@@ -1,0 +1,503 @@
+// ==========================================================
+// Vendas Itinga - Schema Prisma (PostgreSQL)
+// Marketplace C2C com logistica propria e split Pagar.me
+// ==========================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------- Enums -----------------------------
+
+enum UserRole {
+  BUYER
+  SELLER
+  COURIER
+  ADMIN
+}
+
+enum ProductCondition {
+  NEW
+  LIKE_NEW
+  USED
+}
+
+enum ProductStatus {
+  ACTIVE
+  PAUSED
+  SOLD
+  DELETED
+}
+
+enum ShippingMode {
+  PLATFORM // Entrega pela Vendas Itinga (frota propria) - comissao 20%
+  SELLER   // Entrega propria do vendedor              - comissao 15%
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  SHIPPED
+  DELIVERED
+  IN_TEST      // periodo de teste de 4 dias do comprador
+  COMPLETED    // teste vencido, repasse liberado
+  RETURN_REQUESTED
+  RETURN_IN_TRANSIT
+  RETURNED
+  REFUNDED
+  CANCELED
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  PIX
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  CHARGEDBACK
+}
+
+enum PayoutStatus {
+  SCHEDULED
+  RELEASED
+  CANCELED
+}
+
+enum DeliveryType {
+  DELIVERY // coleta no vendedor -> entrega no comprador
+  RETURN   // logistica reversa: coleta no comprador -> devolucao ao vendedor
+}
+
+enum DeliveryStatus {
+  PENDING
+  ASSIGNED
+  PICKED_UP
+  IN_TRANSIT
+  DELIVERED
+  FAILED
+}
+
+enum RefundReason {
+  NOT_AS_DESCRIBED
+  DAMAGED
+  WRONG_ITEM
+  NOT_RECEIVED
+  OTHER
+}
+
+enum RefundStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  COLLECTING
+  COMPLETED
+}
+
+// ----------------------------- Usuario -----------------------------
+
+model User {
+  id            String   @id @default(cuid())
+  googleId      String?  @unique
+  firebaseUid   String?  @unique
+  email         String   @unique
+  name          String
+  avatarUrl     String?
+  phone         String?
+  document      String? // CPF/CNPJ - necessario para virar recebedor Pagar.me
+  bio           String?
+  role          UserRole @default(BUYER)
+  ratingAvg     Float    @default(0)
+  ratingCount   Int      @default(0)
+
+  // Recebedor Pagar.me (criado quando o usuario passa a vender)
+  pagarmeRecipientId String? @unique
+  pagarmeRecipientStatus String?
+
+  // Preferencias de notificacao
+  notifyOffers    Boolean @default(true)
+  notifySales     Boolean @default(true)
+  notifyMessages  Boolean @default(true)
+  pushToken       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  addresses      Address[]
+  products       Product[]      @relation("SellerProducts")
+  favorites      Favorite[]
+  cartItems      CartItem[]
+  ordersAsBuyer  Order[]        @relation("BuyerOrders")
+  ordersAsSeller Order[]        @relation("SellerOrders")
+  payouts        Payout[]
+  deliveries     Delivery[]     @relation("CourierDeliveries")
+  messagesSent   Message[]
+  conversationsAsBuyer  Conversation[] @relation("ConversationBuyer")
+  conversationsAsSeller Conversation[] @relation("ConversationSeller")
+  bankAccount    BankAccount?
+
+  @@index([email])
+}
+
+model BankAccount {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  holderName    String
+  holderDocument String
+  bankCode      String
+  branchNumber  String
+  branchCheckDigit String?
+  accountNumber String
+  accountCheckDigit String
+  accountType   String   @default("checking")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Address {
+  id         String  @id @default(cuid())
+  userId     String
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label      String  @default("Casa")
+  recipient  String
+  zipCode    String
+  street     String
+  number     String
+  complement String?
+  district   String
+  city       String
+  state      String
+  country    String  @default("BR")
+  latitude   Float?
+  longitude  Float?
+  isDefault  Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[]
+
+  @@index([userId])
+}
+
+// ----------------------------- Catalogo -----------------------------
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  slug     String    @unique
+  icon     String?
+  parentId String?
+  parent   Category? @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+  products Product[]
+}
+
+model Product {
+  id          String           @id @default(cuid())
+  sellerId    String
+  seller      User             @relation("SellerProducts", fields: [sellerId], references: [id], onDelete: Cascade)
+  categoryId  String?
+  category    Category?        @relation(fields: [categoryId], references: [id])
+
+  title       String
+  description String
+  condition   ProductCondition @default(USED)
+  size        String?
+  brand       String?
+
+  // Valores sempre em centavos (regra: minimo 1000 = R$ 10,00)
+  priceCents  Int
+
+  // Restricoes fisicas: max 20000 g e max 60 cm de altura
+  weightGrams Int
+  heightCm    Int
+  widthCm     Int
+  lengthCm    Int
+
+  shippingMode ShippingMode @default(PLATFORM)
+  status       ProductStatus @default(ACTIVE)
+
+  // Localizacao para o filtro de proximidade
+  latitude  Float?
+  longitude Float?
+  city      String?
+  state     String?
+
+  viewCount     Int @default(0)
+  favoriteCount Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  images     ProductImage[]
+  favorites  Favorite[]
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+  conversations Conversation[]
+
+  @@index([sellerId])
+  @@index([status, createdAt])
+  @@index([categoryId])
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  width     Int?
+  height    Int?
+  position  Int     @default(0)
+
+  @@index([productId])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+}
+
+// ----------------------------- Pedidos -----------------------------
+
+// Um Order representa a compra de UM vendedor. Um checkout com itens de
+// varios vendedores gera varios Orders agrupados pelo mesmo checkoutId.
+model Order {
+  id         String @id @default(cuid())
+  checkoutId String
+
+  buyerId  String
+  buyer    User   @relation("BuyerOrders", fields: [buyerId], references: [id])
+  sellerId String
+  seller   User   @relation("SellerOrders", fields: [sellerId], references: [id])
+
+  addressId String
+  address   Address @relation(fields: [addressId], references: [id])
+
+  status       OrderStatus  @default(PENDING_PAYMENT)
+  shippingMode ShippingMode
+
+  // Valores em centavos
+  itemsTotalCents    Int
+  shippingCents      Int
+  totalCents         Int
+  platformFeeBps     Int // 2000 (frota) ou 1500 (entrega propria)
+  platformFeeCents   Int
+  sellerAmountCents  Int
+
+  // Pagar.me
+  pagarmeOrderId    String? @unique
+  pagarmeChargeId   String?
+  paymentMethod     PaymentMethod
+  paymentStatus     PaymentStatus @default(PENDING)
+  pixQrCode         String?
+  pixQrCodeUrl      String?
+  pixExpiresAt      DateTime?
+
+  paidAt        DateTime?
+  shippedAt     DateTime?
+  deliveredAt   DateTime?
+  testEndsAt    DateTime? // deliveredAt + 4 dias
+  completedAt   DateTime?
+  canceledAt    DateTime?
+
+  trackingCode String?
+  notes        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items        OrderItem[]
+  deliveries   Delivery[]
+  refund       RefundRequest?
+  payout       Payout?
+  statusEvents OrderStatusEvent[]
+
+  @@index([buyerId, createdAt])
+  @@index([sellerId, createdAt])
+  @@index([checkoutId])
+  @@index([status, testEndsAt])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  titleSnapshot String
+  imageSnapshot String?
+  priceCents    Int
+  quantity      Int  @default(1)
+
+  @@index([orderId])
+}
+
+model OrderStatusEvent {
+  id        String      @id @default(cuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    OrderStatus
+  note      String?
+  createdAt DateTime    @default(now())
+
+  @@index([orderId])
+}
+
+model Payout {
+  id       String @id @default(cuid())
+  orderId  String @unique
+  order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  sellerId String
+  seller   User   @relation(fields: [sellerId], references: [id])
+
+  amountCents      Int
+  platformFeeCents Int
+  status           PayoutStatus @default(SCHEDULED)
+  // Liberacao = fim do teste (4 dias) + prazo de liquidacao do gateway
+  releaseAt        DateTime
+  releasedAt       DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sellerId, status])
+  @@index([status, releaseAt])
+}
+
+// ----------------------------- Logistica -----------------------------
+
+model Delivery {
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  type   DeliveryType   @default(DELIVERY)
+  status DeliveryStatus @default(PENDING)
+
+  courierId String?
+  courier   User?   @relation("CourierDeliveries", fields: [courierId], references: [id])
+
+  // Endereco de coleta
+  pickupLabel     String
+  pickupAddress   String
+  pickupLatitude  Float?
+  pickupLongitude Float?
+
+  // Endereco de entrega (na logistica reversa, e o endereco do vendedor)
+  dropoffLabel     String
+  dropoffAddress   String
+  dropoffLatitude  Float?
+  dropoffLongitude Float?
+
+  assignedAt  DateTime?
+  pickedUpAt  DateTime?
+  completedAt DateTime?
+  failureNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, type])
+  @@index([courierId, status])
+}
+
+model RefundRequest {
+  id      String @id @default(cuid())
+  orderId String @unique
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  reason      RefundReason
+  description String
+  photos      String[]
+  status      RefundStatus @default(REQUESTED)
+
+  // A comissao da plataforma continua devida pelo vendedor mesmo com
+  // reembolso, para cobrir os custos operacionais do processamento.
+  platformFeeRetainedCents Int  @default(0)
+  refundedAmountCents      Int  @default(0)
+
+  reviewedAt  DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ----------------------------- Chat -----------------------------
+
+model Conversation {
+  id        String  @id @default(cuid())
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  buyerId  String
+  buyer    User   @relation("ConversationBuyer", fields: [buyerId], references: [id], onDelete: Cascade)
+  sellerId String
+  seller   User   @relation("ConversationSeller", fields: [sellerId], references: [id], onDelete: Cascade)
+
+  lastMessageAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  messages Message[]
+
+  @@unique([productId, buyerId, sellerId])
+  @@index([buyerId, lastMessageAt])
+  @@index([sellerId, lastMessageAt])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  body           String
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+// ----------------------------- Webhooks -----------------------------
+
+model WebhookEvent {
+  id         String   @id @default(cuid())
+  provider   String   @default("pagarme")
+  externalId String?
+  type       String
+  payload    Json
+  processed  Boolean  @default(false)
+  error      String?
+  createdAt  DateTime @default(now())
+
+  @@index([provider, externalId])
+}

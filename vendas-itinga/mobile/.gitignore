@@ -1,0 +1,14 @@
+node_modules/
+.expo/
+dist/
+web-build/
+android/
+ios/
+*.log
+.env
+.env.*
+!.env.example
+google-play-service-account.json
+*.keystore
+*.jks
+.DS_Store

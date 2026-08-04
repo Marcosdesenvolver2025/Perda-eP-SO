@@ -1,0 +1,192 @@
+:root{
+  --fundo:#241556;
+  --fundo-2:#1b0f43;
+  --cartao:#2f1c6e;
+  --roxo:#4f2ab0;
+  --roxo-claro:#7b52e0;
+  --ouro:#ffc400;
+  --ouro-claro:#ffe45c;
+  --rosa:#f47c7a;
+  --texto:#efe9ff;
+  --texto-suave:#b6a8e0;
+  --raio:16px;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:
+    radial-gradient(900px 460px at 50% -140px,#4a2a9e 0%,rgba(74,42,158,0) 70%),
+    linear-gradient(180deg,var(--fundo) 0%,var(--fundo-2) 100%);
+  background-attachment:fixed;
+  color:var(--texto);
+  font-family:'Montserrat',Arial,Helvetica,sans-serif;
+  font-size:16px;
+  line-height:1.55;
+}
+img{max-width:100%;height:auto;display:block}
+a{text-decoration:none;color:inherit}
+
+.wrap{width:min(1120px,92vw);margin:0 auto}
+.wrap-estreito{width:min(760px,92vw)}
+
+/* ---------- marca ---------- */
+.marca{
+  font-family:'Fredoka One','Montserrat',sans-serif;
+  font-size:2rem;
+  line-height:1;
+  letter-spacing:.5px;
+  background:linear-gradient(180deg,#fff 0%,#ffeccd 32%,#ffaa96 62%,var(--rosa) 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+  text-shadow:0 3px 0 rgba(28,10,64,.35);
+}
+.marca span{
+  font-size:1.25rem;
+  background:linear-gradient(180deg,#fff8de 0%,#fdcda0 45%,#ee7e64 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+
+/* ---------- topo ---------- */
+.topo{
+  position:sticky;top:0;z-index:20;
+  background:rgba(27,15,67,.88);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid rgba(255,255,255,.09);
+}
+.topo-inner{display:flex;align-items:center;gap:22px;padding:12px 0}
+.menu{display:flex;gap:22px;margin-left:14px;flex:1}
+.menu a{
+  color:var(--texto-suave);font-weight:700;font-size:.95rem;
+  padding:6px 2px;border-bottom:2px solid transparent;transition:.2s;
+}
+.menu a:hover{color:#fff;border-color:var(--ouro)}
+.acoes{display:flex;gap:10px}
+.btn{
+  display:inline-block;padding:9px 20px;border-radius:999px;
+  font-weight:800;font-size:.9rem;letter-spacing:.3px;transition:.2s;white-space:nowrap;
+}
+.btn-linha{color:var(--texto);border:2px solid rgba(255,255,255,.25)}
+.btn-linha:hover{border-color:var(--ouro);color:var(--ouro)}
+.btn-ouro{
+  color:#3b2400;
+  background:linear-gradient(180deg,var(--ouro-claro),var(--ouro));
+  box-shadow:0 6px 18px rgba(255,196,0,.28);
+}
+.btn-ouro:hover{filter:brightness(1.08);transform:translateY(-1px)}
+
+/* ---------- carrossel ---------- */
+.hero{padding:26px 0 10px}
+.carrossel{
+  position:relative;
+  width:min(700px,100%);
+  margin:0 auto;
+  border-radius:var(--raio);
+  overflow:hidden;
+  box-shadow:0 18px 44px rgba(0,0,0,.45);
+}
+.trilho{display:flex;transition:transform .55s cubic-bezier(.4,0,.2,1)}
+.trilho img{min-width:100%;aspect-ratio:700/328;object-fit:cover}
+.seta{
+  position:absolute;top:50%;transform:translateY(-50%);
+  width:38px;height:38px;border:0;border-radius:50%;
+  background:rgba(20,10,50,.5);color:#fff;font-size:1.1rem;cursor:pointer;
+  display:grid;place-items:center;transition:.2s;opacity:0;
+}
+.carrossel:hover .seta{opacity:1}
+.seta:hover{background:var(--ouro);color:#3b2400}
+.seta-esq{left:10px}
+.seta-dir{right:10px}
+.pontos{
+  position:absolute;left:0;right:0;bottom:10px;
+  display:flex;justify-content:center;gap:7px;
+}
+.pontos button{
+  width:8px;height:8px;padding:0;border:0;border-radius:50%;
+  background:rgba(255,255,255,.45);cursor:pointer;transition:.25s;
+}
+.pontos button.ativo{background:var(--ouro);width:22px;border-radius:999px}
+
+/* ---------- secoes ---------- */
+.secao{padding:52px 0}
+.secao-alt{background:rgba(255,255,255,.035)}
+.titulo{
+  font-size:clamp(1.5rem,3.4vw,2.1rem);
+  font-weight:800;text-align:center;margin:0 0 6px;
+}
+.titulo span{
+  background:linear-gradient(180deg,var(--ouro-claro),var(--ouro));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.sub{text-align:center;color:var(--texto-suave);margin:0 0 30px}
+
+.grade{
+  display:grid;gap:20px;
+  grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+}
+.card{
+  background:linear-gradient(180deg,var(--cartao),#26165c);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:var(--raio);overflow:hidden;
+  transition:transform .25s,box-shadow .25s,border-color .25s;
+}
+.card:hover{
+  transform:translateY(-5px);
+  border-color:rgba(255,196,0,.5);
+  box-shadow:0 16px 34px rgba(0,0,0,.42);
+}
+.card img{aspect-ratio:700/328;object-fit:cover}
+.card-txt{padding:14px 18px 18px}
+.card-txt h3{
+  margin:0 0 4px;font-size:1.12rem;
+  background:linear-gradient(180deg,var(--ouro-claro),var(--ouro));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.card-txt p{margin:0;color:var(--texto-suave);font-size:.94rem}
+
+.vantagens{
+  display:grid;gap:18px;margin-top:26px;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+}
+.vant{
+  background:rgba(47,28,110,.6);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:var(--raio);padding:22px 20px;text-align:center;
+}
+.vant .ic{font-size:1.9rem;display:block;margin-bottom:8px}
+.vant h4{margin:0 0 6px;font-size:1.02rem}
+.vant p{margin:0;color:var(--texto-suave);font-size:.92rem}
+
+details{
+  background:rgba(47,28,110,.55);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:12px;padding:14px 18px;margin-bottom:12px;
+}
+details summary{cursor:pointer;font-weight:700;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::after{content:"+";float:right;color:var(--ouro);font-weight:800}
+details[open] summary::after{content:"–"}
+details p{margin:10px 0 0;color:var(--texto-suave)}
+
+/* ---------- rodape ---------- */
+.rodape{
+  padding:36px 0 30px;text-align:center;
+  border-top:1px solid rgba(255,255,255,.09);
+  background:rgba(15,7,38,.55);
+}
+.marca-rodape{font-size:1.6rem}
+.aviso{max-width:620px;margin:14px auto 8px;color:var(--texto-suave);font-size:.88rem}
+.aviso strong{color:var(--ouro)}
+.copy{color:#8b7cb8;font-size:.82rem;margin:0}
+
+@media (max-width:760px){
+  .menu{display:none}
+  .topo-inner{gap:12px}
+  .marca{font-size:1.6rem}
+  .marca span{font-size:1rem}
+  .seta{opacity:1;width:32px;height:32px}
+  .secao{padding:40px 0}
+}

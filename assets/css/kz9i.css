@@ -147,6 +147,18 @@ a{text-decoration:none;color:inherit}
 }
 .card-txt p{margin:0;color:var(--texto-suave);font-size:.94rem}
 
+.faixas{
+  display:grid;gap:16px;margin-top:26px;
+  grid-template-columns:repeat(auto-fit,minmax(330px,1fr));
+}
+.faixas img{
+  width:100%;border-radius:12px;
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:0 10px 24px rgba(0,0,0,.35);
+  transition:transform .25s,border-color .25s;
+}
+.faixas img:hover{transform:translateY(-4px);border-color:rgba(255,196,0,.55)}
+
 .vantagens{
   display:grid;gap:18px;margin-top:26px;
   grid-template-columns:repeat(auto-fit,minmax(220px,1fr));

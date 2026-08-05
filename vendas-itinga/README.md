@@ -153,7 +153,49 @@ npm install
 npx expo start
 ```
 
-No emulador Android, a API local é `http://10.0.2.2:3333` (não `localhost`).
+### Qual endereço usar em `EXPO_PUBLIC_API_URL`
+
+`localhost` dentro do celular aponta para o **próprio celular**, nunca para o
+seu computador. Use conforme o caso:
+
+| Onde você roda o app | Endereço da API |
+|---|---|
+| Emulador Android | `http://10.0.2.2:3333` |
+| Simulador iOS | `http://localhost:3333` |
+| Celular físico (Expo Go) | `http://SEU_IP_LOCAL:3333` — ex.: `http://192.168.0.10:3333` |
+| Produção | `https://api.seudominio.com.br` |
+
+Descubra seu IP com `ipconfig` (Windows) ou `ifconfig | grep inet` (Mac/Linux).
+O celular precisa estar no **mesmo Wi-Fi** que o computador.
+
+O app normaliza o valor: se você esquecer o `http://` ou deixar uma barra no
+final, ele corrige sozinho. Se ainda assim não conectar, a tela de erro mostra
+o endereço em uso e um botão para testar a conexão.
+
+---
+
+## Problemas comuns no desenvolvimento
+
+**O app abre a splash e fecha / trava**
+Verifique se você não criou um `app/index.jsx`. A rota `/` já é
+`app/(tabs)/index.jsx` — pastas entre parênteses não criam segmento de URL,
+então os dois arquivos disputariam o mesmo caminho e o roteador entra em laço.
+
+**Login com Google não abre no Expo Go**
+Esperado. Desde o SDK 48 o Expo removeu o proxy de autenticação, então o
+Google Sign-In precisa de um **development build** — o Expo Go não consegue
+registrar o redirecionamento `com.vendasitinga.app`:
+
+```bash
+eas build --platform android --profile development
+```
+
+Enquanto isso, use o botão "Ver como funciona" na tela de login para navegar
+pelo app sem autenticar.
+
+**Notificações push no Expo Go**
+Também exigem development build no Android. O app trata a ausência sem quebrar:
+a preferência é salva mesmo quando o token não pode ser gerado.
 
 ---
 

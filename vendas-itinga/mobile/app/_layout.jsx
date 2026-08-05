@@ -1,14 +1,35 @@
-import { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../src/contexts/AuthContext';
 import { CartProvider } from '../src/contexts/CartContext';
+import ErrorScreen from '../src/components/ErrorScreen';
 import { colors } from '../src/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+/**
+ * Tela de falha do Expo Router.
+ *
+ * Exportar `ErrorBoundary` de um arquivo de layout faz o roteador capturar
+ * qualquer erro lancado abaixo dele. Sem isso, um erro em tempo de execucao
+ * derruba o app inteiro - que era o que acontecia antes.
+ */
+export function ErrorBoundary({ error, retry }) {
+  return (
+    <SafeAreaProvider>
+      <ErrorScreen
+        title="Algo deu errado"
+        message={error?.message || 'O aplicativo encontrou um erro inesperado.'}
+        onRetry={retry}
+        showDiagnostics
+      />
+    </SafeAreaProvider>
+  );
+}
 
 const screenOptions = {
   headerStyle: { backgroundColor: colors.white },
@@ -19,17 +40,38 @@ const screenOptions = {
 };
 
 function RootNavigator() {
-  const { loading } = useAuth();
+  const { loading, isAuthenticated } = useAuth();
+  const router = useRouter();
+  const [splashHidden, setSplashHidden] = useState(false);
 
+  const hideSplash = useCallback(() => {
+    setSplashHidden((already) => {
+      if (!already) SplashScreen.hideAsync().catch(() => {});
+      return true;
+    });
+  }, []);
+
+  // Rede de seguranca: se a checagem de sessao travar (API fora do ar,
+  // DNS lento), a splash sai sozinha em 8s em vez de prender o app.
   useEffect(() => {
-    if (!loading) SplashScreen.hideAsync().catch(() => {});
-  }, [loading]);
+    const timer = setTimeout(hideSplash, 8000);
+    return () => clearTimeout(timer);
+  }, [hideSplash]);
+
+  // A decisao de rota acontece DEPOIS da montagem do navegador (em efeito),
+  // nunca durante a renderizacao - navegar durante o render quebra o router.
+  useEffect(() => {
+    if (loading) return;
+    if (!isAuthenticated) router.replace('/login');
+    hideSplash();
+  }, [loading, isAuthenticated, router, hideSplash]);
 
   return (
     <Stack screenOptions={screenOptions}>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />
+      {/* A rota "/" e o feed em (tabs)/index.jsx. Nao crie um app/index.jsx:
+          os dois resolveriam para o mesmo caminho e o app entra em laco. */}
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />
 
       <Stack.Screen name="product/[id]" options={{ headerTransparent: true, title: '' }} />
       <Stack.Screen name="cart" options={{ title: 'Sacola' }} />

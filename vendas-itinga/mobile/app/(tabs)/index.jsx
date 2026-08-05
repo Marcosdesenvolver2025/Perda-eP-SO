@@ -13,10 +13,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import api from '../../src/api/client';
+import api, { apiError, isNetworkError } from '../../src/api/client';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useCart } from '../../src/contexts/CartContext';
 import ProductCard from '../../src/components/ProductCard';
+import ErrorScreen from '../../src/components/ErrorScreen';
 import { Chip, EmptyState, Loading } from '../../src/components/ui';
 import { colors, radius, spacing, typography } from '../../src/theme';
 
@@ -46,6 +47,7 @@ export default function Feed() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [failure, setFailure] = useState(null);
 
   const load = useCallback(
     async (targetPage = 1, opts = {}) => {
@@ -63,8 +65,14 @@ export default function Feed() {
         setProducts((prev) => (targetPage === 1 ? data.items : [...prev, ...data.items]));
         setHasMore(data.hasMore);
         setPage(targetPage);
-      } catch {
-        if (targetPage === 1) setProducts([]);
+        setFailure(null);
+      } catch (error) {
+        if (targetPage === 1) {
+          setProducts([]);
+          // So bloqueamos a tela quando e falha de rede: um erro pontual da
+          // API vira lista vazia, sem tirar o app do ar.
+          setFailure(isNetworkError(error) ? apiError(error) : null);
+        }
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -200,6 +208,16 @@ export default function Feed() {
 
       {loading ? (
         <Loading label="Buscando novidades..." />
+      ) : failure ? (
+        <ErrorScreen
+          title="Sem conexão com o servidor"
+          message={failure}
+          onRetry={() => {
+            setLoading(true);
+            setFailure(null);
+            load(1);
+          }}
+        />
       ) : (
         <FlatList
           data={products}

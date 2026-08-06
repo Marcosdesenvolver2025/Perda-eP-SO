@@ -60,11 +60,23 @@ eas secret:create --scope project --name EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID --
 ## Passo 4 — Vincular o projeto ao EAS
 
 ```bash
+eas init
 eas build:configure
 ```
 
-Escolha **Android**. Isso preenche automaticamente o `extra.eas.projectId` no
-`app.json` (hoje ele está com um valor de exemplo `00000000-...`).
+O `eas init` cria o projeto na sua conta e **escreve o `extra.eas.projectId`
+real** dentro do `app.json`. O arquivo vem sem esse campo de propósito: um
+`projectId` inventado faz o build falhar na fase *Read app config*.
+
+Confira depois de rodar:
+
+```bash
+npx expo config --type public --json
+```
+
+O `slug` que aparecer aqui precisa ser **o mesmo** slug do projeto no
+expo.dev. Se você criou o projeto com outro nome, ou o slug bate, ou o build
+falha ao ler a configuração.
 
 ## Passo 5 — Build de teste (APK)
 
@@ -158,6 +170,35 @@ com `"appVersionSource": "remote"`. Para mudar a versão visível (ex.: 1.0.0 �
 ---
 
 ## Problemas comuns
+
+**"Android build failed: Unknown error. See logs of the Read app config build phase"**
+
+O EAS não conseguiu ler a configuração do app. As duas causas mais comuns:
+
+1. **`extra.eas.projectId` ausente ou inválido.** Rode `eas init` — ele
+   escreve o id correto. Se já houver um id errado no `app.json`, apague o
+   bloco `"eas": { ... }` inteiro e rode `eas init` de novo.
+2. **`slug` diferente do projeto no expo.dev.** Se a URL do build for
+   `expo.dev/accounts/SUA_CONTA/projects/meu-app`, então o `app.json` precisa
+   ter `"slug": "meu-app"`. Ajuste o slug ou rode `eas init --force` para
+   religar o projeto.
+
+Antes de gastar outro build, valide localmente — é o mesmo comando que o
+servidor executa nessa fase:
+
+```bash
+npx expo config --type public --json
+```
+
+Para ver o erro exato, abra o link de logs que o terminal imprimiu e expanda
+a fase **Read app config**.
+
+**O IP que coloquei no `app.json` não é usado**
+
+Valores de `extra` seguem esta ordem: variável de ambiente → `app.json` →
+padrão. Se existir `EXPO_PUBLIC_API_URL` no `.env` ou no `eas.json`, ela vence
+o que estiver escrito no `app.json`. Para builds, o lugar certo é o `env` do
+perfil no `eas.json`.
 
 **"Package name already exists"**
 Outro app já usa `com.vendasitinga.app`. Troque `android.package` no `app.json`

@@ -2,7 +2,7 @@
  * Fluxo da entrega feita pelos entregadores do Vendas Itinga.
  *
  * Estados: AGUARDANDO_ENTREGADOR -> ACEITA -> COLETADA -> ENTREGUE.
- * A confirmação de entrega é o gatilho da janela de 4 dias para testar.
+ * A confirmação de entrega é o gatilho da janela de 7 dias para testar.
  */
 
 import { ambiente } from '../ambiente';
@@ -109,7 +109,7 @@ export async function confirmarColeta(entregaId: string, entregadorId: string) {
  * Confirma a entrega ao comprador.
  *
  * O entregador digita o código de 4 dígitos que o comprador mostra no app.
- * É esse passo que inicia a contagem dos 4 dias para testar o produto.
+ * É esse passo que inicia a contagem dos 7 dias para testar o produto.
  */
 export async function confirmarEntrega(
   entregaId: string,
@@ -160,7 +160,7 @@ export async function confirmarEntrega(
 
 /**
  * Entrega combinada entre comprador e vendedor: quem confirma o recebimento
- * é o próprio comprador, pelo app. A janela de 4 dias começa igual.
+ * é o próprio comprador, pelo app. A janela de 7 dias começa igual.
  */
 export async function compradorConfirmaRecebimento(
   pedidoId: string,

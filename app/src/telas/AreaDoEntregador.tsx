@@ -3,7 +3,7 @@
  *
  * Duas abas: as corridas abertas (pra aceitar) e as minhas (pra tocar o
  * serviço). Cada entrega vai de aceitar -> coletei -> entreguei, e a
- * confirmação da entrega abre a janela de 4 dias do comprador.
+ * confirmação da entrega abre a janela de 7 dias do comprador.
  */
 
 import React, { useCallback, useState } from 'react';

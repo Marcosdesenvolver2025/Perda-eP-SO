@@ -4,7 +4,7 @@
 
 <p align="center">
   <strong>Compre e venda na sua cidade.</strong><br>
-  Marketplace local para Itinga, com entrega própria e 4 dias para testar o produto.
+  Marketplace local para Itinga-MG, com entrega própria e 7 dias para testar o produto.
 </p>
 
 ---
@@ -34,17 +34,17 @@ O projeto tem três partes:
 | Comissão quando o entregador do app entrega | **18%** sobre o produto |
 | Peso máximo por pacote | **20 kg** |
 | Tamanho máximo (qualquer lado) | **60 cm** |
-| Prazo para testar e devolver | **4 dias** a partir da entrega |
+| Prazo para testar e devolver | **7 dias** a partir da entrega |
 | Repasse ao vendedor | depois que o prazo de teste vence |
-| Reembolso com entrega nossa | comissão e frete **são retidos** |
-| Reembolso com entrega combinada | devolução **integral** |
+| Reembolso dentro do prazo | devolução **integral**, frete incluído (CDC art. 49) |
+| Quem absorve a comissão na devolução | a plataforma |
 
 Essas regras vivem em dois lugares e são checadas por teste automatizado:
 `servidor/src/dominio/regras.ts` (manda) e `app/src/regras/limites.ts` (avisa a
 pessoa antes de ela perder tempo).
 
 ```bash
-cd servidor && npm test    # 23 testes cobrindo comissão, limites, prazo e reembolso
+cd servidor && npm test    # 25 testes cobrindo comissão, limites, prazo e reembolso
 ```
 
 ---
@@ -108,8 +108,9 @@ entregador** e exclusão de conta.
 ## Como o dinheiro anda
 
 O split acontece na hora do pagamento, mas o valor fica **retido** no saldo da
-pagar.me até o prazo de teste vencer. Se houver devolução, o estorno sai do
-saldo certo, com a comissão e o frete preservados.
+pagar.me até o prazo de teste vencer. Se houver devolução dentro dos 7 dias, o
+comprador recebe tudo de volta — inclusive o frete — e o estorno sai do saldo
+certo de cada um, sem debitar o entregador.
 
 O passo a passo, com exemplos numéricos e o checklist de homologação, está em
 **[`documentos/split-pagarme.md`](documentos/split-pagarme.md)** — leia antes de
@@ -147,8 +148,9 @@ Falta só você tirar as **capturas de tela** do app rodando e preencher os
 ## A marca
 
 O verde **`#00DF13`** ocupa o lugar do roxo do app que serviu de referência. O
-símbolo é uma etiqueta de preço com um alfinete de localização dentro: vender,
-na sua cidade.
+símbolo é uma sacola de compras sorridente, desenhada a partir do ícone que
+você enviou — as proporções foram medidas na imagem original e reconstruídas em
+vetor, para ficar nítido em qualquer tamanho.
 
 Todos os arquivos saem de um script só:
 
@@ -195,9 +197,7 @@ tools/gerar_marca.py      gerador da identidade visual
 
 - [ ] Preencher `[RAZÃO SOCIAL]`, `[SEU CNPJ]` e endereço nos três HTML de `loja/`
 - [ ] Rodar o checklist de homologação de `documentos/split-pagarme.md` inteiro
-- [ ] Conversar com um advogado sobre o prazo de 7 dias do CDC (art. 49) —
-      explicado no mesmo documento
+- [ ] Validar com um advogado o texto dos termos e a política de devolução
 - [ ] Definir onde as fotos dos anúncios serão guardadas (S3, Cloudinary…) e
       ligar o upload em `app/src/telas/NovoAnuncio.tsx`
-- [ ] Confirmar a UF da cidade em `servidor/src/dominio/regras.ts` (está `MA`)
 - [ ] Fazer uma compra real de valor baixo e acompanhar o dinheiro até o repasse

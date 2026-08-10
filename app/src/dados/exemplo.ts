@@ -42,7 +42,7 @@ function anuncio(
     fotos: [],
     criadoEm: new Date(Date.now() - 3 * 86_400_000).toISOString(),
     vendedor: { id: 'v1', nome: 'Rubia', apelidoLoja: 'rubia store', bairro: 'Centro' },
-    entrega: { valorFrete: 800, diasParaTestar: 4 },
+    entrega: { valorFrete: 800, diasParaTestar: 7 },
     ...extras,
   };
 }

@@ -227,7 +227,7 @@ Depois que a Google aprovar e você testar tudo em homologação:
    `producao` do `eas.json`).
 3. Gere um novo build de produção e envie.
 4. **Faça uma compra de verdade, de valor baixo, com o seu próprio cartão**, e
-   acompanhe o dinheiro: cobrança → split → retenção de 4 dias → repasse.
+   acompanhe o dinheiro: cobrança → split → retenção de 7 dias → repasse.
    É o único jeito de ter certeza de que o fluxo de dinheiro está correto.
 
 ---

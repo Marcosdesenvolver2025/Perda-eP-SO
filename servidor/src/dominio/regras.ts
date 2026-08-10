@@ -24,8 +24,12 @@ export const DIMENSAO_MAXIMA_CM = 60;
 /**
  * Prazo que o comprador tem para testar o produto e pedir reembolso.
  * A contagem começa na DATA DE ENTREGA (não na data da compra).
+ *
+ * São 7 dias porque é o que manda o artigo 49 do Código de Defesa do
+ * Consumidor: em compra feita fora do estabelecimento comercial (o nosso caso),
+ * o consumidor pode desistir em até 7 dias contados do recebimento.
  */
-export const DIAS_PARA_TESTAR = 4;
+export const DIAS_PARA_TESTAR = 7;
 
 /**
  * Percentual do frete que vai para o entregador. O restante fica com a
@@ -34,19 +38,24 @@ export const DIAS_PARA_TESTAR = 4;
 export const REPASSE_ENTREGADOR = 0.8;
 
 /**
- * No reembolso de um pedido entregue pelos NOSSOS entregadores, a taxa é
- * cobrada do mesmo jeito: a comissão e o frete não voltam para o comprador,
- * porque o serviço de intermediação e de entrega já foi prestado.
+ * Retenção de taxa no reembolso: DESLIGADA.
  *
- * Em pedidos sem os nossos entregadores não há retenção: o comprador recebe
- * tudo de volta.
+ * O artigo 49 do Código de Defesa do Consumidor manda devolver "imediatamente"
+ * e "monetariamente atualizados" TODOS os valores pagos durante o prazo de
+ * arrependimento — e o parágrafo único inclui o frete. Reter comissão ou frete
+ * dentro dos 7 dias contraria a lei, então quem absorve esse custo é a
+ * plataforma.
+ *
+ * As chaves continuam existindo porque `calcularReembolso` aceita sobrescrever
+ * caso a caso (devolução fora do prazo legal, por exemplo, negociada com o
+ * comprador). Não ligue por padrão sem falar com um advogado.
  */
-export const RETER_COMISSAO_NO_REEMBOLSO = true;
-export const RETER_FRETE_NO_REEMBOLSO = true;
+export const RETER_COMISSAO_NO_REEMBOLSO = false;
+export const RETER_FRETE_NO_REEMBOLSO = false;
 
 /** Cidade atendida. Anúncios e entregas ficam restritos a ela. */
 export const CIDADE = 'Itinga';
-export const UF = 'MA';
+export const UF = 'MG';
 
 export type ModalidadeEntrega =
   /** Entregador do Vendas Itinga faz a coleta e a entrega. */

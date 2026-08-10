@@ -5,7 +5,7 @@
  *  - criar recebedores (vendedores e entregadores) para receber o split;
  *  - criar pedidos com split (cartão e Pix);
  *  - estornar (total ou parcial) na devolução;
- *  - transferir o saldo retido ao vendedor quando a janela de 4 dias vence.
+ *  - transferir o saldo retido ao vendedor quando a janela de 7 dias vence.
  *
  * Autenticação: Basic com a chave secreta como usuário e senha vazia.
  *
@@ -94,7 +94,7 @@ export interface RespostaRecebedor {
  * Cria um recebedor com transferência automática DESLIGADA.
  *
  * É de propósito: o dinheiro do split fica parado no saldo do vendedor até a
- * janela de 4 dias vencer. Se o comprador pedir reembolso, o valor ainda está
+ * janela de 7 dias vencer. Se o comprador pedir reembolso, o valor ainda está
  * lá para ser estornado. O repasse sai depois, via `transferir()`.
  */
 export function criarRecebedor(

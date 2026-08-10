@@ -14,21 +14,22 @@ Vendas Itinga
 ## Descrição breve (máx. 80 caracteres)
 
 ```
-Compre e venda em Itinga com entrega local e 4 dias pra testar o produto.
+Compre e venda em Itinga-MG com entrega local e 7 dias pra testar.
 ```
 
-*(72 caracteres)*
+*(66 caracteres — o limite é 80)*
 
 ## Descrição completa (máx. 4.000 caracteres)
 
 ```
-O Vendas Itinga é o app de compra e venda feito para a nossa cidade. Aqui você
+O Vendas Itinga é o app de compra e venda feito para Itinga-MG. Aqui você
 anuncia o que não usa mais e encontra produtos novos e usados de gente que mora
 pertinho de você — sem frete caro e sem esperar semanas pela entrega.
 
 COMPRE COM SEGURANÇA
-• 4 dias para testar: o prazo começa quando o produto chega na sua mão. Não
-  gostou? Peça a devolução pelo próprio app.
+• 7 dias para testar: o prazo começa quando o produto chega na sua mão. Não
+  gostou? Peça a devolução pelo app e receba de volta tudo que pagou, frete
+  incluído — como garante o Código de Defesa do Consumidor.
 • Pagamento protegido: o dinheiro fica retido com a gente e só é repassado ao
   vendedor depois que passa o prazo de teste.
 • Pague com Pix ou cartão de crédito, parcelado em até 12x.
@@ -57,7 +58,7 @@ COMO FUNCIONA
 1. Anuncie ou escolha um produto.
 2. Pague por Pix ou cartão.
 3. Receba pelo nosso entregador ou combine direto com quem vende.
-4. Teste por 4 dias. Gostou? O vendedor recebe. Não gostou? Peça a devolução.
+4. Teste por 7 dias. Gostou? O vendedor recebe. Não gostou? Devolução integral.
 
 Vendas Itinga: compre e venda na sua cidade.
 
@@ -95,7 +96,7 @@ de teste no seu celular:
 1. Abra o app e tire print das telas nesta ordem (dá uma boa história):
    1. Home com produtos
    2. Página de um produto
-   3. Tela de "4 dias pra testar" / finalizar compra
+   3. Tela de "7 dias pra testar" / finalizar compra
    4. Aba vendas (a lojinha)
    5. Criar anúncio
    6. Acompanhamento do pedido
@@ -112,5 +113,5 @@ de teste no seu celular:
 
 ```
 Primeira versão do Vendas Itinga! Compre e venda produtos novos e usados dentro
-da cidade, com entrega pelos nossos entregadores e 4 dias pra testar em casa.
+da cidade, com entrega pelos nossos entregadores e 7 dias pra testar em casa.
 ```

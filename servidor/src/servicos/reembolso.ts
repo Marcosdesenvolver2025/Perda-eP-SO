@@ -1,10 +1,11 @@
 /**
- * Reembolso dentro da janela de 4 dias.
+ * Reembolso dentro da janela de 7 dias.
  *
  * O comprador abre o pedido pelo app; a equipe aprova ou recusa. Aprovado, o
  * estorno é feito na pagar.me com o split explícito, garantindo que:
- *   - a comissão e o frete fiquem retidos quando a entrega foi nossa;
+ *   - o comprador receba de volta TUDO que pagou, frete incluído (CDC art. 49);
  *   - o valor do produto saia do saldo do vendedor (que ainda está retido);
+ *   - a comissão e o frete saiam do caixa da plataforma;
  *   - o entregador não seja debitado — ele já prestou o serviço.
  */
 
@@ -58,11 +59,12 @@ export async function previa(pedidoId: string, compradorId: string) {
     valorPago: pedido.valorTotal,
     valorReembolsado: calculo.valorReembolsado,
     valorRetido: calculo.valorRetido,
-    // deixa explícito para o comprador por que a taxa não volta
+    // dentro do prazo legal a devolução é integral; se algum dia a política
+    // mudar, o cálculo já reflete aqui e o texto acompanha
     explicacao:
-      pedido.modalidade === 'ENTREGADOR_PROPRIO'
-        ? 'A comissão e o frete não são devolvidos porque a entrega já foi feita pelos nossos entregadores.'
-        : 'Você recebe todo o valor de volta.',
+      calculo.valorRetido === 0
+        ? 'Você recebe de volta tudo que pagou, inclusive o frete.'
+        : 'Parte do valor fica retida conforme combinado para esta devolução.',
     prazoTesteAte: pedido.prazoTesteAte,
   };
 }

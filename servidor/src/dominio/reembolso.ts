@@ -1,15 +1,17 @@
 /**
- * Janela de teste de 4 dias e cálculo do reembolso.
+ * Janela de teste de 7 dias e cálculo do reembolso.
  *
  * Como funciona para o comprador:
  *  1. ele compra e o dinheiro fica retido (não vai para o vendedor ainda);
- *  2. o produto chega -> começa a contar 4 dias corridos para testar;
- *  3. dentro desses 4 dias ele pode pedir reembolso pelo app;
- *  4. passados os 4 dias sem pedido, o repasse ao vendedor é liberado.
+ *  2. o produto chega -> começa a contar 7 dias corridos para testar;
+ *  3. dentro desses 7 dias ele pode pedir reembolso pelo app;
+ *  4. passados os 7 dias sem pedido, o repasse ao vendedor é liberado.
  *
- * Sobre a taxa: em pedido entregue pelos NOSSOS entregadores, a comissão e o
- * frete são cobrados do mesmo jeito, porque o serviço já foi prestado. Quem
- * devolve o valor do produto é o vendedor.
+ * O prazo e a devolução integral vêm do artigo 49 do Código de Defesa do
+ * Consumidor. Dentro da janela, o comprador recebe de volta TUDO que pagou,
+ * inclusive o frete: a comissão sai do caixa da plataforma e o valor do
+ * produto sai do saldo retido do vendedor. O entregador não devolve nada —
+ * ele prestou o serviço e é pago pela plataforma de qualquer jeito.
  */
 
 import {
@@ -74,9 +76,12 @@ export interface CalculoReembolso {
 /**
  * Calcula o estorno de um pedido.
  *
- * `modalidade` decide a retenção: só há taxa retida quando a entrega foi
- * feita pelos nossos entregadores. Quando comprador e vendedor combinaram a
- * entrega entre si, a devolução é integral.
+ * Por padrão a devolução é INTEGRAL, como manda o art. 49 do CDC: o comprador
+ * recebe o produto e o frete de volta. `opcoes` permite reter comissão e frete
+ * em casos combinados fora do prazo legal — leia o aviso em `regras.ts` antes.
+ *
+ * A retenção, quando ligada, só vale para entrega feita pelos nossos
+ * entregadores: sem esse serviço prestado não haveria o que reter.
  */
 export function calcularReembolso(
   split: ResultadoSplit,

@@ -61,7 +61,7 @@ const confirmarEsquema = z.object({
 /**
  * POST /entregas/:id/entreguei
  * Confirma a entrega e dispara o pagamento do entregador. Este é o marco que
- * abre a janela de 4 dias do comprador para testar o produto.
+ * abre a janela de 7 dias do comprador para testar o produto.
  */
 rotasEntregas.post('/:id/entreguei', async (req, res, next) => {
   try {

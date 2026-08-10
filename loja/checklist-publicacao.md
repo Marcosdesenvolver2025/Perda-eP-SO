@@ -51,7 +51,7 @@ Marque cada item antes de apertar "Enviar para análise". A ordem importa.
 - [ ] Comprar com **cartão** de teste e ver o split no painel da pagar.me
 - [ ] Cadastrar conta de recebimento e ver o recebedor ficar ativo
 - [ ] Aceitar, coletar e confirmar uma entrega pela área do entregador
-- [ ] Ver o prazo de 4 dias aparecer no pedido depois da entrega
+- [ ] Ver o prazo de 7 dias aparecer no pedido depois da entrega
 - [ ] Pedir devolução e conferir a prévia dos valores retidos
 - [ ] Aprovar a devolução e ver o estorno na pagar.me
 - [ ] Excluir a conta pelo app e conferir que os dados sumiram

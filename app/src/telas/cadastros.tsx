@@ -439,7 +439,7 @@ export function TelaConfirmarEntrega({
         />
 
         <Aviso
-          texto="ao confirmar, começa a contar o prazo de 4 dias que o comprador tem para testar o produto."
+          texto="ao confirmar, começa a contar o prazo de 7 dias que o comprador tem para testar o produto."
           tom="informacao"
         />
 
@@ -483,9 +483,13 @@ const perguntas = [
     texto: `pode, dentro de ${DIAS_PARA_TESTAR} dias contados da chegada. é só abrir o pedido no app e pedir devolução.`,
   },
   {
-    titulo: 'a taxa volta no reembolso?',
+    titulo: 'o frete volta no reembolso?',
+    texto: `volta sim. dentro dos ${DIAS_PARA_TESTAR} dias você recebe de volta tudo que pagou, inclusive o frete — é o que garante o artigo 49 do código de defesa do consumidor.`,
+  },
+  {
+    titulo: 'e se eu vender e o comprador devolver?',
     texto:
-      'quando a entrega é feita pelos nossos entregadores, a comissão e o frete são cobrados do mesmo jeito, porque o serviço já foi prestado. o valor do produto volta pra você.',
+      'você devolve só o valor que recebeu pela venda. a comissão e o frete são absorvidos pelo vendas itinga, não saem do seu bolso.',
   },
   {
     titulo: 'como eu recebo o produto?',

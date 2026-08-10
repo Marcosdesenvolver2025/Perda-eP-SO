@@ -1,7 +1,7 @@
 /**
  * Liberação do dinheiro depois da janela de teste.
  *
- * Enquanto os 4 dias correm, o valor fica retido no saldo da pagar.me (os
+ * Enquanto os 7 dias correm, o valor fica retido no saldo da pagar.me (os
  * recebedores são criados com `transfer_enabled: false`). Quando o prazo
  * vence sem pedido de devolução, o saque é liberado para o vendedor.
  *

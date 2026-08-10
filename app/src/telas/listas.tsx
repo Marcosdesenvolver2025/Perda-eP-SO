@@ -154,7 +154,7 @@ export function TelaMinhasVendas({
           setExtrato({
             aReceber: 9_840,
             recebido: 24_500,
-            diasParaLiberar: 4,
+            diasParaLiberar: 7,
             pedidos: [
               {
                 id: 'p1',
@@ -201,7 +201,7 @@ export function TelaMinhasVendas({
         </View>
 
         <Text style={[fonte.pequeno, { marginTop: espaco.md }]}>
-          o valor de cada venda é liberado {extrato?.diasParaLiberar ?? 4} dias depois que o
+          o valor de cada venda é liberado {extrato?.diasParaLiberar ?? 7} dias depois que o
           produto chega ao comprador — é o prazo dele para testar e pedir devolução.
         </Text>
 

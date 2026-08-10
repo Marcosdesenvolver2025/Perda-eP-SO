@@ -1,6 +1,6 @@
 /**
  * Detalhe do pedido: linha do tempo, código de confirmação da entrega e o
- * botão de devolução enquanto a janela de 4 dias estiver aberta.
+ * botão de devolução enquanto a janela de 7 dias estiver aberta.
  */
 
 import React, { useCallback, useState } from 'react';

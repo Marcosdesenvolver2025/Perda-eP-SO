@@ -151,19 +151,19 @@ describe('limites de peso e tamanho', () => {
   });
 });
 
-describe('janela de 4 dias para testar', () => {
+describe('janela de 7 dias para testar (CDC art. 49)', () => {
   const entrega = new Date('2026-03-10T14:00:00Z');
 
-  it('conta a partir da data de entrega, não da compra', () => {
-    expect(prazoParaTestar(entrega).toISOString()).toBe('2026-03-14T14:00:00.000Z');
+  it('conta 7 dias a partir da data de entrega, não da compra', () => {
+    expect(prazoParaTestar(entrega).toISOString()).toBe('2026-03-17T14:00:00.000Z');
   });
 
-  it('aceita pedido de reembolso dentro dos 4 dias', () => {
-    expect(dentroDaJanelaDeTeste(entrega, new Date('2026-03-14T13:59:00Z'))).toBe(true);
+  it('aceita pedido de reembolso dentro dos 7 dias', () => {
+    expect(dentroDaJanelaDeTeste(entrega, new Date('2026-03-17T13:59:00Z'))).toBe(true);
   });
 
   it('recusa depois do prazo', () => {
-    expect(dentroDaJanelaDeTeste(entrega, new Date('2026-03-14T14:00:01Z'))).toBe(false);
+    expect(dentroDaJanelaDeTeste(entrega, new Date('2026-03-17T14:00:01Z'))).toBe(false);
   });
 
   it('não abre janela para pedido ainda não entregue', () => {
@@ -171,14 +171,14 @@ describe('janela de 4 dias para testar', () => {
   });
 
   it('mostra quantos dias faltam', () => {
-    expect(diasRestantesParaTestar(entrega, new Date('2026-03-10T14:00:00Z'))).toBe(4);
-    expect(diasRestantesParaTestar(entrega, new Date('2026-03-13T10:00:00Z'))).toBe(2);
-    expect(diasRestantesParaTestar(entrega, new Date('2026-03-20T10:00:00Z'))).toBe(0);
+    expect(diasRestantesParaTestar(entrega, new Date('2026-03-10T14:00:00Z'))).toBe(7);
+    expect(diasRestantesParaTestar(entrega, new Date('2026-03-15T10:00:00Z'))).toBe(3);
+    expect(diasRestantesParaTestar(entrega, new Date('2026-03-25T10:00:00Z'))).toBe(0);
   });
 });
 
 describe('reembolso', () => {
-  it('retém comissão e frete quando a entrega foi feita pelo nosso entregador', () => {
+  it('devolve TUDO, inclusive o frete, mesmo com entrega nossa (CDC art. 49)', () => {
     const s = calcularSplit({
       valorProduto: 10_000,
       valorFrete: 1_000,
@@ -186,10 +186,10 @@ describe('reembolso', () => {
     });
     const r = calcularReembolso(s, 'ENTREGADOR_PROPRIO');
 
-    expect(r.valorRetido).toBe(2_800); // 1.800 de comissão + 1.000 de frete
-    expect(r.valorReembolsado).toBe(8_200); // total 11.000 - 2.800
-    expect(r.debitoVendedor).toBe(8_200); // sai do vendedor
-    expect(r.debitoPlataforma).toBe(0);
+    expect(r.valorRetido).toBe(0);
+    expect(r.valorReembolsado).toBe(11_000); // produto + frete
+    expect(r.debitoVendedor).toBe(8_200); // devolve o que recebeu
+    expect(r.debitoPlataforma).toBe(2_800); // comissão + frete saem do caixa
     expect(r.debitoEntregador).toBe(0); // entregador não devolve nada
   });
 
@@ -207,19 +207,34 @@ describe('reembolso', () => {
     expect(r.debitoPlataforma).toBe(1_600); // a plataforma devolve a comissão
   });
 
-  it('permite desligar a retenção caso a política mude', () => {
+  it('permite reter caso a caso, fora do prazo legal', () => {
     const s = calcularSplit({
       valorProduto: 10_000,
       valorFrete: 1_000,
       modalidade: 'ENTREGADOR_PROPRIO',
     });
     const r = calcularReembolso(s, 'ENTREGADOR_PROPRIO', {
-      reterComissao: false,
-      reterFrete: false,
+      reterComissao: true,
+      reterFrete: true,
+    });
+
+    expect(r.valorRetido).toBe(2_800); // 1.800 de comissão + 1.000 de frete
+    expect(r.valorReembolsado).toBe(8_200);
+  });
+
+  it('nunca retém nada em entrega combinada, mesmo se mandarem reter', () => {
+    const s = calcularSplit({
+      valorProduto: 10_000,
+      valorFrete: 0,
+      modalidade: 'COMBINADO_ENTRE_PARTES',
+    });
+    const r = calcularReembolso(s, 'COMBINADO_ENTRE_PARTES', {
+      reterComissao: true,
+      reterFrete: true,
     });
 
     expect(r.valorRetido).toBe(0);
-    expect(r.valorReembolsado).toBe(11_000);
+    expect(r.valorReembolsado).toBe(10_000);
   });
 
   it('o que sai dos saldos sempre bate com o que volta para o comprador', () => {
@@ -234,5 +249,18 @@ describe('reembolso', () => {
       r.valorReembolsado,
     );
     expect(r.valorReembolsado + r.valorRetido).toBe(s.total);
+  });
+
+  it('o comprador nunca recebe menos do que pagou dentro do prazo', () => {
+    for (const produto of [100, 999, 5_000, 12_345, 99_999]) {
+      for (const frete of [0, 800, 1_500]) {
+        const modalidade = frete > 0 ? 'ENTREGADOR_PROPRIO' : 'COMBINADO_ENTRE_PARTES';
+        const s = calcularSplit({ valorProduto: produto, valorFrete: frete, modalidade });
+        const r = calcularReembolso(s, modalidade);
+
+        expect(r.valorReembolsado).toBe(s.total);
+        expect(r.debitoVendedor + r.debitoPlataforma).toBe(s.total);
+      }
+    }
   });
 });

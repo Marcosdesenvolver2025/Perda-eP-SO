@@ -174,7 +174,7 @@ export function TelaCheckout({ navigation, route }: Props) {
         />
 
         <View style={{ height: espaco.xl }} />
-        <SeloGarantia dias={anuncio.entrega?.diasParaTestar ?? 4} />
+        <SeloGarantia dias={anuncio.entrega?.diasParaTestar ?? 7} />
 
         <View style={{ height: espaco.xl }} />
         <Text style={[fonte.rotulo, { marginBottom: espaco.md }]}>como você quer pagar</Text>
@@ -218,7 +218,7 @@ export function TelaCheckout({ navigation, route }: Props) {
 
         <Text style={[fonte.pequeno, { marginTop: espaco.lg }]}>
           o dinheiro fica guardado com a gente até você confirmar que está tudo certo. o
-          vendedor só recebe depois dos {anuncio.entrega?.diasParaTestar ?? 4} dias de teste.
+          vendedor só recebe depois dos {anuncio.entrega?.diasParaTestar ?? 7} dias de teste.
         </Text>
       </ScrollView>
 

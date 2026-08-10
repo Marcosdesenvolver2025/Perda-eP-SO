@@ -152,7 +152,7 @@ export function TelaHome({ navigation }: Props) {
 
             <FaixaDestaque
               titulo="a gente entrega pra você"
-              descricao="até 20 kg e 60 cm, com 4 dias pra testar em casa"
+              descricao="até 20 kg e 60 cm, com 7 dias pra testar em casa"
               textoDoBotao="como funciona"
               aoTocar={() => navigation.navigate('ComoFunciona')}
               icone="bicycle"

@@ -3,7 +3,7 @@
  *
  * O dinheiro NÃO cai na mão do vendedor aqui. O split já distribui os valores,
  * mas os recebedores são criados com transferência automática desligada, então
- * o valor fica retido no saldo até a janela de 4 dias vencer
+ * o valor fica retido no saldo até a janela de 7 dias vencer
  * (ver `servicos/repasse.ts`).
  */
 

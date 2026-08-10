@@ -191,7 +191,7 @@ export function FaixaDestaque({
   );
 }
 
-/** Selo de "4 dias pra testar" usado na página do produto e no pedido. */
+/** Selo de "7 dias pra testar" usado na página do produto e no pedido. */
 export function SeloGarantia({ dias }: { dias: number }) {
   return (
     <View style={e.garantia}>

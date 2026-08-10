@@ -1,9 +1,9 @@
 /**
- * Pedido de devolução dentro dos 4 dias.
+ * Pedido de devolução dentro dos 7 dias.
  *
- * A tela mostra ANTES de confirmar quanto volta e quanto fica retido: quando a
- * entrega foi feita pelos nossos entregadores, a comissão e o frete são
- * cobrados do mesmo jeito, porque o serviço já foi prestado.
+ * A tela mostra ANTES de confirmar exatamente quanto volta. Dentro do prazo do
+ * art. 49 do CDC a devolução é integral — produto e frete —, então a linha de
+ * valor retido só aparece se algum dia a política mudar.
  */
 
 import React, { useEffect, useState } from 'react';
@@ -50,10 +50,9 @@ export function TelaReembolso({ navigation, route }: Props) {
       if (MODO_DEMONSTRACAO) {
         setPrevia({
           valorPago: 12_800,
-          valorReembolsado: 8_200,
-          valorRetido: 4_600,
-          explicacao:
-            'A comissão e o frete não são devolvidos porque a entrega já foi feita pelos nossos entregadores.',
+          valorReembolsado: 12_800,
+          valorRetido: 0,
+          explicacao: 'Você recebe de volta tudo que pagou, inclusive o frete.',
           prazoTesteAte: null,
         });
         setCarregando(false);
@@ -119,11 +118,12 @@ export function TelaReembolso({ navigation, route }: Props) {
             <View style={{ height: espaco.sm }} />
             <Linha rotulo="você recebe de volta" valor={reais(previa.valorReembolsado)} destaque />
 
-            {previa.valorRetido > 0 ? (
-              <View style={{ marginTop: espaco.md }}>
-                <Aviso texto={previa.explicacao} tom="alerta" />
-              </View>
-            ) : null}
+            <View style={{ marginTop: espaco.md }}>
+              <Aviso
+                texto={previa.explicacao}
+                tom={previa.valorRetido > 0 ? 'alerta' : 'sucesso'}
+              />
+            </View>
           </Cartao>
         ) : null}
 

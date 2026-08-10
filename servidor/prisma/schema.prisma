@@ -40,7 +40,7 @@ enum EstadoPedido {
   PAGO // dinheiro retido, esperando o vendedor postar
   EM_SEPARACAO // vendedor confirmou, aguardando coleta
   A_CAMINHO
-  ENTREGUE // começa a contar a janela de 4 dias
+  ENTREGUE // começa a contar a janela de 7 dias
   CONCLUIDO // janela venceu e o repasse foi liberado
   EM_DEVOLUCAO // comprador pediu reembolso
   REEMBOLSADO
@@ -83,7 +83,7 @@ model Usuario {
   papel     Papel    @default(CLIENTE)
   bairro    String?
   cidade    String   @default("Itinga")
-  uf        String   @default("MA")
+  uf        String   @default("MG")
   apelidoLoja String? @unique
   bioLoja   String?
   criadoEm  DateTime @default(now())
@@ -121,7 +121,7 @@ model Recebedor {
   conta          String?
   chavePix       String?
   /// Transferência automática fica DESLIGADA: o repasse só sai quando a
-  /// janela de 4 dias vence (ver servicos/repasse.ts).
+  /// janela de 7 dias vence (ver servicos/repasse.ts).
   transferenciaAutomatica Boolean @default(false)
   criadoEm       DateTime        @default(now())
   atualizadoEm   DateTime        @updatedAt
@@ -138,7 +138,7 @@ model Endereco {
   complemento String?
   bairro     String
   cidade     String   @default("Itinga")
-  uf         String   @default("MA")
+  uf         String   @default("MG")
   referencia String?
   principal  Boolean  @default(false)
   criadoEm   DateTime @default(now())

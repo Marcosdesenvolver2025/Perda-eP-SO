@@ -70,7 +70,7 @@ export function TelaProduto({ navigation, route }: Props) {
   }
 
   const frete = anuncio.entrega?.valorFrete ?? null;
-  const diasParaTestar = anuncio.entrega?.diasParaTestar ?? 4;
+  const diasParaTestar = anuncio.entrega?.diasParaTestar ?? 7;
   const parcelas = parcelamento(anuncio.preco);
 
   return (

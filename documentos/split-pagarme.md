@@ -1,4 +1,4 @@
-# Split de pagamento, retenção e reembolso
+# Split de pagamento, retenção do repasse e reembolso
 
 Este é o documento mais importante do projeto: é aqui que o dinheiro se move.
 Leia inteiro antes de trocar as chaves de teste pelas de produção.
@@ -22,13 +22,13 @@ comprador paga R$ 118,00 (produto R$ 100 + frete R$ 18)
         │  sem sair para a conta bancária, porque criamos os
         │  recebedores com transfer_enabled: false
         ▼
-   produto é entregue  ──►  começa a contar 4 dias
+   produto é entregue  ──►  começa a contar 7 dias
         │
-        ├─── comprador pede devolução dentro dos 4 dias
-        │        └─► estorno parcial: volta o produto,
-        │            a comissão e o frete ficam retidos
+        ├─── comprador pede devolução dentro dos 7 dias
+        │        └─► estorno INTEGRAL: volta produto + frete
+        │            (CDC art. 49); a comissão sai do caixa
         │
-        └─── passaram os 4 dias sem devolução
+        └─── passaram os 7 dias sem devolução
                  └─► saque automático para a conta do vendedor
 ```
 
@@ -43,7 +43,7 @@ A pagar.me permite deixar a transferência automática ligada, e o dinheiro cair
 na conta do vendedor no ciclo normal de liquidação (D+30 no cartão, D+1 no Pix).
 **Não usamos isso de propósito.**
 
-Se o dinheiro saísse antes dos 4 dias de teste, um pedido de devolução deixaria a
+Se o dinheiro saísse antes dos 7 dias de teste, um pedido de devolução deixaria a
 plataforma com um saldo negativo para cobrir — você teria que correr atrás do
 vendedor para reaver o valor.
 
@@ -105,58 +105,64 @@ recusa a transação se o split não fechar no centavo.
 
 Ver `servidor/src/dominio/reembolso.ts` e `servidor/src/servicos/reembolso.ts`.
 
-### A regra combinada
+### A regra: devolução integral, como manda a lei
 
-> Na devolução de um pedido entregue pelos nossos entregadores, a taxa é cobrada
-> do mesmo jeito: a comissão e o frete não voltam para o comprador, porque a
-> intermediação e a entrega já foram prestadas.
+> **Artigo 49 do Código de Defesa do Consumidor** — o consumidor pode desistir
+> da compra feita fora do estabelecimento comercial em até **7 dias** contados
+> do recebimento. O parágrafo único manda devolver **todos os valores pagos,
+> monetariamente atualizados** — e a jurisprudência é firme em incluir o frete.
 
-Em pedido sem os nossos entregadores não há retenção — o comprador recebe tudo
-de volta.
+Por isso, dentro dos 7 dias o comprador recebe **100% do que pagou**, com ou sem
+entregador nosso. Quem absorve a comissão e o custo da entrega é a plataforma.
 
 ### Exemplo — devolução de um pedido com entregador
 
 | Item | Valor |
 |---|---|
 | Comprador pagou | R$ 118,00 |
-| Comissão retida | − R$ 18,00 |
-| Frete retido | − R$ 18,00 |
-| **Volta para o comprador** | **R$ 82,00** |
-| Sai do saldo do vendedor | R$ 82,00 |
+| **Volta para o comprador** | **R$ 118,00** |
+| Sai do saldo do vendedor | R$ 82,00 (o que ele tinha recebido) |
+| Sai do caixa da plataforma | R$ 36,00 (comissão + frete) |
 | Sai do saldo do entregador | R$ 0,00 |
 
 O estorno é feito com `split_rules` explícito, para que cada centavo saia do
-saldo certo. Sem isso, a pagar.me distribuiria o estorno proporcionalmente e a
-comissão voltaria junto.
+saldo certo. Sem isso, a pagar.me distribuiria o estorno proporcionalmente e
+debitaria o entregador junto — que não pode ser penalizado por um problema do
+produto.
 
-### ⚠️ Ponto jurídico que você precisa decidir
+### O que isso custa para a operação
 
-O Código de Defesa do Consumidor, no **artigo 49**, dá ao consumidor **7 dias**
-para desistir de compra feita fora do estabelecimento comercial, com devolução
-**integral** dos valores pagos — incluindo o frete.
+Cada devolução tira do seu caixa a comissão daquela venda **mais** o frete pago
+ao entregador. Numa venda de R$ 100 com entrega nossa, uma devolução custa
+R$ 36,00 à plataforma.
 
-O prazo de 4 dias com retenção de taxa funciona bem para venda entre pessoas
-físicas (o vendedor não é fornecedor profissional). Mas quando o vendedor for
-uma empresa, ou vender com habitualidade, o art. 49 tende a prevalecer.
+Isso é o custo de operar dentro da lei, e é normal no setor. O que dá para fazer
+para segurar esse número:
 
-O código já está preparado para os dois cenários:
+- **cobrar a entrega da devolução** de quem devolve por arrependimento puro
+  (não por defeito) — o art. 49 cobre o frete da ida, não obriga a bancar
+  devoluções em série do mesmo comprador;
+- **acompanhar quem devolve demais**: `GET /admin/reembolsos` mostra a fila, e
+  a tabela `EventoPedido` guarda o histórico por comprador;
+- **exigir foto no pedido de devolução** (o app já envia `fotosUrls`), o que
+  reduz muito pedido oportunista.
+
+### Se um dia a política precisar mudar
+
+As chaves existem e `calcularReembolso()` aceita sobrescrever caso a caso —
+para uma devolução negociada **fora** do prazo legal, por exemplo:
 
 ```ts
-// servidor/src/dominio/regras.ts
-export const RETER_COMISSAO_NO_REEMBOLSO = true;
-export const RETER_FRETE_NO_REEMBOLSO = true;
+// servidor/src/dominio/regras.ts — padrão: false, false
+export const RETER_COMISSAO_NO_REEMBOLSO = false;
+export const RETER_FRETE_NO_REEMBOLSO = false;
+
+// e, caso a caso:
+calcularReembolso(split, modalidade, { reterComissao: true, reterFrete: true });
 ```
 
-e `calcularReembolso()` aceita sobrescrever caso a caso:
-
-```ts
-calcularReembolso(split, modalidade, { reterComissao: false, reterFrete: false });
-```
-
-**Recomendação:** converse com um advogado antes do lançamento e considere
-tratar o pedido feito nos 7 primeiros dias como desistência com devolução
-integral, mantendo a retenção só depois desse prazo. É barato de implementar
-agora e caro de resolver depois de uma ação no Procon.
+**Não ligue a retenção dentro dos 7 dias sem falar com um advogado.** É o tipo
+de economia que vira ação no Procon e custa muito mais do que economizou.
 
 ---
 
@@ -201,7 +207,7 @@ Faça tudo isso com `sk_test_` / `pk_test_`:
 - [ ] Conferir se o saldo do vendedor fica **retido** (não transferido)
 - [ ] Confirmar a entrega e ver o entregador ser pago
 - [ ] Adiantar o relógio (ou baixar `DIAS_PARA_TESTAR=0`) e ver o repasse sair
-- [ ] Pedir devolução e conferir os valores: quanto volta, quanto fica retido
+- [ ] Pedir devolução e conferir que volta 100% do que foi pago, frete incluído
 - [ ] Aprovar a devolução e ver o estorno no painel da pagar.me
 - [ ] Conferir se o saldo do entregador **não** foi debitado no estorno
 

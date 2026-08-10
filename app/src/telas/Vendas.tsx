@@ -37,7 +37,7 @@ export function TelaVendas({ navigation }: Props) {
     useCallback(() => {
       async function carregar() {
         if (MODO_DEMONSTRACAO) {
-          setExtrato({ aReceber: 9_840, recebido: 24_500, diasParaLiberar: 4, pedidos: [] });
+          setExtrato({ aReceber: 9_840, recebido: 24_500, diasParaLiberar: 7, pedidos: [] });
           setAnunciosAtivos(3);
           return;
         }
@@ -109,7 +109,7 @@ export function TelaVendas({ navigation }: Props) {
               {reais(extrato?.aReceber ?? 0)}
             </Text>
             <Text style={{ fontSize: 12, color: cores.verdeProfundo, marginTop: 2 }}>
-              liberado {extrato?.diasParaLiberar ?? 4} dias após a entrega
+              liberado {extrato?.diasParaLiberar ?? 7} dias após a entrega
             </Text>
           </View>
           <Ionicons name="cash-outline" size={44} color={cores.verdeProfundo} style={{ opacity: 0.4 }} />

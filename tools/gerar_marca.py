@@ -47,55 +47,80 @@ def _fonte(tamanho: int, negrito: bool = True) -> ImageFont.FreeTypeFont:
     return ImageFont.load_default(tamanho)
 
 
-def _alfinete(d: ImageDraw.ImageDraw, cx: float, cy: float, altura: float,
-              cor, cor_miolo) -> None:
-    """Alfinete de localizacao: gota (circulo + ponta) com miolo vazado."""
-    r = altura * 0.34
-    topo = cy - altura * 0.5 + r
-    d.ellipse([cx - r, topo - r, cx + r, topo + r], fill=cor)
-    # ponta da gota, tangente ao circulo
-    d.polygon([(cx - r * 0.86, topo + r * 0.50),
-               (cx + r * 0.86, topo + r * 0.50),
-               (cx, cy + altura * 0.5)], fill=cor)
-    m = r * 0.40
-    d.ellipse([cx - m, topo - m, cx + m, topo + m], fill=cor_miolo)
+# --------------------------------------------------------------------------
+# Proporcoes da sacola, medidas no icone enviado como referencia.
+# Todas relativas ao LADO do quadrado do icone (0 a 1).
+# --------------------------------------------------------------------------
+CORPO_ESQ, CORPO_DIR = 0.270, 0.730     # laterais da sacola
+CORPO_TOPO, CORPO_BASE = 0.328, 0.715   # boca e fundo da sacola
+CORPO_RAIO = 0.070                      # arredondamento dos cantos
+ALCA_CY = 0.340                         # centro do meio-anel da alca
+ALCA_RAIO_EXT, ALCA_RAIO_INT = 0.104, 0.042
+SORRISO_CY, SORRISO_RAIO = 0.5175, 0.115
+SORRISO_ESPESSURA = 0.033
+# extremos verticais do desenho, para centralizar a marca
+MARCA_TOPO = ALCA_CY - ALCA_RAIO_EXT    # 0.236
+MARCA_BASE = CORPO_BASE                 # 0.715
+
+
+def _mascara_sacola(lado: int) -> Image.Image:
+    """Mascara da sacola sorridente (255 = tinta) num quadrado de lado `lado`.
+
+    A ordem importa: a alca e desenhada primeiro como um meio-anel e o corpo
+    entra por cima, tapando a parte do vazado que cairia dentro da sacola -
+    e assim que o icone de referencia se comporta.
+    """
+    L = lado
+    m = Image.new("L", (L, L), 0)
+    d = ImageDraw.Draw(m)
+    cx = L / 2
+
+    # alca: meio-anel acima da boca da sacola
+    cy_a = ALCA_CY * L
+    re, ri = ALCA_RAIO_EXT * L, ALCA_RAIO_INT * L
+    d.pieslice([cx - re, cy_a - re, cx + re, cy_a + re], 180, 360, fill=255)
+    d.pieslice([cx - ri, cy_a - ri, cx + ri, cy_a + ri], 180, 360, fill=0)
+
+    # corpo da sacola
+    d.rounded_rectangle(
+        [CORPO_ESQ * L, CORPO_TOPO * L, CORPO_DIR * L, CORPO_BASE * L],
+        radius=CORPO_RAIO * L,
+        fill=255,
+    )
+
+    # sorriso vazado: arco com as pontas arredondadas
+    cy_s, rs = SORRISO_CY * L, SORRISO_RAIO * L
+    esp = max(2, int(round(SORRISO_ESPESSURA * L)))
+    d.arc([cx - rs, cy_s - rs, cx + rs, cy_s + rs], 30, 150, fill=0, width=esp)
+    raio_ponta = rs - esp / 2  # o arco do PIL cresce para dentro do raio
+    for angulo in (30, 150):
+        px = cx + raio_ponta * math.cos(math.radians(angulo))
+        py = cy_s + raio_ponta * math.sin(math.radians(angulo))
+        d.ellipse([px - esp / 2, py - esp / 2, px + esp / 2, py + esp / 2], fill=0)
+
+    return m
+
+
+def camada_sacola(lado: int, cor=BRANCO) -> Image.Image:
+    """A sacola pintada em `cor`, com alca e sorriso VAZADOS (transparentes).
+
+    Deixar os vazados transparentes faz a mesma arte servir sobre o verde
+    (o fundo aparece no sorriso) e sobre o branco (idem), sem redesenhar.
+    """
+    L = int(lado)
+    camada = Image.new("RGBA", (L, L), (0, 0, 0, 0))
+    camada.paste(Image.new("RGBA", (L, L), (*cor, 255)), (0, 0), _mascara_sacola(L))
+    return camada
 
 
 def desenhar_simbolo(img: Image.Image, cx: float, cy: float, tam: float,
-                     cor=BRANCO, cor_furo=VERDE) -> None:
-    """Etiqueta de preco inclinada com um alfinete de localizacao dentro.
-
-    A etiqueta remete a "vendas" (mesma metafora da aba de vendas do app de
-    referencia) e o alfinete remete a "Itinga" - comercio dentro da cidade.
-    A etiqueta e desenhada alinhada aos eixos numa camada propria e depois
-    rotacionada, para que os cantos arredondados fiquem limpos.
-    """
-    ang = 32           # inclinacao da etiqueta, em graus (anti-horario)
-    lado = tam * 1.55  # a camada precisa de folga para caber a rotacao
-    n = int(lado)
-    camada = Image.new("RGBA", (n, n), (0, 0, 0, 0))
-    dc = ImageDraw.Draw(camada)
-
-    larg = tam * 0.62          # largura do corpo da etiqueta
-    alt = tam * 0.98           # altura total da etiqueta (corpo + ponta)
-    esq = (n - larg) / 2
-    topo = (n - alt) / 2
-    dir_ = esq + larg
-    ponta_y = topo + alt
-    corpo_y = ponta_y - larg * 0.62   # onde o corpo vira ponta
-    raio = larg * 0.22
-
-    # corpo: retangulo arredondado
-    dc.rounded_rectangle([esq, topo, dir_, corpo_y + raio], radius=raio, fill=cor)
-    # ponta inferior da etiqueta
-    dc.polygon([(esq, corpo_y - raio * 0.2), (dir_, corpo_y - raio * 0.2),
-                ((esq + dir_) / 2, ponta_y)], fill=cor)
-
-    # alfinete de localizacao vazado no corpo da etiqueta
-    _alfinete(dc, (esq + dir_) / 2, topo + larg * 0.60, larg * 0.74, cor_furo, cor)
-
-    camada = camada.rotate(ang, resample=Image.BICUBIC, center=(n / 2, n / 2))
-    img.alpha_composite(camada, (int(cx - n / 2), int(cy - n / 2)))
+                     cor=BRANCO) -> None:
+    """Desenha a sacola centrada em (cx, cy), ocupando um quadrado de lado `tam`."""
+    L = int(tam)
+    camada = camada_sacola(L, cor)
+    # o desenho nao ocupa o quadrado inteiro: desloca para o centro otico
+    desloc = (0.5 - (MARCA_TOPO + MARCA_BASE) / 2) * L
+    img.alpha_composite(camada, (int(cx - L / 2), int(cy - L / 2 + desloc)))
 
 
 def icone(tamanho: int, fundo=VERDE, simbolo=BRANCO, cor_furo=None,
@@ -106,8 +131,9 @@ def icone(tamanho: int, fundo=VERDE, simbolo=BRANCO, cor_furo=None,
     d = ImageDraw.Draw(img)
     if not transparente:
         d.rounded_rectangle([0, 0, n - 1, n - 1], radius=int(n * raio_rel), fill=fundo)
-    desenhar_simbolo(img, n / 2, n / 2, n * 0.56, cor=simbolo,
-                     cor_furo=cor_furo or (fundo if not transparente else VERDE))
+    # as proporcoes da sacola sao relativas ao lado do icone: usar o quadrado
+    # inteiro reproduz o enquadramento da referencia
+    img.alpha_composite(camada_sacola(n, simbolo))
     return img.resize((tamanho, tamanho), Image.LANCZOS)
 
 
@@ -115,7 +141,9 @@ def icone_adaptativo(tamanho: int = 1024) -> Image.Image:
     """Camada de frente do adaptive icon: simbolo dentro da zona segura (66%)."""
     n = tamanho * SS
     img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
-    desenhar_simbolo(img, n / 2, n / 2, n * 0.38, cor=BRANCO, cor_furo=VERDE)
+    # o lancador mostra so os 66% centrais: encolhendo a arte na mesma
+    # proporcao, o icone aparece do mesmo tamanho da referencia
+    desenhar_simbolo(img, n / 2, n / 2, n * 0.667, cor=BRANCO)
     return img.resize((tamanho, tamanho), Image.LANCZOS)
 
 
@@ -134,13 +162,11 @@ def logo_horizontal(largura: int = 1600, sobre_verde: bool = False) -> Image.Ima
     d = ImageDraw.Draw(img)
 
     cor_simbolo = BRANCO if sobre_verde else VERDE
-    cor_furo = VERDE if sobre_verde else BRANCO
     cor_texto = BRANCO if sobre_verde else GRAFITE
 
-    desenhar_simbolo(img, n_a * 0.50, n_a * 0.50, n_a * 0.62,
-                     cor=cor_simbolo, cor_furo=cor_furo)
+    desenhar_simbolo(img, n_a * 0.52, n_a * 0.50, n_a * 0.92, cor=cor_simbolo)
 
-    x = n_a * 0.98
+    x = n_a * 1.02
     disponivel = n_l - x - n_a * 0.12
 
     # o corpo do texto encolhe ate caber na largura restante
@@ -169,14 +195,14 @@ def capa_play(largura: int = 1024, altura: int = 500) -> Image.Image:
         cor = VERDE_ESCURO if i % 2 == 0 else (0, 190, 16)
         d.ellipse([n_l * 0.78 - r, n_a * 0.5 - r, n_l * 0.78 + r, n_a * 0.5 + r], fill=cor)
 
-    desenhar_simbolo(img, n_l * 0.78, n_a * 0.5, n_a * 0.50, cor=BRANCO, cor_furo=VERDE_ESCURO)
+    desenhar_simbolo(img, n_l * 0.78, n_a * 0.5, n_a * 0.78, cor=BRANCO)
 
     f_titulo = _fonte(int(n_a * 0.185), negrito=True)
     f_sub = _fonte(int(n_a * 0.085), negrito=False)
     d.text((n_l * 0.07, n_a * 0.28), "vendas", font=f_titulo, fill=BRANCO)
     d.text((n_l * 0.07, n_a * 0.47), "itinga", font=f_titulo, fill=BRANCO)
     d.text((n_l * 0.075, n_a * 0.70), "compre e venda na sua cidade,", font=f_sub, fill=BRANCO)
-    d.text((n_l * 0.075, n_a * 0.79), "com entrega local e 4 dias pra testar",
+    d.text((n_l * 0.075, n_a * 0.79), "com entrega local e 7 dias pra testar",
            font=f_sub, fill=BRANCO)
     return img.convert("RGB").resize((largura, altura), Image.LANCZOS)
 

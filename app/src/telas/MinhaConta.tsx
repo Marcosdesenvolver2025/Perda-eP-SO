@@ -80,7 +80,7 @@ export function TelaMinhaConta({ navigation }: Props) {
               acompanhe o que você tem a receber
             </Text>
             <Text style={{ fontSize: 13, color: cores.verdeProfundo, marginTop: espaco.sm }}>
-              o dinheiro cai 4 dias depois que o produto chega
+              o dinheiro cai 7 dias depois que o produto chega
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={22} color={cores.verdeProfundo} />

@@ -3,7 +3,7 @@
  *
  * Sem isso o vendedor (ou entregador) não recebe a parte dele no split.
  * A conta é criada com transferência automática desligada de propósito: o
- * dinheiro fica retido até vencer a janela de 4 dias.
+ * dinheiro fica retido até vencer a janela de 7 dias.
  */
 
 import { Router } from 'express';

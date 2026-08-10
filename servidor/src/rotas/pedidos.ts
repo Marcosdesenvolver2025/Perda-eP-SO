@@ -173,7 +173,7 @@ const reembolsoEsquema = z.object({
   fotosUrls: z.array(z.string().url()).max(6).optional(),
 });
 
-/** POST /pedidos/:id/reembolso — abre a devolução dentro dos 4 dias. */
+/** POST /pedidos/:id/reembolso — abre a devolução dentro dos 7 dias. */
 rotasPedidos.post('/:id/reembolso', async (req, res, next) => {
   try {
     const dados = reembolsoEsquema.parse(req.body);

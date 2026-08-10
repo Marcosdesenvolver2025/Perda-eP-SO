@@ -8,7 +8,7 @@
 
 export const PESO_MAXIMO_G = 20_000; // 20 kg
 export const DIMENSAO_MAXIMA_CM = 60;
-export const DIAS_PARA_TESTAR = 4;
+export const DIAS_PARA_TESTAR = 7;
 
 export const COMISSAO_SEM_ENTREGADOR = 0.16;
 export const COMISSAO_COM_ENTREGADOR = 0.18;

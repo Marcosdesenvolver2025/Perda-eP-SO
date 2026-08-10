@@ -116,6 +116,10 @@ O passo a passo, com exemplos numéricos e o checklist de homologação, está e
 **[`documentos/split-pagarme.md`](documentos/split-pagarme.md)** — leia antes de
 trocar as chaves de teste pelas de produção.
 
+Por que a pagar.me e não outra, o que muda com a reforma tributária e a régua de
+habitualidade dos vendedores estão em
+**[`documentos/arquitetura-de-pagamento.md`](documentos/arquitetura-de-pagamento.md)**.
+
 ---
 
 ## Publicar na Play Store
@@ -187,7 +191,7 @@ servidor/
     rotas/                endpoints HTTP
     servicos/             checkout, entrega, reembolso, repasse
 loja/                     tudo da Google Play
-documentos/               guias de publicação e do split
+documentos/               publicação, split e arquitetura de pagamento
 tools/gerar_marca.py      gerador da identidade visual
 ```
 

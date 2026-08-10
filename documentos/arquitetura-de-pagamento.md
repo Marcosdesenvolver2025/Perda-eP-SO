@@ -240,6 +240,65 @@ receita sua, tributada, com ou sem reforma.
 
 ---
 
+## "E se eu usar o Bradesco direto?"
+
+Resposta curta: **o Bradesco é ótimo para uma coisa e péssimo para outra**, e
+misturar as duas quebra o projeto.
+
+### Onde o Bradesco entra bem
+
+- **Conta bancária da empresa.** É para lá que cai a sua comissão quando você
+  saca da pagar.me. Ter conta PJ em banco grande ajuda em crédito, maquininha,
+  folha e na relação de longo prazo. Nada contra.
+- **Domicílio bancário dos recebedores.** Vendedor com conta Bradesco recebe
+  normalmente — isso independe do provedor de split.
+
+### Onde o Bradesco não resolve
+
+Banco não é facilitador de pagamento. O que o Bradesco te dá por API é
+**cobrança** (Pix, boleto) que cai **na sua conta**. Ele não tem o que o
+marketplace precisa:
+
+| O que o projeto precisa | Banco (Bradesco) | Instituição de pagamento (pagar.me) |
+|---|---|---|
+| Recebedor por vendedor, com saldo próprio | não | sim |
+| Split físico na liquidação | não | sim |
+| Segurar o dinheiro 7 dias sem ser seu | não | sim |
+| Cadastrar vendedor PF pela sua API | não | sim |
+| Estorno parcial com rateio por recebedor | não | sim |
+
+Se o Pix cair direto na conta do Bradesco e você repassar depois por
+TED/Pix, acontecem **três coisas ruins de uma vez**:
+
+1. **O GMV inteiro vira receita sua.** R$ 80 de venda entram como R$ 80 na sua
+   conta, não como R$ 14,40 de comissão. No Simples ou no Presumido isso
+   inviabiliza a operação — é o requisito nº 1 da sua lista, perdido.
+2. **Você passa a custodiar dinheiro de terceiro.** Guardar por 7 dias o valor
+   que é do vendedor, em conta própria, é atividade de instituição de pagamento
+   e exige autorização do Banco Central. Sem isso, é risco regulatório real.
+3. **Some a rastreabilidade do estorno.** Devolver 100% ao comprador debitando
+   o vendedor certo, sem tocar no entregador, deixa de ser uma chamada de API e
+   vira planilha e transferência manual.
+
+A tarifa de Pix do banco é mais barata que a do adquirente — e é exatamente por
+isso que a ideia é tentadora. **É uma economia que custa o modelo inteiro.**
+
+### Se você quiser mesmo explorar
+
+O caminho pelo Bradesco passaria pela **Cielo** (da qual o Bradesco é sócio),
+que tem oferta de split para marketplace. Vale perguntar ao gerente, mas leve
+estas três perguntas — são elas que decidem:
+
+1. O split aceita **recebedor pessoa física (CPF)**?
+2. Consigo **cadastrar o vendedor pela minha API**, sem ele abrir conta ou se
+   credenciar por fora?
+3. Dá para **segurar o valor do vendedor por 7 dias** e liberar por comando meu?
+
+Se a resposta de qualquer uma for "não", não serve para o Vendas Itinga — e essa
+é a resposta que eu espero em pelo menos duas delas.
+
+---
+
 ## Veredito
 
 **Fique na pagar.me.** Ela atende 6 dos 7 requisitos hoje e ganha das

@@ -1,0 +1,389 @@
+// Banco do Vendas Itinga.
+// Dinheiro é sempre Int em CENTAVOS. Peso em GRAMAS. Medidas em CENTÍMETROS.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Papel {
+  CLIENTE // compra e vende
+  ENTREGADOR // faz as entregas
+  ADMIN // equipe do Vendas Itinga
+}
+
+enum EstadoAnuncio {
+  RASCUNHO
+  ATIVO
+  PAUSADO
+  VENDIDO
+  REMOVIDO
+}
+
+enum CondicaoProduto {
+  NOVO
+  SEMINOVO
+  USADO
+}
+
+enum ModalidadeEntrega {
+  ENTREGADOR_PROPRIO // nossos entregadores fazem a coleta e a entrega
+  COMBINADO_ENTRE_PARTES // comprador e vendedor combinam entre si
+}
+
+enum EstadoPedido {
+  AGUARDANDO_PAGAMENTO
+  PAGO // dinheiro retido, esperando o vendedor postar
+  EM_SEPARACAO // vendedor confirmou, aguardando coleta
+  A_CAMINHO
+  ENTREGUE // começa a contar a janela de 4 dias
+  CONCLUIDO // janela venceu e o repasse foi liberado
+  EM_DEVOLUCAO // comprador pediu reembolso
+  REEMBOLSADO
+  CANCELADO
+}
+
+enum EstadoEntrega {
+  AGUARDANDO_ENTREGADOR
+  ACEITA
+  COLETADA
+  ENTREGUE
+  DEVOLVENDO // levando o produto de volta ao vendedor
+  DEVOLVIDA
+  CANCELADA
+}
+
+enum EstadoReembolso {
+  SOLICITADO
+  EM_ANALISE
+  APROVADO
+  RECUSADO
+  CONCLUIDO
+}
+
+enum EstadoRecebedor {
+  PENDENTE // cadastrado na pagar.me, aguardando aprovação
+  ATIVO
+  RECUSADO
+  BLOQUEADO
+}
+
+model Usuario {
+  id        String   @id @default(cuid())
+  googleId  String   @unique
+  email     String   @unique
+  nome      String
+  fotoUrl   String?
+  telefone  String?
+  cpf       String?  @unique
+  papel     Papel    @default(CLIENTE)
+  bairro    String?
+  cidade    String   @default("Itinga")
+  uf        String   @default("MA")
+  apelidoLoja String? @unique
+  bioLoja   String?
+  criadoEm  DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+  // exclusão de conta exigida pela Google Play: marcamos e anonimizamos
+  excluidoEm DateTime?
+
+  anuncios      Anuncio[]
+  compras       Pedido[]        @relation("Comprador")
+  vendas        Pedido[]        @relation("Vendedor")
+  entregas      Entrega[]       @relation("Entregador")
+  recebedor     Recebedor?
+  enderecos     Endereco[]
+  mensagens     Mensagem[]
+  avaliacoesFeitas Avaliacao[]  @relation("Autor")
+  avaliacoesRecebidas Avaliacao[] @relation("Avaliado")
+  dispositivos  Dispositivo[]
+
+  @@index([cidade, papel])
+}
+
+/// Recebedor na pagar.me. Sem isso o usuário não recebe o split.
+model Recebedor {
+  id             String          @id @default(cuid())
+  usuarioId      String          @unique
+  usuario        Usuario         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  /// recipient_id devolvido pela pagar.me (rp_...)
+  recipientId    String          @unique
+  estado         EstadoRecebedor @default(PENDENTE)
+  /// documento usado no cadastro (CPF ou CNPJ), guardado só com os dígitos
+  documento      String
+  tipo           String // "individual" ou "company"
+  bancoCodigo    String?
+  agencia        String?
+  conta          String?
+  chavePix       String?
+  /// Transferência automática fica DESLIGADA: o repasse só sai quando a
+  /// janela de 4 dias vence (ver servicos/repasse.ts).
+  transferenciaAutomatica Boolean @default(false)
+  criadoEm       DateTime        @default(now())
+  atualizadoEm   DateTime        @updatedAt
+}
+
+model Endereco {
+  id         String   @id @default(cuid())
+  usuarioId  String
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  apelido    String? // "casa", "trabalho"
+  cep        String
+  logradouro String
+  numero     String
+  complemento String?
+  bairro     String
+  cidade     String   @default("Itinga")
+  uf         String   @default("MA")
+  referencia String?
+  principal  Boolean  @default(false)
+  criadoEm   DateTime @default(now())
+
+  pedidos    Pedido[]
+}
+
+model Categoria {
+  id       String     @id @default(cuid())
+  slug     String     @unique
+  nome     String
+  emoji    String?
+  ordem    Int        @default(0)
+  paiId    String?
+  pai      Categoria? @relation("Subcategorias", fields: [paiId], references: [id])
+  filhos   Categoria[] @relation("Subcategorias")
+  anuncios Anuncio[]
+}
+
+model Anuncio {
+  id          String          @id @default(cuid())
+  vendedorId  String
+  vendedor    Usuario         @relation(fields: [vendedorId], references: [id], onDelete: Cascade)
+  categoriaId String?
+  categoria   Categoria?      @relation(fields: [categoriaId], references: [id])
+
+  titulo      String
+  descricao   String
+  /// preço em centavos
+  preco       Int
+  precoOriginal Int?
+  condicao    CondicaoProduto @default(USADO)
+  marca       String?
+  tamanho     String?
+  cor         String?
+  estado      EstadoAnuncio   @default(ATIVO)
+
+  /// medidas da embalagem: limite de 20 kg e 60 cm por lado
+  pesoG        Int
+  comprimentoCm Int
+  larguraCm    Int
+  alturaCm     Int
+
+  aceitaEntregador Boolean @default(true)
+  aceitaCombinado  Boolean @default(true)
+
+  visualizacoes Int      @default(0)
+  criadoEm      DateTime @default(now())
+  atualizadoEm  DateTime @updatedAt
+
+  fotos     FotoAnuncio[]
+  pedidos   Pedido[]
+  favoritos Favorito[]
+
+  @@index([estado, criadoEm])
+  @@index([vendedorId, estado])
+  @@index([categoriaId, estado])
+}
+
+model FotoAnuncio {
+  id        String  @id @default(cuid())
+  anuncioId String
+  anuncio   Anuncio @relation(fields: [anuncioId], references: [id], onDelete: Cascade)
+  url       String
+  ordem     Int     @default(0)
+
+  @@index([anuncioId, ordem])
+}
+
+model Favorito {
+  id        String   @id @default(cuid())
+  usuarioId String
+  anuncioId String
+  anuncio   Anuncio  @relation(fields: [anuncioId], references: [id], onDelete: Cascade)
+  criadoEm  DateTime @default(now())
+
+  @@unique([usuarioId, anuncioId])
+}
+
+model Pedido {
+  id         String            @id @default(cuid())
+  /// código curto mostrado ao usuário, ex.: VI-8KQ2
+  codigo     String            @unique
+  anuncioId  String
+  anuncio    Anuncio           @relation(fields: [anuncioId], references: [id])
+  compradorId String
+  comprador  Usuario           @relation("Comprador", fields: [compradorId], references: [id])
+  vendedorId String
+  vendedor   Usuario           @relation("Vendedor", fields: [vendedorId], references: [id])
+  enderecoId String?
+  endereco   Endereco?         @relation(fields: [enderecoId], references: [id])
+
+  modalidade ModalidadeEntrega
+  estado     EstadoPedido      @default(AGUARDANDO_PAGAMENTO)
+
+  /// valores congelados no momento da compra (centavos)
+  valorProduto    Int
+  valorFrete      Int  @default(0)
+  valorTotal      Int
+  taxaComissao    Float
+  valorComissao   Int
+  valorVendedor   Int
+  valorEntregador Int  @default(0)
+  valorPlataforma Int
+
+  /// identificadores da pagar.me
+  pagarmeOrderId  String? @unique
+  pagarmeChargeId String? @unique
+  metodoPagamento String? // credit_card, pix
+  parcelas        Int     @default(1)
+
+  pagoEm      DateTime?
+  entregueEm  DateTime?
+  /// pagoEm + janela de teste; depois disso o repasse é liberado
+  prazoTesteAte DateTime?
+  repassadoEm DateTime?
+  canceladoEm DateTime?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  entrega   Entrega?
+  reembolso Reembolso?
+  mensagens Mensagem[]
+  eventos   EventoPedido[]
+  avaliacoes Avaliacao[]
+
+  @@index([compradorId, criadoEm])
+  @@index([vendedorId, criadoEm])
+  @@index([estado, prazoTesteAte])
+}
+
+model Entrega {
+  id           String        @id @default(cuid())
+  pedidoId     String        @unique
+  pedido       Pedido        @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  entregadorId String?
+  entregador   Usuario?      @relation("Entregador", fields: [entregadorId], references: [id])
+  estado       EstadoEntrega @default(AGUARDANDO_ENTREGADOR)
+
+  /// quanto o entregador recebe por esta entrega (centavos)
+  valorEntregador Int @default(0)
+
+  coletaEndereco  String
+  entregaEndereco String
+  observacoes     String?
+  /// código que o comprador informa ao entregador para confirmar o recebimento
+  codigoConfirmacao String?
+  fotoComprovanteUrl String?
+
+  aceitaEm   DateTime?
+  coletadaEm DateTime?
+  entregueEm DateTime?
+  criadoEm   DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([estado, criadoEm])
+  @@index([entregadorId, estado])
+}
+
+model Reembolso {
+  id        String          @id @default(cuid())
+  pedidoId  String          @unique
+  pedido    Pedido          @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  estado    EstadoReembolso @default(SOLICITADO)
+  motivo    String
+  descricao String?
+  fotosUrls String[]
+
+  /// quanto volta ao comprador e quanto a plataforma retém (centavos)
+  valorReembolsado Int
+  valorRetido      Int
+  debitoVendedor   Int
+  debitoPlataforma Int
+
+  pagarmeEstornoId String?
+  analisadoPor     String?
+  respostaEquipe   String?
+
+  solicitadoEm DateTime  @default(now())
+  concluidoEm  DateTime?
+
+  @@index([estado, solicitadoEm])
+}
+
+model Mensagem {
+  id        String   @id @default(cuid())
+  pedidoId  String?
+  pedido    Pedido?  @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  anuncioId String?
+  autorId   String
+  autor     Usuario  @relation(fields: [autorId], references: [id], onDelete: Cascade)
+  destinatarioId String
+  texto     String
+  lidaEm    DateTime?
+  criadoEm  DateTime @default(now())
+
+  @@index([destinatarioId, lidaEm])
+  @@index([pedidoId, criadoEm])
+}
+
+model Avaliacao {
+  id        String   @id @default(cuid())
+  pedidoId  String
+  pedido    Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  autorId   String
+  autor     Usuario  @relation("Autor", fields: [autorId], references: [id], onDelete: Cascade)
+  avaliadoId String
+  avaliado  Usuario  @relation("Avaliado", fields: [avaliadoId], references: [id], onDelete: Cascade)
+  nota      Int // 1 a 5
+  comentario String?
+  criadoEm  DateTime @default(now())
+
+  @@unique([pedidoId, autorId])
+  @@index([avaliadoId])
+}
+
+/// Trilha de auditoria: toda mudança relevante de pedido vira um evento.
+model EventoPedido {
+  id       String   @id @default(cuid())
+  pedidoId String
+  pedido   Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  tipo     String
+  detalhe  Json?
+  autorId  String?
+  criadoEm DateTime @default(now())
+
+  @@index([pedidoId, criadoEm])
+}
+
+/// Token de push por aparelho (avisos de venda, entrega e fim da janela).
+model Dispositivo {
+  id        String   @id @default(cuid())
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  plataforma String  @default("android")
+  criadoEm  DateTime @default(now())
+}
+
+/// Webhooks da pagar.me já processados, para não processar duas vezes.
+model WebhookRecebido {
+  id          String   @id @default(cuid())
+  eventoId    String   @unique
+  tipo        String
+  conteudo    Json
+  processadoEm DateTime @default(now())
+}

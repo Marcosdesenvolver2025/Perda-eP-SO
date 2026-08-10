@@ -1,0 +1,81 @@
+{
+  "expo": {
+    "name": "Vendas Itinga",
+    "slug": "vendas-itinga",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "vendasitinga",
+    "userInterfaceStyle": "light",
+    "primaryColor": "#00DF13",
+    "description": "Compre e venda produtos novos e usados dentro de Itinga, com entrega local e 4 dias para testar.",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#00DF13"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "android": {
+      "package": "br.com.vendasitinga.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#00DF13"
+      },
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.POST_NOTIFICATIONS"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_MEDIA_VIDEO"
+      ],
+      "edgeToEdgeEnabled": true,
+      "softwareKeyboardLayoutMode": "pan"
+    },
+    "ios": {
+      "bundleIdentifier": "br.com.vendasitinga.app",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Precisamos acessar suas fotos para você publicar os anúncios dos seus produtos.",
+        "NSCameraUsageDescription": "Precisamos da câmera para você fotografar o produto que vai anunciar."
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36,
+            "minSdkVersion": 24,
+            "buildToolsVersion": "36.0.0"
+          }
+        }
+      ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.SUBSTITUA_PELO_SEU_ID_IOS"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Precisamos acessar suas fotos para você publicar os anúncios dos seus produtos.",
+          "cameraPermission": "Precisamos da câmera para você fotografar o produto que vai anunciar."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "SUBSTITUA_PELO_ID_DO_PROJETO_EAS"
+      }
+    }
+  }
+}

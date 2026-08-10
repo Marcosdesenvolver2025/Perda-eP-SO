@@ -1,0 +1,50 @@
+# dependências
+node_modules/
+
+# variáveis de ambiente — nunca comite chave secreta
+.env
+.env.local
+.env.*.local
+!.env.exemplo
+
+# build
+dist/
+build/
+*.tsbuildinfo
+
+# expo
+.expo/
+.expo-shared/
+web-build/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+android/
+ios/
+
+# credenciais de publicação
+app/credenciais/
+*-service-account.json
+
+# prisma
+servidor/prisma/*.db
+servidor/prisma/migrations/dev.db*
+
+# logs
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# sistema
+.DS_Store
+Thumbs.db
+
+# editores
+.vscode/
+.idea/
+
+# python
+__pycache__/
+*.pyc

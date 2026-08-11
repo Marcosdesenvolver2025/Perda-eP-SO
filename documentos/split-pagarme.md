@@ -8,14 +8,19 @@ Leia inteiro antes de trocar as chaves de teste pelas de produção.
 ## O caminho do dinheiro
 
 ```
-comprador paga R$ 118,00 (produto R$ 100 + frete R$ 18)
+comprador paga R$ 100,00 (só o preço do produto)
         │
         ▼
 ┌───────────────────────────────────────────────────────────┐
 │  pagar.me cria a cobrança JÁ COM O SPLIT                   │
 │                                                            │
-│   vendedor    R$ 82,00   (produto − 18% de comissão)       │
-│   plataforma  R$ 36,00   (comissão R$ 18 + frete R$ 18)    │
+│  entrega pela plataforma:                                  │
+│    vendedor    R$ 79,50  (produto − 12% − tarifa R$ 8,50)  │
+│    plataforma  R$ 20,50  (comissão R$ 12 + tarifa R$ 8,50) │
+│                                                            │
+│  entrega pelo vendedor:                                    │
+│    vendedor    R$ 88,00  (produto − 12%)                   │
+│    plataforma  R$ 12,00  (só a comissão)                   │
 └───────────────────────────────────────────────────────────┘
         │
         │  o dinheiro fica NO SALDO de cada recebedor,
@@ -25,15 +30,16 @@ comprador paga R$ 118,00 (produto R$ 100 + frete R$ 18)
    produto é entregue  ──►  começa a contar 7 dias
         │
         ├─── comprador pede devolução dentro dos 7 dias
-        │        └─► estorno INTEGRAL: volta produto + frete
-        │            (CDC art. 49); a comissão sai do caixa
+        │        └─► estorno INTEGRAL: volta tudo o que foi pago
+        │            (CDC art. 49); comissão e tarifa saem do caixa
         │
         └─── passaram os 7 dias sem devolução
                  └─► saque automático para a conta do vendedor
 ```
 
 O entregador é pago à parte, assim que confirma a entrega — o serviço dele já
-foi prestado e não depende de o comprador aprovar o produto.
+foi prestado e não depende de o comprador aprovar o produto. Na entrega pelo
+vendedor não há entregador nem corrida a pagar.
 
 ---
 
@@ -67,28 +73,36 @@ vencido e sem devolução aberta.
 
 Tudo em centavos, sempre inteiro. Ver `servidor/src/dominio/comissao.ts`.
 
-### Sem os nossos entregadores — comissão de 16%
+Em **qualquer** modalidade, o comprador paga só o preço do produto. O que muda é
+o que a plataforma desconta do vendedor.
+
+### Entrega pelo vendedor — 12%, sem tarifa
 
 | Item | Valor |
 |---|---|
 | Produto | R$ 100,00 |
-| Frete | R$ 0,00 |
 | **Comprador paga** | **R$ 100,00** |
-| Comissão (16%) | R$ 16,00 |
-| Vendedor recebe | R$ 84,00 |
-| Plataforma recebe | R$ 16,00 |
+| Comissão (12%) | R$ 12,00 |
+| Tarifa fixa | — |
+| Vendedor recebe | R$ 88,00 |
+| Plataforma recebe | R$ 12,00 |
 
-### Com os nossos entregadores — comissão de 18%
+### Entrega pela plataforma — 12% + tarifa da faixa
 
 | Item | Valor |
 |---|---|
 | Produto | R$ 100,00 |
-| Frete | R$ 18,00 |
-| **Comprador paga** | **R$ 118,00** |
-| Comissão (18%) | R$ 18,00 |
-| Vendedor recebe | R$ 82,00 |
-| Entregador recebe (80% do frete) | R$ 14,40 |
-| Plataforma fica com | R$ 21,60 (comissão + 20% do frete) |
+| **Comprador paga** | **R$ 100,00** |
+| Comissão (12%) | R$ 12,00 |
+| Tarifa fixa (faixa até R$ 199,99) | R$ 8,50 |
+| Vendedor recebe | R$ 79,50 |
+| Plataforma recebe | R$ 20,50 |
+| Custo do entregador (sai da plataforma) | R$ 5,00 |
+| Margem da plataforma nesta venda | R$ 15,50 |
+
+> **A modalidade é congelada no pedido.** Se a tabela de tarifas mudar amanhã, o
+> pedido de hoje mantém os valores com que foi vendido — `Pedido.modalidade`,
+> `valorComissao` e `valorTarifa` guardam a foto da regra no momento da compra.
 
 ### Arredondamento
 
@@ -110,19 +124,20 @@ Ver `servidor/src/dominio/reembolso.ts` e `servidor/src/servicos/reembolso.ts`.
 > **Artigo 49 do Código de Defesa do Consumidor** — o consumidor pode desistir
 > da compra feita fora do estabelecimento comercial em até **7 dias** contados
 > do recebimento. O parágrafo único manda devolver **todos os valores pagos,
-> monetariamente atualizados** — e a jurisprudência é firme em incluir o frete.
+> monetariamente atualizados** — sem descontar custo de intermediação.
 
-Por isso, dentro dos 7 dias o comprador recebe **100% do que pagou**, com ou sem
-entregador nosso. Quem absorve a comissão e o custo da entrega é a plataforma.
+Por isso, dentro dos 7 dias o comprador recebe **100% do que pagou**, nas duas
+modalidades. Quem absorve a comissão, a tarifa e o custo da entrega é a
+plataforma.
 
-### Exemplo — devolução de um pedido com entregador
+### Exemplo — devolução de um pedido com entrega pela plataforma
 
 | Item | Valor |
 |---|---|
-| Comprador pagou | R$ 118,00 |
-| **Volta para o comprador** | **R$ 118,00** |
-| Sai do saldo do vendedor | R$ 82,00 (o que ele tinha recebido) |
-| Sai do caixa da plataforma | R$ 36,00 (comissão + frete) |
+| Comprador pagou | R$ 100,00 |
+| **Volta para o comprador** | **R$ 100,00** |
+| Sai do saldo do vendedor | R$ 79,50 (o que ele tinha recebido) |
+| Sai do caixa da plataforma | R$ 20,50 (comissão + tarifa) |
 | Sai do saldo do entregador | R$ 0,00 |
 
 O estorno é feito com `split_rules` explícito, para que cada centavo saia do
@@ -132,16 +147,17 @@ produto.
 
 ### O que isso custa para a operação
 
-Cada devolução tira do seu caixa a comissão daquela venda **mais** o frete pago
-ao entregador. Numa venda de R$ 100 com entrega nossa, uma devolução custa
-R$ 36,00 à plataforma.
+Cada devolução tira do seu caixa a comissão e a tarifa daquela venda, **mais** a
+corrida paga ao entregador (e, na devolução, a corrida de volta também). Numa
+venda de R$ 100 com entrega nossa, uma devolução custa R$ 20,50 de receita
+perdida mais até R$ 10,00 de corridas.
 
 Isso é o custo de operar dentro da lei, e é normal no setor. O que dá para fazer
 para segurar esse número:
 
 - **cobrar a entrega da devolução** de quem devolve por arrependimento puro
-  (não por defeito) — o art. 49 cobre o frete da ida, não obriga a bancar
-  devoluções em série do mesmo comprador;
+  (não por defeito) — o art. 49 cobre a ida, não obriga a bancar devoluções em
+  série do mesmo comprador;
 - **acompanhar quem devolve demais**: `GET /admin/reembolsos` mostra a fila, e
   a tabela `EventoPedido` guarda o histórico por comprador;
 - **exigir foto no pedido de devolução** (o app já envia `fotosUrls`), o que
@@ -155,10 +171,10 @@ para uma devolução negociada **fora** do prazo legal, por exemplo:
 ```ts
 // servidor/src/dominio/regras.ts — padrão: false, false
 export const RETER_COMISSAO_NO_REEMBOLSO = false;
-export const RETER_FRETE_NO_REEMBOLSO = false;
+export const RETER_TARIFA_NO_REEMBOLSO = false;
 
 // e, caso a caso:
-calcularReembolso(split, modalidade, { reterComissao: true, reterFrete: true });
+calcularReembolso(split, { reterComissao: true, reterTarifa: true });
 ```
 
 **Não ligue a retenção dentro dos 7 dias sem falar com um advogado.** É o tipo
@@ -207,7 +223,9 @@ Faça tudo isso com `sk_test_` / `pk_test_`:
 - [ ] Conferir se o saldo do vendedor fica **retido** (não transferido)
 - [ ] Confirmar a entrega e ver o entregador ser pago
 - [ ] Adiantar o relógio (ou baixar `DIAS_PARA_TESTAR=0`) e ver o repasse sair
-- [ ] Pedir devolução e conferir que volta 100% do que foi pago, frete incluído
+- [ ] Vender nas **duas modalidades** e conferir a tarifa (só na plataforma)
+- [ ] Confirmar entrega do vendedor pelo código e pela expiração dos 3 dias
+- [ ] Pedir devolução e conferir que volta 100% do que foi pago
 - [ ] Aprovar a devolução e ver o estorno no painel da pagar.me
 - [ ] Conferir se o saldo do entregador **não** foi debitado no estorno
 

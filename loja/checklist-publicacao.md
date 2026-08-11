@@ -44,16 +44,24 @@ Marque cada item antes de apertar "Enviar para análise". A ordem importa.
 - [ ] Entrar com a conta Google
 - [ ] Completar o cadastro (CPF e telefone)
 - [ ] Cadastrar endereço
-- [ ] Publicar um anúncio com fotos
-- [ ] Tentar publicar com **21 kg** → o app precisa recusar
-- [ ] Tentar publicar com **61 cm** → o app precisa recusar
+- [ ] Publicar um anúncio com fotos nas **duas modalidades** de entrega
+- [ ] Conferir o comparativo de taxas na tela de anúncio (com e sem tarifa fixa)
+- [ ] Com **entrega pela plataforma**, tentar publicar com **21 kg** → o app precisa
+      recusar a modalidade e explicar o motivo
+- [ ] Idem com **101 cm de largura** e com **101 cm de altura**
+- [ ] Com **entrega pelo vendedor**, publicar os mesmos 21 kg → precisa **aceitar**
 - [ ] Comprar com **Pix** (chave de teste) e ver o pedido virar PAGO
 - [ ] Comprar com **cartão** de teste e ver o split no painel da pagar.me
 - [ ] Cadastrar conta de recebimento e ver o recebedor ficar ativo
 - [ ] Aceitar, coletar e confirmar uma entrega pela área do entregador
+- [ ] Na entrega pelo vendedor: confirmar com o **código de 4 dígitos** do comprador
+- [ ] Na entrega pelo vendedor: declarar sem código e ver a confirmação automática
+      em **3 dias** (ou baixando `DIAS_PARA_CONFIRMACAO_AUTOMATICA=0`)
 - [ ] Ver o prazo de 7 dias aparecer no pedido depois da entrega
-- [ ] Pedir devolução e conferir a prévia dos valores retidos
+- [ ] Pedir devolução e conferir que a prévia mostra **devolução integral**
 - [ ] Aprovar a devolução e ver o estorno na pagar.me
+- [ ] Na entrega pelo vendedor: confirmar o retorno pelo painel admin e só então
+      ver o estorno disparar
 - [ ] Excluir a conta pelo app e conferir que os dados sumiram
 
 ## 6. Ficha da loja

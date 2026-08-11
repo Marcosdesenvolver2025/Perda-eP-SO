@@ -5,6 +5,28 @@ encosta no financeiro (spoiler: quase em lugar nenhum).
 
 ---
 
+## Antes de tudo: qual modalidade
+
+Cada anúncio nasce com uma `modalidadeEntrega`, escolhida pelo vendedor, e o
+pedido **congela** essa escolha no momento da compra (`Pedido.modalidade`). Se a
+regra mudar amanhã, o pedido de ontem continua valendo com a regra de ontem.
+
+| | `PLATAFORMA` | `VENDEDOR` |
+|---|---|---|
+| Quem leva | entregador nosso | o próprio vendedor |
+| Taxa | 12% + tarifa da faixa | só 12% |
+| Limite de peso/medida | 20 kg · 100 cm largura · 100 cm altura | nenhum |
+| Corrida na fila | sim | **não** |
+| Máquina de estados da corrida | sim | **não** |
+| Prova de entrega | código digitado pelo entregador | código digitado pelo vendedor |
+| Devolução | coleta reversa | combinada entre as partes, admin confirma |
+
+**Todo o resto deste documento fala da modalidade `PLATAFORMA`.** A `VENDEDOR`
+tem uma seção própria mais abaixo, e ela não entra na fila, não gera `Entrega`
+e não passa pela máquina de estados.
+
+---
+
 ## A fronteira com o financeiro
 
 A regra que vale para todo o módulo:
@@ -147,6 +169,83 @@ pago pelas duas.
 
 ---
 
+## Entrega pelo vendedor
+
+Sem entregador, sem corrida, sem fila. O que sobra é **provar que o produto
+chegou**, porque é a entrega que abre os 7 dias e o relógio do repasse.
+
+Tudo isso vive em `servidor/src/servicos/entregaDoVendedor.ts`, fora do módulo
+de corridas.
+
+```
+pedido pago  →  AGUARDANDO_ENTREGA_DO_VENDEDOR
+                (gera um código de 4 dígitos, visível só ao comprador)
+      │
+      ├── caminho normal: vendedor entrega e digita o código
+      │      └─► ENTREGUE  (confirmadaPor = 'codigo')
+      │
+      ├── comprador toca em "já recebi" no app
+      │      └─► ENTREGUE  (confirmadaPor = 'comprador')
+      │
+      └── comprador sumiu: vendedor declara a entrega sem código
+             └─► ENTREGA_DECLARADA + prazoConfirmacaoAte = agora + 3 dias
+                   ├── comprador confirma ou abre devolução dentro dos 3 dias
+                   └── passaram os 3 dias em silêncio
+                          └─► ENTREGUE  (confirmadaPor = 'automatica')
+```
+
+Chegando em `ENTREGUE`, o pedido volta para o fluxo comum: começam os 7 dias de
+teste e, vencidos sem devolução, o repasse sai como sempre.
+
+### Detalhes que importam
+
+- **Só existe um caminho para `ENTREGUE`.** As três portas acima chamam a mesma
+  função privada `marcarEntregue()`, que grava quem confirmou e a data. Não há
+  como um fluxo esquecer de abrir o prazo de teste.
+- **O código nunca aparece para o vendedor.** `GET /pedidos/:id/codigo` só
+  responde ao comprador. O vendedor digita em `POST /pedidos/:id/entreguei` e o
+  servidor compara — errou, não passa.
+- **A declaração sem código é registrada.** `ENTREGA_DECLARADA` é um estado
+  visível: o comprador recebe push e vê no app que o vendedor declarou a
+  entrega e que ele tem 3 dias para contestar.
+- **A confirmação automática é um job**, não um cálculo na leitura:
+  `confirmarEntregasVencidas()` roda junto com o ciclo de repasses
+  (`servicos/tarefas.ts`).
+
+### Devolução na entrega pelo vendedor
+
+Não há coleta reversa — as partes moram na mesma cidade e combinam entre si.
+O que o sistema garante é que **o dinheiro não volta antes do produto**:
+
+```
+comprador pede (dentro dos 7 dias)  → DEVOLUCAO_SOLICITADA
+admin aprova                        → DEVOLUCAO_COMBINADA
+                                      (as partes se acertam; os telefones são
+                                       liberados um para o outro)
+vendedor recebe o produto e o admin confirma no painel
+                                    → DEVOLVIDO_AO_VENDEDOR
+                                    → estorno na pagar.me → REEMBOLSADO
+```
+
+A confirmação do admin é `POST /admin/reembolsos/:id/confirmar-retorno`, e ela
+chama exatamente o mesmo `reembolso.ts#concluirAposDevolucao` que a corrida
+reversa chama. O cálculo do estorno é o mesmo: **devolução integral**.
+
+> É o único ponto do fluxo que depende de julgamento humano. Foi de propósito:
+> sem entregador nosso no meio, ninguém além das duas partes sabe se o produto
+> voltou, e liberar estorno na palavra de um dos lados é convite a fraude.
+
+### Telas
+
+| Quem | Tela | O que faz |
+|---|---|---|
+| comprador | `CodigoDeConfirmacao.tsx` | mostra o código em tamanho grande, avisa para só informar ao receber, e tem o atalho "já recebi" |
+| vendedor | `EntregaDoVendedor.tsx` | digita o código; se o comprador não responder, declara a entrega (com confirmação em Alert) |
+| comprador | `PedidoDetalhe.tsx` → devolução | pede a devolução; depois de aprovada, mostra o contato do vendedor e o aviso de que o estorno sai quando o admin confirmar o retorno |
+| vendedor | `NovoAnuncio.tsx` | compara as duas modalidades lado a lado, com o valor líquido de cada uma, antes de publicar |
+
+---
+
 ## Notificações
 
 Cada transição relevante dispara um push (`servicos/notificacoes.ts`, via
@@ -159,7 +258,10 @@ serviço da Expo):
 | produto coletado | comprador | "saiu para entrega" |
 | chegou na entrega | comprador | "o entregador está na porta, seu código é 1234" |
 | entregue | comprador e vendedor | prazo de devolução / valor a receber |
-| devolução aprovada | comprador | "um entregador vai buscar" |
+| devolução aprovada (plataforma) | comprador | "um entregador vai buscar" |
+| devolução aprovada (vendedor) | comprador e vendedor | "combinem a devolução; o estorno sai quando o produto voltar" |
+| pedido pago (vendedor) | vendedor | "combine a entrega com o comprador" |
+| entrega declarada | comprador | "o vendedor marcou como entregue; confirme em 3 dias" |
 
 Falha de push nunca derruba operação: é registrada e engolida. Token de
 aparelho desinstalado é apagado do banco automaticamente.
@@ -197,9 +299,19 @@ aparelho desinstalado é apagado do banco automaticamente.
 | POST | `/entregas/:id/cancelar` | cancela a corrida |
 | GET | `/entregadores` | quem está na operação e carga de cada um |
 | GET | `/reembolsos` | fila de devoluções |
-| POST | `/reembolsos/:id/aprovar` | aprova e abre a coleta reversa |
+| POST | `/reembolsos/:id/aprovar` | aprova; abre a coleta reversa (plataforma) ou marca `DEVOLUCAO_COMBINADA` (vendedor) |
 | POST | `/reembolsos/:id/recusar` | recusa, exige motivo |
+| POST | `/reembolsos/:id/confirmar-retorno` | só na modalidade VENDEDOR: confirma que o produto voltou e dispara o estorno |
 | GET | `/resumo` | números do dia, incluindo receita líquida |
+
+### Entrega pelo vendedor (`/pedidos`, comprador ou vendedor do pedido)
+
+| Método | Rota | Quem | O que faz |
+|---|---|---|---|
+| GET | `/:id/codigo` | comprador | mostra o código de 4 dígitos |
+| POST | `/:id/recebi` | comprador | confirma o recebimento na mão |
+| POST | `/:id/entreguei` | vendedor | confirma com o código digitado |
+| POST | `/:id/declarar-entrega` | vendedor | declara sem código, abrindo os 3 dias |
 
 ---
 

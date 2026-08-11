@@ -28,8 +28,8 @@ pertinho de você — sem frete caro e sem esperar semanas pela entrega.
 
 COMPRE COM SEGURANÇA
 • 7 dias para testar: o prazo começa quando o produto chega na sua mão. Não
-  gostou? Peça a devolução pelo app e receba de volta tudo que pagou, frete
-  incluído — como garante o Código de Defesa do Consumidor.
+  gostou? Peça a devolução pelo app e receba de volta 100% do que pagou — como
+  garante o Código de Defesa do Consumidor.
 • Pagamento protegido: o dinheiro fica retido com a gente e só é repassado ao
   vendedor depois que passa o prazo de teste.
 • Pague com Pix ou cartão de crédito, parcelado em até 12x.
@@ -37,13 +37,17 @@ COMPRE COM SEGURANÇA
 VENDA SEM COMPLICAÇÃO
 • Anuncie de graça: tire as fotos, coloque o preço e pronto.
 • Sem mensalidade. Você só paga quando vende.
-• 16% de comissão quando você mesmo entrega.
-• 18% quando o entregador do Vendas Itinga faz a coleta e a entrega.
+• Você escolhe quem entrega, e isso muda a taxa:
+  - entregando por sua conta: só 12% de comissão;
+  - entrega pelo Vendas Itinga: 12% mais uma tarifa fixa por faixa de preço,
+    a partir de R$ 2,50.
+• O app mostra quanto você recebe em cada opção antes de publicar.
 • Receba direto na sua conta bancária.
 
 ENTREGA DENTRO DA CIDADE
 • Nossos entregadores buscam com o vendedor e levam até o comprador.
-• Aceitamos pacotes de até 20 kg e 60 cm em cada lado.
+• Aceitamos pacotes de até 20 kg, 100 cm de largura e 100 cm de altura.
+• Produto maior? Anuncie mesmo assim e entregue por sua conta, sem limite.
 • Acompanhe o pedido pelo app, do pagamento até a entrega.
 
 TUDO SALVO NA SUA CONTA
@@ -57,7 +61,7 @@ casa, coisas de bebê, bicicletas, ferramentas, livros, games e muito mais.
 COMO FUNCIONA
 1. Anuncie ou escolha um produto.
 2. Pague por Pix ou cartão.
-3. Receba pelo nosso entregador ou combine direto com quem vende.
+3. Receba pelo nosso entregador ou direto de quem vende, conforme o anúncio.
 4. Teste por 7 dias. Gostou? O vendedor recebe. Não gostou? Devolução integral.
 
 Vendas Itinga: compre e venda na sua cidade.

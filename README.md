@@ -152,8 +152,8 @@ quando o vendedor recebe o produto de volta**. Detalhes em
 
 O split acontece na hora do pagamento, mas o valor fica **retido** no saldo da
 pagar.me até o prazo de teste vencer. Se houver devolução dentro dos 7 dias, o
-comprador recebe tudo de volta — inclusive o frete — e o estorno sai do saldo
-certo de cada um, sem debitar o entregador.
+comprador recebe **100% do que pagou** e o estorno sai do saldo certo de cada
+um, sem debitar o entregador.
 
 O passo a passo, com exemplos numéricos e o checklist de homologação, está em
 **[`documentos/split-pagarme.md`](documentos/split-pagarme.md)** — leia antes de

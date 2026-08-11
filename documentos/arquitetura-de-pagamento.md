@@ -32,7 +32,7 @@ recebedor tem um saldo próprio dentro da pagar.me. O dinheiro do vendedor
 Isso resolve os dois riscos que você levantou:
 
 - **Imposto sobre o GMV inteiro.** Sua receita tributável é a comissão + a
-  margem do frete, não os R$ 80 da venda. Se o valor cheio caísse na sua conta
+  tarifa fixa, não os R$ 80 da venda. Se o valor cheio caísse na sua conta
   e você repassasse depois, o Fisco enxergaria R$ 80 de receita — no Simples ou
   no Presumido isso destrói a operação.
 - **Risco regulatório.** Guardar dinheiro de terceiro na sua conta é atividade
@@ -121,24 +121,28 @@ dele.
 | | Valor |
 |---|---|
 | Venda | R$ 80,00 |
-| Comissão 18% | − R$ 14,40 |
-| Bruto do vendedor | R$ 65,60 |
+| Comissão 12% | − R$ 9,60 |
+| Tarifa fixa (faixa até R$ 99,99) | − R$ 6,50 |
+| Bruto do vendedor | R$ 63,90 |
 | Taxa de saque (≈ R$ 3,67 — **confirme a sua**) | − R$ 3,67 |
-| **Vendedor recebe** | **R$ 61,93** |
-| Peso real sentido pelo vendedor | **22,6%**, não 18% |
+| **Vendedor recebe** | **R$ 60,23** |
+| Peso real sentido pelo vendedor | **24,7%**, não 20,1% |
 
 **Carteira com saque agrupado (o desenho que eu recomendo):**
 
 | | Valor |
 |---|---|
 | 5 vendas de R$ 80 | R$ 400,00 |
-| Comissão 18% | − R$ 72,00 |
-| Saldo em carteira | R$ 328,00 |
+| Comissão 12% | − R$ 48,00 |
+| Tarifa fixa × 5 | − R$ 32,50 |
+| Saldo em carteira | R$ 319,50 |
 | Uma taxa de saque | − R$ 3,67 |
-| **Vendedor recebe** | **R$ 324,33** |
-| Peso real | **18,9%** |
+| **Vendedor recebe** | **R$ 315,83** |
+| Peso real | **21,0%** |
 
-Mesma tarifa, mesma comissão. Só muda **quando** o dinheiro sai.
+Mesma tarifa, mesma comissão. Só muda **quando** o dinheiro sai. E no modo
+**entrega pelo vendedor** não há tarifa fixa nenhuma: a mesma venda de R$ 80
+custa só os 12% (R$ 9,60), o que deixa o saque agrupado ainda mais leve.
 
 ### O que muda no produto
 
@@ -232,8 +236,8 @@ Uma **régua de habitualidade**, com o vendedor sendo avisado antes de bater nel
 Os dados para isso **já existem** no banco: `Pedido.vendedorId`, `valorProduto`
 e `criadoEm` dão volume e frequência por vendedor sem nenhuma tabela nova.
 
-E emita **NFS-e da sua comissão e do frete** desde a primeira venda — essa é
-receita sua, tributada, com ou sem reforma.
+E emita **NFS-e da sua comissão e da tarifa fixa** desde a primeira venda — essa
+é receita sua, tributada, com ou sem reforma.
 
 > Leve esta seção para o seu contador **antes** de abrir para o público. É a
 > parte do projeto com maior risco de passivo e a mais barata de acertar agora.

@@ -1,10 +1,13 @@
 /**
  * Cálculo da receita da plataforma e da divisão do pagamento (split).
  *
- * O comprador paga UM valor: o preço do produto. Dele saem duas coisas para a
- * plataforma — a comissão de 12% e a tarifa fixa da faixa — e o resto é do
- * vendedor. Não há cobrança separada de frete: a entrega está coberta pela
- * tarifa fixa.
+ * O comprador paga UM valor: o preço do produto. O que a plataforma desconta
+ * depende de quem entrega:
+ *
+ *   PLATAFORMA -> 12% de comissão + tarifa fixa da faixa
+ *   VENDEDOR   -> 12% de comissão, sem tarifa
+ *
+ * Não há cobrança separada de frete em nenhuma das duas.
  *
  * Regra de ouro: a soma das partes tem que bater EXATAMENTE com o total pago
  * pelo comprador. A pagar.me rejeita a transação se o split não fechar, então
@@ -21,6 +24,7 @@ import {
 export interface EntradaSplit {
   /** Preço do produto, em centavos. É o total pago pelo comprador. */
   valorProduto: number;
+  /** Quem entrega. Decide se há tarifa fixa. */
   modalidade: ModalidadeEntrega;
   /** Alíquota da comissão (0 a 1). Só informe para simular outra política. */
   taxaComissao?: number;
@@ -35,8 +39,10 @@ export interface ResultadoSplit {
   comissao: number;
   /** Alíquota aplicada, guardada para auditoria. */
   taxaComissao: number;
-  /** Tarifa fixa da faixa de preço. */
+  /** Tarifa fixa da faixa de preço. Zero na modalidade VENDEDOR. */
   tarifa: number;
+  /** Modalidade usada no cálculo, congelada junto com os valores. */
+  modalidade: ModalidadeEntrega;
   /** Comissão + tarifa: o que a plataforma cobra do vendedor nesta venda. */
   totalDescontado: number;
   /** Quanto o vendedor recebe. */
@@ -54,7 +60,7 @@ function centavos(valor: number): number {
 }
 
 export function calcularSplit(entrada: EntradaSplit): ResultadoSplit {
-  const { valorProduto } = entrada;
+  const { valorProduto, modalidade } = entrada;
   const taxaComissao = entrada.taxaComissao ?? COMISSAO;
 
   if (!Number.isInteger(valorProduto) || valorProduto <= 0) {
@@ -67,7 +73,7 @@ export function calcularSplit(entrada: EntradaSplit): ResultadoSplit {
   }
 
   const comissao = centavos(valorProduto * taxaComissao);
-  const tarifa = tarifaFixa(valorProduto);
+  const tarifa = tarifaFixa(valorProduto, modalidade);
   const totalDescontado = comissao + tarifa;
 
   if (totalDescontado >= valorProduto) {
@@ -90,6 +96,7 @@ export function calcularSplit(entrada: EntradaSplit): ResultadoSplit {
     comissao,
     taxaComissao,
     tarifa,
+    modalidade,
     totalDescontado,
     valorVendedor,
     valorPlataforma,

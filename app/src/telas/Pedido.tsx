@@ -41,11 +41,14 @@ const rotuloEstado: Record<EstadoPedido, string> = {
   A_CAMINHO_DA_COLETA: 'entregador indo buscar',
   PRODUTO_COLETADO: 'produto coletado',
   EM_ROTA_PARA_ENTREGA: 'a caminho de você',
+  AGUARDANDO_ENTREGA_DO_VENDEDOR: 'combinando a entrega',
+  ENTREGA_DECLARADA: 'aguardando sua confirmação',
   ENTREGUE: 'entregue',
   CONCLUIDO: 'concluído',
   DEVOLUCAO_SOLICITADA: 'devolução em análise',
   DEVOLUCAO_APROVADA: 'devolução aprovada, aguardando coleta',
   DEVOLUCAO_EM_TRANSITO: 'produto voltando ao vendedor',
+  DEVOLUCAO_COMBINADA: 'combine a devolução com quem vendeu',
   DEVOLVIDO_AO_VENDEDOR: 'devolvido, processando estorno',
   REEMBOLSADO: 'reembolsado',
   CANCELADO: 'cancelado',
@@ -127,18 +130,45 @@ export function TelaPedido({ navigation, route }: Props) {
           <View style={{ height: espaco.md }} />
 
           <Linha rotulo="produto" valor={reais(pedido.valorProduto)} />
-          {pedido.modalidade === 'ENTREGADOR_PROPRIO' ? (
+          {pedido.modalidade === 'PLATAFORMA' ? (
             <Linha rotulo="entrega" valor="incluída" />
-          ) : null}
+          ) : (
+            <Linha rotulo="entrega" valor="com o vendedor" />
+          )}
           <Linha rotulo="total pago" valor={reais(pedido.valorTotal)} destaque />
         </Cartao>
 
-        {pedido.entrega?.codigoConfirmacao &&
-        ['PRODUTO_COLETADO', 'EM_ROTA_PARA_ENTREGA'].includes(pedido.estado) ? (
-          <Cartao estilo={{ marginTop: espaco.lg, alignItems: 'center' }}>
-            <Text style={fonte.pequeno}>mostre esse código pro entregador</Text>
-            <Text style={e.codigo}>{pedido.entrega.codigoConfirmacao}</Text>
+        {/* o código é a prova de entrega nas duas modalidades */}
+        {[
+          'PRODUTO_COLETADO',
+          'EM_ROTA_PARA_ENTREGA',
+          'AGUARDANDO_ENTREGA_DO_VENDEDOR',
+          'ENTREGA_DECLARADA',
+        ].includes(pedido.estado) ? (
+          <Cartao
+            estilo={{ marginTop: espaco.lg }}
+            aoTocar={() => navigation.navigate('CodigoDeConfirmacao', { pedidoId: pedido.id })}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="keypad-outline" size={22} color={cores.verdeEscuro} />
+              <View style={{ flex: 1, marginLeft: espaco.md }}>
+                <Text style={fonte.rotulo}>ver meu código de confirmação</Text>
+                <Text style={fonte.pequeno}>
+                  informe só quando o produto estiver na sua mão
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={cores.textoFraco} />
+            </View>
           </Cartao>
+        ) : null}
+
+        {pedido.estado === 'ENTREGA_DECLARADA' && pedido.prazoConfirmacaoAte ? (
+          <View style={{ marginTop: espaco.md }}>
+            <Aviso
+              texto="quem vendeu marcou que entregou. Se você recebeu, confirme; se não recebeu, peça devolução. Sem resposta, a gente confirma sozinho quando o prazo vencer."
+              tom="alerta"
+            />
+          </View>
         ) : null}
 
         <View style={{ marginTop: espaco.xl }}>

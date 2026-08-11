@@ -7,10 +7,11 @@ import { z } from 'zod';
 
 import { ambiente } from '../ambiente';
 import { diasRestantesParaTestar, dentroDaJanelaDeTeste } from '../dominio/reembolso';
-import { conflito, naoEncontrado, semPermissao } from '../erros';
+import { naoEncontrado, semPermissao } from '../erros';
 import { exigirLogin } from '../middlewares/autenticacao';
 import { prisma } from '../prisma';
 import * as checkout from '../servicos/checkout';
+import * as entregaDoVendedor from '../servicos/entregaDoVendedor';
 import * as reembolsoServico from '../servicos/reembolso';
 import { extratoDoVendedor } from '../servicos/repasse';
 
@@ -18,13 +19,14 @@ export const rotasPedidos = Router();
 
 rotasPedidos.use(exigirLogin);
 
-const modalidade = z.enum(['ENTREGADOR_PROPRIO', 'COMBINADO_ENTRE_PARTES']);
-
-/** GET /pedidos/simular?anuncio=...&modalidade=... — prévia de valores. */
+/**
+ * GET /pedidos/simular?anuncio=...
+ * Prévia dos valores. A modalidade vem do anúncio — quem escolhe é o vendedor.
+ */
 rotasPedidos.get('/simular', async (req, res, next) => {
   try {
-    const dados = z.object({ anuncio: z.string(), modalidade }).parse(req.query);
-    return res.json(await checkout.simular(dados.anuncio, dados.modalidade));
+    const { anuncio } = z.object({ anuncio: z.string() }).parse(req.query);
+    return res.json(await checkout.simular(anuncio));
   } catch (erro) {
     return next(erro);
   }
@@ -32,7 +34,6 @@ rotasPedidos.get('/simular', async (req, res, next) => {
 
 const comprarEsquema = z.object({
   anuncioId: z.string(),
-  modalidade,
   enderecoId: z.string().optional(),
   pagamento: z.discriminatedUnion('tipo', [
     z.object({
@@ -170,41 +171,86 @@ rotasPedidos.get('/:id', async (req, res, next) => {
 
 /**
  * POST /pedidos/:id/recebi
- * Comprador confirma a entrega quando ela foi combinada entre as partes —
- * nesse caso não há entregador para confirmar por ele.
+ * Modalidade VENDEDOR: o comprador confirma que recebeu, sem esperar o prazo
+ * da confirmação automática.
  */
 rotasPedidos.post('/:id/recebi', async (req, res, next) => {
   try {
-    const pedido = await prisma.pedido.findUnique({ where: { id: req.params.id } });
+    return res.json(
+      await entregaDoVendedor.compradorConfirma(req.params.id, req.sessao!.usuarioId),
+    );
+  } catch (erro) {
+    return next(erro);
+  }
+});
+
+/**
+ * GET /pedidos/:id/codigo
+ * Código de confirmação, visível SÓ para o comprador. É ele que prova a
+ * entrega nas duas modalidades.
+ */
+rotasPedidos.get('/:id/codigo', async (req, res, next) => {
+  try {
+    const pedido = await prisma.pedido.findUnique({
+      where: { id: req.params.id },
+      include: { entregas: { where: { tipo: 'ENTREGA' }, take: 1 } },
+    });
     if (!pedido) throw naoEncontrado('Pedido não encontrado.');
-    if (pedido.compradorId !== req.sessao!.usuarioId) throw semPermissao();
-    if (pedido.modalidade !== 'COMBINADO_ENTRE_PARTES') {
-      throw conflito('Neste pedido quem confirma a entrega é o entregador.');
-    }
-    if (pedido.estado !== 'PAGO') {
-      throw conflito('Este pedido não está aguardando confirmação de recebimento.');
+    if (pedido.compradorId !== req.sessao!.usuarioId) {
+      throw semPermissao('O código é só de quem comprou.');
     }
 
-    const { prazoParaTestar } = await import('../dominio/reembolso');
-    const agora = new Date();
-    const prazo = prazoParaTestar(agora, ambiente.DIAS_PARA_TESTAR);
+    const codigo =
+      pedido.modalidade === 'VENDEDOR'
+        ? pedido.codigoConfirmacao
+        : (pedido.entregas[0]?.codigoConfirmacao ?? null);
 
-    const [atualizado] = await prisma.$transaction([
-      prisma.pedido.update({
-        where: { id: pedido.id },
-        data: { estado: 'ENTREGUE', entregueEm: agora, prazoTesteAte: prazo },
-      }),
-      prisma.eventoPedido.create({
-        data: {
-          pedidoId: pedido.id,
-          tipo: 'recebimento_confirmado',
-          autorId: req.sessao!.usuarioId,
-          detalhe: { prazoTesteAte: prazo.toISOString() },
-        },
-      }),
-    ]);
+    return res.json({
+      codigo,
+      modalidade: pedido.modalidade,
+      estado: pedido.estado,
+      paraQuem:
+        pedido.modalidade === 'VENDEDOR'
+          ? 'informe ao vendedor só quando o produto estiver na sua mão'
+          : 'informe ao entregador só quando o produto estiver na sua mão',
+    });
+  } catch (erro) {
+    return next(erro);
+  }
+});
 
-    return res.json(atualizado);
+/**
+ * POST /pedidos/:id/entreguei
+ * Modalidade VENDEDOR: o vendedor digita o código que o comprador mostrou.
+ * Código certo marca ENTREGUE na hora e registra data e hora.
+ */
+rotasPedidos.post('/:id/entreguei', async (req, res, next) => {
+  try {
+    const { codigo } = z
+      .object({ codigo: z.string().min(4).max(6) })
+      .parse(req.body);
+    return res.json(
+      await entregaDoVendedor.confirmarComCodigo(
+        req.params.id,
+        req.sessao!.usuarioId,
+        codigo,
+      ),
+    );
+  } catch (erro) {
+    return next(erro);
+  }
+});
+
+/**
+ * POST /pedidos/:id/declarar-entrega
+ * Saída para quando o comprador some: o vendedor declara a entrega sem o
+ * código e abre o prazo de confirmação automática.
+ */
+rotasPedidos.post('/:id/declarar-entrega', async (req, res, next) => {
+  try {
+    return res.json(
+      await entregaDoVendedor.declararEntrega(req.params.id, req.sessao!.usuarioId),
+    );
   } catch (erro) {
     return next(erro);
   }

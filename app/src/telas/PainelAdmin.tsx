@@ -101,6 +101,28 @@ export function TelaPainelAdmin({ navigation }: Props) {
     );
   }
 
+  function confirmarRetorno(item: SolicitacaoDeDevolucao) {
+    Alert.alert(
+      'confirmar o retorno do produto?',
+      'Só confirme depois que o vendedor avisar que recebeu o produto de volta. Isso dispara o estorno na hora e não tem como desfazer.',
+      [
+        { text: 'cancelar', style: 'cancel' },
+        {
+          text: 'confirmar e estornar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api(`/admin/reembolsos/${item.id}/confirmar-retorno`, { metodo: 'POST' });
+              await carregar();
+            } catch (e) {
+              Alert.alert('não deu', (e as Error).message);
+            }
+          },
+        },
+      ],
+    );
+  }
+
   if (carregando) return <Carregando texto="carregando o painel..." />;
 
   return (
@@ -231,12 +253,26 @@ export function TelaPainelAdmin({ navigation }: Props) {
                 ) : null}
 
                 {item.estado === 'APROVADO' ? (
-                  <View style={{ marginTop: espaco.md }}>
-                    <Aviso
-                      texto="aprovada. a coleta reversa está na fila de entregas; o estorno sai quando o vendedor receber o produto."
-                      tom="informacao"
-                    />
-                  </View>
+                  item.pedido.modalidade === 'PLATAFORMA' ? (
+                    <View style={{ marginTop: espaco.md }}>
+                      <Aviso
+                        texto="aprovada. a coleta reversa está na fila de entregas; o estorno sai quando o vendedor receber o produto."
+                        tom="informacao"
+                      />
+                    </View>
+                  ) : (
+                    <View style={{ marginTop: espaco.md }}>
+                      <Aviso
+                        texto="aprovada. as partes combinam a devolução. confirme aqui quando o vendedor avisar que recebeu o produto de volta — é isso que dispara o estorno."
+                        tom="alerta"
+                      />
+                      <Botao
+                        titulo="o vendedor recebeu de volta"
+                        aoTocar={() => confirmarRetorno(item)}
+                        estilo={{ marginTop: espaco.md }}
+                      />
+                    </View>
+                  )
                 ) : (
                   <View style={{ flexDirection: 'row', gap: espaco.sm, marginTop: espaco.lg }}>
                     <Botao

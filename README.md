@@ -28,25 +28,51 @@ O projeto tem três partes:
 
 ## As regras do negócio
 
+O vendedor escolhe, em cada anúncio, **quem faz a entrega** — e isso muda a taxa:
+
+| | entrega pela plataforma | entrega pelo vendedor |
+|---|---|---|
+| Comissão | 12% | 12% |
+| Tarifa fixa | por faixa de preço | **não há** |
+| Limite de peso/tamanho | 20 kg · 100 cm de largura · 100 cm de altura | **sem limite** |
+| Quem entrega | entregador nosso | o próprio vendedor |
+| Prova de entrega | código do comprador, digitado pelo entregador | código do comprador, digitado pelo vendedor |
+| Devolução | coleta reversa por entregador | combinada entre as partes, admin confirma |
+
+Tarifa fixa (só na entrega pela plataforma):
+
+| Preço do produto | Tarifa |
+|---|---|
+| até R$ 24,99 | R$ 2,50 |
+| até R$ 49,99 | R$ 4,50 |
+| até R$ 99,99 | R$ 6,50 |
+| até R$ 199,99 | R$ 8,50 |
+| até R$ 499,99 | R$ 10,50 |
+| a partir de R$ 500,00 | R$ 14,50 |
+
+Regras comuns às duas modalidades:
+
 | Regra | Valor |
 |---|---|
 | Venda mínima | **R$ 10,00** |
-| Comissão | **12%** sobre o produto |
-| Tarifa fixa por venda | R$ 2,50 (até 24,99) · R$ 4,50 (até 49,99) · R$ 6,50 (até 99,99) · R$ 8,50 (até 199,99) · R$ 18,50 (R$ 200+) |
-| O que o comprador paga | só o preço do produto — a entrega está inclusa |
-| Peso máximo por pacote | **20 kg** |
-| Tamanho máximo (qualquer lado) | **60 cm** |
+| O que o comprador paga | só o preço do produto |
 | Prazo para testar e devolver | **7 dias** a partir da entrega |
+| Confirmação automática (entrega pelo vendedor) | **3 dias** após a declaração |
 | Repasse ao vendedor | depois que o prazo de teste vence |
 | Reembolso dentro do prazo | devolução **integral** (CDC art. 49) |
 | Quem absorve comissão e tarifa na devolução | a plataforma |
+
+> **Degraus de faixa:** toda tabela por faixa cria um degrau na virada. Aqui o
+> maior é de **R$ 4,00** (em R$ 500,00); nas demais fronteiras é de R$ 2,00.
+> Há teste fixando esses valores — se alguém mexer na tabela e criar um degrau
+> grande, a suíte quebra.
 
 Essas regras vivem em dois lugares e são checadas por teste automatizado:
 `servidor/src/dominio/regras.ts` (manda) e `app/src/regras/limites.ts` (avisa a
 pessoa antes de ela perder tempo).
 
 ```bash
-cd servidor && npm test    # 53 testes: taxas, prazo, reembolso, máquina de estados e atribuição
+cd servidor && npm test    # 60 testes: taxas, faixas, prazo, reembolso, estados e atribuição
 ```
 
 ---

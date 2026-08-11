@@ -4,7 +4,7 @@ export type Papel = 'CLIENTE' | 'ENTREGADOR' | 'ADMIN';
 
 export type CondicaoProduto = 'NOVO' | 'SEMINOVO' | 'USADO';
 
-export type ModalidadeEntrega = 'ENTREGADOR_PROPRIO' | 'COMBINADO_ENTRE_PARTES';
+export type ModalidadeEntrega = 'PLATAFORMA' | 'VENDEDOR';
 
 export type EstadoPedido =
   | 'AGUARDANDO_PAGAMENTO'
@@ -13,11 +13,14 @@ export type EstadoPedido =
   | 'A_CAMINHO_DA_COLETA'
   | 'PRODUTO_COLETADO'
   | 'EM_ROTA_PARA_ENTREGA'
+  | 'AGUARDANDO_ENTREGA_DO_VENDEDOR'
+  | 'ENTREGA_DECLARADA'
   | 'ENTREGUE'
   | 'CONCLUIDO'
   | 'DEVOLUCAO_SOLICITADA'
   | 'DEVOLUCAO_APROVADA'
   | 'DEVOLUCAO_EM_TRANSITO'
+  | 'DEVOLUCAO_COMBINADA'
   | 'DEVOLVIDO_AO_VENDEDOR'
   | 'REEMBOLSADO'
   | 'CANCELADO';
@@ -72,8 +75,8 @@ export interface Anuncio {
   comprimentoCm: number;
   larguraCm: number;
   alturaCm: number;
-  aceitaEntregador: boolean;
-  aceitaCombinado: boolean;
+  /** Quem entrega. Define a taxa e se há limite de peso/tamanho. */
+  modalidadeEntrega: ModalidadeEntrega;
   fotos: Foto[];
   criadoEm: string;
   vendedor: {
@@ -87,6 +90,7 @@ export interface Anuncio {
   };
   categoria?: { slug: string; nome: string } | null;
   entrega?: {
+    modalidade: ModalidadeEntrega;
     diasParaTestar: number;
     entregaInclusa: boolean;
   };
@@ -119,6 +123,9 @@ export interface Pedido {
   pagoEm?: string | null;
   entregueEm?: string | null;
   prazoTesteAte?: string | null;
+  /** Modalidade VENDEDOR: prazo da confirmação automática. */
+  prazoConfirmacaoAte?: string | null;
+  confirmadaPor?: 'codigo' | 'comprador' | 'automatica' | null;
   anuncio: { titulo: string; fotos: Foto[] };
   vendedor?: { nome: string; apelidoLoja?: string | null };
   comprador?: { nome: string };
@@ -204,6 +211,8 @@ export interface SolicitacaoDeDevolucao {
     id: string;
     codigo: string;
     valorTotal: number;
+    /** Decide se há coleta reversa ou se as partes combinam entre si. */
+    modalidade: ModalidadeEntrega;
     comprador: { nome: string; telefone?: string | null };
     vendedor: { nome: string; telefone?: string | null };
     anuncio: { titulo: string };
@@ -218,6 +227,8 @@ export interface Configuracoes {
   /** `ateInclusive: null` é a última faixa, aberta. */
   tarifas: Array<{ ateInclusive: number | null; tarifa: number }>;
   diasParaTestar: number;
+  diasParaConfirmacaoAutomatica: number;
   pesoMaximoG: number;
-  dimensaoMaximaCm: number;
+  larguraMaximaCm: number;
+  alturaMaximaCm: number;
 }

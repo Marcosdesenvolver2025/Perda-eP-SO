@@ -21,6 +21,7 @@ import { conflito, erroDeValidacao, naoEncontrado } from '../erros';
 import * as pagarme from '../integracoes/pagarme';
 import { log } from '../log';
 import { prisma } from '../prisma';
+import { abrirEntregaDoVendedor } from './entregaDoVendedor';
 import { abrirEntregaDoPedido } from './logistica';
 
 /** Código curto e legível do pedido, ex.: VI-7K3QM2. */
@@ -35,7 +36,6 @@ function gerarCodigo(): string {
 export interface PedidoDeCompra {
   compradorId: string;
   anuncioId: string;
-  modalidade: ModalidadeEntrega;
   enderecoId?: string;
   pagamento:
     | { tipo: 'credit_card'; tokenCartao: string; parcelas: number }
@@ -57,15 +57,14 @@ export interface ResumoDaCompra {
  * Simula a compra sem cobrar nada. O app chama isso na tela do produto para
  * mostrar os valores antes de o comprador decidir.
  */
-export async function simular(
-  anuncioId: string,
-  modalidade: ModalidadeEntrega,
-): Promise<ResumoDaCompra> {
+export async function simular(anuncioId: string): Promise<ResumoDaCompra> {
   const anuncio = await prisma.anuncio.findUnique({ where: { id: anuncioId } });
   if (!anuncio || anuncio.estado !== 'ATIVO') {
     throw naoEncontrado('Este anúncio não está mais disponível.');
   }
 
+  // quem escolhe a modalidade é o vendedor, no anúncio
+  const modalidade = anuncio.modalidadeEntrega as ModalidadeEntrega;
   const split = calcularSplit({
     valorProduto: anuncio.preco,
     modalidade,
@@ -110,30 +109,33 @@ export async function comprar(entrada: PedidoDeCompra) {
     );
   }
 
-  const validacao = validarMedidas({
-    pesoG: anuncio.pesoG,
-    comprimentoCm: anuncio.comprimentoCm,
-    larguraCm: anuncio.larguraCm,
-    alturaCm: anuncio.alturaCm,
-  });
+  // a modalidade vem do anúncio e é congelada no pedido logo abaixo
+  const modalidade = anuncio.modalidadeEntrega as ModalidadeEntrega;
+  const pelaPlataforma = modalidade === 'PLATAFORMA';
+
+  const validacao = validarMedidas(
+    {
+      pesoG: anuncio.pesoG,
+      comprimentoCm: anuncio.comprimentoCm,
+      larguraCm: anuncio.larguraCm,
+      alturaCm: anuncio.alturaCm,
+    },
+    modalidade,
+  );
   if (!validacao.valido) {
     throw erroDeValidacao(validacao.erros.join(' '), validacao.erros);
   }
 
-  const comEntregador = entrada.modalidade === 'ENTREGADOR_PROPRIO';
-  if (comEntregador && !anuncio.aceitaEntregador) {
-    throw conflito('Este anúncio não aceita entrega pelos nossos entregadores.');
-  }
-  if (comEntregador && !entrada.enderecoId) {
+  if (pelaPlataforma && !entrada.enderecoId) {
     throw erroDeValidacao('Escolha o endereço de entrega.');
   }
-  if (comEntregador && !anuncio.enderecoColetaId) {
+  if (pelaPlataforma && !anuncio.enderecoColetaId) {
     throw conflito('O vendedor ainda não informou o endereço de coleta deste anúncio.');
   }
 
   const split = calcularSplit({
     valorProduto: anuncio.preco,
-    modalidade: entrada.modalidade,
+    modalidade,
     taxaComissao: ambiente.COMISSAO,
   });
 
@@ -151,7 +153,8 @@ export async function comprar(entrada: PedidoDeCompra) {
       compradorId: comprador.id,
       vendedorId: anuncio.vendedorId,
       enderecoId: entrada.enderecoId ?? null,
-      modalidade: entrada.modalidade,
+      // congelado: se a política mudar, este pedido mantém a regra da venda
+      modalidade,
       estado: 'AGUARDANDO_PAGAMENTO',
       valorProduto: split.valorProduto,
       valorTotal: split.total,
@@ -161,7 +164,7 @@ export async function comprar(entrada: PedidoDeCompra) {
       valorVendedor: split.valorVendedor,
       valorPlataforma: split.valorPlataforma,
       // custo da corrida, pago pela plataforma; não entra no split da cobrança
-      custoEntregador: comEntregador ? ambiente.PAGAMENTO_POR_ENTREGA : 0,
+      custoEntregador: pelaPlataforma ? ambiente.PAGAMENTO_POR_ENTREGA : 0,
       metodoPagamento: entrada.pagamento.tipo,
       parcelas: entrada.pagamento.tipo === 'credit_card' ? entrada.pagamento.parcelas : 1,
     },
@@ -280,9 +283,13 @@ export async function marcarComoPago(pedidoId: string) {
     }),
   ]);
 
-  // cria a corrida e move o pedido para AGUARDANDO_AGENDAMENTO_DE_COLETA.
-  // Não cria cobrança nova nem mexe no split — só abre a operação.
-  await abrirEntregaDoPedido(pedido.id);
+  // abre a operação conforme a modalidade congelada no pedido. Nenhum dos dois
+  // caminhos cria cobrança nova nem mexe no split.
+  if (pedido.modalidade === 'PLATAFORMA') {
+    await abrirEntregaDoPedido(pedido.id);
+  } else {
+    await abrirEntregaDoVendedor(pedido.id);
+  }
 
   log.info({ pedido: pedido.codigo }, 'pagamento confirmado');
   return prisma.pedido.findUnique({ where: { id: pedido.id } });

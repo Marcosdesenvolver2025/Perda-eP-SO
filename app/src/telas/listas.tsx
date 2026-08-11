@@ -138,6 +138,7 @@ interface Extrato {
     valorTarifa: number;
     taxaComissao: number;
     valorVendedor: number;
+    modalidade: 'PLATAFORMA' | 'VENDEDOR';
     repassadoEm?: string | null;
     anuncio: { titulo: string };
   }>;
@@ -161,6 +162,7 @@ export function TelaMinhasVendas({
                 id: 'p1',
                 codigo: 'VI-7K3QM2',
                 estado: 'ENTREGUE',
+                modalidade: 'PLATAFORMA',
                 valorProduto: 12_000,
                 valorComissao: 1_440,
                 valorTarifa: 850,
@@ -241,9 +243,26 @@ export function TelaMinhasVendas({
                   rotulo={`comissão (${Math.round(venda.taxaComissao * 100)}%)`}
                   valor={`- ${reais(venda.valorComissao)}`}
                 />
-                <LinhaValor rotulo="tarifa da venda" valor={`- ${reais(venda.valorTarifa)}`} />
+                {venda.valorTarifa > 0 ? (
+                  <LinhaValor rotulo="tarifa da venda" valor={`- ${reais(venda.valorTarifa)}`} />
+                ) : null}
                 <LinhaValor rotulo="você recebe" valor={reais(venda.valorVendedor)} destaque />
               </View>
+
+              {venda.modalidade === 'VENDEDOR' &&
+              ['AGUARDANDO_ENTREGA_DO_VENDEDOR', 'ENTREGA_DECLARADA'].includes(venda.estado) ? (
+                <Botao
+                  titulo={
+                    venda.estado === 'ENTREGA_DECLARADA'
+                      ? 'confirmar com o código'
+                      : 'registrar entrega'
+                  }
+                  aoTocar={() =>
+                    navigation.navigate('EntregaDoVendedor', { pedidoId: venda.id })
+                  }
+                  estilo={{ marginTop: espaco.md }}
+                />
+              ) : null}
             </Cartao>
           ))
         )}

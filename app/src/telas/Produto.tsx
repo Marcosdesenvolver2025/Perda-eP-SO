@@ -172,24 +172,25 @@ export function TelaProduto({ navigation, route }: Props) {
 
           <View>
             <Text style={[fonte.rotulo, { marginBottom: espaco.sm }]}>entrega</Text>
-            {anuncio.aceitaEntregador ? (
+            {anuncio.modalidadeEntrega === 'PLATAFORMA' ? (
               <View style={e.linhaEntrega}>
                 <Ionicons name="bicycle-outline" size={20} color={cores.verdeEscuro} />
-                <Text style={[fonte.corpo, { flex: 1, marginLeft: espaco.md }]}>
-                  entregador do vendas itinga
-                </Text>
+                <View style={{ flex: 1, marginLeft: espaco.md }}>
+                  <Text style={fonte.corpo}>entregador do vendas itinga</Text>
+                  <Text style={fonte.pequeno}>buscamos com quem vende e levamos até você</Text>
+                </View>
                 <Text style={[fonte.rotulo, { color: cores.verdeEscuro }]}>incluída</Text>
               </View>
-            ) : null}
-            {anuncio.aceitaCombinado ? (
+            ) : (
               <View style={e.linhaEntrega}>
-                <Ionicons name="people-outline" size={20} color={cores.verdeEscuro} />
-                <Text style={[fonte.corpo, { flex: 1, marginLeft: espaco.md }]}>
-                  combinar com quem vende
-                </Text>
-                <Text style={fonte.rotulo}>grátis</Text>
+                <Ionicons name="walk-outline" size={20} color={cores.verdeEscuro} />
+                <View style={{ flex: 1, marginLeft: espaco.md }}>
+                  <Text style={fonte.corpo}>quem vende entrega</Text>
+                  <Text style={fonte.pequeno}>vocês combinam onde e quando</Text>
+                </View>
+                <Text style={[fonte.rotulo, { color: cores.verdeEscuro }]}>sem frete</Text>
               </View>
-            ) : null}
+            )}
           </View>
 
           <View>

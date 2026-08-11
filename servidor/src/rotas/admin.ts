@@ -5,9 +5,11 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
+import { naoEncontrado } from '../erros';
 import { exigirLogin, exigirPapel } from '../middlewares/autenticacao';
 import { prisma } from '../prisma';
 import { candidatosPara, estrategiaAtiva } from '../servicos/atribuicao';
+import * as entregaDoVendedor from '../servicos/entregaDoVendedor';
 import * as logistica from '../servicos/logistica';
 import * as reembolsoServico from '../servicos/reembolso';
 import { liberarRepassesVencidos } from '../servicos/repasse';
@@ -175,6 +177,8 @@ rotasAdmin.get('/reembolsos', async (req, res, next) => {
             comprador: { select: { nome: true, email: true, telefone: true } },
             vendedor: { select: { nome: true, email: true, telefone: true } },
             anuncio: { select: { titulo: true } },
+            // a modalidade diz ao admin se há coleta reversa ou se as partes
+            // combinam a devolução entre si
             entregas: {
               where: { tipo: 'DEVOLUCAO' },
               select: { id: true, estado: true },
@@ -199,6 +203,30 @@ rotasAdmin.post('/reembolsos/:id/aprovar', async (req, res, next) => {
     const { resposta } = z.object({ resposta: z.string().max(500).optional() }).parse(req.body);
     return res.json(
       await reembolsoServico.aprovar(req.params.id, req.sessao!.usuarioId, resposta),
+    );
+  } catch (erro) {
+    return next(erro);
+  }
+});
+
+/**
+ * POST /admin/reembolsos/:id/confirmar-retorno
+ * Modalidade VENDEDOR: não há entregador para trazer o produto de volta. O
+ * admin confirma que o vendedor recebeu e isso dispara o estorno.
+ */
+rotasAdmin.post('/reembolsos/:id/confirmar-retorno', async (req, res, next) => {
+  try {
+    const reembolso = await prisma.reembolso.findUnique({
+      where: { id: req.params.id },
+      select: { pedidoId: true },
+    });
+    if (!reembolso) throw naoEncontrado('Solicitação não encontrada.');
+
+    return res.json(
+      await entregaDoVendedor.confirmarRetornoDoProduto(
+        reembolso.pedidoId,
+        req.sessao!.usuarioId,
+      ),
     );
   } catch (erro) {
     return next(erro);

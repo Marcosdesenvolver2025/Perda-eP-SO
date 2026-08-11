@@ -32,6 +32,8 @@ export type ParametrosApp = {
   PainelAdmin: undefined;
   EscolherEntregador: { entregaId: string };
   RecusarDevolucao: { reembolsoId: string };
+  CodigoDeConfirmacao: { pedidoId: string };
+  EntregaDoVendedor: { pedidoId: string };
   ComoFunciona: undefined;
 };
 

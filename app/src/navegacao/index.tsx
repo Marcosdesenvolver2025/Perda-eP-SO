@@ -35,6 +35,8 @@ import {
   TelaDadosPessoais,
   TelaEnderecos,
 } from '../telas/cadastros';
+import { TelaCodigoDeConfirmacao } from '../telas/CodigoDeConfirmacao';
+import { TelaEntregaDoVendedor } from '../telas/EntregaDoVendedor';
 import { TelaPassoDaEntrega } from '../telas/PassoDaEntrega';
 import {
   TelaEscolherEntregador,
@@ -150,6 +152,12 @@ export function Navegacao() {
         <Pilha.Screen
           name="RecusarDevolucao"
           component={TelaRecusarDevolucao}
+          options={{ presentation: 'modal' }}
+        />
+        <Pilha.Screen name="CodigoDeConfirmacao" component={TelaCodigoDeConfirmacao} />
+        <Pilha.Screen
+          name="EntregaDoVendedor"
+          component={TelaEntregaDoVendedor}
           options={{ presentation: 'modal' }}
         />
         <Pilha.Screen name="ComoFunciona" component={TelaComoFunciona} />

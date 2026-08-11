@@ -10,6 +10,7 @@ import { z } from 'zod';
 import {
   CIDADE,
   COMISSAO,
+  DIAS_PARA_CONFIRMACAO_AUTOMATICA,
   DIAS_PARA_TESTAR,
   PAGAMENTO_POR_ENTREGA,
   UF,
@@ -51,6 +52,12 @@ const esquema = z.object({
   /** Regras de negócio (valores padrão vêm de src/dominio/regras.ts). */
   COMISSAO: porcentagem.default(COMISSAO),
   DIAS_PARA_TESTAR: z.coerce.number().int().positive().default(DIAS_PARA_TESTAR),
+  /** Modalidade VENDEDOR: prazo da confirmação automática após a declaração. */
+  DIAS_PARA_CONFIRMACAO_AUTOMATICA: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(DIAS_PARA_CONFIRMACAO_AUTOMATICA),
   VALOR_MINIMO_VENDA: z.coerce.number().int().positive().default(VALOR_MINIMO_VENDA),
   /** Quanto o entregador recebe por corrida concluída, em centavos. */
   PAGAMENTO_POR_ENTREGA: z.coerce.number().int().nonnegative().default(PAGAMENTO_POR_ENTREGA),

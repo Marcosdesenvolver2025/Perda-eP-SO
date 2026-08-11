@@ -71,7 +71,7 @@ export async function abrirEntregaDoPedido(pedidoId: string) {
   const existente = pedido.entregas[0];
   if (existente) return existente;
 
-  if (pedido.modalidade !== 'ENTREGADOR_PROPRIO') {
+  if (pedido.modalidade !== 'PLATAFORMA') {
     // combinado entre as partes: não há corrida a fazer
     return null;
   }

@@ -32,7 +32,8 @@ type FormaDePagamento = 'pix' | 'credit_card';
 
 export function TelaCheckout({ navigation, route }: Props) {
   const [anuncio, setAnuncio] = useState<Anuncio | null>(null);
-  const [modalidade, setModalidade] = useState<ModalidadeEntrega>('ENTREGADOR_PROPRIO');
+  // a modalidade vem do anúncio: quem escolhe é o vendedor
+  const modalidade: ModalidadeEntrega = anuncio?.modalidadeEntrega ?? 'PLATAFORMA';
   const [forma, setForma] = useState<FormaDePagamento>('pix');
   const [cartao, setCartao] = useState<DadosDoCartao | null>(null);
   const [parcelas, setParcelas] = useState(1);
@@ -63,7 +64,7 @@ export function TelaCheckout({ navigation, route }: Props) {
       if (!anuncio) return;
 
       if (MODO_DEMONSTRACAO) {
-        const descontos = calcularDescontos(anuncio.preco);
+        const descontos = calcularDescontos(anuncio.preco, modalidade);
         setResumo({
           valorProduto: anuncio.preco,
           valorTotal: anuncio.preco,
@@ -77,11 +78,7 @@ export function TelaCheckout({ navigation, route }: Props) {
       }
 
       try {
-        setResumo(
-          await api<ResumoDaCompra>(
-            `/pedidos/simular?anuncio=${anuncio.id}&modalidade=${modalidade}`,
-          ),
-        );
+        setResumo(await api<ResumoDaCompra>(`/pedidos/simular?anuncio=${anuncio.id}`));
       } catch (e) {
         setErro((e as Error).message);
       }
@@ -115,10 +112,9 @@ export function TelaCheckout({ navigation, route }: Props) {
           metodo: 'POST',
           corpo: {
             anuncioId: anuncio.id,
-            modalidade,
             pagamento,
             // o endereço é escolhido na tela de endereços; aqui vai o principal
-            ...(modalidade === 'ENTREGADOR_PROPRIO' ? { enderecoId: route.params.enderecoId } : {}),
+            ...(modalidade === 'PLATAFORMA' ? { enderecoId: route.params.enderecoId } : {}),
           },
         },
       );
@@ -136,7 +132,7 @@ export function TelaCheckout({ navigation, route }: Props) {
 
   if (carregando || !anuncio) return <Carregando />;
 
-  const comEntregador = modalidade === 'ENTREGADOR_PROPRIO';
+  const comEntregador = modalidade === 'PLATAFORMA';
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: cores.fundo }} edges={['top']}>
@@ -150,24 +146,25 @@ export function TelaCheckout({ navigation, route }: Props) {
       <ScrollView contentContainerStyle={{ padding: espaco.lg, paddingBottom: 140 }}>
         {erro ? <Aviso texto={erro} tom="alerta" /> : null}
 
-        <Text style={[fonte.rotulo, { marginBottom: espaco.md }]}>como você quer receber</Text>
+        <Text style={[fonte.rotulo, { marginBottom: espaco.md }]}>como você recebe</Text>
 
-        <OpcaoDeEntrega
-          selecionada={comEntregador}
-          icone="bicycle"
-          titulo="entregador do vendas itinga"
-          descricao="a gente busca com o vendedor e leva até você · sem custo extra"
-          desabilitada={!anuncio.aceitaEntregador}
-          aoTocar={() => setModalidade('ENTREGADOR_PROPRIO')}
-        />
-        <OpcaoDeEntrega
-          selecionada={!comEntregador}
-          icone="people"
-          titulo="combinar com quem vende"
-          descricao="vocês dois combinam onde e quando · sem frete"
-          desabilitada={!anuncio.aceitaCombinado}
-          aoTocar={() => setModalidade('COMBINADO_ENTRE_PARTES')}
-        />
+        <View style={e.modalidade}>
+          <Ionicons
+            name={comEntregador ? 'bicycle' : 'walk'}
+            size={22}
+            color={cores.verdeEscuro}
+          />
+          <View style={{ flex: 1, marginLeft: espaco.md }}>
+            <Text style={fonte.rotulo}>
+              {comEntregador ? 'entrega pelo vendas itinga' : 'entrega pelo vendedor'}
+            </Text>
+            <Text style={fonte.pequeno}>
+              {comEntregador
+                ? 'a gente busca com o vendedor e leva até você, sem custo extra'
+                : 'quem vende combina com você onde e quando entregar'}
+            </Text>
+          </View>
+        </View>
 
         <View style={{ height: espaco.xl }} />
         <SeloGarantia dias={anuncio.entrega?.diasParaTestar ?? 7} />
@@ -307,6 +304,13 @@ const e = StyleSheet.create({
     borderRadius: raio.md,
     padding: espaco.lg,
     marginBottom: espaco.md,
+  },
+  modalidade: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: cores.verdeClaro,
+    borderRadius: raio.md,
+    padding: espaco.lg,
   },
   rodape: {
     position: 'absolute',

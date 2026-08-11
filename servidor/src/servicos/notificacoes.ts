@@ -153,4 +153,30 @@ export const avisos = {
     corpo: 'A devolução foi coletada e está a caminho do seu endereço.',
     dados: { tela: 'MinhasVendas' },
   }),
+
+  // --- modalidade VENDEDOR -------------------------------------------------
+
+  combineAEntrega: (produto: string): Aviso => ({
+    titulo: 'você vendeu!',
+    corpo: `${produto} foi pago. Combine a entrega com o comprador pelo app.`,
+    dados: { tela: 'MinhasVendas' },
+  }),
+
+  combineComOVendedor: (produto: string): Aviso => ({
+    titulo: 'pagamento confirmado',
+    corpo: `Combine com quem vende como receber o ${produto}. Seu código de confirmação está no pedido.`,
+    dados: { tela: 'MinhasCompras' },
+  }),
+
+  confirmeORecebimento: (produto: string, dias: number): Aviso => ({
+    titulo: 'o vendedor marcou a entrega',
+    corpo: `Recebeu o ${produto}? Confirme no app. Se não responder em ${dias} dias, a gente confirma sozinho.`,
+    dados: { tela: 'MinhasCompras' },
+  }),
+
+  devolucaoCombinada: (): Aviso => ({
+    titulo: 'devolução aprovada',
+    corpo: 'Combinem a devolução entre vocês. O dinheiro volta quando o vendedor confirmar que recebeu o produto.',
+    dados: { tela: 'MinhasCompras' },
+  }),
 };

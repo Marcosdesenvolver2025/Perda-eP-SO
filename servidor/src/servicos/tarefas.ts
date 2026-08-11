@@ -9,12 +9,21 @@
  */
 
 import { log } from '../log';
+import { confirmarEntregasVencidas } from './entregaDoVendedor';
 import { liberarRepassesVencidos } from './repasse';
 
 const UMA_HORA = 60 * 60 * 1000;
 
 export function agendarTarefas() {
   const executar = async () => {
+    // a ordem importa: confirmar entregas primeiro faz os pedidos recém
+    // confirmados já entrarem na contagem da janela de teste
+    try {
+      await confirmarEntregasVencidas();
+    } catch (erro) {
+      log.error({ erro }, 'falha no ciclo de confirmação automática');
+    }
+
     try {
       const resultado = await liberarRepassesVencidos();
       if (resultado.liberados || resultado.falhas) {
@@ -30,5 +39,5 @@ export function agendarTarefas() {
   temporizador.unref();
 
   void executar();
-  log.info('tarefas periódicas agendadas (repasses a cada 1h)');
+  log.info('tarefas periódicas agendadas (confirmações e repasses a cada 1h)');
 }

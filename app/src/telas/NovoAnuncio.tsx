@@ -6,7 +6,7 @@
  * hora da coleta que o entregador não consegue levar.
  */
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Image,
   KeyboardAvoidingView,
@@ -28,12 +28,15 @@ import type { CondicaoProduto } from '../api/tipos';
 import { Aviso, Botao, Campo, Selo } from '../componentes/base';
 import type { ParametrosApp } from '../navegacao/tipos';
 import { cores, espaco, fonte, raio } from '../tema';
+import { EscolhaDeModalidade } from '../componentes/modalidade';
 import {
-  DIMENSAO_MAXIMA_CM,
+  ALTURA_MAXIMA_CM,
+  LARGURA_MAXIMA_CM,
   PESO_MAXIMO_G,
   VALOR_MINIMO_VENDA,
+  cabeNaEntregaDaPlataforma,
   calcularDescontos,
-  validarMedidas,
+  type ModalidadeEntrega,
 } from '../regras/limites';
 
 type Props = NativeStackScreenProps<ParametrosApp, 'NovoAnuncio'>;
@@ -77,8 +80,7 @@ export function TelaNovoAnuncio({ navigation }: Props) {
   const [comprimento, setComprimento] = useState('');
   const [largura, setLargura] = useState('');
   const [altura, setAltura] = useState('');
-  const [aceitaEntregador, setAceitaEntregador] = useState(true);
-  const [aceitaCombinado, setAceitaCombinado] = useState(true);
+  const [modalidadeEntrega, setModalidadeEntrega] = useState<ModalidadeEntrega>('PLATAFORMA');
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [enderecos, setEnderecos] = useState<EnderecoDeColeta[]>([]);
@@ -117,7 +119,16 @@ export function TelaNovoAnuncio({ navigation }: Props) {
   // só reclama depois que a pessoa começou a preencher as medidas
   const preencheuMedidas =
     medidas.pesoG > 0 && medidas.comprimentoCm > 0 && medidas.larguraCm > 0 && medidas.alturaCm > 0;
-  const validacao = preencheuMedidas ? validarMedidas(medidas) : { valido: true, erros: [] };
+
+  // se o pacote não cabe na nossa entrega, a opção fica bloqueada e o app cai
+  // sozinho para "entrega por sua conta"
+  const cabe = preencheuMedidas ? cabeNaEntregaDaPlataforma(medidas) : { cabe: true, motivos: [] };
+
+  useEffect(() => {
+    if (!cabe.cabe && modalidadeEntrega === 'PLATAFORMA') {
+      setModalidadeEntrega('VENDEDOR');
+    }
+  }, [cabe.cabe, modalidadeEntrega]);
 
   async function escolherFotos() {
     const permissao = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -144,10 +155,9 @@ export function TelaNovoAnuncio({ navigation }: Props) {
     descricao.trim().length >= 10 &&
     preco >= VALOR_MINIMO_VENDA &&
     preencheuMedidas &&
-    validacao.valido &&
-    (aceitaEntregador || aceitaCombinado) &&
-    // sem endereço de coleta o entregador não tem onde buscar
-    (!aceitaEntregador || !!enderecoColetaId || MODO_DEMONSTRACAO);
+    // na modalidade PLATAFORMA o pacote precisa caber e ter endereço de coleta
+    (modalidadeEntrega === 'VENDEDOR' ||
+      (cabe.cabe && (!!enderecoColetaId || MODO_DEMONSTRACAO)));
 
   async function publicar() {
     setErro(null);
@@ -170,9 +180,10 @@ export function TelaNovoAnuncio({ navigation }: Props) {
           condicao,
           marca: marca.trim() || undefined,
           ...medidas,
-          aceitaEntregador,
-          aceitaCombinado,
-          ...(aceitaEntregador && enderecoColetaId ? { enderecoColetaId } : {}),
+          modalidadeEntrega,
+          ...(modalidadeEntrega === 'PLATAFORMA' && enderecoColetaId
+            ? { enderecoColetaId }
+            : {}),
           fotos,
         },
       });
@@ -247,9 +258,9 @@ export function TelaNovoAnuncio({ navigation }: Props) {
             teclado="numeric"
             ajuda={
               preco >= VALOR_MINIMO_VENDA
-                ? `comissão ${formatarPreco(calcularDescontos(preco).comissao)} + tarifa ${formatarPreco(
-                    calcularDescontos(preco).tarifa,
-                  )} · você recebe ${formatarPreco(calcularDescontos(preco).vendedor)}`
+                ? `você recebe ${formatarPreco(
+                    calcularDescontos(preco, modalidadeEntrega).vendedor,
+                  )} — veja o detalhe das taxas mais abaixo`
                 : `valor mínimo de venda: ${formatarPreco(VALOR_MINIMO_VENDA)}`
             }
           />
@@ -291,8 +302,8 @@ export function TelaNovoAnuncio({ navigation }: Props) {
           <View style={e.blocoMedidas}>
             <Text style={[fonte.rotulo, { marginBottom: 4 }]}>tamanho e peso do pacote</Text>
             <Text style={[fonte.pequeno, { marginBottom: espaco.lg }]}>
-              nossos entregadores levam até {PESO_MAXIMO_G / 1000} kg e {DIMENSAO_MAXIMA_CM} cm em
-              cada lado
+              nossos entregadores levam até {PESO_MAXIMO_G / 1000} kg, {LARGURA_MAXIMA_CM} cm de
+              largura e {ALTURA_MAXIMA_CM} cm de altura. acima disso, você mesmo entrega.
             </Text>
 
             <Campo
@@ -337,34 +348,28 @@ export function TelaNovoAnuncio({ navigation }: Props) {
               </View>
             </View>
 
-            {!validacao.valido ? (
-              <Aviso texto={validacao.erros.join(' ')} tom="alerta" />
-            ) : preencheuMedidas ? (
-              <Aviso texto="dentro do limite. nossos entregadores conseguem levar." tom="sucesso" />
+            {preencheuMedidas ? (
+              cabe.cabe ? (
+                <Aviso texto="cabe na nossa entrega — você pode escolher as duas opções." tom="sucesso" />
+              ) : (
+                <Aviso
+                  texto={`esse produto não cabe na nossa entrega (${cabe.motivos.join('; ')}), então a entrega fica por sua conta.`}
+                  tom="alerta"
+                />
+              )
             ) : null}
           </View>
 
-          <Text style={[fonte.rotulo, { marginTop: espaco.xl, marginBottom: espaco.sm }]}>
-            como o comprador recebe
-          </Text>
-          <Pressable
-            onPress={() => setAceitaEntregador((v) => !v)}
-            style={e.escolha}
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: aceitaEntregador }}
-          >
-            <Ionicons
-              name={aceitaEntregador ? 'checkbox' : 'square-outline'}
-              size={22}
-              color={aceitaEntregador ? cores.verde : cores.textoFraco}
+          <View style={{ marginTop: espaco.xl }}>
+            <EscolhaDeModalidade
+              preco={preco}
+              selecionada={modalidadeEntrega}
+              aoEscolher={setModalidadeEntrega}
+              bloqueioDaPlataforma={cabe.cabe ? null : cabe.motivos}
             />
-            <View style={{ flex: 1, marginLeft: espaco.md }}>
-              <Text style={fonte.corpo}>entregador do vendas itinga</Text>
-              <Text style={fonte.pequeno}>a gente busca na sua casa e entrega ao comprador</Text>
-            </View>
-          </Pressable>
+          </View>
 
-          {aceitaEntregador ? (
+          {modalidadeEntrega === 'PLATAFORMA' ? (
             <View style={e.blocoColeta}>
               <Text style={[fonte.rotulo, { marginBottom: 4 }]}>onde buscar o produto</Text>
               <Text style={[fonte.pequeno, { marginBottom: espaco.md }]}>
@@ -411,23 +416,6 @@ export function TelaNovoAnuncio({ navigation }: Props) {
               )}
             </View>
           ) : null}
-
-          <Pressable
-            onPress={() => setAceitaCombinado((v) => !v)}
-            style={e.escolha}
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: aceitaCombinado }}
-          >
-            <Ionicons
-              name={aceitaCombinado ? 'checkbox' : 'square-outline'}
-              size={22}
-              color={aceitaCombinado ? cores.verde : cores.textoFraco}
-            />
-            <View style={{ flex: 1, marginLeft: espaco.md }}>
-              <Text style={fonte.corpo}>combinar com o comprador</Text>
-              <Text style={fonte.pequeno}>vocês dois combinam onde e quando</Text>
-            </View>
-          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
 

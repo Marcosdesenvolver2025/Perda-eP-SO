@@ -8,10 +8,12 @@ import { z } from 'zod';
 import { ambiente } from '../ambiente';
 import { validarMedidas } from '../dominio/frete';
 import {
-  DIMENSAO_MAXIMA_CM,
+  ALTURA_MAXIMA_CM,
+  LARGURA_MAXIMA_CM,
   PESO_MAXIMO_G,
   VALOR_MINIMO_VENDA,
   tarifaFixa,
+  type ModalidadeEntrega,
 } from '../dominio/regras';
 import { erroDeValidacao, naoEncontrado, semPermissao } from '../erros';
 import { exigirLogin, loginOpcional } from '../middlewares/autenticacao';
@@ -130,15 +132,16 @@ rotasAnuncios.get('/:id', loginOpcional, async (req, res, next) => {
           : null,
       },
       entrega: {
-        // não há frete separado: a entrega está coberta pela tarifa fixa,
-        // que já sai do valor do vendedor. O comprador paga só o produto.
+        // não há frete separado em nenhuma das modalidades: o comprador paga
+        // só o preço do produto.
+        modalidade: anuncio.modalidadeEntrega,
         diasParaTestar: ambiente.DIAS_PARA_TESTAR,
-        entregaInclusa: anuncio.aceitaEntregador,
+        entregaInclusa: anuncio.modalidadeEntrega === 'PLATAFORMA',
       },
-      /** O que a plataforma desconta desta venda — o vendedor vê no anúncio. */
+      /** O que a plataforma desconta desta venda. */
       taxas: {
         comissao: Math.floor(anuncio.preco * ambiente.COMISSAO),
-        tarifa: tarifaFixa(anuncio.preco),
+        tarifa: tarifaFixa(anuncio.preco, anuncio.modalidadeEntrega as ModalidadeEntrega),
       },
     });
   } catch (erro) {
@@ -159,13 +162,15 @@ const anuncioEsquema = z.object({
   marca: z.string().max(60).optional(),
   tamanho: z.string().max(20).optional(),
   cor: z.string().max(30).optional(),
-  pesoG: z.number().int().positive().max(PESO_MAXIMO_G, `o peso máximo é ${PESO_MAXIMO_G / 1000} kg`),
-  comprimentoCm: z.number().int().positive().max(DIMENSAO_MAXIMA_CM),
-  larguraCm: z.number().int().positive().max(DIMENSAO_MAXIMA_CM),
-  alturaCm: z.number().int().positive().max(DIMENSAO_MAXIMA_CM),
-  aceitaEntregador: z.boolean().default(true),
-  aceitaCombinado: z.boolean().default(true),
-  /** Onde o entregador busca o produto. Obrigatório para aceitar entregador. */
+  // os limites por campo valem só na modalidade PLATAFORMA; a checagem
+  // completa é feita por `validarMedidas` logo abaixo, que conhece a modalidade
+  pesoG: z.number().int().positive(),
+  comprimentoCm: z.number().int().positive(),
+  larguraCm: z.number().int().positive(),
+  alturaCm: z.number().int().positive(),
+  /** Quem entrega. Define a taxa e se há limite de peso/tamanho. */
+  modalidadeEntrega: z.enum(['PLATAFORMA', 'VENDEDOR']).default('PLATAFORMA'),
+  /** Onde o entregador busca o produto. Obrigatório na modalidade PLATAFORMA. */
   enderecoColetaId: z.string().optional(),
   fotos: z.array(z.string().url()).min(1, 'envie pelo menos uma foto').max(10),
 });
@@ -175,12 +180,19 @@ rotasAnuncios.post('/', exigirLogin, async (req, res, next) => {
   try {
     const dados = anuncioEsquema.parse(req.body);
 
-    // a checagem do zod pega cada campo isolado; esta pega o pacote inteiro
-    const validacao = validarMedidas(dados);
-    if (!validacao.valido) throw erroDeValidacao(validacao.erros.join(' '), validacao.erros);
+    // os limites de 20 kg / 100 cm valem só quando quem entrega é a plataforma
+    const validacao = validarMedidas(dados, dados.modalidadeEntrega);
+    if (!validacao.valido) {
+      throw erroDeValidacao(
+        dados.modalidadeEntrega === 'PLATAFORMA'
+          ? `${validacao.erros.join(' ')} Você pode anunciar escolhendo entregar por conta própria.`
+          : validacao.erros.join(' '),
+        validacao.erros,
+      );
+    }
 
     // sem endereço de coleta o entregador não tem onde buscar o produto
-    if (dados.aceitaEntregador && !dados.enderecoColetaId) {
+    if (dados.modalidadeEntrega === 'PLATAFORMA' && !dados.enderecoColetaId) {
       throw erroDeValidacao(
         'Escolha o endereço onde o entregador vai buscar o produto.',
       );
@@ -223,7 +235,10 @@ rotasAnuncios.patch('/:id', exigirLogin, async (req, res, next) => {
       larguraCm: dados.larguraCm ?? anuncio.larguraCm,
       alturaCm: dados.alturaCm ?? anuncio.alturaCm,
     };
-    const validacao = validarMedidas(medidas);
+    const modalidade = (dados.modalidadeEntrega ??
+      anuncio.modalidadeEntrega) as ModalidadeEntrega;
+
+    const validacao = validarMedidas(medidas, modalidade);
     if (!validacao.valido) throw erroDeValidacao(validacao.erros.join(' '), validacao.erros);
 
     const atualizado = await prisma.anuncio.update({

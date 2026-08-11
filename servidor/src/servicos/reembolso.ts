@@ -15,11 +15,13 @@
 
 import { ambiente } from '../ambiente';
 import type { ResultadoSplit } from '../dominio/comissao';
+import type { ModalidadeEntrega } from '../dominio/regras';
 import { calcularReembolso, dentroDaJanelaDeTeste } from '../dominio/reembolso';
 import { conflito, naoEncontrado, semPermissao } from '../erros';
 import * as pagarme from '../integracoes/pagarme';
 import { log } from '../log';
 import { prisma } from '../prisma';
+import { marcarDevolucaoCombinada } from './entregaDoVendedor';
 import { abrirDevolucao } from './logistica';
 
 /** Remonta o split a partir dos valores congelados no pedido. */
@@ -31,6 +33,7 @@ function splitDoPedido(pedido: {
   taxaComissao: number;
   valorVendedor: number;
   valorPlataforma: number;
+  modalidade: string;
 }): ResultadoSplit {
   return {
     valorProduto: pedido.valorProduto,
@@ -38,6 +41,7 @@ function splitDoPedido(pedido: {
     comissao: pedido.valorComissao,
     taxaComissao: pedido.taxaComissao,
     tarifa: pedido.valorTarifa,
+    modalidade: pedido.modalidade as ModalidadeEntrega,
     totalDescontado: pedido.valorComissao + pedido.valorTarifa,
     valorVendedor: pedido.valorVendedor,
     valorPlataforma: pedido.valorPlataforma,
@@ -68,7 +72,9 @@ export async function previa(pedidoId: string, compradorId: string) {
         ? 'Você recebe de volta tudo que pagou.'
         : 'Parte do valor fica retida conforme combinado para esta devolução.',
     comoFunciona:
-      'Depois que a gente aprovar, um entregador busca o produto no seu endereço. O dinheiro volta assim que o vendedor receber o produto de volta.',
+      pedido.modalidade === 'PLATAFORMA'
+        ? 'Depois que a gente aprovar, um entregador busca o produto no seu endereço. O dinheiro volta assim que o vendedor receber o produto de volta.'
+        : 'Depois que a gente aprovar, combine a devolução com quem vendeu. O dinheiro volta assim que a gente confirmar que o produto chegou de volta.',
     prazoTesteAte: pedido.prazoTesteAte,
   };
 }
@@ -150,19 +156,30 @@ export async function aprovar(reembolsoId: string, adminId: string, resposta?: s
     },
   });
 
-  // abre a corrida de volta: comprador -> vendedor
-  const entrega = await abrirDevolucao(reembolso.pedidoId, adminId);
+  // como o produto volta depende de quem entregou
+  let entregaId: string | null = null;
+  if (reembolso.pedido.modalidade === 'PLATAFORMA') {
+    // corrida de volta: comprador -> vendedor
+    const entrega = await abrirDevolucao(reembolso.pedidoId, adminId);
+    entregaId = entrega?.id ?? null;
+  } else {
+    // sem entregador: as partes combinam e o admin confirma o retorno
+    await marcarDevolucaoCombinada(reembolso.pedidoId, adminId);
+  }
 
   await prisma.eventoPedido.create({
     data: {
       pedidoId: reembolso.pedidoId,
       tipo: 'devolucao_aprovada',
       autorId: adminId,
-      detalhe: { entregaId: entrega?.id ?? null },
+      detalhe: { entregaId, modalidade: reembolso.pedido.modalidade },
     },
   });
 
-  log.info({ pedido: reembolso.pedido.codigo }, 'devolução aprovada, coleta reversa aberta');
+  log.info(
+    { pedido: reembolso.pedido.codigo, modalidade: reembolso.pedido.modalidade },
+    'devolução aprovada',
+  );
   return prisma.reembolso.findUniqueOrThrow({ where: { id: reembolso.id } });
 }
 

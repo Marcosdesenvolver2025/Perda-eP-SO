@@ -16,9 +16,11 @@ import { useAutenticacao } from '../contextos/Autenticacao';
 import type { ParametrosApp } from '../navegacao/tipos';
 import { cores, espaco, fonte, raio } from '../tema';
 import {
+  ALTURA_MAXIMA_CM,
   COMISSAO,
+  DIAS_PARA_CONFIRMACAO_AUTOMATICA,
   DIAS_PARA_TESTAR,
-  DIMENSAO_MAXIMA_CM,
+  LARGURA_MAXIMA_CM,
   PESO_MAXIMO_G,
   TABELA_DE_TARIFAS,
   VALOR_MINIMO_VENDA,
@@ -403,11 +405,14 @@ const perguntas = [
   },
   {
     titulo: 'quanto vocês cobram?',
-    texto: `${Math.round(COMISSAO * 100)}% de comissão sobre o produto, mais uma tarifa fixa que depende do preço: ${TABELA_DE_TARIFAS.map(
-      (f, i) =>
-        Number.isFinite(f.ateInclusive)
-          ? `até R$ ${(f.ateInclusive / 100).toFixed(2).replace('.', ',')} são R$ ${(f.tarifa / 100).toFixed(2).replace('.', ',')}`
-          : `de R$ 200,00 pra cima são R$ ${(f.tarifa / 100).toFixed(2).replace('.', ',')}`,
+    texto: `depende de quem entrega. se você entregar por conta própria, são só ${Math.round(
+      COMISSAO * 100,
+    )}% de comissão. se a entrega for pela plataforma, são ${Math.round(
+      COMISSAO * 100,
+    )}% mais uma tarifa fixa por faixa de preço: ${TABELA_DE_TARIFAS.map((f) =>
+      Number.isFinite(f.ateInclusive)
+        ? `até R$ ${(f.ateInclusive / 100).toFixed(2).replace('.', ',')} são R$ ${(f.tarifa / 100).toFixed(2).replace('.', ',')}`
+        : `de R$ 500,00 pra cima são R$ ${(f.tarifa / 100).toFixed(2).replace('.', ',')}`,
     ).join('; ')}. sem mensalidade e sem taxa pra anunciar.`,
   },
   {
@@ -416,7 +421,7 @@ const perguntas = [
   },
   {
     titulo: 'qual o tamanho máximo?',
-    texto: `nossos entregadores levam pacotes de até ${PESO_MAXIMO_G / 1000} kg, com no máximo ${DIMENSAO_MAXIMA_CM} cm em cada lado. acima disso, dá pra combinar a entrega direto com o comprador.`,
+    texto: `o limite vale só para a entrega pela plataforma: até ${PESO_MAXIMO_G / 1000} kg, ${LARGURA_MAXIMA_CM} cm de largura e ${ALTURA_MAXIMA_CM} cm de altura. escolhendo entregar por conta própria, não há limite.`,
   },
   {
     titulo: 'posso devolver o que comprei?',
@@ -439,7 +444,11 @@ const perguntas = [
   {
     titulo: 'a entrega é cobrada à parte?',
     texto:
-      'não. o comprador paga só o preço do produto; a entrega já está coberta pela tarifa da venda.',
+      'não. em qualquer modalidade o comprador paga só o preço do produto.',
+  },
+  {
+    titulo: 'como funciona quando o vendedor entrega?',
+    texto: `vocês combinam onde e quando. na hora, o comprador informa o código de 4 dígitos que aparece no app dele e o vendedor digita para registrar a entrega. se o comprador sumir, o vendedor pode declarar a entrega e ela é confirmada automaticamente em ${DIAS_PARA_CONFIRMACAO_AUTOMATICA} dias.`,
   },
   {
     titulo: 'tem valor mínimo pra anunciar?',

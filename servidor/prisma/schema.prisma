@@ -30,9 +30,11 @@ enum CondicaoProduto {
   USADO
 }
 
+/// Quem faz a entrega. Escolhido pelo vendedor no anúncio e CONGELADO no
+/// pedido: se a política mudar, o pedido antigo mantém a regra da venda.
 enum ModalidadeEntrega {
-  ENTREGADOR_PROPRIO // nossos entregadores fazem a coleta e a entrega
-  COMBINADO_ENTRE_PARTES // comprador e vendedor combinam entre si
+  PLATAFORMA // entregador da plataforma: cobra 12% + tarifa da faixa
+  VENDEDOR // o próprio vendedor entrega: cobra só os 12%
 }
 
 /// Estados do pedido. Os financeiros (AGUARDANDO_PAGAMENTO, PAGO, REEMBOLSADO,
@@ -40,15 +42,21 @@ enum ModalidadeEntrega {
 enum EstadoPedido {
   AGUARDANDO_PAGAMENTO
   PAGO // dinheiro retido; ponte entre o financeiro e a logística
+  // --- modalidade PLATAFORMA ---
   AGUARDANDO_AGENDAMENTO_DE_COLETA // entrega criada, esperando o admin atribuir
   A_CAMINHO_DA_COLETA
   PRODUTO_COLETADO
   EM_ROTA_PARA_ENTREGA
+  // --- modalidade VENDEDOR ---
+  AGUARDANDO_ENTREGA_DO_VENDEDOR // pago; o vendedor combina e entrega
+  ENTREGA_DECLARADA // vendedor declarou entrega sem código; conta o prazo de confirmação
+  // --- comum às duas ---
   ENTREGUE // começa a contar a janela de 7 dias
   CONCLUIDO // janela venceu e o repasse foi liberado
   DEVOLUCAO_SOLICITADA
   DEVOLUCAO_APROVADA
   DEVOLUCAO_EM_TRANSITO // entregador levando o produto de volta ao vendedor
+  DEVOLUCAO_COMBINADA // modalidade VENDEDOR: partes combinam; admin confirma o retorno
   DEVOLVIDO_AO_VENDEDOR // gatilho do estorno
   REEMBOLSADO
   CANCELADO
@@ -220,8 +228,8 @@ model Anuncio {
   enderecoColetaId String?
   enderecoColeta   Endereco? @relation("EnderecoDeColeta", fields: [enderecoColetaId], references: [id])
 
-  aceitaEntregador Boolean @default(true)
-  aceitaCombinado  Boolean @default(true)
+  /// Quem entrega este produto. Define a taxa e se há limite de peso/tamanho.
+  modalidadeEntrega ModalidadeEntrega @default(PLATAFORMA)
 
   visualizacoes Int      @default(0)
   criadoEm      DateTime @default(now())
@@ -291,7 +299,18 @@ model Pedido {
   metodoPagamento String? // credit_card, pix
   parcelas        Int     @default(1)
 
+  /// Código que o comprador informa ao vendedor (modalidade VENDEDOR) ou ao
+  /// entregador (modalidade PLATAFORMA, guardado na Entrega). Visível só ao
+  /// comprador.
+  codigoConfirmacao String?
+
   pagoEm      DateTime?
+  /// Modalidade VENDEDOR: quando o vendedor declarou a entrega sem o código.
+  entregaDeclaradaEm DateTime?
+  /// Prazo da confirmação automática (entregaDeclaradaEm + 3 dias).
+  prazoConfirmacaoAte DateTime?
+  /// Como a entrega foi confirmada: "codigo", "comprador" ou "automatica".
+  confirmadaPor String?
   entregueEm  DateTime?
   /// entregueEm + janela de teste; depois disso o repasse é liberado
   prazoTesteAte DateTime?

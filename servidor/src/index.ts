@@ -26,7 +26,8 @@ import { rotasRecebedores } from './rotas/recebedores';
 import { rotasWebhooks } from './rotas/webhooks';
 import { agendarTarefas } from './servicos/tarefas';
 import {
-  DIMENSAO_MAXIMA_CM,
+  ALTURA_MAXIMA_CM,
+  LARGURA_MAXIMA_CM,
   PESO_MAXIMO_G,
   TABELA_DE_TARIFAS,
 } from './dominio/regras';
@@ -66,8 +67,11 @@ app.get('/configuracoes', (_req, res) =>
       tarifa: f.tarifa,
     })),
     diasParaTestar: ambiente.DIAS_PARA_TESTAR,
+    diasParaConfirmacaoAutomatica: ambiente.DIAS_PARA_CONFIRMACAO_AUTOMATICA,
+    // limites valem só para a modalidade PLATAFORMA
     pesoMaximoG: PESO_MAXIMO_G,
-    dimensaoMaximaCm: DIMENSAO_MAXIMA_CM,
+    larguraMaximaCm: LARGURA_MAXIMA_CM,
+    alturaMaximaCm: ALTURA_MAXIMA_CM,
   }),
 );
 

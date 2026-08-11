@@ -44,6 +44,7 @@ export function TelaMinhaConta({ navigation }: Props) {
   }
 
   const ehEntregador = usuario.papel === 'ENTREGADOR' || usuario.papel === 'ADMIN';
+  const ehAdmin = usuario.papel === 'ADMIN';
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: cores.fundo }} edges={['top']}>
@@ -129,9 +130,21 @@ export function TelaMinhaConta({ navigation }: Props) {
               <Separador />
               <ItemDeMenu
                 titulo="área do entregador"
-                descricao="entregas disponíveis e as suas corridas"
+                descricao="suas corridas de coleta e entrega"
                 icone="bicycle-outline"
                 aoTocar={() => navigation.navigate('AreaDoEntregador')}
+              />
+            </>
+          ) : null}
+
+          {ehAdmin ? (
+            <>
+              <Separador />
+              <ItemDeMenu
+                titulo="painel"
+                descricao="fila de entregas e devoluções"
+                icone="speedometer-outline"
+                aoTocar={() => navigation.navigate('PainelAdmin')}
               />
             </>
           ) : null}

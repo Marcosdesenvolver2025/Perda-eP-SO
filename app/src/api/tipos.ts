@@ -9,22 +9,33 @@ export type ModalidadeEntrega = 'ENTREGADOR_PROPRIO' | 'COMBINADO_ENTRE_PARTES';
 export type EstadoPedido =
   | 'AGUARDANDO_PAGAMENTO'
   | 'PAGO'
-  | 'EM_SEPARACAO'
-  | 'A_CAMINHO'
+  | 'AGUARDANDO_AGENDAMENTO_DE_COLETA'
+  | 'A_CAMINHO_DA_COLETA'
+  | 'PRODUTO_COLETADO'
+  | 'EM_ROTA_PARA_ENTREGA'
   | 'ENTREGUE'
   | 'CONCLUIDO'
-  | 'EM_DEVOLUCAO'
+  | 'DEVOLUCAO_SOLICITADA'
+  | 'DEVOLUCAO_APROVADA'
+  | 'DEVOLUCAO_EM_TRANSITO'
+  | 'DEVOLVIDO_AO_VENDEDOR'
   | 'REEMBOLSADO'
   | 'CANCELADO';
 
 export type EstadoEntrega =
-  | 'AGUARDANDO_ENTREGADOR'
+  | 'AGUARDANDO_ATRIBUICAO'
+  | 'ATRIBUIDA'
+  | 'RECUSADA'
   | 'ACEITA'
-  | 'COLETADA'
+  | 'A_CAMINHO_DA_COLETA'
+  | 'CHEGOU_NA_COLETA'
+  | 'PRODUTO_COLETADO'
+  | 'EM_ROTA_PARA_ENTREGA'
+  | 'CHEGOU_NA_ENTREGA'
   | 'ENTREGUE'
-  | 'DEVOLVENDO'
-  | 'DEVOLVIDA'
   | 'CANCELADA';
+
+export type TipoEntrega = 'ENTREGA' | 'DEVOLUCAO';
 
 export interface Usuario {
   id: string;
@@ -76,17 +87,19 @@ export interface Anuncio {
   };
   categoria?: { slug: string; nome: string } | null;
   entrega?: {
-    valorFrete: number | null;
     diasParaTestar: number;
+    entregaInclusa: boolean;
   };
+  /** O que a plataforma desconta desta venda. */
+  taxas?: { comissao: number; tarifa: number };
 }
 
 export interface ResumoDaCompra {
   valorProduto: number;
-  valorFrete: number;
   valorTotal: number;
   taxaComissao: number;
   valorComissao: number;
+  valorTarifa: number;
   valorVendedor: number;
   modalidade: ModalidadeEntrega;
 }
@@ -97,9 +110,9 @@ export interface Pedido {
   estado: EstadoPedido;
   modalidade: ModalidadeEntrega;
   valorProduto: number;
-  valorFrete: number;
   valorTotal: number;
   valorComissao: number;
+  valorTarifa: number;
   taxaComissao: number;
   valorVendedor: number;
   criadoEm: string;
@@ -109,22 +122,42 @@ export interface Pedido {
   anuncio: { titulo: string; fotos: Foto[] };
   vendedor?: { nome: string; apelidoLoja?: string | null };
   comprador?: { nome: string };
-  entrega?: { estado: EstadoEntrega; codigoConfirmacao?: string | null } | null;
+  entrega?: {
+    id: string;
+    estado: EstadoEntrega;
+    codigoConfirmacao?: string | null;
+    entregador?: { nome: string; telefone?: string | null } | null;
+  } | null;
+  entregaDevolucao?: { id: string; estado: EstadoEntrega } | null;
   reembolso?: { estado: string; valorReembolsado: number } | null;
   podePedirReembolso?: boolean;
   diasRestantesParaTestar?: number | null;
   eventos?: Array<{ id: string; tipo: string; criadoEm: string }>;
 }
 
-export interface Entrega {
+/** Uma corrida do entregador: ida (ENTREGA) ou volta (DEVOLUCAO). */
+export interface Corrida {
   id: string;
+  tipo: TipoEntrega;
   estado: EstadoEntrega;
   valorEntregador: number;
   coletaEndereco: string;
+  coletaReferencia?: string | null;
+  coletaContato?: string | null;
+  coletaTelefone?: string | null;
   entregaEndereco: string;
+  entregaReferencia?: string | null;
+  entregaContato?: string | null;
+  entregaTelefone?: string | null;
   observacoes?: string | null;
-  codigoConfirmacao?: string | null;
+  volumes?: number | null;
+  fotoPacoteUrl?: string | null;
+  /** false enquanto o entregador não aceitou: os telefones vêm mascarados. */
+  telefoneLiberado?: boolean;
   criadoEm: string;
+  proximosPassos?: EstadoEntrega[];
+  entregador?: { id: string; nome: string } | null;
+  recusas?: Array<{ motivo: string; criadoEm: string; entregador: { nome: string } }>;
   pedido: {
     codigo: string;
     valorProduto?: number;
@@ -136,16 +169,54 @@ export interface Entrega {
       alturaCm?: number;
       fotos?: Foto[];
     };
-    comprador?: { nome: string; telefone?: string | null };
-    vendedor?: { nome: string; telefone?: string | null };
+  };
+}
+
+/** Entregador candidato a uma corrida, na tela de escolha do admin. */
+export interface Candidato {
+  id: string;
+  nome: string;
+  disponivel: boolean;
+  corridasAtivas: number;
+  capacidade: number;
+}
+
+export interface ResumoAdmin {
+  anunciosAtivos: number;
+  pedidosEmAndamento: number;
+  aguardandoAtribuicao: number;
+  corridasEmRota: number;
+  devolucoesAbertas: number;
+  comissaoAcumulada: number;
+  tarifasAcumuladas: number;
+  custoComEntregas: number;
+  receitaLiquida: number;
+}
+
+export interface SolicitacaoDeDevolucao {
+  id: string;
+  estado: 'SOLICITADO' | 'EM_ANALISE' | 'APROVADO' | 'RECUSADO' | 'CONCLUIDO';
+  motivo: string;
+  descricao?: string | null;
+  valorReembolsado: number;
+  solicitadoEm: string;
+  pedido: {
+    id: string;
+    codigo: string;
+    valorTotal: number;
+    comprador: { nome: string; telefone?: string | null };
+    vendedor: { nome: string; telefone?: string | null };
+    anuncio: { titulo: string };
   };
 }
 
 export interface Configuracoes {
   cidade: string;
   uf: string;
-  comissaoSemEntregador: number;
-  comissaoComEntregador: number;
+  comissao: number;
+  valorMinimoVenda: number;
+  /** `ateInclusive: null` é a última faixa, aberta. */
+  tarifas: Array<{ ateInclusive: number | null; tarifa: number }>;
   diasParaTestar: number;
   pesoMaximoG: number;
   dimensaoMaximaCm: number;

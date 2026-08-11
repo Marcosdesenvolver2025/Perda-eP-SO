@@ -28,7 +28,10 @@ export type ParametrosApp = {
   Enderecos: undefined;
   ContaDeRecebimento: undefined;
   AreaDoEntregador: undefined;
-  ConfirmarEntrega: { entregaId: string };
+  PassoDaEntrega: { entregaId: string; passo: 'coleta' | 'entrega' | 'recusa' };
+  PainelAdmin: undefined;
+  EscolherEntregador: { entregaId: string };
+  RecusarDevolucao: { reembolsoId: string };
   ComoFunciona: undefined;
 };
 

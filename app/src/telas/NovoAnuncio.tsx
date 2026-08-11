@@ -6,7 +6,7 @@
  * hora da coleta que o entregador não consegue levar.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Image,
   KeyboardAvoidingView,
@@ -20,6 +20,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { api, MODO_DEMONSTRACAO } from '../api/cliente';
@@ -27,9 +28,23 @@ import type { CondicaoProduto } from '../api/tipos';
 import { Aviso, Botao, Campo, Selo } from '../componentes/base';
 import type { ParametrosApp } from '../navegacao/tipos';
 import { cores, espaco, fonte, raio } from '../tema';
-import { DIMENSAO_MAXIMA_CM, PESO_MAXIMO_G, validarMedidas } from '../regras/limites';
+import {
+  DIMENSAO_MAXIMA_CM,
+  PESO_MAXIMO_G,
+  VALOR_MINIMO_VENDA,
+  calcularDescontos,
+  validarMedidas,
+} from '../regras/limites';
 
 type Props = NativeStackScreenProps<ParametrosApp, 'NovoAnuncio'>;
+
+interface EnderecoDeColeta {
+  id: string;
+  logradouro: string;
+  numero: string;
+  bairro: string;
+  principal: boolean;
+}
 
 const condicoes: { chave: CondicaoProduto; rotulo: string }[] = [
   { chave: 'NOVO', rotulo: 'novo' },
@@ -66,6 +81,28 @@ export function TelaNovoAnuncio({ navigation }: Props) {
   const [aceitaCombinado, setAceitaCombinado] = useState(true);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [enderecos, setEnderecos] = useState<EnderecoDeColeta[]>([]);
+  const [enderecoColetaId, setEnderecoColetaId] = useState<string | null>(null);
+
+  // o entregador precisa saber onde buscar; a lista vem dos endereços
+  // que o vendedor já cadastrou
+  useFocusEffect(
+    useCallback(() => {
+      async function carregar() {
+        if (MODO_DEMONSTRACAO) return;
+        try {
+          const r = await api<{ itens: EnderecoDeColeta[] }>('/conta/enderecos');
+          setEnderecos(r.itens);
+          setEnderecoColetaId(
+            (atual) => atual ?? r.itens.find((e) => e.principal)?.id ?? r.itens[0]?.id ?? null,
+          );
+        } catch {
+          setEnderecos([]);
+        }
+      }
+      void carregar();
+    }, []),
+  );
 
   const medidas = useMemo(
     () => ({
@@ -105,10 +142,12 @@ export function TelaNovoAnuncio({ navigation }: Props) {
     fotos.length > 0 &&
     titulo.trim().length >= 4 &&
     descricao.trim().length >= 10 &&
-    preco >= 100 &&
+    preco >= VALOR_MINIMO_VENDA &&
     preencheuMedidas &&
     validacao.valido &&
-    (aceitaEntregador || aceitaCombinado);
+    (aceitaEntregador || aceitaCombinado) &&
+    // sem endereço de coleta o entregador não tem onde buscar
+    (!aceitaEntregador || !!enderecoColetaId || MODO_DEMONSTRACAO);
 
   async function publicar() {
     setErro(null);
@@ -133,6 +172,7 @@ export function TelaNovoAnuncio({ navigation }: Props) {
           ...medidas,
           aceitaEntregador,
           aceitaCombinado,
+          ...(aceitaEntregador && enderecoColetaId ? { enderecoColetaId } : {}),
           fotos,
         },
       });
@@ -206,11 +246,11 @@ export function TelaNovoAnuncio({ navigation }: Props) {
             dica="R$ 0,00"
             teclado="numeric"
             ajuda={
-              preco >= 100
-                ? `você recebe ${formatarPreco(preco - Math.floor(preco * 0.18))} se a gente entregar, ou ${formatarPreco(
-                    preco - Math.floor(preco * 0.16),
-                  )} se você mesmo entregar`
-                : 'preço mínimo: R$ 1,00'
+              preco >= VALOR_MINIMO_VENDA
+                ? `comissão ${formatarPreco(calcularDescontos(preco).comissao)} + tarifa ${formatarPreco(
+                    calcularDescontos(preco).tarifa,
+                  )} · você recebe ${formatarPreco(calcularDescontos(preco).vendedor)}`
+                : `valor mínimo de venda: ${formatarPreco(VALOR_MINIMO_VENDA)}`
             }
           />
 
@@ -320,9 +360,57 @@ export function TelaNovoAnuncio({ navigation }: Props) {
             />
             <View style={{ flex: 1, marginLeft: espaco.md }}>
               <Text style={fonte.corpo}>entregador do vendas itinga</Text>
-              <Text style={fonte.pequeno}>comissão de 18% · a gente busca e entrega</Text>
+              <Text style={fonte.pequeno}>a gente busca na sua casa e entrega ao comprador</Text>
             </View>
           </Pressable>
+
+          {aceitaEntregador ? (
+            <View style={e.blocoColeta}>
+              <Text style={[fonte.rotulo, { marginBottom: 4 }]}>onde buscar o produto</Text>
+              <Text style={[fonte.pequeno, { marginBottom: espaco.md }]}>
+                é o endereço onde o entregador vai passar para pegar
+              </Text>
+
+              {enderecos.length === 0 ? (
+                <>
+                  <Aviso
+                    texto="você ainda não tem endereço cadastrado. cadastre um para usar nossos entregadores."
+                    tom="alerta"
+                  />
+                  <Botao
+                    titulo="cadastrar endereço"
+                    variante="vazado"
+                    aoTocar={() => navigation.navigate('Enderecos')}
+                  />
+                </>
+              ) : (
+                enderecos.map((endereco) => (
+                  <Pressable
+                    key={endereco.id}
+                    onPress={() => setEnderecoColetaId(endereco.id)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: enderecoColetaId === endereco.id }}
+                    style={[
+                      e.opcaoEndereco,
+                      enderecoColetaId === endereco.id && {
+                        borderColor: cores.verde,
+                        backgroundColor: cores.branco,
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={enderecoColetaId === endereco.id ? 'radio-button-on' : 'radio-button-off'}
+                      size={20}
+                      color={enderecoColetaId === endereco.id ? cores.verde : cores.textoFraco}
+                    />
+                    <Text style={[fonte.corpo, { marginLeft: espaco.md, flex: 1 }]}>
+                      {endereco.logradouro}, {endereco.numero} — {endereco.bairro}
+                    </Text>
+                  </Pressable>
+                ))
+              )}
+            </View>
+          ) : null}
 
           <Pressable
             onPress={() => setAceitaCombinado((v) => !v)}
@@ -337,7 +425,7 @@ export function TelaNovoAnuncio({ navigation }: Props) {
             />
             <View style={{ flex: 1, marginLeft: espaco.md }}>
               <Text style={fonte.corpo}>combinar com o comprador</Text>
-              <Text style={fonte.pequeno}>comissão de 16% · vocês combinam a entrega</Text>
+              <Text style={fonte.pequeno}>vocês dois combinam onde e quando</Text>
             </View>
           </Pressable>
         </ScrollView>
@@ -415,6 +503,22 @@ const e = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: espaco.md,
+  },
+  blocoColeta: {
+    backgroundColor: cores.fundoCinza,
+    borderRadius: raio.lg,
+    padding: espaco.lg,
+    marginTop: espaco.sm,
+    marginBottom: espaco.md,
+  },
+  opcaoEndereco: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: cores.borda,
+    borderRadius: raio.md,
+    padding: espaco.md,
+    marginBottom: espaco.sm,
   },
   rodape: {
     position: 'absolute',

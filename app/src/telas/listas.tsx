@@ -135,6 +135,7 @@ interface Extrato {
     estado: string;
     valorProduto: number;
     valorComissao: number;
+    valorTarifa: number;
     taxaComissao: number;
     valorVendedor: number;
     repassadoEm?: string | null;
@@ -152,7 +153,7 @@ export function TelaMinhasVendas({
       async function carregar() {
         if (MODO_DEMONSTRACAO) {
           setExtrato({
-            aReceber: 9_840,
+            aReceber: 9_710,
             recebido: 24_500,
             diasParaLiberar: 7,
             pedidos: [
@@ -161,9 +162,10 @@ export function TelaMinhasVendas({
                 codigo: 'VI-7K3QM2',
                 estado: 'ENTREGUE',
                 valorProduto: 12_000,
-                valorComissao: 2_160,
-                taxaComissao: 0.18,
-                valorVendedor: 9_840,
+                valorComissao: 1_440,
+                valorTarifa: 850,
+                taxaComissao: 0.12,
+                valorVendedor: 9_710,
                 anuncio: { titulo: 'jaqueta de couro' },
               },
             ],
@@ -239,6 +241,7 @@ export function TelaMinhasVendas({
                   rotulo={`comissão (${Math.round(venda.taxaComissao * 100)}%)`}
                   valor={`- ${reais(venda.valorComissao)}`}
                 />
+                <LinhaValor rotulo="tarifa da venda" valor={`- ${reais(venda.valorTarifa)}`} />
                 <LinhaValor rotulo="você recebe" valor={reais(venda.valorVendedor)} destaque />
               </View>
             </Cartao>

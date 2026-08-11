@@ -30,21 +30,23 @@ O projeto tem três partes:
 
 | Regra | Valor |
 |---|---|
-| Comissão quando o vendedor entrega | **16%** sobre o produto |
-| Comissão quando o entregador do app entrega | **18%** sobre o produto |
+| Venda mínima | **R$ 10,00** |
+| Comissão | **12%** sobre o produto |
+| Tarifa fixa por venda | R$ 2,50 (até 24,99) · R$ 4,50 (até 49,99) · R$ 6,50 (até 99,99) · R$ 8,50 (até 199,99) · R$ 18,50 (R$ 200+) |
+| O que o comprador paga | só o preço do produto — a entrega está inclusa |
 | Peso máximo por pacote | **20 kg** |
 | Tamanho máximo (qualquer lado) | **60 cm** |
 | Prazo para testar e devolver | **7 dias** a partir da entrega |
 | Repasse ao vendedor | depois que o prazo de teste vence |
-| Reembolso dentro do prazo | devolução **integral**, frete incluído (CDC art. 49) |
-| Quem absorve a comissão na devolução | a plataforma |
+| Reembolso dentro do prazo | devolução **integral** (CDC art. 49) |
+| Quem absorve comissão e tarifa na devolução | a plataforma |
 
 Essas regras vivem em dois lugares e são checadas por teste automatizado:
 `servidor/src/dominio/regras.ts` (manda) e `app/src/regras/limites.ts` (avisa a
 pessoa antes de ela perder tempo).
 
 ```bash
-cd servidor && npm test    # 25 testes cobrindo comissão, limites, prazo e reembolso
+cd servidor && npm test    # 53 testes: taxas, prazo, reembolso, máquina de estados e atribuição
 ```
 
 ---
@@ -100,8 +102,23 @@ EXPO_PUBLIC_API_URL=http://10.0.2.2:3333    # emulador Android
 | minha conta | perfil, atalhos e configurações | `app/src/telas/MinhaConta.tsx` |
 
 Fora das abas: produto, checkout, pedido com linha do tempo, devolução, criar
-anúncio, endereços, conta de recebimento, central de ajuda, **área do
-entregador** e exclusão de conta.
+anúncio, endereços, conta de recebimento, central de ajuda, exclusão de conta,
+**área do entregador** (corridas passo a passo) e **painel administrativo**
+(fila de entregas e devoluções).
+
+### Logística
+
+O módulo de entregas tem máquina de estados própria e não toca em dinheiro:
+
+```
+pago → aguardando agendamento → atribuída → aceita → a caminho da coleta
+     → chegou → coletado (foto + volumes) → em rota → chegou → entregue
+```
+
+A devolução usa a mesma máquina no sentido inverso: o admin aprova, um
+entregador busca no comprador e leva ao vendedor, e o **estorno só dispara
+quando o vendedor recebe o produto de volta**. Detalhes em
+**[`documentos/logistica.md`](documentos/logistica.md)**.
 
 ---
 
@@ -191,7 +208,7 @@ servidor/
     rotas/                endpoints HTTP
     servicos/             checkout, entrega, reembolso, repasse
 loja/                     tudo da Google Play
-documentos/               publicação, split e arquitetura de pagamento
+documentos/               publicação, split, arquitetura de pagamento e logística
 tools/gerar_marca.py      gerador da identidade visual
 ```
 

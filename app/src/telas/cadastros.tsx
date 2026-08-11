@@ -16,11 +16,12 @@ import { useAutenticacao } from '../contextos/Autenticacao';
 import type { ParametrosApp } from '../navegacao/tipos';
 import { cores, espaco, fonte, raio } from '../tema';
 import {
-  COMISSAO_COM_ENTREGADOR,
-  COMISSAO_SEM_ENTREGADOR,
+  COMISSAO,
   DIAS_PARA_TESTAR,
   DIMENSAO_MAXIMA_CM,
   PESO_MAXIMO_G,
+  TABELA_DE_TARIFAS,
+  VALOR_MINIMO_VENDA,
 } from '../regras/limites';
 
 function Cabecalho({ titulo, aoVoltar }: { titulo: string; aoVoltar: () => void }) {
@@ -391,70 +392,6 @@ export function TelaContaDeRecebimento({
 }
 
 // ---------------------------------------------------------------------------
-// confirmação de entrega (Android não tem Alert.prompt)
-// ---------------------------------------------------------------------------
-
-export function TelaConfirmarEntrega({
-  navigation,
-  route,
-}: NativeStackScreenProps<ParametrosApp, 'ConfirmarEntrega'>) {
-  const [codigo, setCodigo] = useState('');
-  const [enviando, setEnviando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
-
-  async function confirmar() {
-    setErro(null);
-    setEnviando(true);
-    try {
-      await api(`/entregas/${route.params.entregaId}/entreguei`, {
-        metodo: 'POST',
-        corpo: { codigo: codigo.trim() },
-      });
-      navigation.goBack();
-    } catch (e) {
-      setErro((e as Error).message);
-    } finally {
-      setEnviando(false);
-    }
-  }
-
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: cores.fundo }} edges={['top']}>
-      <Cabecalho titulo="confirmar entrega" aoVoltar={navigation.goBack} />
-
-      <View style={{ padding: espaco.lg }}>
-        {erro ? <Aviso texto={erro} tom="alerta" /> : null}
-
-        <Text style={[fonte.corpo, { marginBottom: espaco.lg }]}>
-          peça ao comprador o código de 4 dígitos que aparece no app dele e digite aqui.
-        </Text>
-
-        <Campo
-          rotulo="código do comprador"
-          valor={codigo}
-          aoMudar={setCodigo}
-          dica="0000"
-          teclado="numeric"
-          maxLength={6}
-        />
-
-        <Aviso
-          texto="ao confirmar, começa a contar o prazo de 7 dias que o comprador tem para testar o produto."
-          tom="informacao"
-        />
-
-        <Botao
-          titulo="confirmar entrega"
-          aoTocar={confirmar}
-          carregando={enviando}
-          desabilitado={codigo.trim().length < 4}
-        />
-      </View>
-    </SafeAreaView>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // como funciona (central de ajuda)
 // ---------------------------------------------------------------------------
 
@@ -466,9 +403,12 @@ const perguntas = [
   },
   {
     titulo: 'quanto vocês cobram?',
-    texto: `${Math.round(COMISSAO_SEM_ENTREGADOR * 100)}% por venda quando você mesmo entrega e ${Math.round(
-      COMISSAO_COM_ENTREGADOR * 100,
-    )}% quando o entregador do vendas itinga leva. sem mensalidade e sem taxa pra anunciar.`,
+    texto: `${Math.round(COMISSAO * 100)}% de comissão sobre o produto, mais uma tarifa fixa que depende do preço: ${TABELA_DE_TARIFAS.map(
+      (f, i) =>
+        Number.isFinite(f.ateInclusive)
+          ? `até R$ ${(f.ateInclusive / 100).toFixed(2).replace('.', ',')} são R$ ${(f.tarifa / 100).toFixed(2).replace('.', ',')}`
+          : `de R$ 200,00 pra cima são R$ ${(f.tarifa / 100).toFixed(2).replace('.', ',')}`,
+    ).join('; ')}. sem mensalidade e sem taxa pra anunciar.`,
   },
   {
     titulo: 'quando eu recebo o dinheiro?',
@@ -494,7 +434,16 @@ const perguntas = [
   {
     titulo: 'como eu recebo o produto?',
     texto:
-      'o entregador leva até seu endereço. na hora, mostre o código de 4 dígitos que aparece no seu pedido — é ele que confirma a entrega.',
+      'o entregador busca no vendedor e leva até seu endereço. na hora, mostre o código de 4 dígitos que aparece no seu pedido — é ele que confirma a entrega.',
+  },
+  {
+    titulo: 'a entrega é cobrada à parte?',
+    texto:
+      'não. o comprador paga só o preço do produto; a entrega já está coberta pela tarifa da venda.',
+  },
+  {
+    titulo: 'tem valor mínimo pra anunciar?',
+    texto: `tem: R$ ${(VALOR_MINIMO_VENDA / 100).toFixed(2).replace('.', ',')}.`,
   },
 ];
 

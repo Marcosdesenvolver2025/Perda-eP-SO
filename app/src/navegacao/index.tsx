@@ -31,11 +31,16 @@ import { TelaReembolso } from '../telas/Reembolso';
 import { TelaVendas } from '../telas/Vendas';
 import {
   TelaComoFunciona,
-  TelaConfirmarEntrega,
   TelaContaDeRecebimento,
   TelaDadosPessoais,
   TelaEnderecos,
 } from '../telas/cadastros';
+import { TelaPassoDaEntrega } from '../telas/PassoDaEntrega';
+import {
+  TelaEscolherEntregador,
+  TelaPainelAdmin,
+  TelaRecusarDevolucao,
+} from '../telas/PainelAdmin';
 import { TelaMinhaLoja, TelaMinhasCompras, TelaMinhasVendas } from '../telas/listas';
 import type { ParametrosAbas, ParametrosApp } from './tipos';
 
@@ -135,7 +140,18 @@ export function Navegacao() {
         <Pilha.Screen name="Enderecos" component={TelaEnderecos} />
         <Pilha.Screen name="ContaDeRecebimento" component={TelaContaDeRecebimento} />
         <Pilha.Screen name="AreaDoEntregador" component={TelaAreaDoEntregador} />
-        <Pilha.Screen name="ConfirmarEntrega" component={TelaConfirmarEntrega} />
+        <Pilha.Screen
+          name="PassoDaEntrega"
+          component={TelaPassoDaEntrega}
+          options={{ presentation: 'modal' }}
+        />
+        <Pilha.Screen name="PainelAdmin" component={TelaPainelAdmin} />
+        <Pilha.Screen name="EscolherEntregador" component={TelaEscolherEntregador} />
+        <Pilha.Screen
+          name="RecusarDevolucao"
+          component={TelaRecusarDevolucao}
+          options={{ presentation: 'modal' }}
+        />
         <Pilha.Screen name="ComoFunciona" component={TelaComoFunciona} />
       </Pilha.Navigator>
     </NavigationContainer>

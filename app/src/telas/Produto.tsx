@@ -23,7 +23,7 @@ import { LinhaDeMedidas, SeloGarantia } from '../componentes/produto';
 import { anunciosDemo } from '../dados/exemplo';
 import type { ParametrosApp } from '../navegacao/tipos';
 import { cores, espaco, fonte, raio } from '../tema';
-import { parcelamento, precoCurto, quando, reais } from '../util/formato';
+import { parcelamento, precoCurto, quando } from '../util/formato';
 
 type Props = NativeStackScreenProps<ParametrosApp, 'Produto'>;
 
@@ -69,7 +69,6 @@ export function TelaProduto({ navigation, route }: Props) {
     );
   }
 
-  const frete = anuncio.entrega?.valorFrete ?? null;
   const diasParaTestar = anuncio.entrega?.diasParaTestar ?? 7;
   const parcelas = parcelamento(anuncio.preco);
 
@@ -173,13 +172,13 @@ export function TelaProduto({ navigation, route }: Props) {
 
           <View>
             <Text style={[fonte.rotulo, { marginBottom: espaco.sm }]}>entrega</Text>
-            {anuncio.aceitaEntregador && frete != null ? (
+            {anuncio.aceitaEntregador ? (
               <View style={e.linhaEntrega}>
                 <Ionicons name="bicycle-outline" size={20} color={cores.verdeEscuro} />
                 <Text style={[fonte.corpo, { flex: 1, marginLeft: espaco.md }]}>
                   entregador do vendas itinga
                 </Text>
-                <Text style={fonte.rotulo}>{reais(frete)}</Text>
+                <Text style={[fonte.rotulo, { color: cores.verdeEscuro }]}>incluída</Text>
               </View>
             ) : null}
             {anuncio.aceitaCombinado ? (

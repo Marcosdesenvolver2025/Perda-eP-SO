@@ -22,6 +22,7 @@ import { anunciosDemo } from '../dados/exemplo';
 import type { ParametrosApp } from '../navegacao/tipos';
 import { cores, espaco, fonte, raio } from '../tema';
 import { reais } from '../util/formato';
+import { COMISSAO, calcularDescontos } from '../regras/limites';
 import { tokenizarCartao, type DadosDoCartao } from '../pagamento/cartao';
 import { FormularioDeCartao } from '../componentes/cartao';
 
@@ -62,17 +63,14 @@ export function TelaCheckout({ navigation, route }: Props) {
       if (!anuncio) return;
 
       if (MODO_DEMONSTRACAO) {
-        const comEntregador = modalidade === 'ENTREGADOR_PROPRIO';
-        const frete = comEntregador ? (anuncio.entrega?.valorFrete ?? 800) : 0;
-        const taxa = comEntregador ? 0.18 : 0.16;
-        const comissao = Math.floor(anuncio.preco * taxa);
+        const descontos = calcularDescontos(anuncio.preco);
         setResumo({
           valorProduto: anuncio.preco,
-          valorFrete: frete,
-          valorTotal: anuncio.preco + frete,
-          taxaComissao: taxa,
-          valorComissao: comissao,
-          valorVendedor: anuncio.preco - comissao,
+          valorTotal: anuncio.preco,
+          taxaComissao: COMISSAO,
+          valorComissao: descontos.comissao,
+          valorTarifa: descontos.tarifa,
+          valorVendedor: descontos.vendedor,
           modalidade,
         });
         return;
@@ -158,9 +156,7 @@ export function TelaCheckout({ navigation, route }: Props) {
           selecionada={comEntregador}
           icone="bicycle"
           titulo="entregador do vendas itinga"
-          descricao={`a gente busca com o vendedor e leva até você · ${reais(
-            anuncio.entrega?.valorFrete ?? 0,
-          )}`}
+          descricao="a gente busca com o vendedor e leva até você · sem custo extra"
           desabilitada={!anuncio.aceitaEntregador}
           aoTocar={() => setModalidade('ENTREGADOR_PROPRIO')}
         />
@@ -212,7 +208,12 @@ export function TelaCheckout({ navigation, route }: Props) {
 
         <Text style={[fonte.rotulo, { marginBottom: espaco.md }]}>resumo</Text>
         <LinhaDeValor rotulo="produto" valor={resumo?.valorProduto ?? anuncio.preco} />
-        {comEntregador ? <LinhaDeValor rotulo="entrega" valor={resumo?.valorFrete ?? 0} /> : null}
+        {comEntregador ? (
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
+            <Text style={fonte.corpo}>entrega</Text>
+            <Text style={[fonte.corpo, { color: cores.verdeEscuro }]}>incluída</Text>
+          </View>
+        ) : null}
         <View style={{ height: espaco.sm }} />
         <LinhaDeValor rotulo="total" valor={resumo?.valorTotal ?? anuncio.preco} destaque />
 

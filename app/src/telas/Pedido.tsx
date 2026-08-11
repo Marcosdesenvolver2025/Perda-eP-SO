@@ -22,7 +22,14 @@ type Props = NativeStackScreenProps<ParametrosApp, 'Pedido'>;
 
 const etapas: { estado: EstadoPedido; rotulo: string; icone: keyof typeof Ionicons.glyphMap }[] = [
   { estado: 'PAGO', rotulo: 'pagamento confirmado', icone: 'card-outline' },
-  { estado: 'A_CAMINHO', rotulo: 'a caminho', icone: 'bicycle-outline' },
+  {
+    estado: 'AGUARDANDO_AGENDAMENTO_DE_COLETA',
+    rotulo: 'organizando a coleta',
+    icone: 'time-outline',
+  },
+  { estado: 'A_CAMINHO_DA_COLETA', rotulo: 'entregador indo buscar', icone: 'bicycle-outline' },
+  { estado: 'PRODUTO_COLETADO', rotulo: 'produto coletado', icone: 'cube-outline' },
+  { estado: 'EM_ROTA_PARA_ENTREGA', rotulo: 'a caminho de você', icone: 'navigate-outline' },
   { estado: 'ENTREGUE', rotulo: 'entregue', icone: 'home-outline' },
   { estado: 'CONCLUIDO', rotulo: 'concluído', icone: 'checkmark-done-outline' },
 ];
@@ -30,11 +37,16 @@ const etapas: { estado: EstadoPedido; rotulo: string; icone: keyof typeof Ionico
 const rotuloEstado: Record<EstadoPedido, string> = {
   AGUARDANDO_PAGAMENTO: 'aguardando pagamento',
   PAGO: 'pagamento confirmado',
-  EM_SEPARACAO: 'vendedor preparando',
-  A_CAMINHO: 'a caminho',
+  AGUARDANDO_AGENDAMENTO_DE_COLETA: 'organizando a coleta',
+  A_CAMINHO_DA_COLETA: 'entregador indo buscar',
+  PRODUTO_COLETADO: 'produto coletado',
+  EM_ROTA_PARA_ENTREGA: 'a caminho de você',
   ENTREGUE: 'entregue',
   CONCLUIDO: 'concluído',
-  EM_DEVOLUCAO: 'devolução em análise',
+  DEVOLUCAO_SOLICITADA: 'devolução em análise',
+  DEVOLUCAO_APROVADA: 'devolução aprovada, aguardando coleta',
+  DEVOLUCAO_EM_TRANSITO: 'produto voltando ao vendedor',
+  DEVOLVIDO_AO_VENDEDOR: 'devolvido, processando estorno',
   REEMBOLSADO: 'reembolsado',
   CANCELADO: 'cancelado',
 };
@@ -115,11 +127,14 @@ export function TelaPedido({ navigation, route }: Props) {
           <View style={{ height: espaco.md }} />
 
           <Linha rotulo="produto" valor={reais(pedido.valorProduto)} />
-          {pedido.valorFrete > 0 ? <Linha rotulo="entrega" valor={reais(pedido.valorFrete)} /> : null}
+          {pedido.modalidade === 'ENTREGADOR_PROPRIO' ? (
+            <Linha rotulo="entrega" valor="incluída" />
+          ) : null}
           <Linha rotulo="total pago" valor={reais(pedido.valorTotal)} destaque />
         </Cartao>
 
-        {pedido.entrega?.codigoConfirmacao && pedido.estado === 'A_CAMINHO' ? (
+        {pedido.entrega?.codigoConfirmacao &&
+        ['PRODUTO_COLETADO', 'EM_ROTA_PARA_ENTREGA'].includes(pedido.estado) ? (
           <Cartao estilo={{ marginTop: espaco.lg, alignItems: 'center' }}>
             <Text style={fonte.pequeno}>mostre esse código pro entregador</Text>
             <Text style={e.codigo}>{pedido.entrega.codigoConfirmacao}</Text>

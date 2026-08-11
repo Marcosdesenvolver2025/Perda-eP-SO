@@ -18,6 +18,7 @@ import { useAutenticacao } from '../contextos/Autenticacao';
 import type { ParametrosApp } from '../navegacao/tipos';
 import { cores, espaco, fonte, raio } from '../tema';
 import { reais } from '../util/formato';
+import { TABELA_DE_TARIFAS } from '../regras/limites';
 
 type Props = NativeStackScreenProps<ParametrosApp, 'Abas'>;
 
@@ -161,19 +162,33 @@ export function TelaVendas({ navigation }: Props) {
               quanto a gente cobra
             </Text>
             <Text style={{ color: cores.branco, marginTop: espaco.sm, fontSize: 14 }}>
-              16% por venda quando você mesmo entrega
+              12% de comissão sobre o produto
             </Text>
             <Text style={{ color: cores.branco, fontSize: 14 }}>
-              18% quando o entregador do vendas itinga leva
+              mais uma tarifa fixa que depende do preço da venda
             </Text>
-            <Text style={{ color: cores.branco, marginTop: espaco.sm, fontSize: 12, opacity: 0.9 }}>
+            <View style={{ marginTop: espaco.md, gap: 2 }}>
+              {TABELA_DE_TARIFAS.map((f) => (
+                <Text
+                  key={f.tarifa}
+                  style={{ color: cores.branco, fontSize: 12, opacity: 0.95 }}
+                >
+                  {Number.isFinite(f.ateInclusive)
+                    ? `até ${reais(f.ateInclusive)}`
+                    : 'de R$ 200,00 pra cima'}
+                  {'  ·  '}
+                  {reais(f.tarifa)}
+                </Text>
+              ))}
+            </View>
+            <Text style={{ color: cores.branco, marginTop: espaco.md, fontSize: 12, opacity: 0.9 }}>
               já inclui o pagamento, a entrega e o suporte. sem mensalidade.
             </Text>
           </View>
 
           <View style={{ marginTop: espaco.lg }}>
             <Aviso
-              texto="limite dos nossos entregadores: até 20 kg e 60 cm em qualquer lado do pacote."
+              texto="limite dos nossos entregadores: até 20 kg e 60 cm em qualquer lado do pacote. venda mínima de R$ 10,00."
               tom="informacao"
             />
           </View>

@@ -6,8 +6,13 @@ import { Router } from 'express';
 import { z } from 'zod';
 
 import { ambiente } from '../ambiente';
-import { calcularFrete, validarMedidas } from '../dominio/frete';
-import { DIMENSAO_MAXIMA_CM, PESO_MAXIMO_G } from '../dominio/regras';
+import { validarMedidas } from '../dominio/frete';
+import {
+  DIMENSAO_MAXIMA_CM,
+  PESO_MAXIMO_G,
+  VALOR_MINIMO_VENDA,
+  tarifaFixa,
+} from '../dominio/regras';
 import { erroDeValidacao, naoEncontrado, semPermissao } from '../erros';
 import { exigirLogin, loginOpcional } from '../middlewares/autenticacao';
 import { prisma } from '../prisma';
@@ -113,12 +118,6 @@ rotasAnuncios.get('/:id', loginOpcional, async (req, res, next) => {
       .catch(() => undefined);
 
     const notas = anuncio.vendedor.avaliacoesRecebidas.map((a) => a.nota);
-    const medida = {
-      pesoG: anuncio.pesoG,
-      comprimentoCm: anuncio.comprimentoCm,
-      larguraCm: anuncio.larguraCm,
-      alturaCm: anuncio.alturaCm,
-    };
 
     return res.json({
       ...anuncio,
@@ -131,9 +130,15 @@ rotasAnuncios.get('/:id', loginOpcional, async (req, res, next) => {
           : null,
       },
       entrega: {
-        // frete calculado na hora, para o comprador ver antes de decidir
-        valorFrete: anuncio.aceitaEntregador ? calcularFrete(medida) : null,
+        // não há frete separado: a entrega está coberta pela tarifa fixa,
+        // que já sai do valor do vendedor. O comprador paga só o produto.
         diasParaTestar: ambiente.DIAS_PARA_TESTAR,
+        entregaInclusa: anuncio.aceitaEntregador,
+      },
+      /** O que a plataforma desconta desta venda — o vendedor vê no anúncio. */
+      taxas: {
+        comissao: Math.floor(anuncio.preco * ambiente.COMISSAO),
+        tarifa: tarifaFixa(anuncio.preco),
       },
     });
   } catch (erro) {
@@ -144,7 +149,10 @@ rotasAnuncios.get('/:id', loginOpcional, async (req, res, next) => {
 const anuncioEsquema = z.object({
   titulo: z.string().min(4).max(120),
   descricao: z.string().min(10).max(4000),
-  preco: z.number().int().min(100, 'o preço mínimo é R$ 1,00'),
+  preco: z
+    .number()
+    .int()
+    .min(VALOR_MINIMO_VENDA, `o valor mínimo de venda é R$ ${(VALOR_MINIMO_VENDA / 100).toFixed(2)}`),
   precoOriginal: z.number().int().positive().optional(),
   condicao: z.enum(['NOVO', 'SEMINOVO', 'USADO']),
   categoriaId: z.string().optional(),
@@ -157,6 +165,8 @@ const anuncioEsquema = z.object({
   alturaCm: z.number().int().positive().max(DIMENSAO_MAXIMA_CM),
   aceitaEntregador: z.boolean().default(true),
   aceitaCombinado: z.boolean().default(true),
+  /** Onde o entregador busca o produto. Obrigatório para aceitar entregador. */
+  enderecoColetaId: z.string().optional(),
   fotos: z.array(z.string().url()).min(1, 'envie pelo menos uma foto').max(10),
 });
 
@@ -168,6 +178,19 @@ rotasAnuncios.post('/', exigirLogin, async (req, res, next) => {
     // a checagem do zod pega cada campo isolado; esta pega o pacote inteiro
     const validacao = validarMedidas(dados);
     if (!validacao.valido) throw erroDeValidacao(validacao.erros.join(' '), validacao.erros);
+
+    // sem endereço de coleta o entregador não tem onde buscar o produto
+    if (dados.aceitaEntregador && !dados.enderecoColetaId) {
+      throw erroDeValidacao(
+        'Escolha o endereço onde o entregador vai buscar o produto.',
+      );
+    }
+    if (dados.enderecoColetaId) {
+      const endereco = await prisma.endereco.findFirst({
+        where: { id: dados.enderecoColetaId, usuarioId: req.sessao!.usuarioId },
+      });
+      if (!endereco) throw erroDeValidacao('Endereço de coleta não encontrado.');
+    }
 
     const { fotos, ...resto } = dados;
     const anuncio = await prisma.anuncio.create({

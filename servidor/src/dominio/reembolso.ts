@@ -4,12 +4,12 @@
  * Como funciona para o comprador:
  *  1. ele compra e o dinheiro fica retido (não vai para o vendedor ainda);
  *  2. o produto chega -> começa a contar 7 dias corridos para testar;
- *  3. dentro desses 7 dias ele pode pedir reembolso pelo app;
+ *  3. dentro desses 7 dias ele pode pedir devolução pelo app;
  *  4. passados os 7 dias sem pedido, o repasse ao vendedor é liberado.
  *
  * O prazo e a devolução integral vêm do artigo 49 do Código de Defesa do
- * Consumidor. Dentro da janela, o comprador recebe de volta TUDO que pagou,
- * inclusive o frete: a comissão sai do caixa da plataforma e o valor do
+ * Consumidor. Dentro da janela, o comprador recebe de volta TUDO que pagou:
+ * a comissão e a tarifa saem do caixa da plataforma e o valor líquido do
  * produto sai do saldo retido do vendedor. O entregador não devolve nada —
  * ele prestou o serviço e é pago pela plataforma de qualquer jeito.
  */
@@ -17,10 +17,9 @@
 import {
   DIAS_PARA_TESTAR,
   RETER_COMISSAO_NO_REEMBOLSO,
-  RETER_FRETE_NO_REEMBOLSO,
+  RETER_TARIFA_NO_REEMBOLSO,
 } from './regras';
 import type { ResultadoSplit } from './comissao';
-import type { ModalidadeEntrega } from './regras';
 
 const UM_DIA_MS = 24 * 60 * 60 * 1000;
 
@@ -56,7 +55,7 @@ export function diasRestantesParaTestar(
 
 export interface OpcoesReembolso {
   reterComissao?: boolean;
-  reterFrete?: boolean;
+  reterTarifa?: boolean;
 }
 
 export interface CalculoReembolso {
@@ -68,53 +67,42 @@ export interface CalculoReembolso {
   debitoVendedor: number;
   /** Quanto sai do saldo da plataforma, em centavos. */
   debitoPlataforma: number;
-  /** Quanto sai do saldo do entregador (sempre 0: o serviço foi prestado). */
-  debitoEntregador: number;
   detalhamento: string[];
 }
 
 /**
  * Calcula o estorno de um pedido.
  *
- * Por padrão a devolução é INTEGRAL, como manda o art. 49 do CDC: o comprador
- * recebe o produto e o frete de volta. `opcoes` permite reter comissão e frete
- * em casos combinados fora do prazo legal — leia o aviso em `regras.ts` antes.
- *
- * A retenção, quando ligada, só vale para entrega feita pelos nossos
- * entregadores: sem esse serviço prestado não haveria o que reter.
+ * Por padrão a devolução é INTEGRAL, como manda o art. 49 do CDC. `opcoes`
+ * permite reter comissão e tarifa em devoluções negociadas fora do prazo
+ * legal — leia o aviso em `regras.ts` antes de usar.
  */
 export function calcularReembolso(
   split: ResultadoSplit,
-  modalidade: ModalidadeEntrega,
   opcoes: OpcoesReembolso = {},
 ): CalculoReembolso {
-  const comEntregador = modalidade === 'ENTREGADOR_PROPRIO';
-  const reterComissao =
-    comEntregador && (opcoes.reterComissao ?? RETER_COMISSAO_NO_REEMBOLSO);
-  const reterFrete =
-    comEntregador && (opcoes.reterFrete ?? RETER_FRETE_NO_REEMBOLSO);
+  const reterComissao = opcoes.reterComissao ?? RETER_COMISSAO_NO_REEMBOLSO;
+  const reterTarifa = opcoes.reterTarifa ?? RETER_TARIFA_NO_REEMBOLSO;
 
-  const frete = split.valorFrete;
   const detalhamento: string[] = [];
-
   let valorRetido = 0;
+
   if (reterComissao) {
     valorRetido += split.comissao;
     detalhamento.push(
       `Comissão retida (${(split.taxaComissao * 100).toFixed(0)}%): ${split.comissao}`,
     );
   }
-  if (reterFrete && frete > 0) {
-    valorRetido += frete;
-    detalhamento.push(`Frete retido (entrega já realizada): ${frete}`);
+  if (reterTarifa) {
+    valorRetido += split.tarifa;
+    detalhamento.push(`Tarifa fixa retida: ${split.tarifa}`);
   }
 
   const valorReembolsado = split.total - valorRetido;
 
   // De onde sai o dinheiro do estorno:
-  //  - o valor do produto (menos a comissão retida) sai do vendedor;
-  //  - o que faltar sai da plataforma;
-  //  - o entregador nunca é debitado.
+  //  - o líquido que o vendedor recebeu sai do saldo dele;
+  //  - o que faltar (comissão + tarifa) sai da plataforma.
   const debitoVendedor = Math.min(split.valorVendedor, valorReembolsado);
   const debitoPlataforma = valorReembolsado - debitoVendedor;
 
@@ -125,7 +113,6 @@ export function calcularReembolso(
     valorRetido,
     debitoVendedor,
     debitoPlataforma,
-    debitoEntregador: 0,
     detalhamento,
   };
 }

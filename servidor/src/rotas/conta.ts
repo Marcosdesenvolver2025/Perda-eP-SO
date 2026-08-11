@@ -114,7 +114,18 @@ rotasConta.delete('/', async (req, res, next) => {
       where: {
         OR: [{ compradorId: usuarioId }, { vendedorId: usuarioId }],
         estado: {
-          in: ['AGUARDANDO_PAGAMENTO', 'PAGO', 'EM_SEPARACAO', 'A_CAMINHO', 'ENTREGUE', 'EM_DEVOLUCAO'],
+          in: [
+            'AGUARDANDO_PAGAMENTO',
+            'PAGO',
+            'AGUARDANDO_AGENDAMENTO_DE_COLETA',
+            'A_CAMINHO_DA_COLETA',
+            'PRODUTO_COLETADO',
+            'EM_ROTA_PARA_ENTREGA',
+            'ENTREGUE',
+            'DEVOLUCAO_SOLICITADA',
+            'DEVOLUCAO_APROVADA',
+            'DEVOLUCAO_EM_TRANSITO',
+          ],
         },
       },
     });

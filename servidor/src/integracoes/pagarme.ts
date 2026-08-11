@@ -20,7 +20,7 @@ import { ErroDeIntegracao } from '../erros';
 import type { RegraSplitPagarme } from '../dominio/comissao';
 
 const AUTORIZACAO =
-  'Basic ' + Buffer.from(`${ambiente.PAGARME_CHAVE_SECRETA}:`).toString('base64');
+  'Basic ' + Buffer.from(`${ambiente.PAGARME_SECRET_KEY}:`).toString('base64');
 
 interface OpcoesRequisicao {
   metodo: 'GET' | 'POST' | 'PATCH' | 'DELETE';

@@ -26,10 +26,9 @@ import { rotasRecebedores } from './rotas/recebedores';
 import { rotasWebhooks } from './rotas/webhooks';
 import { agendarTarefas } from './servicos/tarefas';
 import {
-  COMISSAO_COM_ENTREGADOR,
-  COMISSAO_SEM_ENTREGADOR,
   DIMENSAO_MAXIMA_CM,
   PESO_MAXIMO_G,
+  TABELA_DE_TARIFAS,
 } from './dominio/regras';
 
 const app = express();
@@ -59,8 +58,13 @@ app.get('/configuracoes', (_req, res) =>
   res.json({
     cidade: ambiente.CIDADE,
     uf: ambiente.UF,
-    comissaoSemEntregador: ambiente.COMISSAO_SEM_ENTREGADOR ?? COMISSAO_SEM_ENTREGADOR,
-    comissaoComEntregador: ambiente.COMISSAO_COM_ENTREGADOR ?? COMISSAO_COM_ENTREGADOR,
+    comissao: ambiente.COMISSAO,
+    valorMinimoVenda: ambiente.VALOR_MINIMO_VENDA,
+    // a última faixa é aberta; o app mostra "a partir de"
+    tarifas: TABELA_DE_TARIFAS.map((f) => ({
+      ateInclusive: Number.isFinite(f.ateInclusive) ? f.ateInclusive : null,
+      tarifa: f.tarifa,
+    })),
     diasParaTestar: ambiente.DIAS_PARA_TESTAR,
     pesoMaximoG: PESO_MAXIMO_G,
     dimensaoMaximaCm: DIMENSAO_MAXIMA_CM,

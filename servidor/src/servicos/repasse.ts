@@ -5,8 +5,8 @@
  * recebedores são criados com `transfer_enabled: false`). Quando o prazo
  * vence sem pedido de devolução, o saque é liberado para o vendedor.
  *
- * O entregador é pago assim que a entrega é confirmada: o serviço dele já
- * acabou e não depende de o comprador aprovar o produto.
+ * O entregador é pago assim que conclui a corrida: o serviço dele já acabou e
+ * não depende de o comprador aprovar o produto.
  */
 
 import { ambiente } from '../ambiente';
@@ -80,7 +80,13 @@ export async function liberarRepassesVencidos(agora: Date = new Date()) {
   return resultados;
 }
 
-/** Paga o entregador assim que a entrega é confirmada. */
+/**
+ * Paga o entregador pela corrida concluída.
+ *
+ * O valor sai do caixa da plataforma (da tarifa fixa), não de uma cobrança
+ * ao comprador — por isso é uma transferência avulsa e não parte do split.
+ * Idempotente pela chave `entregador-{id da entrega}`.
+ */
 export async function pagarEntregador(entregaId: string) {
   const entrega = await prisma.entrega.findUnique({
     where: { id: entregaId },
@@ -113,7 +119,11 @@ export async function pagarEntregador(entregaId: string) {
       pedidoId: entrega.pedidoId,
       tipo: 'entregador_pago',
       autorId: entrega.entregadorId,
-      detalhe: { valor: entrega.valorEntregador, saqueId: saque.id },
+      detalhe: {
+        valor: entrega.valorEntregador,
+        saqueId: saque.id,
+        tipoCorrida: entrega.tipo,
+      },
     },
   });
 
@@ -130,7 +140,20 @@ export async function pagarEntregador(entregaId: string) {
  */
 export async function extratoDoVendedor(vendedorId: string) {
   const pedidos = await prisma.pedido.findMany({
-    where: { vendedorId, estado: { in: ['PAGO', 'A_CAMINHO', 'ENTREGUE', 'CONCLUIDO'] } },
+    where: {
+      vendedorId,
+      estado: {
+        in: [
+          'PAGO',
+          'AGUARDANDO_AGENDAMENTO_DE_COLETA',
+          'A_CAMINHO_DA_COLETA',
+          'PRODUTO_COLETADO',
+          'EM_ROTA_PARA_ENTREGA',
+          'ENTREGUE',
+          'CONCLUIDO',
+        ],
+      },
+    },
     orderBy: { criadoEm: 'desc' },
     select: {
       id: true,
@@ -138,6 +161,7 @@ export async function extratoDoVendedor(vendedorId: string) {
       estado: true,
       valorProduto: true,
       valorComissao: true,
+      valorTarifa: true,
       taxaComissao: true,
       valorVendedor: true,
       prazoTesteAte: true,
@@ -158,5 +182,26 @@ export async function extratoDoVendedor(vendedorId: string) {
     recebido,
     diasParaLiberar: ambiente.DIAS_PARA_TESTAR,
     pedidos,
+  };
+}
+
+/** Quanto o entregador ganhou — tela da área dele. */
+export async function extratoDoEntregador(entregadorId: string) {
+  const entregas = await prisma.entrega.findMany({
+    where: { entregadorId, estado: 'ENTREGUE' },
+    orderBy: { entregueEm: 'desc' },
+    select: { id: true, valorEntregador: true, entregueEm: true, tipo: true },
+  });
+
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  return {
+    totalCorridas: entregas.length,
+    ganhoTotal: entregas.reduce((acc, e) => acc + e.valorEntregador, 0),
+    ganhoHoje: entregas
+      .filter((e) => e.entregueEm && e.entregueEm >= hoje)
+      .reduce((acc, e) => acc + e.valorEntregador, 0),
+    valorPorCorrida: ambiente.PAGAMENTO_POR_ENTREGA,
   };
 }

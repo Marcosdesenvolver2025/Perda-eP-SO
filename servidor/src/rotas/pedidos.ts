@@ -1,5 +1,5 @@
 /**
- * Compra, acompanhamento do pedido e reembolso pelo comprador.
+ * Compra, acompanhamento do pedido e devolução pelo comprador.
  */
 
 import { Router } from 'express';
@@ -7,12 +7,12 @@ import { z } from 'zod';
 
 import { ambiente } from '../ambiente';
 import { diasRestantesParaTestar, dentroDaJanelaDeTeste } from '../dominio/reembolso';
-import { naoEncontrado, semPermissao } from '../erros';
+import { conflito, naoEncontrado, semPermissao } from '../erros';
 import { exigirLogin } from '../middlewares/autenticacao';
 import { prisma } from '../prisma';
 import * as checkout from '../servicos/checkout';
-import * as entregaServico from '../servicos/entrega';
 import * as reembolsoServico from '../servicos/reembolso';
+import { extratoDoVendedor } from '../servicos/repasse';
 
 export const rotasPedidos = Router();
 
@@ -23,9 +23,7 @@ const modalidade = z.enum(['ENTREGADOR_PROPRIO', 'COMBINADO_ENTRE_PARTES']);
 /** GET /pedidos/simular?anuncio=...&modalidade=... — prévia de valores. */
 rotasPedidos.get('/simular', async (req, res, next) => {
   try {
-    const dados = z
-      .object({ anuncio: z.string(), modalidade })
-      .parse(req.query);
+    const dados = z.object({ anuncio: z.string(), modalidade }).parse(req.query);
     return res.json(await checkout.simular(dados.anuncio, dados.modalidade));
   } catch (erro) {
     return next(erro);
@@ -60,6 +58,18 @@ rotasPedidos.post('/', async (req, res, next) => {
   }
 });
 
+/** A entrega de ida é a que o comprador acompanha. */
+const ENTREGA_DE_IDA = {
+  where: { tipo: 'ENTREGA' as const },
+  take: 1,
+  select: {
+    id: true,
+    estado: true,
+    codigoConfirmacao: true,
+    entregador: { select: { nome: true, telefone: true } },
+  },
+};
+
 /** GET /pedidos/compras — "minhas compras". */
 rotasPedidos.get('/compras', async (req, res, next) => {
   try {
@@ -69,15 +79,16 @@ rotasPedidos.get('/compras', async (req, res, next) => {
       include: {
         anuncio: { select: { titulo: true, fotos: { take: 1, orderBy: { ordem: 'asc' } } } },
         vendedor: { select: { nome: true, apelidoLoja: true } },
-        entrega: { select: { estado: true, codigoConfirmacao: true } },
+        entregas: ENTREGA_DE_IDA,
         reembolso: { select: { estado: true, valorReembolsado: true } },
       },
     });
 
     const agora = new Date();
     return res.json({
-      itens: pedidos.map((p) => ({
+      itens: pedidos.map(({ entregas, ...p }) => ({
         ...p,
+        entrega: entregas[0] ?? null,
         // o app mostra "faltam X dias pra testar" direto no card
         podePedirReembolso:
           p.estado === 'ENTREGUE' &&
@@ -96,7 +107,6 @@ rotasPedidos.get('/compras', async (req, res, next) => {
 /** GET /pedidos/vendas — "minhas vendas" com o extrato de repasses. */
 rotasPedidos.get('/vendas', async (req, res, next) => {
   try {
-    const { extratoDoVendedor } = await import('../servicos/repasse');
     return res.json(await extratoDoVendedor(req.sessao!.usuarioId));
   } catch (erro) {
     return next(erro);
@@ -111,7 +121,17 @@ async function pedidoDaPessoa(pedidoId: string, usuarioId: string) {
       comprador: { select: { id: true, nome: true, fotoUrl: true } },
       vendedor: { select: { id: true, nome: true, apelidoLoja: true, fotoUrl: true } },
       endereco: true,
-      entrega: { include: { entregador: { select: { nome: true, telefone: true } } } },
+      entregas: {
+        orderBy: { criadoEm: 'asc' },
+        select: {
+          id: true,
+          tipo: true,
+          estado: true,
+          codigoConfirmacao: true,
+          volumes: true,
+          entregador: { select: { nome: true, telefone: true } },
+        },
+      },
       reembolso: true,
       eventos: { orderBy: { criadoEm: 'asc' } },
     },
@@ -128,10 +148,14 @@ rotasPedidos.get('/:id', async (req, res, next) => {
   try {
     const pedido = await pedidoDaPessoa(req.params.id, req.sessao!.usuarioId);
     const agora = new Date();
+    const souComprador = pedido.compradorId === req.sessao!.usuarioId;
+
     return res.json({
       ...pedido,
+      entrega: pedido.entregas.find((e) => e.tipo === 'ENTREGA') ?? null,
+      entregaDevolucao: pedido.entregas.find((e) => e.tipo === 'DEVOLUCAO') ?? null,
       podePedirReembolso:
-        pedido.compradorId === req.sessao!.usuarioId &&
+        souComprador &&
         pedido.estado === 'ENTREGUE' &&
         !pedido.reembolso &&
         dentroDaJanelaDeTeste(pedido.entregueEm, agora, ambiente.DIAS_PARA_TESTAR),
@@ -144,15 +168,43 @@ rotasPedidos.get('/:id', async (req, res, next) => {
   }
 });
 
-/** POST /pedidos/:id/recebi — comprador confirma entrega combinada. */
+/**
+ * POST /pedidos/:id/recebi
+ * Comprador confirma a entrega quando ela foi combinada entre as partes —
+ * nesse caso não há entregador para confirmar por ele.
+ */
 rotasPedidos.post('/:id/recebi', async (req, res, next) => {
   try {
-    return res.json(
-      await entregaServico.compradorConfirmaRecebimento(
-        req.params.id,
-        req.sessao!.usuarioId,
-      ),
-    );
+    const pedido = await prisma.pedido.findUnique({ where: { id: req.params.id } });
+    if (!pedido) throw naoEncontrado('Pedido não encontrado.');
+    if (pedido.compradorId !== req.sessao!.usuarioId) throw semPermissao();
+    if (pedido.modalidade !== 'COMBINADO_ENTRE_PARTES') {
+      throw conflito('Neste pedido quem confirma a entrega é o entregador.');
+    }
+    if (pedido.estado !== 'PAGO') {
+      throw conflito('Este pedido não está aguardando confirmação de recebimento.');
+    }
+
+    const { prazoParaTestar } = await import('../dominio/reembolso');
+    const agora = new Date();
+    const prazo = prazoParaTestar(agora, ambiente.DIAS_PARA_TESTAR);
+
+    const [atualizado] = await prisma.$transaction([
+      prisma.pedido.update({
+        where: { id: pedido.id },
+        data: { estado: 'ENTREGUE', entregueEm: agora, prazoTesteAte: prazo },
+      }),
+      prisma.eventoPedido.create({
+        data: {
+          pedidoId: pedido.id,
+          tipo: 'recebimento_confirmado',
+          autorId: req.sessao!.usuarioId,
+          detalhe: { prazoTesteAte: prazo.toISOString() },
+        },
+      }),
+    ]);
+
+    return res.json(atualizado);
   } catch (erro) {
     return next(erro);
   }

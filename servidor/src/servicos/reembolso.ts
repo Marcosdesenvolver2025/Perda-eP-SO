@@ -1,12 +1,16 @@
 /**
- * Reembolso dentro da janela de 7 dias.
+ * Devolução dentro da janela de 7 dias.
  *
- * O comprador abre o pedido pelo app; a equipe aprova ou recusa. Aprovado, o
- * estorno é feito na pagar.me com o split explícito, garantindo que:
- *   - o comprador receba de volta TUDO que pagou, frete incluído (CDC art. 49);
- *   - o valor do produto saia do saldo do vendedor (que ainda está retido);
- *   - a comissão e o frete saiam do caixa da plataforma;
- *   - o entregador não seja debitado — ele já prestou o serviço.
+ * O caminho completo:
+ *   comprador pede  ->  admin aprova  ->  entregador busca no comprador e
+ *   devolve ao vendedor  ->  produto de volta  ->  estorno na pagar.me.
+ *
+ * O estorno só dispara DEPOIS que o vendedor recebe o produto de volta. Isso
+ * evita o caso em que o comprador recebe o dinheiro e fica com a mercadoria.
+ *
+ * O cálculo e a chamada à pagar.me continuam iguais aos que já existiam: o
+ * comprador recebe de volta tudo que pagou, a comissão e a tarifa saem do
+ * caixa da plataforma e o entregador nunca é debitado.
  */
 
 import { ambiente } from '../ambiente';
@@ -16,26 +20,26 @@ import { conflito, naoEncontrado, semPermissao } from '../erros';
 import * as pagarme from '../integracoes/pagarme';
 import { log } from '../log';
 import { prisma } from '../prisma';
+import { abrirDevolucao } from './logistica';
 
 /** Remonta o split a partir dos valores congelados no pedido. */
 function splitDoPedido(pedido: {
   valorProduto: number;
-  valorFrete: number;
   valorTotal: number;
   valorComissao: number;
+  valorTarifa: number;
   taxaComissao: number;
   valorVendedor: number;
-  valorEntregador: number;
   valorPlataforma: number;
 }): ResultadoSplit {
   return {
     valorProduto: pedido.valorProduto,
-    valorFrete: pedido.valorFrete,
     total: pedido.valorTotal,
     comissao: pedido.valorComissao,
     taxaComissao: pedido.taxaComissao,
+    tarifa: pedido.valorTarifa,
+    totalDescontado: pedido.valorComissao + pedido.valorTarifa,
     valorVendedor: pedido.valorVendedor,
-    valorEntregador: pedido.valorEntregador,
     valorPlataforma: pedido.valorPlataforma,
   };
 }
@@ -54,17 +58,17 @@ export async function previa(pedidoId: string, compradorId: string) {
   if (!pedido) throw naoEncontrado('Pedido não encontrado.');
   if (pedido.compradorId !== compradorId) throw semPermissao();
 
-  const calculo = calcularReembolso(splitDoPedido(pedido), pedido.modalidade);
+  const calculo = calcularReembolso(splitDoPedido(pedido));
   return {
     valorPago: pedido.valorTotal,
     valorReembolsado: calculo.valorReembolsado,
     valorRetido: calculo.valorRetido,
-    // dentro do prazo legal a devolução é integral; se algum dia a política
-    // mudar, o cálculo já reflete aqui e o texto acompanha
     explicacao:
       calculo.valorRetido === 0
-        ? 'Você recebe de volta tudo que pagou, inclusive o frete.'
+        ? 'Você recebe de volta tudo que pagou.'
         : 'Parte do valor fica retida conforme combinado para esta devolução.',
+    comoFunciona:
+      'Depois que a gente aprovar, um entregador busca o produto no seu endereço. O dinheiro volta assim que o vendedor receber o produto de volta.',
     prazoTesteAte: pedido.prazoTesteAte,
   };
 }
@@ -86,7 +90,7 @@ export async function solicitar(entrada: SolicitacaoDeReembolso) {
     );
   }
 
-  const calculo = calcularReembolso(splitDoPedido(pedido), pedido.modalidade);
+  const calculo = calcularReembolso(splitDoPedido(pedido));
 
   const reembolso = await prisma.$transaction(async (tx) => {
     const criado = await tx.reembolso.create({
@@ -104,12 +108,12 @@ export async function solicitar(entrada: SolicitacaoDeReembolso) {
     });
     await tx.pedido.update({
       where: { id: pedido.id },
-      data: { estado: 'EM_DEVOLUCAO' },
+      data: { estado: 'DEVOLUCAO_SOLICITADA' },
     });
     await tx.eventoPedido.create({
       data: {
         pedidoId: pedido.id,
-        tipo: 'reembolso_solicitado',
+        tipo: 'devolucao_solicitada',
         autorId: entrada.compradorId,
         detalhe: { motivo: entrada.motivo, valor: calculo.valorReembolsado },
       },
@@ -117,22 +121,69 @@ export async function solicitar(entrada: SolicitacaoDeReembolso) {
     return criado;
   });
 
-  log.info({ pedido: pedido.codigo, valor: calculo.valorReembolsado }, 'reembolso solicitado');
+  log.info({ pedido: pedido.codigo, valor: calculo.valorReembolsado }, 'devolução solicitada');
   return reembolso;
 }
 
-/** Aprovação pela equipe: estorna na pagar.me e fecha o pedido. */
+/**
+ * Aprovação pela equipe.
+ *
+ * NÃO estorna ainda: abre a coleta reversa. O dinheiro volta quando o produto
+ * chegar no vendedor (ver `concluirAposDevolucao`).
+ */
 export async function aprovar(reembolsoId: string, adminId: string, resposta?: string) {
   const reembolso = await prisma.reembolso.findUnique({
     where: { id: reembolsoId },
-    include: {
-      pedido: {
-        include: { vendedor: { include: { recebedor: true } } },
-      },
-    },
+    include: { pedido: true },
   });
   if (!reembolso) throw naoEncontrado('Solicitação não encontrada.');
   if (reembolso.estado === 'CONCLUIDO') throw conflito('Este reembolso já foi concluído.');
+  if (reembolso.estado === 'APROVADO') throw conflito('Esta devolução já foi aprovada.');
+
+  await prisma.reembolso.update({
+    where: { id: reembolso.id },
+    data: {
+      estado: 'APROVADO',
+      analisadoPor: adminId,
+      respostaEquipe: resposta ?? null,
+      aprovadoEm: new Date(),
+    },
+  });
+
+  // abre a corrida de volta: comprador -> vendedor
+  const entrega = await abrirDevolucao(reembolso.pedidoId, adminId);
+
+  await prisma.eventoPedido.create({
+    data: {
+      pedidoId: reembolso.pedidoId,
+      tipo: 'devolucao_aprovada',
+      autorId: adminId,
+      detalhe: { entregaId: entrega?.id ?? null },
+    },
+  });
+
+  log.info({ pedido: reembolso.pedido.codigo }, 'devolução aprovada, coleta reversa aberta');
+  return prisma.reembolso.findUniqueOrThrow({ where: { id: reembolso.id } });
+}
+
+/**
+ * Estorna na pagar.me depois que o produto voltou para o vendedor.
+ *
+ * Chamado pela logística quando a corrida de DEVOLUCAO chega em ENTREGUE.
+ * Idempotente: se já estornou, não estorna de novo.
+ */
+export async function concluirAposDevolucao(pedidoId: string, autorId?: string) {
+  const reembolso = await prisma.reembolso.findUnique({
+    where: { pedidoId },
+    include: {
+      pedido: { include: { vendedor: { include: { recebedor: true } } } },
+    },
+  });
+  if (!reembolso) {
+    log.warn({ pedidoId }, 'devolução concluída sem reembolso registrado');
+    return null;
+  }
+  if (reembolso.estado === 'CONCLUIDO') return reembolso;
 
   const { pedido } = reembolso;
   if (!pedido.pagarmeChargeId) {
@@ -146,7 +197,8 @@ export async function aprovar(reembolsoId: string, adminId: string, resposta?: s
 
   /**
    * Split do estorno: cada centavo devolvido sai de um saldo específico.
-   * Não incluímos o entregador aqui de propósito.
+   * O entregador não entra aqui de propósito — o serviço dele foi prestado
+   * nas duas pontas e ele é pago pela plataforma.
    */
   const splitDoEstorno = [
     {
@@ -177,8 +229,6 @@ export async function aprovar(reembolsoId: string, adminId: string, resposta?: s
       where: { id: reembolso.id },
       data: {
         estado: 'CONCLUIDO',
-        analisadoPor: adminId,
-        respostaEquipe: resposta ?? null,
         pagarmeEstornoId: estorno.id,
         concluidoEm: new Date(),
       },
@@ -191,7 +241,7 @@ export async function aprovar(reembolsoId: string, adminId: string, resposta?: s
       data: {
         pedidoId: pedido.id,
         tipo: 'reembolso_concluido',
-        autorId: adminId,
+        autorId: autorId ?? null,
         detalhe: {
           valorReembolsado: reembolso.valorReembolsado,
           valorRetido: reembolso.valorRetido,
@@ -228,7 +278,7 @@ export async function recusar(reembolsoId: string, adminId: string, motivo: stri
     prisma.eventoPedido.create({
       data: {
         pedidoId: reembolso.pedidoId,
-        tipo: 'reembolso_recusado',
+        tipo: 'devolucao_recusada',
         autorId: adminId,
         detalhe: { motivo },
       },

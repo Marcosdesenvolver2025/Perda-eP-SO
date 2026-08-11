@@ -1,6 +1,10 @@
 /**
- * Cálculo da comissão e da divisão do pagamento (split) entre
- * plataforma, vendedor e entregador.
+ * Cálculo da receita da plataforma e da divisão do pagamento (split).
+ *
+ * O comprador paga UM valor: o preço do produto. Dele saem duas coisas para a
+ * plataforma — a comissão de 12% e a tarifa fixa da faixa — e o resto é do
+ * vendedor. Não há cobrança separada de frete: a entrega está coberta pela
+ * tarifa fixa.
  *
  * Regra de ouro: a soma das partes tem que bater EXATAMENTE com o total pago
  * pelo comprador. A pagar.me rejeita a transação se o split não fechar, então
@@ -8,37 +12,36 @@
  */
 
 import {
-  REPASSE_ENTREGADOR,
-  taxaDeComissao,
+  COMISSAO,
+  VALOR_MINIMO_VENDA,
+  tarifaFixa,
   type ModalidadeEntrega,
 } from './regras';
 
 export interface EntradaSplit {
-  /** Preço do produto, em centavos. */
+  /** Preço do produto, em centavos. É o total pago pelo comprador. */
   valorProduto: number;
-  /** Frete cobrado do comprador, em centavos. Zero quando não há entregador. */
-  valorFrete: number;
   modalidade: ModalidadeEntrega;
-  /** Percentual do frete repassado ao entregador (0 a 1). */
-  repasseEntregador?: number;
+  /** Alíquota da comissão (0 a 1). Só informe para simular outra política. */
+  taxaComissao?: number;
 }
 
 export interface ResultadoSplit {
   /** Preço do produto, em centavos (repetido para auditoria e estorno). */
   valorProduto: number;
-  /** Frete cobrado do comprador, em centavos. */
-  valorFrete: number;
-  /** Quanto o comprador paga no total (produto + frete). */
+  /** Quanto o comprador paga no total. Igual ao preço do produto. */
   total: number;
-  /** Comissão da plataforma sobre o produto. */
+  /** Comissão percentual da plataforma. */
   comissao: number;
-  /** Alíquota aplicada (0.16 ou 0.18), guardada para auditoria. */
+  /** Alíquota aplicada, guardada para auditoria. */
   taxaComissao: number;
+  /** Tarifa fixa da faixa de preço. */
+  tarifa: number;
+  /** Comissão + tarifa: o que a plataforma cobra do vendedor nesta venda. */
+  totalDescontado: number;
   /** Quanto o vendedor recebe. */
   valorVendedor: number;
-  /** Quanto o entregador recebe (0 quando não há entregador). */
-  valorEntregador: number;
-  /** Quanto fica com a plataforma (comissão + margem do frete + sobras). */
+  /** Quanto fica com a plataforma (comissão + tarifa + sobras). */
   valorPlataforma: number;
 }
 
@@ -51,39 +54,44 @@ function centavos(valor: number): number {
 }
 
 export function calcularSplit(entrada: EntradaSplit): ResultadoSplit {
-  const { valorProduto, modalidade } = entrada;
-  const valorFrete = entrada.valorFrete ?? 0;
-  const repasse = entrada.repasseEntregador ?? REPASSE_ENTREGADOR;
+  const { valorProduto } = entrada;
+  const taxaComissao = entrada.taxaComissao ?? COMISSAO;
 
   if (!Number.isInteger(valorProduto) || valorProduto <= 0) {
     throw new Error('valorProduto precisa ser um inteiro positivo em centavos');
   }
-  if (!Number.isInteger(valorFrete) || valorFrete < 0) {
-    throw new Error('valorFrete precisa ser um inteiro >= 0 em centavos');
-  }
-  if (modalidade !== 'ENTREGADOR_PROPRIO' && valorFrete > 0) {
-    throw new Error('só há frete quando a entrega é feita pelo nosso entregador');
+  if (valorProduto < VALOR_MINIMO_VENDA) {
+    throw new Error(
+      `o valor mínimo de venda é R$ ${(VALOR_MINIMO_VENDA / 100).toFixed(2)}`,
+    );
   }
 
-  const taxaComissao = taxaDeComissao(modalidade);
   const comissao = centavos(valorProduto * taxaComissao);
-  const valorVendedor = valorProduto - comissao;
+  const tarifa = tarifaFixa(valorProduto);
+  const totalDescontado = comissao + tarifa;
 
-  const valorEntregador =
-    modalidade === 'ENTREGADOR_PROPRIO' ? centavos(valorFrete * repasse) : 0;
+  if (totalDescontado >= valorProduto) {
+    // não pode acontecer com a tabela atual e o mínimo de R$ 10,00, mas se
+    // alguém mexer nos números sem refazer as contas, é melhor estourar aqui
+    // do que deixar o vendedor receber zero ou negativo.
+    throw new Error(
+      `comissão + tarifa (${totalDescontado}) não pode ser maior ou igual ao valor do produto (${valorProduto})`,
+    );
+  }
 
-  const total = valorProduto + valorFrete;
+  const valorVendedor = valorProduto - totalDescontado;
+  const total = valorProduto;
   // a plataforma recebe o que sobra: fecha o split no centavo.
-  const valorPlataforma = total - valorVendedor - valorEntregador;
+  const valorPlataforma = total - valorVendedor;
 
   return {
     valorProduto,
-    valorFrete,
     total,
     comissao,
     taxaComissao,
+    tarifa,
+    totalDescontado,
     valorVendedor,
-    valorEntregador,
     valorPlataforma,
   };
 }
@@ -103,7 +111,6 @@ export interface RecebedoresDoPedido {
   /** Recebedor da plataforma (a sua conta principal na pagar.me). */
   plataforma: string;
   vendedor: string;
-  entregador?: string | null;
 }
 
 /**
@@ -112,8 +119,10 @@ export interface RecebedoresDoPedido {
  * Quem responde pelas taxas e pelos estornos:
  *  - a PLATAFORMA paga a taxa de processamento e a sobra de arredondamento;
  *  - a PLATAFORMA e o VENDEDOR são `liable`, ou seja, respondem por chargeback
- *    na proporção do que receberam. O entregador nunca é `liable`: ele prestou
- *    o serviço e não pode ser penalizado por um problema do produto.
+ *    na proporção do que receberam.
+ *
+ * O entregador NÃO entra no split da cobrança: ele é pago pela plataforma
+ * quando conclui a corrida (ver `servicos/repasse.ts#pagarEntregador`).
  */
 export function montarRegrasSplit(
   split: ResultadoSplit,
@@ -141,24 +150,6 @@ export function montarRegrasSplit(
       },
     },
   ];
-
-  if (split.valorEntregador > 0) {
-    if (!recebedores.entregador) {
-      throw new Error(
-        'pedido com entregador precisa do recipient_id do entregador',
-      );
-    }
-    regras.push({
-      amount: split.valorEntregador,
-      recipient_id: recebedores.entregador,
-      type: 'flat',
-      options: {
-        charge_processing_fee: false,
-        charge_remainder_fee: false,
-        liable: false,
-      },
-    });
-  }
 
   const soma = regras.reduce((acc, r) => acc + r.amount, 0);
   if (soma !== split.total) {

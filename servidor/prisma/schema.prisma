@@ -12,7 +12,7 @@ datasource db {
 
 enum Papel {
   CLIENTE // compra e vende
-  ENTREGADOR // faz as entregas
+  ENTREGADOR // faz as coletas e entregas
   ADMIN // equipe do Vendas Itinga
 }
 
@@ -35,34 +35,51 @@ enum ModalidadeEntrega {
   COMBINADO_ENTRE_PARTES // comprador e vendedor combinam entre si
 }
 
+/// Estados do pedido. Os financeiros (AGUARDANDO_PAGAMENTO, PAGO, REEMBOLSADO,
+/// CANCELADO) pertencem ao fluxo da pagar.me e não são tocados pela logística.
 enum EstadoPedido {
   AGUARDANDO_PAGAMENTO
-  PAGO // dinheiro retido, esperando o vendedor postar
-  EM_SEPARACAO // vendedor confirmou, aguardando coleta
-  A_CAMINHO
+  PAGO // dinheiro retido; ponte entre o financeiro e a logística
+  AGUARDANDO_AGENDAMENTO_DE_COLETA // entrega criada, esperando o admin atribuir
+  A_CAMINHO_DA_COLETA
+  PRODUTO_COLETADO
+  EM_ROTA_PARA_ENTREGA
   ENTREGUE // começa a contar a janela de 7 dias
   CONCLUIDO // janela venceu e o repasse foi liberado
-  EM_DEVOLUCAO // comprador pediu reembolso
+  DEVOLUCAO_SOLICITADA
+  DEVOLUCAO_APROVADA
+  DEVOLUCAO_EM_TRANSITO // entregador levando o produto de volta ao vendedor
+  DEVOLVIDO_AO_VENDEDOR // gatilho do estorno
   REEMBOLSADO
   CANCELADO
 }
 
+/// A mesma entrega serve para levar ao comprador e para trazer de volta.
+enum TipoEntrega {
+  ENTREGA // vendedor -> comprador
+  DEVOLUCAO // comprador -> vendedor
+}
+
 enum EstadoEntrega {
-  AGUARDANDO_ENTREGADOR
+  AGUARDANDO_ATRIBUICAO // na fila do administrador
+  ATRIBUIDA // admin escolheu um entregador, aguardando aceite
+  RECUSADA // entregador recusou; volta para a fila
   ACEITA
-  COLETADA
+  A_CAMINHO_DA_COLETA
+  CHEGOU_NA_COLETA
+  PRODUTO_COLETADO
+  EM_ROTA_PARA_ENTREGA
+  CHEGOU_NA_ENTREGA
   ENTREGUE
-  DEVOLVENDO // levando o produto de volta ao vendedor
-  DEVOLVIDA
   CANCELADA
 }
 
 enum EstadoReembolso {
   SOLICITADO
   EM_ANALISE
-  APROVADO
+  APROVADO // aprovado; aguardando a coleta reversa
   RECUSADO
-  CONCLUIDO
+  CONCLUIDO // produto devolvido e estorno feito
 }
 
 enum EstadoRecebedor {
@@ -91,10 +108,21 @@ model Usuario {
   // exclusão de conta exigida pela Google Play: marcamos e anonimizamos
   excluidoEm DateTime?
 
+  // --- campos usados só quando papel = ENTREGADOR -------------------------
+  /// Entregador marca que está aceitando corridas.
+  entregadorDisponivel Boolean @default(false)
+  /// Última posição informada. Serve para a futura atribuição automática.
+  entregadorLat        Float?
+  entregadorLng        Float?
+  entregadorPosicaoEm  DateTime?
+  /// Quantas corridas ele consegue tocar ao mesmo tempo.
+  entregadorCapacidade Int     @default(1)
+
   anuncios      Anuncio[]
   compras       Pedido[]        @relation("Comprador")
   vendas        Pedido[]        @relation("Vendedor")
   entregas      Entrega[]       @relation("Entregador")
+  recusas       RecusaEntrega[]
   recebedor     Recebedor?
   enderecos     Endereco[]
   mensagens     Mensagem[]
@@ -103,6 +131,7 @@ model Usuario {
   dispositivos  Dispositivo[]
 
   @@index([cidade, papel])
+  @@index([papel, entregadorDisponivel])
 }
 
 /// Recebedor na pagar.me. Sem isso o usuário não recebe o split.
@@ -140,10 +169,14 @@ model Endereco {
   cidade     String   @default("Itinga")
   uf         String   @default("MG")
   referencia String?
+  /// Coordenadas opcionais, para a futura atribuição automática por distância.
+  latitude   Float?
+  longitude  Float?
   principal  Boolean  @default(false)
   criadoEm   DateTime @default(now())
 
-  pedidos    Pedido[]
+  pedidos          Pedido[]
+  anunciosColeta   Anuncio[] @relation("EnderecoDeColeta")
 }
 
 model Categoria {
@@ -167,7 +200,7 @@ model Anuncio {
 
   titulo      String
   descricao   String
-  /// preço em centavos
+  /// preço em centavos; é o total que o comprador paga
   preco       Int
   precoOriginal Int?
   condicao    CondicaoProduto @default(USADO)
@@ -176,11 +209,16 @@ model Anuncio {
   cor         String?
   estado      EstadoAnuncio   @default(ATIVO)
 
-  /// medidas da embalagem: limite de 20 kg e 60 cm por lado
+  /// medidas aproximadas da embalagem: limite de 20 kg e 60 cm por lado
   pesoG        Int
   comprimentoCm Int
   larguraCm    Int
   alturaCm     Int
+
+  /// Onde o entregador busca o produto. Obrigatório para aceitar entregador
+  /// próprio; o vendedor escolhe um dos endereços cadastrados dele.
+  enderecoColetaId String?
+  enderecoColeta   Endereco? @relation("EnderecoDeColeta", fields: [enderecoColetaId], references: [id])
 
   aceitaEntregador Boolean @default(true)
   aceitaCombinado  Boolean @default(true)
@@ -235,14 +273,17 @@ model Pedido {
   estado     EstadoPedido      @default(AGUARDANDO_PAGAMENTO)
 
   /// valores congelados no momento da compra (centavos)
+  /// O comprador paga só `valorProduto`; não há cobrança separada de frete.
   valorProduto    Int
-  valorFrete      Int  @default(0)
   valorTotal      Int
   taxaComissao    Float
   valorComissao   Int
+  valorTarifa     Int
   valorVendedor   Int
-  valorEntregador Int  @default(0)
   valorPlataforma Int
+  /// Custo da corrida pago ao entregador. Sai da plataforma, NÃO do split
+  /// da cobrança — por isso é custo, não parte do rateio.
+  custoEntregador Int @default(0)
 
   /// identificadores da pagar.me
   pagarmeOrderId  String? @unique
@@ -252,7 +293,7 @@ model Pedido {
 
   pagoEm      DateTime?
   entregueEm  DateTime?
-  /// pagoEm + janela de teste; depois disso o repasse é liberado
+  /// entregueEm + janela de teste; depois disso o repasse é liberado
   prazoTesteAte DateTime?
   repassadoEm DateTime?
   canceladoEm DateTime?
@@ -260,7 +301,7 @@ model Pedido {
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  entrega   Entrega?
+  entregas  Entrega[]
   reembolso Reembolso?
   mensagens Mensagem[]
   eventos   EventoPedido[]
@@ -271,32 +312,86 @@ model Pedido {
   @@index([estado, prazoTesteAte])
 }
 
+/// Uma corrida: ida (vendedor -> comprador) ou volta (comprador -> vendedor).
 model Entrega {
   id           String        @id @default(cuid())
-  pedidoId     String        @unique
+  pedidoId     String
   pedido       Pedido        @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  tipo         TipoEntrega   @default(ENTREGA)
   entregadorId String?
   entregador   Usuario?      @relation("Entregador", fields: [entregadorId], references: [id])
-  estado       EstadoEntrega @default(AGUARDANDO_ENTREGADOR)
+  estado       EstadoEntrega @default(AGUARDANDO_ATRIBUICAO)
 
-  /// quanto o entregador recebe por esta entrega (centavos)
+  /// quanto o entregador recebe por esta corrida (centavos)
   valorEntregador Int @default(0)
 
-  coletaEndereco  String
-  entregaEndereco String
-  observacoes     String?
-  /// código que o comprador informa ao entregador para confirmar o recebimento
-  codigoConfirmacao String?
-  fotoComprovanteUrl String?
+  /// endereços resolvidos na criação, para o histórico não mudar se o
+  /// usuário editar o cadastro depois
+  coletaEndereco   String
+  coletaReferencia String?
+  coletaContato    String? // nome de quem entrega o produto ao entregador
+  coletaTelefone   String? // guardado inteiro; a API devolve mascarado
+  entregaEndereco  String
+  entregaReferencia String?
+  entregaContato   String?
+  entregaTelefone  String?
+  observacoes      String?
 
-  aceitaEm   DateTime?
-  coletadaEm DateTime?
-  entregueEm DateTime?
-  criadoEm   DateTime @default(now())
-  atualizadoEm DateTime @updatedAt
+  /// janela combinada para a coleta
+  janelaColetaInicio DateTime?
+  janelaColetaFim    DateTime?
+
+  /// comprovação da coleta
+  fotoPacoteUrl String?
+  volumes       Int?
+
+  /// comprovação da entrega
+  codigoConfirmacao  String?
+  fotoEntregaUrl     String?
+
+  atribuidaPorId String?
+  atribuidaEm    DateTime?
+  aceitaEm       DateTime?
+  coletadaEm     DateTime?
+  entregueEm     DateTime?
+  canceladaEm    DateTime?
+  criadoEm       DateTime @default(now())
+  atualizadoEm   DateTime @updatedAt
+
+  recusas RecusaEntrega[]
+  eventos EventoEntrega[]
 
   @@index([estado, criadoEm])
   @@index([entregadorId, estado])
+  @@index([pedidoId, tipo])
+}
+
+/// Recusa registrada: serve de histórico e evita reoferecer ao mesmo entregador.
+model RecusaEntrega {
+  id           String   @id @default(cuid())
+  entregaId    String
+  entrega      Entrega  @relation(fields: [entregaId], references: [id], onDelete: Cascade)
+  entregadorId String
+  entregador   Usuario  @relation(fields: [entregadorId], references: [id], onDelete: Cascade)
+  motivo       String
+  criadoEm     DateTime @default(now())
+
+  @@unique([entregaId, entregadorId])
+  @@index([entregadorId, criadoEm])
+}
+
+/// Trilha de auditoria da corrida: cada transição de estado vira um evento.
+model EventoEntrega {
+  id        String   @id @default(cuid())
+  entregaId String
+  entrega   Entrega  @relation(fields: [entregaId], references: [id], onDelete: Cascade)
+  de        EstadoEntrega?
+  para      EstadoEntrega
+  autorId   String?
+  detalhe   Json?
+  criadoEm  DateTime @default(now())
+
+  @@index([entregaId, criadoEm])
 }
 
 model Reembolso {
@@ -319,6 +414,7 @@ model Reembolso {
   respostaEquipe   String?
 
   solicitadoEm DateTime  @default(now())
+  aprovadoEm   DateTime?
   concluidoEm  DateTime?
 
   @@index([estado, solicitadoEm])
@@ -356,7 +452,7 @@ model Avaliacao {
   @@index([avaliadoId])
 }
 
-/// Trilha de auditoria: toda mudança relevante de pedido vira um evento.
+/// Trilha de auditoria do pedido: toda mudança relevante vira um evento.
 model EventoPedido {
   id       String   @id @default(cuid())
   pedidoId String
@@ -369,7 +465,7 @@ model EventoPedido {
   @@index([pedidoId, criadoEm])
 }
 
-/// Token de push por aparelho (avisos de venda, entrega e fim da janela).
+/// Token de push por aparelho (avisos de venda, coleta, entrega e prazo).
 model Dispositivo {
   id        String   @id @default(cuid())
   usuarioId String

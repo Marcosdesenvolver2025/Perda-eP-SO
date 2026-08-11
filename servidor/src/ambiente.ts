@@ -9,11 +9,11 @@ import { z } from 'zod';
 
 import {
   CIDADE,
-  COMISSAO_COM_ENTREGADOR,
-  COMISSAO_SEM_ENTREGADOR,
+  COMISSAO,
   DIAS_PARA_TESTAR,
-  REPASSE_ENTREGADOR,
+  PAGAMENTO_POR_ENTREGA,
   UF,
+  VALOR_MINIMO_VENDA,
 } from './dominio/regras';
 
 const porcentagem = z.coerce.number().min(0).max(1);
@@ -35,8 +35,12 @@ const esquema = z.object({
   GOOGLE_CLIENT_ID_WEB: z.string().min(1),
   GOOGLE_CLIENT_ID_ANDROID: z.string().optional(),
 
-  /** Chave secreta da sua conta pagar.me (sk_test_... em homologação). */
-  PAGARME_CHAVE_SECRETA: z.string().min(1),
+  /**
+   * Chave SECRETA da pagar.me. Vive só no .env do servidor — nunca no app,
+   * nunca no repositório. Escopo necessário: leitura e escrita em
+   * Transacional, Financeiro e Recebedores.
+   */
+  PAGARME_SECRET_KEY: z.string().min(1, 'defina a chave secreta da pagar.me'),
   PAGARME_URL_BASE: z.string().url().default('https://api.pagar.me/core/v5'),
   /** recipient_id da SUA conta: é para onde vai a comissão. */
   PAGARME_RECEBEDOR_PLATAFORMA: z.string().min(1),
@@ -45,10 +49,11 @@ const esquema = z.object({
   PAGARME_WEBHOOK_SENHA: z.string().optional(),
 
   /** Regras de negócio (valores padrão vêm de src/dominio/regras.ts). */
-  COMISSAO_SEM_ENTREGADOR: porcentagem.default(COMISSAO_SEM_ENTREGADOR),
-  COMISSAO_COM_ENTREGADOR: porcentagem.default(COMISSAO_COM_ENTREGADOR),
-  REPASSE_ENTREGADOR: porcentagem.default(REPASSE_ENTREGADOR),
+  COMISSAO: porcentagem.default(COMISSAO),
   DIAS_PARA_TESTAR: z.coerce.number().int().positive().default(DIAS_PARA_TESTAR),
+  VALOR_MINIMO_VENDA: z.coerce.number().int().positive().default(VALOR_MINIMO_VENDA),
+  /** Quanto o entregador recebe por corrida concluída, em centavos. */
+  PAGAMENTO_POR_ENTREGA: z.coerce.number().int().nonnegative().default(PAGAMENTO_POR_ENTREGA),
 
   CIDADE: z.string().default(CIDADE),
   UF: z.string().length(2).default(UF),

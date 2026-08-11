@@ -1,6 +1,10 @@
 /**
  * Compra: monta o split, cobra pela pagar.me e cria o pedido.
  *
+ * O comprador paga UM valor — o preço do produto. Dele saem a comissão de 12%
+ * e a tarifa fixa da faixa, e o resto é do vendedor. Não há cobrança separada
+ * de frete: a entrega está coberta pela tarifa.
+ *
  * O dinheiro NÃO cai na mão do vendedor aqui. O split já distribui os valores,
  * mas os recebedores são criados com transferência automática desligada, então
  * o valor fica retido no saldo até a janela de 7 dias vencer
@@ -11,12 +15,13 @@ import { randomBytes } from 'node:crypto';
 
 import { ambiente } from '../ambiente';
 import { calcularSplit, montarRegrasSplit } from '../dominio/comissao';
-import { calcularFrete, validarMedidas } from '../dominio/frete';
+import { validarMedidas } from '../dominio/frete';
 import type { ModalidadeEntrega } from '../dominio/regras';
 import { conflito, erroDeValidacao, naoEncontrado } from '../erros';
 import * as pagarme from '../integracoes/pagarme';
 import { log } from '../log';
 import { prisma } from '../prisma';
+import { abrirEntregaDoPedido } from './logistica';
 
 /** Código curto e legível do pedido, ex.: VI-7K3QM2. */
 function gerarCodigo(): string {
@@ -39,10 +44,10 @@ export interface PedidoDeCompra {
 
 export interface ResumoDaCompra {
   valorProduto: number;
-  valorFrete: number;
   valorTotal: number;
   taxaComissao: number;
   valorComissao: number;
+  valorTarifa: number;
   /** O que o vendedor recebe depois da janela de teste. */
   valorVendedor: number;
   modalidade: ModalidadeEntrega;
@@ -50,7 +55,7 @@ export interface ResumoDaCompra {
 
 /**
  * Simula a compra sem cobrar nada. O app chama isso na tela do produto para
- * mostrar frete e prazo antes de o comprador decidir.
+ * mostrar os valores antes de o comprador decidir.
  */
 export async function simular(
   anuncioId: string,
@@ -61,28 +66,18 @@ export async function simular(
     throw naoEncontrado('Este anúncio não está mais disponível.');
   }
 
-  const medidas = {
-    pesoG: anuncio.pesoG,
-    comprimentoCm: anuncio.comprimentoCm,
-    larguraCm: anuncio.larguraCm,
-    alturaCm: anuncio.alturaCm,
-  };
-
-  const valorFrete =
-    modalidade === 'ENTREGADOR_PROPRIO' ? calcularFrete(medidas) : 0;
-
   const split = calcularSplit({
     valorProduto: anuncio.preco,
-    valorFrete,
     modalidade,
+    taxaComissao: ambiente.COMISSAO,
   });
 
   return {
     valorProduto: split.valorProduto,
-    valorFrete: split.valorFrete,
     valorTotal: split.total,
     taxaComissao: split.taxaComissao,
     valorComissao: split.comissao,
+    valorTarifa: split.tarifa,
     valorVendedor: split.valorVendedor,
     modalidade,
   };
@@ -115,13 +110,12 @@ export async function comprar(entrada: PedidoDeCompra) {
     );
   }
 
-  const medidas = {
+  const validacao = validarMedidas({
     pesoG: anuncio.pesoG,
     comprimentoCm: anuncio.comprimentoCm,
     larguraCm: anuncio.larguraCm,
     alturaCm: anuncio.alturaCm,
-  };
-  const validacao = validarMedidas(medidas);
+  });
   if (!validacao.valido) {
     throw erroDeValidacao(validacao.erros.join(' '), validacao.erros);
   }
@@ -133,28 +127,20 @@ export async function comprar(entrada: PedidoDeCompra) {
   if (comEntregador && !entrada.enderecoId) {
     throw erroDeValidacao('Escolha o endereço de entrega.');
   }
+  if (comEntregador && !anuncio.enderecoColetaId) {
+    throw conflito('O vendedor ainda não informou o endereço de coleta deste anúncio.');
+  }
 
-  const valorFrete = comEntregador ? calcularFrete(medidas) : 0;
   const split = calcularSplit({
     valorProduto: anuncio.preco,
-    valorFrete,
     modalidade: entrada.modalidade,
-    repasseEntregador: ambiente.REPASSE_ENTREGADOR,
+    taxaComissao: ambiente.COMISSAO,
   });
 
-  /**
-   * O entregador só é escalado depois do pagamento, então na hora do split
-   * ainda não sabemos quem vai entregar. A parte do frete que caberia a ele
-   * fica com a plataforma na cobrança e é repassada ao entregador quando a
-   * entrega é concluída (ver `servicos/repasse.ts#pagarEntregador`).
-   */
-  const regras = montarRegrasSplit(
-    { ...split, valorEntregador: 0, valorPlataforma: split.valorPlataforma + split.valorEntregador },
-    {
-      plataforma: ambiente.PAGARME_RECEBEDOR_PLATAFORMA,
-      vendedor: recebedorVendedor.recipientId,
-    },
-  );
+  const regras = montarRegrasSplit(split, {
+    plataforma: ambiente.PAGARME_RECEBEDOR_PLATAFORMA,
+    vendedor: recebedorVendedor.recipientId,
+  });
 
   const codigo = gerarCodigo();
 
@@ -168,13 +154,14 @@ export async function comprar(entrada: PedidoDeCompra) {
       modalidade: entrada.modalidade,
       estado: 'AGUARDANDO_PAGAMENTO',
       valorProduto: split.valorProduto,
-      valorFrete: split.valorFrete,
       valorTotal: split.total,
       taxaComissao: split.taxaComissao,
       valorComissao: split.comissao,
+      valorTarifa: split.tarifa,
       valorVendedor: split.valorVendedor,
-      valorEntregador: split.valorEntregador,
       valorPlataforma: split.valorPlataforma,
+      // custo da corrida, pago pela plataforma; não entra no split da cobrança
+      custoEntregador: comEntregador ? ambiente.PAGAMENTO_POR_ENTREGA : 0,
       metodoPagamento: entrada.pagamento.tipo,
       parcelas: entrada.pagamento.tipo === 'credit_card' ? entrada.pagamento.parcelas : 1,
     },
@@ -198,16 +185,6 @@ export async function comprar(entrada: PedidoDeCompra) {
             quantidade: 1,
             codigo: anuncio.id,
           },
-          ...(split.valorFrete > 0
-            ? [
-                {
-                  descricao: 'Entrega Vendas Itinga',
-                  valorUnitario: split.valorFrete,
-                  quantidade: 1,
-                  codigo: 'frete',
-                },
-              ]
-            : []),
         ],
         pagamento:
           entrada.pagamento.tipo === 'credit_card'
@@ -275,64 +252,37 @@ export async function comprar(entrada: PedidoDeCompra) {
 }
 
 /**
- * Confirma o pagamento: reserva o anúncio e abre a entrega quando for o caso.
- * Chamado pelo checkout (cartão aprovado na hora) e pelo webhook (Pix).
+ * Confirma o pagamento e passa a bola para a logística.
+ *
+ * Chamado pelo checkout (cartão aprovado na hora) e pelo webhook (Pix). É a
+ * fronteira entre o financeiro e a operação: daqui em diante quem move o
+ * pedido é `servicos/logistica.ts`.
  */
 export async function marcarComoPago(pedidoId: string) {
-  const pedido = await prisma.pedido.findUnique({
-    where: { id: pedidoId },
-    include: { anuncio: true, endereco: true, vendedor: true },
-  });
+  const pedido = await prisma.pedido.findUnique({ where: { id: pedidoId } });
   if (!pedido) throw naoEncontrado('Pedido não encontrado.');
-  if (pedido.estado !== 'AGUARDANDO_PAGAMENTO' && pedido.estado !== 'PAGO') {
-    return pedido; // já seguiu adiante; webhook repetido não faz nada
-  }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.pedido.update({
+  const jaSeguiu = !['AGUARDANDO_PAGAMENTO', 'PAGO'].includes(pedido.estado);
+  if (jaSeguiu) return pedido; // webhook repetido não faz nada
+
+  await prisma.$transaction([
+    prisma.pedido.update({
       where: { id: pedido.id },
       data: { estado: 'PAGO', pagoEm: pedido.pagoEm ?? new Date() },
-    });
-
+    }),
     // o anúncio sai do ar: é peça única
-    await tx.anuncio.update({
+    prisma.anuncio.update({
       where: { id: pedido.anuncioId },
       data: { estado: 'VENDIDO' },
-    });
-
-    if (pedido.modalidade === 'ENTREGADOR_PROPRIO' && pedido.endereco) {
-      const jaExiste = await tx.entrega.findUnique({
-        where: { pedidoId: pedido.id },
-      });
-      if (!jaExiste) {
-        await tx.entrega.create({
-          data: {
-            pedidoId: pedido.id,
-            estado: 'AGUARDANDO_ENTREGADOR',
-            valorEntregador: pedido.valorEntregador,
-            coletaEndereco: `Combinar com ${pedido.vendedor.nome} — ${
-              pedido.vendedor.bairro ?? ambiente.CIDADE
-            }`,
-            entregaEndereco: [
-              pedido.endereco.logradouro,
-              pedido.endereco.numero,
-              pedido.endereco.complemento,
-              pedido.endereco.bairro,
-              `${pedido.endereco.cidade}/${pedido.endereco.uf}`,
-            ]
-              .filter(Boolean)
-              .join(', '),
-            observacoes: pedido.endereco.referencia,
-            codigoConfirmacao: String(Math.floor(1000 + Math.random() * 9000)),
-          },
-        });
-      }
-    }
-
-    await tx.eventoPedido.create({
+    }),
+    prisma.eventoPedido.create({
       data: { pedidoId: pedido.id, tipo: 'pagamento_confirmado' },
-    });
-  });
+    }),
+  ]);
+
+  // cria a corrida e move o pedido para AGUARDANDO_AGENDAMENTO_DE_COLETA.
+  // Não cria cobrança nova nem mexe no split — só abre a operação.
+  await abrirEntregaDoPedido(pedido.id);
 
   log.info({ pedido: pedido.codigo }, 'pagamento confirmado');
   return prisma.pedido.findUnique({ where: { id: pedido.id } });

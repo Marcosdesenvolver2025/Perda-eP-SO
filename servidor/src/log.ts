@@ -10,7 +10,7 @@ export const log = pino({
     'tokenCartao',
     '*.card_token',
     '*.document',
-    'PAGARME_CHAVE_SECRETA',
+    'PAGARME_SECRET_KEY',
   ],
   ...(emProducao ? {} : { transport: { target: 'pino/file', options: { destination: 1 } } }),
 });

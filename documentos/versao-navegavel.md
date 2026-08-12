@@ -158,6 +158,31 @@ npx netlify-cli deploy --dir dist --prod
 Sem instalar nada: gere a pasta `dist` e arraste para
 <https://app.netlify.com/drop>.
 
-> Para publicar a versão conectada à API, tire `EXPO_PUBLIC_MODO_DEMO` do
-> `netlify.toml` e ponha `EXPO_PUBLIC_API_URL` com o endereço do servidor.
-> Sem isso, o site continua sendo uma demonstração.
+### Desligar o modo demonstração
+
+São **necessárias as duas coisas** em `[build.environment]` do `netlify.toml`:
+
+1. **remover** `EXPO_PUBLIC_MODO_DEMO`
+2. **definir** `EXPO_PUBLIC_API_URL = "https://sua-api.com.br"`
+
+Por quê as duas, e não só uma:
+
+```ts
+// app/src/api/cliente.ts
+const FORCAR_DEMONSTRACAO = process.env.EXPO_PUBLIC_MODO_DEMO === '1';
+export const URL_API = process.env.EXPO_PUBLIC_API_URL ?? '';
+export const MODO_DEMONSTRACAO = FORCAR_DEMONSTRACAO || URL_API === '';
+```
+
+| O que você faz | Resultado |
+|---|---|
+| só remove a flag | URL vazia → `URL_API === ''` → **demonstração continua ligada** |
+| só define a URL | flag ainda vale `1` e tem precedência → **demonstração continua ligada** |
+| remove a flag **e** define a URL | **produção**: o app chama a API de verdade |
+
+É de propósito: as duas travas existem para o site nunca subir apontando para
+produção por engano, nem ficar apontando para lugar nenhum.
+
+> As variáveis são lidas em **tempo de build** — o Expo embute o valor no
+> bundle. Depois de mudar o `netlify.toml`, é preciso um novo deploy para o
+> site mudar de comportamento; trocar a variável sem rebuildar não faz nada.

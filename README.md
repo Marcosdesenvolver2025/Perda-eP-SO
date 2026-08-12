@@ -173,6 +173,44 @@ habitualidade dos vendedores estão em
 
 ---
 
+## O site navegável (Netlify)
+
+A branch de produção do site é a **`main`**. O `netlify.toml` fica na **raiz**,
+que é onde o Netlify procura — conectar o repositório não pede configuração
+nenhuma no painel:
+
+| Campo | Valor | Vem de |
+|---|---|---|
+| base | `app` | `netlify.toml` |
+| comando | `npx expo export --platform web` | idem |
+| publicação | `dist` (relativo à base → `app/dist`) | idem |
+| Node | 20 | idem |
+
+Hoje o site publica em **modo demonstração**: um servidor falso em memória
+(`app/src/demo/`) responde no lugar da API, sem banco e sem pagar.me.
+
+### Desligar o modo demonstração
+
+São **necessárias as duas coisas** em `[build.environment]` do `netlify.toml`:
+
+1. **remover** `EXPO_PUBLIC_MODO_DEMO`
+2. **definir** `EXPO_PUBLIC_API_URL = "https://sua-api.com.br"`
+
+Uma sem a outra não muda nada, porque a regra em `app/src/api/cliente.ts` é:
+
+```ts
+MODO_DEMONSTRACAO = (EXPO_PUBLIC_MODO_DEMO === '1') || (URL_API === '');
+```
+
+Com a URL vazia o modo religa sozinho; com a flag em `1` ela tem precedência
+sobre a URL. As variáveis entram no bundle em **tempo de build**, então depois
+de mudar é preciso um novo deploy.
+
+Detalhes do modo demonstração em
+**[`documentos/versao-navegavel.md`](documentos/versao-navegavel.md)**.
+
+---
+
 ## Publicar na Play Store
 
 O guia completo, do zero até o app no ar, está em

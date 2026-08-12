@@ -7,11 +7,32 @@
 # `base = "app"` faz o build rodar dentro de app/, e `publish` é relativo à
 # base, ou seja, a pasta publicada é app/dist.
 #
-# `EXPO_PUBLIC_MODO_DEMO=1` liga o servidor falso em memória: a vitrine, os
-# pedidos e as entregas respondem sem banco e sem pagar.me.
+# A branch de produção do site é a `main`.
 #
-# Para publicar a versão de verdade, tire a variável e coloque
-# `EXPO_PUBLIC_API_URL` apontando para a API.
+# ---------------------------------------------------------------------------
+# COMO DESLIGAR O MODO DEMONSTRAÇÃO
+# ---------------------------------------------------------------------------
+# Hoje o site roda com um servidor falso em memória (`app/src/demo/`): a
+# vitrine, os pedidos e as entregas respondem sem banco e sem pagar.me.
+#
+# Para apontar o site para a API de verdade são NECESSÁRIAS AS DUAS COISAS,
+# no bloco [build.environment] logo abaixo:
+#
+#   1. REMOVER   EXPO_PUBLIC_MODO_DEMO
+#   2. DEFINIR   EXPO_PUBLIC_API_URL = "https://sua-api.com.br"
+#
+# Só tirar a flag NÃO BASTA. A regra em app/src/api/cliente.ts é:
+#
+#     MODO_DEMONSTRACAO = (EXPO_PUBLIC_MODO_DEMO === '1') || (URL_API === '')
+#
+# ou seja, com a URL vazia o modo demonstração religa sozinho. E só definir a
+# URL também não basta enquanto a flag continuar valendo `1`, porque ela tem
+# precedência. As duas, sempre.
+#
+# As variáveis são lidas em tempo de BUILD (o Expo as embute no bundle), não
+# em tempo de execução: depois de mudar aqui, é preciso um novo deploy para o
+# site mudar de comportamento.
+# ---------------------------------------------------------------------------
 
 [build]
   base = "app"
@@ -20,7 +41,14 @@
 
 [build.environment]
   NODE_VERSION = "20"
+
+  # Modo demonstração LIGADO. Ver o bloco de instruções no topo deste arquivo
+  # antes de mexer: para desligar, remova esta linha E defina EXPO_PUBLIC_API_URL.
   EXPO_PUBLIC_MODO_DEMO = "1"
+
+  # Modo produção: descomente e preencha AO MESMO TEMPO em que remover a linha
+  # de cima. Uma sem a outra não troca o comportamento do site.
+  # EXPO_PUBLIC_API_URL = "https://api.vendasitinga.com.br"
 
 # O app usa react-navigation, não rotas de arquivo: tudo cai no index.html.
 [[redirects]]

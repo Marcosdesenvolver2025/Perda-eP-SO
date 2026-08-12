@@ -81,16 +81,24 @@ cd servidor && npm test    # 60 testes: taxas, faixas, prazo, reembolso, estados
 
 ### O app, sem servidor nenhum
 
-Dá para abrir e navegar por todas as telas com dados de exemplo:
+Dá para abrir e navegar por todas as telas com dados de exemplo, no celular ou
+direto no navegador:
 
 ```bash
 cd app
 npm install
-npm start          # leia o QR Code com o Expo Go
+npm start              # leia o QR Code com o Expo Go
+npx expo start --web   # ou abra em http://localhost:8081
 ```
 
-Sem `EXPO_PUBLIC_API_URL` configurado, o app entra em **modo demonstração**:
-usa os dados de `app/src/dados/exemplo.ts` e não chama a rede.
+Sem `EXPO_PUBLIC_API_URL` configurado, o app entra em **modo demonstração**: um
+servidor falso em memória (`app/src/demo/`) responde às mesmas rotas da API, e
+o estado muda de verdade enquanto você clica — aceitar uma corrida move o
+pedido, confirmar o código abre os 7 dias. A faixa preta no topo tem o botão
+**roteiro**, que indexa as telas e troca o papel do usuário.
+
+Detalhes, e o que não funciona no navegador (câmera, upload, push), em
+**[`documentos/versao-navegavel.md`](documentos/versao-navegavel.md)**.
 
 > O login com Google e o pagamento não funcionam no Expo Go — eles precisam de
 > um build de desenvolvimento. Veja `documentos/publicar-na-play-store.md`.
@@ -220,7 +228,8 @@ app/                      aplicativo Expo
     api/                  cliente HTTP e tipos
     componentes/          peças de interface reaproveitadas
     contextos/            login com Google
-    dados/                dados de exemplo (modo demonstração)
+    dados/                categorias da vitrine
+    demo/                 MODO DEMONSTRAÇÃO (servidor falso, isolado)
     navegacao/            abas e pilha de telas
     pagamento/            tokenização do cartão
     regras/               limites de peso e tamanho

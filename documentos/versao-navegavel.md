@@ -122,11 +122,32 @@ a tela mostra um aviso e o fluxo continua.
 
 ## Publicar no Netlify
 
-O `app/netlify.toml` já está pronto: base `app`, comando
-`npx expo export --platform web`, publicação em `dist`, redirect de todas as
-rotas para o `index.html` (o app usa react-navigation, não rotas de arquivo).
+O `netlify.toml` está na **raiz do repositório**, que é onde o Netlify procura.
+Com ele lá, conectar o repositório não pede configuração nenhuma no painel:
 
-Pela linha de comando:
+| Campo | Valor | De onde vem |
+|---|---|---|
+| base | `app` | `netlify.toml` |
+| comando | `npx expo export --platform web` | idem |
+| publicação | `dist` (relativo à base, ou seja `app/dist`) | idem |
+| Node | 20 | idem |
+| `EXPO_PUBLIC_MODO_DEMO` | `1` | idem |
+
+Tem também o redirect de todas as rotas para o `index.html` — o app usa
+react-navigation, não rotas de arquivo, então sem isso qualquer link direto
+daria 404.
+
+### Conectando o repositório
+
+1. <https://app.netlify.com> → **Add new site** → **Import an existing project**
+2. escolha GitHub e o repositório `Perda-eP-SO`
+3. em **Branch to deploy**, escolha `claude/vendas-itinga-app-19ctbw`
+4. não mexa em build command nem em publish directory: o `netlify.toml` manda
+5. **Deploy**
+
+Cada push na branch republica sozinho.
+
+### Ou pela linha de comando
 
 ```bash
 cd app

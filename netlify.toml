@@ -1,6 +1,12 @@
 # Publicação da versão navegável (modo demonstração) no Netlify.
 #
-# O build sai de `npx expo export --platform web`, que gera a pasta `dist`.
+# Este arquivo fica na RAIZ de propósito: é onde o Netlify procura. Com ele
+# aqui, conectar o repositório não exige configurar nada no painel — base,
+# comando e pasta de publicação já vêm daqui.
+#
+# `base = "app"` faz o build rodar dentro de app/, e `publish` é relativo à
+# base, ou seja, a pasta publicada é app/dist.
+#
 # `EXPO_PUBLIC_MODO_DEMO=1` liga o servidor falso em memória: a vitrine, os
 # pedidos e as entregas respondem sem banco e sem pagar.me.
 #

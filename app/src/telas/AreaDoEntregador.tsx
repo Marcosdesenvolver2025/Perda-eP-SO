@@ -22,10 +22,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { api, MODO_DEMONSTRACAO } from '../api/cliente';
+import { api } from '../api/cliente';
 import type { Corrida, EstadoEntrega } from '../api/tipos';
 import { Aviso, Botao, Cartao, Selo, TelaVazia } from '../componentes/base';
-import { corridasDemo } from '../dados/exemplo';
 import type { ParametrosApp } from '../navegacao/tipos';
 import { cores, espaco, fonte, raio } from '../tema';
 import { peso, quando, reais } from '../util/formato';
@@ -71,15 +70,6 @@ export function TelaAreaDoEntregador({ navigation }: Props) {
   const carregar = useCallback(async () => {
     setErro(null);
 
-    if (MODO_DEMONSTRACAO) {
-      setOferecidas(corridasDemo.filter((c) => c.estado === 'ATRIBUIDA'));
-      setMinhas(corridasDemo.filter((c) => !['ATRIBUIDA', 'ENTREGUE'].includes(c.estado)));
-      setHistorico(corridasDemo.filter((c) => c.estado === 'ENTREGUE'));
-      setExtrato({ ganhoHoje: 1_500, ganhoTotal: 12_500 });
-      setAtualizando(false);
-      return;
-    }
-
     try {
       const [a, b, c] = await Promise.all([
         api<{ itens: Corrida[] }>('/entregas/oferecidas'),
@@ -107,7 +97,6 @@ export function TelaAreaDoEntregador({ navigation }: Props) {
 
   async function alternarDisponibilidade(valor: boolean) {
     setDisponivel(valor);
-    if (MODO_DEMONSTRACAO) return;
     try {
       await api('/entregas/disponibilidade', { metodo: 'POST', corpo: { disponivel: valor } });
     } catch {

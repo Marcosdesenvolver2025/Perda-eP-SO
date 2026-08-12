@@ -8,7 +8,6 @@
 
 import React, { useCallback, useState } from 'react';
 import {
-  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -21,7 +20,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { api, MODO_DEMONSTRACAO } from '../api/cliente';
+import { api } from '../api/cliente';
+import { avisar, confirmar } from '../util/dialogo';
 import type { Candidato, Corrida, ResumoAdmin, SolicitacaoDeDevolucao } from '../api/tipos';
 import {
   Aviso,
@@ -50,13 +50,6 @@ export function TelaPainelAdmin({ navigation }: Props) {
   const carregar = useCallback(async () => {
     setErro(null);
 
-    if (MODO_DEMONSTRACAO) {
-      setErro('Modo demonstração: conecte o servidor para operar o painel.');
-      setCarregando(false);
-      setAtualizando(false);
-      return;
-    }
-
     try {
       const [r, f, d] = await Promise.all([
         api<ResumoAdmin>('/admin/resumo'),
@@ -80,47 +73,41 @@ export function TelaPainelAdmin({ navigation }: Props) {
     }, [carregar]),
   );
 
-  function aprovarDevolucao(item: SolicitacaoDeDevolucao) {
-    Alert.alert(
-      'aprovar devolução?',
-      'Um entregador vai buscar o produto no comprador e levar de volta ao vendedor. O dinheiro só volta quando o vendedor receber o produto.',
-      [
-        { text: 'cancelar', style: 'cancel' },
-        {
-          text: 'aprovar',
-          onPress: async () => {
-            try {
-              await api(`/admin/reembolsos/${item.id}/aprovar`, { metodo: 'POST' });
-              await carregar();
-            } catch (e) {
-              Alert.alert('não deu', (e as Error).message);
-            }
-          },
-        },
-      ],
-    );
+  async function aprovarDevolucao(item: SolicitacaoDeDevolucao) {
+    const certeza = await confirmar({
+      titulo: 'aprovar devolução?',
+      mensagem:
+        item.pedido.modalidade === 'PLATAFORMA'
+          ? 'Um entregador vai buscar o produto no comprador e levar de volta ao vendedor. O dinheiro só volta quando o vendedor receber o produto.'
+          : 'Comprador e vendedor combinam a devolução entre si. O dinheiro só volta depois que você confirmar que o produto voltou.',
+      confirmar: 'aprovar',
+    });
+    if (!certeza) return;
+
+    try {
+      await api(`/admin/reembolsos/${item.id}/aprovar`, { metodo: 'POST' });
+      await carregar();
+    } catch (e) {
+      avisar('não deu', (e as Error).message);
+    }
   }
 
-  function confirmarRetorno(item: SolicitacaoDeDevolucao) {
-    Alert.alert(
-      'confirmar o retorno do produto?',
-      'Só confirme depois que o vendedor avisar que recebeu o produto de volta. Isso dispara o estorno na hora e não tem como desfazer.',
-      [
-        { text: 'cancelar', style: 'cancel' },
-        {
-          text: 'confirmar e estornar',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await api(`/admin/reembolsos/${item.id}/confirmar-retorno`, { metodo: 'POST' });
-              await carregar();
-            } catch (e) {
-              Alert.alert('não deu', (e as Error).message);
-            }
-          },
-        },
-      ],
-    );
+  async function confirmarRetorno(item: SolicitacaoDeDevolucao) {
+    const certeza = await confirmar({
+      titulo: 'confirmar o retorno do produto?',
+      mensagem:
+        'Só confirme depois que o vendedor avisar que recebeu o produto de volta. Isso dispara o estorno na hora e não tem como desfazer.',
+      confirmar: 'confirmar e estornar',
+      destrutivo: true,
+    });
+    if (!certeza) return;
+
+    try {
+      await api(`/admin/reembolsos/${item.id}/confirmar-retorno`, { metodo: 'POST' });
+      await carregar();
+    } catch (e) {
+      avisar('não deu', (e as Error).message);
+    }
   }
 
   if (carregando) return <Carregando texto="carregando o painel..." />;
@@ -220,7 +207,7 @@ export function TelaPainelAdmin({ navigation }: Props) {
                       });
                       await carregar();
                     } catch (err) {
-                      Alert.alert('não deu', (err as Error).message);
+                      avisar('não deu', (err as Error).message);
                     }
                   }}
                 />

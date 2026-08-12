@@ -9,10 +9,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { api, MODO_DEMONSTRACAO } from '../api/cliente';
+import { api } from '../api/cliente';
 import type { Pedido } from '../api/tipos';
 import { Avatar, Selo, Separador, TelaVazia } from '../componentes/base';
-import { pedidosDemo } from '../dados/exemplo';
 import type { ParametrosApp } from '../navegacao/tipos';
 import { cores, espaco, fonte } from '../tema';
 import { prazoDeTeste, quando, reais } from '../util/formato';
@@ -37,11 +36,6 @@ export function TelaNotificacoes({ navigation }: Props) {
   useFocusEffect(
     useCallback(() => {
       async function carregar() {
-        if (MODO_DEMONSTRACAO) {
-          setPedidos(pedidosDemo);
-          setConversas([]);
-          return;
-        }
         try {
           const [compras, mensagens] = await Promise.all([
             api<{ itens: Pedido[] }>('/pedidos/compras'),

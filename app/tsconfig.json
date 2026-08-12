@@ -4,6 +4,10 @@
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "jsx": "react-jsx",
+    // import() preguiçoso: usado para não carregar o SDK nativo do Google no
+    // web e para manter src/demo/ fora do caminho de produção
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "skipLibCheck": true,
     "paths": {
       "@/*": ["./src/*"]

@@ -8,13 +8,14 @@
  */
 
 import React, { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { api, MODO_DEMONSTRACAO } from '../api/cliente';
+import { api } from '../api/cliente';
+import { confirmar } from '../util/dialogo';
 import type { Pedido } from '../api/tipos';
 import { Aviso, Botao, Campo, Carregando, Cartao } from '../componentes/base';
 import type { ParametrosApp } from '../navegacao/tipos';
@@ -34,10 +35,6 @@ export function TelaEntregaDoVendedor({ navigation, route }: Props) {
   useFocusEffect(
     useCallback(() => {
       async function carregar() {
-        if (MODO_DEMONSTRACAO) {
-          setCarregando(false);
-          return;
-        }
         try {
           setPedido(await api<Pedido>(`/pedidos/${route.params.pedidoId}`));
         } catch (e) {
@@ -66,32 +63,26 @@ export function TelaEntregaDoVendedor({ navigation, route }: Props) {
     }
   }
 
-  function declararSemCodigo() {
-    Alert.alert(
-      'declarar entrega sem o código?',
-      `Use isto só quando não conseguir o código com o comprador. Ele vai ter ${DIAS_PARA_CONFIRMACAO_AUTOMATICA} dias para confirmar ou abrir devolução; se não fizer nada, a entrega é confirmada automaticamente.`,
-      [
-        { text: 'cancelar', style: 'cancel' },
-        {
-          text: 'declarar entrega',
-          onPress: async () => {
-            setErro(null);
-            setEnviando(true);
-            try {
-              await api(`/pedidos/${route.params.pedidoId}/declarar-entrega`, {
-                metodo: 'POST',
-              });
-              navigation.goBack();
-            } catch (e) {
-              setErro((e as Error).message);
-            } finally {
-              setEnviando(false);
-            }
-          },
-        },
-      ],
-    );
+  async function declararSemCodigo() {
+    const certeza = await confirmar({
+      titulo: 'declarar entrega sem o código?',
+      mensagem: `Use isto só quando não conseguir o código com o comprador. Ele vai ter ${DIAS_PARA_CONFIRMACAO_AUTOMATICA} dias para confirmar ou abrir devolução; se não fizer nada, a entrega é confirmada automaticamente.`,
+      confirmar: 'declarar entrega',
+    });
+    if (!certeza) return;
+
+    setErro(null);
+    setEnviando(true);
+    try {
+      await api(`/pedidos/${route.params.pedidoId}/declarar-entrega`, { metodo: 'POST' });
+      navigation.goBack();
+    } catch (e) {
+      setErro((e as Error).message);
+    } finally {
+      setEnviando(false);
+    }
   }
+
 
   if (carregando) return <Carregando />;
 

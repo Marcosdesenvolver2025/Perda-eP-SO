@@ -1,15 +1,24 @@
 /**
  * Cliente HTTP da API do Vendas Itinga.
  *
- * Sem `EXPO_PUBLIC_API_URL` configurado, o app roda com os dados de exemplo
- * (`src/dados/exemplo.ts`). Isso deixa qualquer pessoa abrir o app e navegar
- * pelas telas antes de o servidor estar no ar.
+ * Sem `EXPO_PUBLIC_API_URL` configurado, o app entra em **modo demonstração**:
+ * as mesmas chamadas são respondidas por um servidor falso em memória
+ * (`src/demo/servidor.ts`), que só existe para navegar pelas telas antes de o
+ * servidor de verdade estar no ar.
+ *
+ * O código de demonstração fica todo em `src/demo/` e é carregado por
+ * `import()` preguiçoso — em produção (`EXPO_PUBLIC_API_URL` preenchido) ele
+ * nunca chega a ser executado.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const URL_API = process.env.EXPO_PUBLIC_API_URL ?? '';
-export const MODO_DEMONSTRACAO = URL_API === '';
+
+/** Liga a demonstração mesmo com API configurada. Usado no build web da vitrine. */
+const FORCAR_DEMONSTRACAO = process.env.EXPO_PUBLIC_MODO_DEMO === '1';
+
+export const MODO_DEMONSTRACAO = FORCAR_DEMONSTRACAO || URL_API === '';
 
 const CHAVE_TOKEN = '@vendasitinga:token';
 
@@ -47,11 +56,18 @@ interface Opcoes {
 
 export async function api<T>(caminho: string, opcoes: Opcoes = {}): Promise<T> {
   if (MODO_DEMONSTRACAO) {
-    throw new ErroDaApi(
-      0,
-      'App em modo demonstração. Configure EXPO_PUBLIC_API_URL para conectar no servidor.',
-      'demonstracao',
-    );
+    // carregado só aqui: o bundle de produção não executa nada de src/demo/
+    const { responderDemo } = await import('../demo/servidor');
+    try {
+      return await responderDemo<T>(caminho, opcoes.metodo ?? 'GET', opcoes.corpo);
+    } catch (e) {
+      const erro = e as { status?: number; message?: string };
+      throw new ErroDaApi(
+        erro.status ?? 400,
+        erro.message ?? 'Não conseguimos completar essa ação.',
+        'demonstracao',
+      );
+    }
   }
 
   const cabecalhos: Record<string, string> = { 'Content-Type': 'application/json' };

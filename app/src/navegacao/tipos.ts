@@ -35,6 +35,8 @@ export type ParametrosApp = {
   CodigoDeConfirmacao: { pedidoId: string };
   EntregaDoVendedor: { pedidoId: string };
   ComoFunciona: undefined;
+  /** Só existe no modo demonstração. */
+  Roteiro: undefined;
 };
 
 declare global {

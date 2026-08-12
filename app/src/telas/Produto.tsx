@@ -16,11 +16,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { api, MODO_DEMONSTRACAO } from '../api/cliente';
+import { api } from '../api/cliente';
 import type { Anuncio } from '../api/tipos';
 import { Avatar, Botao, Carregando, Selo, Separador, TelaVazia } from '../componentes/base';
 import { LinhaDeMedidas, SeloGarantia } from '../componentes/produto';
-import { anunciosDemo } from '../dados/exemplo';
 import type { ParametrosApp } from '../navegacao/tipos';
 import { cores, espaco, fonte, raio } from '../tema';
 import { parcelamento, precoCurto, quando } from '../util/formato';
@@ -41,11 +40,6 @@ export function TelaProduto({ navigation, route }: Props) {
 
   useEffect(() => {
     async function carregar() {
-      if (MODO_DEMONSTRACAO) {
-        setAnuncio(anunciosDemo.find((a) => a.id === route.params.id) ?? anunciosDemo[0]!);
-        setCarregando(false);
-        return;
-      }
       try {
         setAnuncio(await api<Anuncio>(`/anuncios/${route.params.id}`, { publico: true }));
       } catch {

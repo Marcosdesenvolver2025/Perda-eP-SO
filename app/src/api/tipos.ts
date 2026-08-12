@@ -123,6 +123,8 @@ export interface Pedido {
   pagoEm?: string | null;
   entregueEm?: string | null;
   prazoTesteAte?: string | null;
+  /** Modalidade VENDEDOR: código que o comprador informa ao vendedor. */
+  codigoConfirmacao?: string | null;
   /** Modalidade VENDEDOR: prazo da confirmação automática. */
   prazoConfirmacaoAte?: string | null;
   confirmadaPor?: 'codigo' | 'comprador' | 'automatica' | null;

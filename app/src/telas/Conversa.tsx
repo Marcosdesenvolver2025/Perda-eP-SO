@@ -19,7 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { api, MODO_DEMONSTRACAO } from '../api/cliente';
+import { api } from '../api/cliente';
 import { TelaVazia } from '../componentes/base';
 import { useAutenticacao } from '../contextos/Autenticacao';
 import type { ParametrosApp } from '../navegacao/tipos';
@@ -43,7 +43,6 @@ export function TelaConversa({ navigation, route }: Props) {
   const rolagem = useRef<ScrollView>(null);
 
   const carregar = useCallback(async () => {
-    if (MODO_DEMONSTRACAO) return;
     try {
       const resposta = await api<{ itens: Mensagem[] }>(
         `/mensagens/pedido/${route.params.pedidoId}`,

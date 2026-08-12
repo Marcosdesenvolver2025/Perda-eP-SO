@@ -18,7 +18,6 @@ import { api, MODO_DEMONSTRACAO } from '../api/cliente';
 import type { Anuncio, ModalidadeEntrega, ResumoDaCompra } from '../api/tipos';
 import { Aviso, Botao, Carregando, Separador } from '../componentes/base';
 import { SeloGarantia } from '../componentes/produto';
-import { anunciosDemo } from '../dados/exemplo';
 import type { ParametrosApp } from '../navegacao/tipos';
 import { cores, espaco, fonte, raio } from '../tema';
 import { reais } from '../util/formato';
@@ -44,12 +43,6 @@ export function TelaCheckout({ navigation, route }: Props) {
 
   useEffect(() => {
     async function carregar() {
-      if (MODO_DEMONSTRACAO) {
-        const demo = anunciosDemo.find((a) => a.id === route.params.anuncioId) ?? anunciosDemo[0]!;
-        setAnuncio(demo);
-        setCarregando(false);
-        return;
-      }
       try {
         setAnuncio(await api<Anuncio>(`/anuncios/${route.params.anuncioId}`, { publico: true }));
       } finally {
@@ -63,19 +56,6 @@ export function TelaCheckout({ navigation, route }: Props) {
     async function simular() {
       if (!anuncio) return;
 
-      if (MODO_DEMONSTRACAO) {
-        const descontos = calcularDescontos(anuncio.preco, modalidade);
-        setResumo({
-          valorProduto: anuncio.preco,
-          valorTotal: anuncio.preco,
-          taxaComissao: COMISSAO,
-          valorComissao: descontos.comissao,
-          valorTarifa: descontos.tarifa,
-          valorVendedor: descontos.vendedor,
-          modalidade,
-        });
-        return;
-      }
 
       try {
         setResumo(await api<ResumoDaCompra>(`/pedidos/simular?anuncio=${anuncio.id}`));
@@ -90,19 +70,17 @@ export function TelaCheckout({ navigation, route }: Props) {
     if (!anuncio) return;
     setErro(null);
 
-    if (MODO_DEMONSTRACAO) {
-      setErro('Modo demonstração: configure o servidor para concluir a compra de verdade.');
-      return;
-    }
-
     setPagando(true);
     try {
       let pagamento: Record<string, unknown> = { tipo: 'pix' };
 
       if (forma === 'credit_card') {
         if (!cartao) throw new Error('Preencha os dados do cartão.');
-        // o cartão vira token no próprio aparelho, direto com a pagar.me
-        const tokenCartao = await tokenizarCartao(cartao);
+        // o cartão vira token no próprio aparelho, direto com a pagar.me.
+        // Na demonstração não existe chave nem cobrança: o cartão nem sai daqui.
+        const tokenCartao = MODO_DEMONSTRACAO
+          ? 'token_demonstracao'
+          : await tokenizarCartao(cartao);
         pagamento = { tipo: 'credit_card', tokenCartao, parcelas };
       }
 

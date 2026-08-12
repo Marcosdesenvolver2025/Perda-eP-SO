@@ -17,14 +17,9 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import {
-  GoogleSignin,
-  statusCodes,
-} from '@react-native-google-signin/google-signin';
-
 import { api, guardarToken, lerToken, MODO_DEMONSTRACAO } from '../api/cliente';
 import type { Usuario } from '../api/tipos';
-import { usuarioDemo } from '../dados/exemplo';
+import { carregarGoogleSignin, faltaPlayServices, foiCancelado } from './google';
 
 interface RespostaLogin {
   token: string;
@@ -52,17 +47,20 @@ export function ProvedorAutenticacao({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     if (MODO_DEMONSTRACAO) return;
-    GoogleSignin.configure({
-      // client ID do tipo "Web" do mesmo projeto no Google Cloud
-      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '',
-      offlineAccess: false,
-      scopes: ['profile', 'email'],
-    });
+    void carregarGoogleSignin().then((google) =>
+      google?.configure({
+        // client ID do tipo "Web" do mesmo projeto no Google Cloud
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '',
+        offlineAccess: false,
+        scopes: ['profile', 'email'],
+      }),
+    );
   }, []);
 
   const recarregar = useCallback(async () => {
     if (MODO_DEMONSTRACAO) {
-      setUsuario(usuarioDemo);
+      // o servidor falso responde /auth/eu sem exigir token
+      setUsuario(await api<Usuario>('/auth/eu'));
       setCarregando(false);
       return;
     }
@@ -89,14 +87,18 @@ export function ProvedorAutenticacao({ children }: { children: React.ReactNode }
     setErro(null);
 
     if (MODO_DEMONSTRACAO) {
-      setUsuario(usuarioDemo);
+      const login = await api<RespostaLogin>('/auth/google', { metodo: 'POST', publico: true });
+      setUsuario(login.usuario);
       return;
     }
 
     setEntrando(true);
     try {
-      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      const resposta = await GoogleSignin.signIn();
+      const google = await carregarGoogleSignin();
+      if (!google) throw new Error('O login com Google não está disponível neste aparelho.');
+
+      await google.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const resposta = await google.signIn();
 
       const idToken =
         // a lib mudou o formato entre versões; aceitamos os dois
@@ -115,9 +117,9 @@ export function ProvedorAutenticacao({ children }: { children: React.ReactNode }
       setUsuario(login.usuario);
     } catch (e) {
       const codigo = (e as { code?: string }).code;
-      if (codigo === statusCodes.SIGN_IN_CANCELLED) {
+      if (await foiCancelado(codigo)) {
         setErro(null); // a pessoa desistiu: não é erro
-      } else if (codigo === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+      } else if (await faltaPlayServices(codigo)) {
         setErro('Atualize o Google Play Services para entrar.');
       } else {
         setErro((e as Error).message ?? 'Não foi possível entrar. Tente de novo.');
@@ -129,17 +131,14 @@ export function ProvedorAutenticacao({ children }: { children: React.ReactNode }
 
   const sair = useCallback(async () => {
     if (!MODO_DEMONSTRACAO) {
-      await GoogleSignin.signOut().catch(() => undefined);
+      const google = await carregarGoogleSignin();
+      await google?.signOut().catch(() => undefined);
       await guardarToken(null);
     }
     setUsuario(null);
   }, []);
 
   const atualizarPerfil = useCallback(async (dados: Partial<Usuario>) => {
-    if (MODO_DEMONSTRACAO) {
-      setUsuario((atual) => (atual ? { ...atual, ...dados } : atual));
-      return;
-    }
     await api('/auth/eu', { metodo: 'PATCH', corpo: dados });
     setUsuario((atual) => (atual ? { ...atual, ...dados } : atual));
   }, []);

@@ -6,13 +6,14 @@
  */
 
 import React, { useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { api, MODO_DEMONSTRACAO } from '../api/cliente';
+import { api } from '../api/cliente';
+import { confirmar } from '../util/dialogo';
 import { Aviso, Botao, ItemDeMenu, Separador } from '../componentes/base';
 import { useAutenticacao } from '../contextos/Autenticacao';
 import type { ParametrosApp } from '../navegacao/tipos';
@@ -28,24 +29,19 @@ export function TelaConfiguracoes({ navigation }: Props) {
   const [excluindo, setExcluindo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
-  function confirmarExclusao() {
-    Alert.alert(
-      'excluir sua conta?',
-      'seus dados pessoais, anúncios e endereços serão apagados. os registros de vendas já concluídas ficam guardados por exigência fiscal, mas sem seus dados pessoais. essa ação não tem volta.',
-      [
-        { text: 'cancelar', style: 'cancel' },
-        { text: 'excluir minha conta', style: 'destructive', onPress: excluir },
-      ],
-    );
+  async function confirmarExclusao() {
+    const certeza = await confirmar({
+      titulo: 'excluir sua conta?',
+      mensagem:
+        'seus dados pessoais, anúncios e endereços serão apagados. os registros de vendas já concluídas ficam guardados por exigência fiscal, mas sem seus dados pessoais. essa ação não tem volta.',
+      confirmar: 'excluir minha conta',
+      destrutivo: true,
+    });
+    if (certeza) await excluir();
   }
 
   async function excluir() {
     setErro(null);
-
-    if (MODO_DEMONSTRACAO) {
-      setErro('Modo demonstração: conecte o servidor para excluir a conta de verdade.');
-      return;
-    }
 
     setExcluindo(true);
     try {

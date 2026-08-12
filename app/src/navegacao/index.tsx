@@ -11,8 +11,11 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer, type Theme } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { MODO_DEMONSTRACAO } from '../api/cliente';
 import { Carregando } from '../componentes/base';
 import { useAutenticacao } from '../contextos/Autenticacao';
+import { referenciaDeNavegacao } from '../demo/navegacao';
+import { TelaRoteiro } from '../demo/TelaRoteiro';
 import { cores } from '../tema';
 import { TelaAreaDoEntregador } from '../telas/AreaDoEntregador';
 import { TelaBusca } from '../telas/Busca';
@@ -118,7 +121,7 @@ export function Navegacao() {
   if (carregando) return <Carregando texto="abrindo o vendas itinga..." />;
 
   return (
-    <NavigationContainer theme={tema}>
+    <NavigationContainer theme={tema} ref={referenciaDeNavegacao}>
       <Pilha.Navigator screenOptions={{ headerShown: false }}>
         <Pilha.Screen name="Abas" component={NavegadorDeAbas} />
         <Pilha.Screen name="Entrar" component={TelaEntrar} options={{ presentation: 'modal' }} />
@@ -161,6 +164,9 @@ export function Navegacao() {
           options={{ presentation: 'modal' }}
         />
         <Pilha.Screen name="ComoFunciona" component={TelaComoFunciona} />
+        {MODO_DEMONSTRACAO ? (
+          <Pilha.Screen name="Roteiro" component={TelaRoteiro} />
+        ) : null}
       </Pilha.Navigator>
     </NavigationContainer>
   );

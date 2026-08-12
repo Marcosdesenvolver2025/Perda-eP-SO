@@ -8,11 +8,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { api, MODO_DEMONSTRACAO } from '../api/cliente';
+import { api } from '../api/cliente';
 import type { Anuncio, CondicaoProduto } from '../api/tipos';
 import { BarraDeBusca, Carregando, TelaVazia } from '../componentes/base';
 import { GradeDeProdutos } from '../componentes/produto';
-import { anunciosDemo } from '../dados/exemplo';
 import type { ParametrosApp } from '../navegacao/tipos';
 import { cores, espaco, fonte, raio } from '../tema';
 
@@ -41,22 +40,6 @@ export function TelaBusca({ navigation, route }: Props) {
 
   const buscar = useCallback(async () => {
     setCarregando(true);
-
-    if (MODO_DEMONSTRACAO) {
-      const filtrados = anunciosDemo
-        .filter((a) => (condicao ? a.condicao === condicao : true))
-        .filter((a) => a.titulo.toLowerCase().includes(termo.trim().toLowerCase()))
-        .sort((a, b) =>
-          ordem === 'menor_preco'
-            ? a.preco - b.preco
-            : ordem === 'maior_preco'
-              ? b.preco - a.preco
-              : 0,
-        );
-      setItens(filtrados);
-      setCarregando(false);
-      return;
-    }
 
     try {
       const parametros = new URLSearchParams({ ordem, porPagina: '40' });

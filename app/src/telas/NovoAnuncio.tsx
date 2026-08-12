@@ -19,16 +19,16 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { api, MODO_DEMONSTRACAO } from '../api/cliente';
+import { api } from '../api/cliente';
 import type { CondicaoProduto } from '../api/tipos';
 import { Aviso, Botao, Campo, Selo } from '../componentes/base';
 import type { ParametrosApp } from '../navegacao/tipos';
 import { cores, espaco, fonte, raio } from '../tema';
 import { EscolhaDeModalidade } from '../componentes/modalidade';
+import { escolherDaGaleria } from '../util/fotos';
 import {
   ALTURA_MAXIMA_CM,
   LARGURA_MAXIMA_CM,
@@ -91,7 +91,6 @@ export function TelaNovoAnuncio({ navigation }: Props) {
   useFocusEffect(
     useCallback(() => {
       async function carregar() {
-        if (MODO_DEMONSTRACAO) return;
         try {
           const r = await api<{ itens: EnderecoDeColeta[] }>('/conta/enderecos');
           setEnderecos(r.itens);
@@ -116,13 +115,14 @@ export function TelaNovoAnuncio({ navigation }: Props) {
     [pesoKg, comprimento, largura, altura],
   );
 
-  // só reclama depois que a pessoa começou a preencher as medidas
+  // publicar exige as quatro medidas
   const preencheuMedidas =
     medidas.pesoG > 0 && medidas.comprimentoCm > 0 && medidas.larguraCm > 0 && medidas.alturaCm > 0;
 
-  // se o pacote não cabe na nossa entrega, a opção fica bloqueada e o app cai
-  // sozinho para "entrega por sua conta"
-  const cabe = preencheuMedidas ? cabeNaEntregaDaPlataforma(medidas) : { cabe: true, motivos: [] };
+  // Já bloqueia com o primeiro campo que estoura, sem esperar os outros: quem
+  // digita 25 kg descobre ali, não depois de preencher mais três campos. Medida
+  // em branco vale 0 e nunca passa de limite nenhum, então não gera alarme falso.
+  const cabe = cabeNaEntregaDaPlataforma(medidas);
 
   useEffect(() => {
     if (!cabe.cabe && modalidadeEntrega === 'PLATAFORMA') {
@@ -131,22 +131,10 @@ export function TelaNovoAnuncio({ navigation }: Props) {
   }, [cabe.cabe, modalidadeEntrega]);
 
   async function escolherFotos() {
-    const permissao = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permissao.granted) {
-      setErro('Precisamos da sua permissão para acessar as fotos.');
-      return;
-    }
-
-    const resultado = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: true,
-      selectionLimit: 10 - fotos.length,
-      quality: 0.7,
-    });
-
-    if (!resultado.canceled) {
-      setFotos((atuais) => [...atuais, ...resultado.assets.map((a) => a.uri)].slice(0, 10));
-    }
+    setErro(null);
+    const { uris, aviso } = await escolherDaGaleria(10 - fotos.length);
+    if (aviso) setErro(aviso);
+    if (uris.length) setFotos((atuais) => [...atuais, ...uris].slice(0, 10));
   }
 
   const podePublicar =
@@ -157,15 +145,10 @@ export function TelaNovoAnuncio({ navigation }: Props) {
     preencheuMedidas &&
     // na modalidade PLATAFORMA o pacote precisa caber e ter endereço de coleta
     (modalidadeEntrega === 'VENDEDOR' ||
-      (cabe.cabe && (!!enderecoColetaId || MODO_DEMONSTRACAO)));
+      (cabe.cabe && !!enderecoColetaId));
 
   async function publicar() {
     setErro(null);
-
-    if (MODO_DEMONSTRACAO) {
-      setErro('Modo demonstração: configure o servidor para publicar de verdade.');
-      return;
-    }
 
     setEnviando(true);
     try {

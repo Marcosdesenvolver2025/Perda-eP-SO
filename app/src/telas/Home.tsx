@@ -20,7 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { api, MODO_DEMONSTRACAO } from '../api/cliente';
+import { api } from '../api/cliente';
 import type { Anuncio } from '../api/tipos';
 import {
   AbasDeCategoria,
@@ -31,7 +31,7 @@ import {
 } from '../componentes/base';
 import { CarrosselDeProdutos, FaixaDestaque } from '../componentes/produto';
 import { useAutenticacao } from '../contextos/Autenticacao';
-import { anunciosDemo, categoriasDemo } from '../dados/exemplo';
+import { categorias as abasDeCategoria } from '../dados/categorias';
 import type { ParametrosApp } from '../navegacao/tipos';
 import { cores, espaco, fonte } from '../tema';
 
@@ -45,11 +45,6 @@ export function TelaHome({ navigation }: Props) {
   const [atualizando, setAtualizando] = useState(false);
 
   const carregar = useCallback(async () => {
-    if (MODO_DEMONSTRACAO) {
-      setAnuncios(anunciosDemo);
-      setCarregando(false);
-      return;
-    }
     try {
       const resposta = await api<{ itens: Anuncio[] }>(
         `/anuncios?porPagina=40${categoria === 'todos' ? '' : `&categoria=${categoria}`}`,
@@ -112,7 +107,7 @@ export function TelaHome({ navigation }: Props) {
       <BarraDeBusca somenteLeitura aoTocar={() => abrirBusca()} />
 
       <View style={{ marginTop: espaco.md }}>
-        <AbasDeCategoria itens={categoriasDemo} ativa={categoria} aoTrocar={setCategoria} />
+        <AbasDeCategoria itens={abasDeCategoria} ativa={categoria} aoTrocar={setCategoria} />
       </View>
 
       <ScrollView
@@ -152,7 +147,7 @@ export function TelaHome({ navigation }: Props) {
 
             <FaixaDestaque
               titulo="a gente entrega pra você"
-              descricao="até 20 kg e 60 cm, com 7 dias pra testar em casa"
+              descricao="até 20 kg e 100 cm, com 7 dias pra testar em casa"
               textoDoBotao="como funciona"
               aoTocar={() => navigation.navigate('ComoFunciona')}
               icone="bicycle"

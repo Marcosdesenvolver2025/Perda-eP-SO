@@ -8,11 +8,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { api, MODO_DEMONSTRACAO } from '../api/cliente';
+import { api } from '../api/cliente';
 import type { Anuncio } from '../api/tipos';
 import { Avatar, Carregando, TelaVazia } from '../componentes/base';
 import { GradeDeProdutos } from '../componentes/produto';
-import { anunciosDemo } from '../dados/exemplo';
 import type { ParametrosApp } from '../navegacao/tipos';
 import { cores, espaco, fonte } from '../tema';
 
@@ -24,11 +23,6 @@ export function TelaLoja({ navigation, route }: Props) {
 
   useEffect(() => {
     async function carregar() {
-      if (MODO_DEMONSTRACAO) {
-        setAnuncios(anunciosDemo.slice(0, 4));
-        setCarregando(false);
-        return;
-      }
       try {
         // a vitrine já filtra por vendedor via busca
         const resposta = await api<{ itens: Anuncio[] }>(

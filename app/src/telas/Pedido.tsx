@@ -10,10 +10,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { api, MODO_DEMONSTRACAO } from '../api/cliente';
+import { api } from '../api/cliente';
 import type { EstadoPedido, Pedido } from '../api/tipos';
 import { Aviso, Botao, Carregando, Cartao, Selo, Separador } from '../componentes/base';
-import { pedidosDemo } from '../dados/exemplo';
 import type { ParametrosApp } from '../navegacao/tipos';
 import { cores, espaco, fonte, raio } from '../tema';
 import { dataCurta, prazoDeTeste, reais } from '../util/formato';
@@ -61,11 +60,6 @@ export function TelaPedido({ navigation, route }: Props) {
   useFocusEffect(
     useCallback(() => {
       async function carregar() {
-        if (MODO_DEMONSTRACAO) {
-          setPedido(pedidosDemo.find((p) => p.id === route.params.id) ?? pedidosDemo[0]!);
-          setCarregando(false);
-          return;
-        }
         try {
           setPedido(await api<Pedido>(`/pedidos/${route.params.id}`));
         } catch {

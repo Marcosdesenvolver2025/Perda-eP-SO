@@ -1,0 +1,28 @@
+# Publicação da versão navegável (modo demonstração) no Netlify.
+#
+# O build sai de `npx expo export --platform web`, que gera a pasta `dist`.
+# `EXPO_PUBLIC_MODO_DEMO=1` liga o servidor falso em memória: a vitrine, os
+# pedidos e as entregas respondem sem banco e sem pagar.me.
+#
+# Para publicar a versão de verdade, tire a variável e coloque
+# `EXPO_PUBLIC_API_URL` apontando para a API.
+
+[build]
+  base = "app"
+  command = "npx expo export --platform web"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+  EXPO_PUBLIC_MODO_DEMO = "1"
+
+# O app usa react-navigation, não rotas de arquivo: tudo cai no index.html.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/_expo/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

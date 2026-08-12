@@ -10,11 +10,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { api, MODO_DEMONSTRACAO } from '../api/cliente';
+import { api } from '../api/cliente';
 import type { Anuncio, Pedido } from '../api/tipos';
 import { Botao, Cartao, Selo, TelaVazia } from '../componentes/base';
 import { GradeDeProdutos } from '../componentes/produto';
-import { anunciosDemo, pedidosDemo } from '../dados/exemplo';
 import type { ParametrosApp } from '../navegacao/tipos';
 import { cores, espaco, fonte, raio } from '../tema';
 import { prazoDeTeste, quando, reais } from '../util/formato';
@@ -48,10 +47,6 @@ export function TelaMinhasCompras({
   useFocusEffect(
     useCallback(() => {
       async function carregar() {
-        if (MODO_DEMONSTRACAO) {
-          setPedidos(pedidosDemo);
-          return;
-        }
         try {
           const resposta = await api<{ itens: Pedido[] }>('/pedidos/compras');
           setPedidos(resposta.itens);
@@ -152,28 +147,6 @@ export function TelaMinhasVendas({
   useFocusEffect(
     useCallback(() => {
       async function carregar() {
-        if (MODO_DEMONSTRACAO) {
-          setExtrato({
-            aReceber: 9_710,
-            recebido: 24_500,
-            diasParaLiberar: 7,
-            pedidos: [
-              {
-                id: 'p1',
-                codigo: 'VI-7K3QM2',
-                estado: 'ENTREGUE',
-                modalidade: 'PLATAFORMA',
-                valorProduto: 12_000,
-                valorComissao: 1_440,
-                valorTarifa: 850,
-                taxaComissao: 0.12,
-                valorVendedor: 9_710,
-                anuncio: { titulo: 'jaqueta de couro' },
-              },
-            ],
-          });
-          return;
-        }
         try {
           setExtrato(await api<Extrato>('/pedidos/vendas'));
         } catch {
@@ -300,10 +273,6 @@ export function TelaMinhaLoja({
   useFocusEffect(
     useCallback(() => {
       async function carregar() {
-        if (MODO_DEMONSTRACAO) {
-          setAnuncios(anunciosDemo.slice(0, 3));
-          return;
-        }
         try {
           const resposta = await api<{ itens: Anuncio[] }>('/anuncios/meus/lista');
           setAnuncios(resposta.itens);

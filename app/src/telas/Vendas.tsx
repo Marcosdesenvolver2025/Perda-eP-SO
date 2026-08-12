@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { api, MODO_DEMONSTRACAO } from '../api/cliente';
+import { api } from '../api/cliente';
 import { Avatar, Aviso, Botao, Cartao, Selo } from '../componentes/base';
 import { useAutenticacao } from '../contextos/Autenticacao';
 import type { ParametrosApp } from '../navegacao/tipos';
@@ -37,11 +37,6 @@ export function TelaVendas({ navigation }: Props) {
   useFocusEffect(
     useCallback(() => {
       async function carregar() {
-        if (MODO_DEMONSTRACAO) {
-          setExtrato({ aReceber: 9_840, recebido: 24_500, diasParaLiberar: 7, pedidos: [] });
-          setAnunciosAtivos(3);
-          return;
-        }
         try {
           const [dados, meus] = await Promise.all([
             api<Extrato>('/pedidos/vendas'),

@@ -12,10 +12,10 @@ import React, { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
+import { tirarFotoAgora } from '../util/fotos';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { api, MODO_DEMONSTRACAO } from '../api/cliente';
+import { api } from '../api/cliente';
 import { Aviso, Botao, Campo } from '../componentes/base';
 import type { ParametrosApp } from '../navegacao/tipos';
 import { cores, espaco, fonte, raio } from '../tema';
@@ -42,22 +42,14 @@ export function TelaPassoDaEntrega({ navigation, route }: Props) {
   const [erro, setErro] = useState<string | null>(null);
 
   async function tirarFoto() {
-    const permissao = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permissao.granted) {
-      setErro('Precisamos da câmera para registrar a foto.');
-      return;
-    }
-    const resultado = await ImagePicker.launchCameraAsync({ quality: 0.6 });
-    if (!resultado.canceled) setFoto(resultado.assets[0]?.uri ?? null);
+    setErro(null);
+    const { uris, aviso } = await tirarFotoAgora();
+    if (aviso) setErro(aviso);
+    if (uris[0]) setFoto(uris[0]);
   }
 
   async function enviar() {
     setErro(null);
-
-    if (MODO_DEMONSTRACAO) {
-      setErro('Modo demonstração: conecte o servidor para concluir o passo.');
-      return;
-    }
 
     setEnviando(true);
     try {

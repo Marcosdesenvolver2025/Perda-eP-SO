@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { api, MODO_DEMONSTRACAO } from '../api/cliente';
+import { api } from '../api/cliente';
 import { Aviso, Botao, Campo, Cartao, Separador, TelaVazia } from '../componentes/base';
 import { useAutenticacao } from '../contextos/Autenticacao';
 import type { ParametrosApp } from '../navegacao/tipos';
@@ -141,7 +141,6 @@ export function TelaEnderecos({
   const [erro, setErro] = useState<string | null>(null);
 
   const carregar = useCallback(async () => {
-    if (MODO_DEMONSTRACAO) return;
     try {
       const resposta = await api<{ itens: Endereco[] }>('/conta/enderecos');
       setEnderecos(resposta.itens);
@@ -285,11 +284,6 @@ export function TelaContaDeRecebimento({
 
   async function cadastrar() {
     setErro(null);
-
-    if (MODO_DEMONSTRACAO) {
-      setErro('Modo demonstração: conecte o servidor para cadastrar sua conta.');
-      return;
-    }
 
     setEnviando(true);
     try {

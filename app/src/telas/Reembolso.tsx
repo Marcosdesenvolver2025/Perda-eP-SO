@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { api, MODO_DEMONSTRACAO } from '../api/cliente';
+import { api } from '../api/cliente';
 import { Aviso, Botao, Campo, Carregando, Cartao, Separador } from '../componentes/base';
 import type { ParametrosApp } from '../navegacao/tipos';
 import { cores, espaco, fonte, raio } from '../tema';
@@ -47,17 +47,6 @@ export function TelaReembolso({ navigation, route }: Props) {
 
   useEffect(() => {
     async function carregar() {
-      if (MODO_DEMONSTRACAO) {
-        setPrevia({
-          valorPago: 12_800,
-          valorReembolsado: 12_800,
-          valorRetido: 0,
-          explicacao: 'Você recebe de volta tudo que pagou, inclusive o frete.',
-          prazoTesteAte: null,
-        });
-        setCarregando(false);
-        return;
-      }
       try {
         setPrevia(await api<Previa>(`/pedidos/${route.params.pedidoId}/reembolso/previa`));
       } catch (e) {
@@ -72,11 +61,6 @@ export function TelaReembolso({ navigation, route }: Props) {
   async function enviar() {
     if (!motivo) return;
     setErro(null);
-
-    if (MODO_DEMONSTRACAO) {
-      setErro('Modo demonstração: conecte o servidor para abrir a devolução.');
-      return;
-    }
 
     setEnviando(true);
     try {

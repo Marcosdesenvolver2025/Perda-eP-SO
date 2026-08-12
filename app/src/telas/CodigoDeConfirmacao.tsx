@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { api, MODO_DEMONSTRACAO } from '../api/cliente';
+import { api } from '../api/cliente';
 import type { ModalidadeEntrega } from '../api/tipos';
 import { Aviso, Botao, Carregando, Cartao } from '../componentes/base';
 import type { ParametrosApp } from '../navegacao/tipos';
@@ -41,16 +41,6 @@ export function TelaCodigoDeConfirmacao({ navigation, route }: Props) {
   useFocusEffect(
     useCallback(() => {
       async function carregar() {
-        if (MODO_DEMONSTRACAO) {
-          setDados({
-            codigo: '4821',
-            modalidade: 'VENDEDOR',
-            estado: 'AGUARDANDO_ENTREGA_DO_VENDEDOR',
-            paraQuem: 'informe ao vendedor só quando o produto estiver na sua mão',
-          });
-          setCarregando(false);
-          return;
-        }
         try {
           setDados(await api<RespostaCodigo>(`/pedidos/${route.params.pedidoId}/codigo`));
         } catch (e) {

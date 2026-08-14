@@ -1,0 +1,9 @@
+# O app usa react-navigation, não rotas de arquivo: toda rota cai no index.html.
+#
+# O netlify.toml da raiz já declara este mesmo redirect para o build conectado
+# ao repositório. Este arquivo existe para o caminho manual: ao arrastar só a
+# pasta app/dist em app.netlify.com/drop, o Netlify não lê o toml da raiz — mas
+# lê o _redirects de dentro da pasta publicada.
+#
+# O Expo copia tudo de app/public/ para a raiz do export.
+/*  /index.html  200

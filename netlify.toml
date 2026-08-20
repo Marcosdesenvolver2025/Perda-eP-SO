@@ -36,7 +36,8 @@
 
 [build]
   base = "app"
-  command = "npx expo export --platform web"
+  # export + o passo que carimba a versão no service worker
+  command = "npm run build:web"
   publish = "dist"
 
 [build.environment]
@@ -56,7 +57,22 @@
   to = "/index.html"
   status = 200
 
+# Bundle e assets têm hash no nome: podem ficar em cache para sempre.
 [[headers]]
   for = "/_expo/static/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+# O service worker NÃO pode ser cacheado. Se a CDN segurar o sw.js antigo,
+# o navegador nunca descobre que existe versão nova e o app trava na antiga.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Mesma razão: o index.html aponta para o bundle com hash, então ele precisa
+# ser sempre revalidado para uma publicação nova chegar em quem já visitou.
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"

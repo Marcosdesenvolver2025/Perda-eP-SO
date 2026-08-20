@@ -43,5 +43,31 @@
     </noscript>
     <!-- The root element for your Expo app. -->
     <div id="root"></div>
+
+    <!--
+      Service worker: é o que faz o navegador oferecer "instalar" e o que
+      deixa o app abrir sem rede. Registrado depois do load para não
+      disputar banda com o bundle na primeira visita.
+
+      Quando um deploy novo chega, o service worker novo assume e a página
+      recarrega uma vez sozinha — senão o app ficaria preso na versão antiga
+      até a pessoa fechar todas as abas.
+    -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/sw.js').catch(function (erro) {
+            console.warn('service worker não registrou:', erro);
+          });
+
+          var recarregando = false;
+          navigator.serviceWorker.addEventListener('controllerchange', function () {
+            if (recarregando) return;
+            recarregando = true;
+            window.location.reload();
+          });
+        });
+      }
+    </script>
 </body>
 </html>

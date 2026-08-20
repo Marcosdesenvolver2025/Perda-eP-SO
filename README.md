@@ -182,9 +182,15 @@ nenhuma no painel:
 | Campo | Valor | Vem de |
 |---|---|---|
 | base | `app` | `netlify.toml` |
-| comando | `npx expo export --platform web` | idem |
+| comando | `npm run build:web` | idem |
 | publicação | `dist` (relativo à base → `app/dist`) | idem |
 | Node | 20 | idem |
+
+O site é um **PWA**: instalável no celular (abre em tela cheia, com ícone
+próprio) e funciona **sem rede**. Manifesto, ícones e service worker estão em
+`app/public/`; `app/scripts/finalizar-web.mjs` carimba a versão do cache no
+worker depois do export — por isso o comando é `npm run build:web` e não
+`expo export` direto.
 
 Hoje o site publica em **modo demonstração**: um servidor falso em memória
 (`app/src/demo/`) responde no lugar da API, sem banco e sem pagar.me.

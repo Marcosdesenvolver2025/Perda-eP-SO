@@ -120,6 +120,45 @@ a tela mostra um aviso e o fluxo continua.
 
 ---
 
+## O site é um PWA
+
+Instalável no celular e funciona sem rede.
+
+| Peça | Arquivo | O que faz |
+|---|---|---|
+| manifesto | `app/public/manifest.webmanifest` | nome, ícones, `display: standalone`, tema `#00DF13` |
+| ícones | `app/public/icone-{192,512}.png`, `apple-touch-icon.png` | tela de início do Android e do iPhone |
+| service worker | `app/public/sw.js` | instalabilidade e funcionamento offline |
+| registro | `app/public/index.html` | registra o worker e recarrega quando chega versão nova |
+| carimbo de versão | `app/scripts/finalizar-web.mjs` | roda depois do export |
+
+### Como o cache se comporta
+
+| Pedido | Estratégia | Por quê |
+|---|---|---|
+| abrir / recarregar | rede primeiro, cache como reserva | fica atualizado com rede, abre sem ela |
+| `/_expo/static/**`, `/assets/**` | cache primeiro | têm hash no nome, o conteúdo nunca muda |
+| o resto | rede, cache como reserva | — |
+
+**Por que existe o `finalizar-web.mjs`:** o nome do cache precisa mudar a cada
+deploy, senão o worker antigo continua servindo a versão velha e a atualização
+nunca chega. O script carimba o hash do bundle dentro do `sw.js` e monta a
+lista de arquivos pré-carregados. Por isso o comando de build é
+`npm run build:web`, não `expo export` direto — o export sozinho deixaria os
+marcadores `__VERSAO__` e `__BUNDLES__` sem preencher.
+
+O `netlify.toml` também manda `sw.js` e `index.html` com
+`max-age=0, must-revalidate`. Sem isso a CDN seguraria o worker antigo e o
+app travaria na versão publicada anteriormente.
+
+### Verificado
+
+Service worker registrado, ativado e controlando a página; 11 arquivos na
+casca; a página recarregada **em modo offline** abre completa, com vitrine,
+preços e navegação. Zero erros de console.
+
+---
+
 ## Publicar no Netlify
 
 O `netlify.toml` está na **raiz do repositório**, que é onde o Netlify procura.

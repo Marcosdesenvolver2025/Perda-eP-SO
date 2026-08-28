@@ -1,2 +1,7 @@
 # Segredo do site — nunca versionado.
 .env
+
+# Saída do empacotador (gerada com `node tools/empacotar.mjs`).
+pacote/
+pacote.zip
+.oficina/

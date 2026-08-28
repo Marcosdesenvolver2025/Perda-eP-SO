@@ -38,6 +38,20 @@
   </div>
 
   <div class="cartao" id="passo-pix" hidden></div>
+
+  <!--
+    Registro do pedido. O Netlify detecta este formulário na publicação e passa
+    a guardar cada envio no painel (aba Forms), com o e-mail do comprador e o
+    número do pedido. É assim que você descobre para quem mandar o código
+    depois de ver o Pix cair no banco. O visitante nunca vê este bloco: quem
+    envia é o JavaScript, na hora de gerar o Pix.
+  -->
+  <form name="pedidos" data-netlify="true" netlify-honeypot="deixe-vazio" hidden>
+    <input type="email" name="email">
+    <input type="text" name="pedido">
+    <input type="text" name="valor">
+    <input type="text" name="deixe-vazio">
+  </form>
 </main>
 
 <footer class="rodape">

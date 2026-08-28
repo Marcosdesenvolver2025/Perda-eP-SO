@@ -6,6 +6,7 @@
 // possíveis e guardamos o que existir.
 
 import { readFile, stat } from 'node:fs/promises';
+import { PAGINAS_EMBUTIDAS } from './paginas-embutidas.mjs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -41,8 +42,13 @@ let catalogoEmCache = null;
 
 export async function lerCatalogo() {
   if (catalogoEmCache) return catalogoEmCache;
-  const bruto = await readFile(join(await raizDoConteudo(), 'catalogo.json'), 'utf8');
-  catalogoEmCache = JSON.parse(bruto);
+  try {
+    const bruto = await readFile(join(await raizDoConteudo(), 'catalogo.json'), 'utf8');
+    catalogoEmCache = JSON.parse(bruto);
+  } catch {
+    if (!PAGINAS_EMBUTIDAS.catalogo) throw new Error('Catálogo não encontrado.');
+    catalogoEmCache = PAGINAS_EMBUTIDAS.catalogo;
+  }
   return catalogoEmCache;
 }
 
@@ -60,22 +66,39 @@ const TIPOS = {
   '.svg': 'image/svg+xml',
 };
 
-// Lê a página de um capítulo pago. Aceita qualquer uma das extensões
-// conhecidas, então trocar os SVGs de exemplo por .jpg não exige mexer no
-// código nem no catálogo.
+// Lê a página de um capítulo pago. Duas origens, nesta ordem:
+//
+//   1. os arquivos em conteudo/, quando o site é construído pelo Netlify a
+//      partir do repositório (é o caminho normal, e o que aguenta arte
+//      pesada);
+//   2. o mapa embutido, quando o site foi publicado pelo pacote pronto, que
+//      não tem etapa de build para levar a pasta junto.
+//
+// Aceita qualquer uma das extensões conhecidas, então trocar os SVGs de
+// exemplo por .jpg não exige mexer no código nem no catálogo.
 export async function lerPaginaPaga(capitulo, pagina) {
   const nomeCap = `cap-${String(capitulo).padStart(2, '0')}`;
   const nomeArquivo = String(pagina).padStart(3, '0');
-  const pasta = join(await raizDoConteudo(), nomeCap);
 
-  for (const [extensao, tipo] of Object.entries(TIPOS)) {
-    try {
-      const bytes = await readFile(join(pasta, nomeArquivo + extensao));
-      return { bytes, tipo };
-    } catch {
-      // tenta a próxima extensão
+  try {
+    const pasta = join(await raizDoConteudo(), nomeCap);
+    for (const [extensao, tipo] of Object.entries(TIPOS)) {
+      try {
+        const bytes = await readFile(join(pasta, nomeArquivo + extensao));
+        return { bytes, tipo };
+      } catch {
+        // tenta a próxima extensão
+      }
     }
+  } catch {
+    // sem a pasta conteudo/: seguimos para o mapa embutido
   }
+
+  const embutida = PAGINAS_EMBUTIDAS[`${nomeCap}/${nomeArquivo}`];
+  if (embutida) {
+    return { bytes: Buffer.from(embutida.dados, 'base64'), tipo: embutida.tipo };
+  }
+
   return null;
 }
 

@@ -62,18 +62,23 @@ quando o dinheiro cai. Quem confere é você. O caminho completo:
 
 1. O comprador digita o e-mail e clica em *Gerar o Pix*.
 2. O site monta o "copia e cola" com a sua chave, R$ 10,00 e um número de
-   pedido (`CAP...`) — o mesmo que aparece no seu extrato.
-3. Ele paga e manda o comprovante pelo WhatsApp ou e-mail configurado.
-4. Você vê o Pix cair no aplicativo do banco e roda:
+   pedido (`CAP...`), e **registra o pedido no painel do Netlify** (aba
+   *Forms* → `pedidos`), com o e-mail e esse número. É assim que você sabe
+   para quem mandar o código — sem isso, o Pix cai no banco sem nome.
+3. Ele paga. Se você tiver contato configurado, o site ainda oferece o botão
+   de mandar o comprovante.
+4. Você compara o número do pedido com o Pix recebido e roda:
 
    ```bash
    cd webtoon
    node tools/gerar-codigo.mjs email-do-comprador@exemplo.com
    ```
 
-5. Manda o código para ele. Ele entra em `/liberar.html`, digita e-mail +
-   código, e os capítulos 6 a 11 abrem — naquele e em qualquer outro aparelho,
-   sempre com o mesmo par e-mail/código.
+5. Manda o código. Ele entra em `/liberar.html`, digita e-mail + código, e os
+   capítulos 6 a 11 abrem — naquele e em qualquer outro aparelho.
+
+Vale ligar o aviso por e-mail em *Forms* → *Form notifications*, para cada
+pedido novo chegar na sua caixa.
 
 **Confirmação automática (opcional).** Se um dia essa chave estiver dentro de
 uma conta Mercado Pago, defina `MP_ACCESS_TOKEN` e a função
@@ -84,27 +89,57 @@ passos 3 a 5.
 
 ## Publicar
 
-O site vai para o ar no Netlify, como um **site novo**, separado do que já
-existe:
+Há dois caminhos. Os dois deixam o cadeado rodando no servidor.
 
-1. No Netlify: *Add new site* → *Import an existing project* → este
-   repositório.
-2. Em *Base directory*, escreva **`webtoon`**. Isso é o que faz o Netlify ler
-   o `webtoon/netlify.toml` em vez do da raiz. O resto (comando e pasta
-   publicada) já vem do arquivo.
-3. Em *Environment variables*, cadastre:
+### Caminho 1 — arrastar o pacote pronto (mais rápido)
 
-   | Variável | Valor |
+O `pacote.zip` sai do empacotador com o site inteiro construído: páginas,
+funções e capítulos pagos embutidos no código da função. Não precisa de build,
+de CLI nem de configurar nada.
+
+```bash
+cd webtoon
+node tools/empacotar.mjs      # gera pacote/ e pacote.zip
+```
+
+No painel: abra o projeto → aba **Deploys** → arraste o `pacote.zip` na área
+de publicação manual.
+
+Arraste **no projeto que já existe** (`capitulos-online`), não em
+`netlify.com/drop`: o projeto já tem o `SEGREDO_ACESSO` cadastrado, e sem essa
+variável as funções recusam tudo.
+
+Limite: as páginas pagas viajam dentro do código da função, que não passa de
+~50 MB. Serve bem para exemplo e para arte leve; para arte pesada, use o
+caminho 2.
+
+### Caminho 2 — publicar a partir do repositório (para o dia a dia)
+
+Aqui o Netlify constrói sozinho a cada `git push`, e a arte vai como arquivo,
+sem limite de tamanho de função.
+
+1. No projeto → *Build & deploy* → *Link repository* → `Perda-eP-SO`.
+2. Preencha:
+
+   | Campo | Valor |
    |---|---|
-   | `SEGREDO_ACESSO` | um segredo longo, gerado com `openssl rand -hex 32` |
+   | Branch to deploy | `claude/chapters-paywall-site-12u5mi` |
+   | **Base directory** | **`webtoon`** |
+   | Build command | em branco |
+   | Publish directory | em branco |
 
-   Guarde esse segredo. Trocá-lo invalida **todos** os códigos já vendidos.
+   A base directory é o que faz o Netlify ler o `webtoon/netlify.toml` em vez
+   do da raiz, que é do outro site.
 
-4. Publique. Depois, no seu computador, crie `webtoon/.env` com a mesma linha
-   `SEGREDO_ACESSO=...` para o `gerar-codigo.mjs` produzir códigos que o site
-   aceite. Esse arquivo é ignorado pelo git de propósito.
+### A variável obrigatória
 
-Para rodar na sua máquina antes: `npx netlify dev` de dentro de `webtoon/`.
+| Variável | Valor |
+|---|---|
+| `SEGREDO_ACESSO` | um segredo longo, gerado com `openssl rand -hex 32` |
+
+Já está cadastrada no projeto `capitulos-online`. Guarde-a: trocá-la invalida
+**todos** os códigos já vendidos. Para o `gerar-codigo.mjs` produzir códigos
+que o site aceite, grave o mesmo valor em `webtoon/.env` (ignorado pelo git).
 
 ---
 

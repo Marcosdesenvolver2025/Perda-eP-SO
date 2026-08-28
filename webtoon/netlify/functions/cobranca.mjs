@@ -10,6 +10,20 @@ import { normalizarEmail } from './_lib/codigos.mjs';
 
 const EMAIL_VALIDO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+// O catálogo nasce com contato de exemplo. Enquanto ele não for trocado pelo
+// seu de verdade, é melhor não mandar nada para a tela do que oferecer ao
+// comprador um botão que abre uma conversa que não existe.
+const PLACEHOLDERS = [/exemplo/i, /^5533900000000$/, /^0+$/];
+
+function contatoUtil(contato = {}) {
+  const util = {};
+  for (const [canal, valor] of Object.entries(contato)) {
+    const texto = String(valor || '').trim();
+    if (texto && !PLACEHOLDERS.some((p) => p.test(texto))) util[canal] = texto;
+  }
+  return util;
+}
+
 export default async (req) => {
   if (req.method !== 'POST') {
     return Response.json({ erro: 'Use POST.' }, { status: 405 });
@@ -44,7 +58,7 @@ export default async (req) => {
         identificador,
         copiaECola,
         valor: catalogo.preco.rotulo,
-        contato: catalogo.pix.contato || {},
+        contato: contatoUtil(catalogo.pix.contato),
         confirmacaoAutomatica: confirmacaoAutomatica(),
       },
       { headers: { 'Cache-Control': 'no-store' } },

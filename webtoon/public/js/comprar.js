@@ -11,6 +11,28 @@ const passoPix = document.getElementById('passo-pix');
 
 const EMAIL_VALIDO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+// Avisa o Netlify que existe um pedido esperando pagamento. É um envio de
+// formulário comum: aparece no painel, em Forms -> pedidos, com o e-mail e o
+// número do pedido. Se falhar, a compra segue — o comprovante ainda chega
+// pelo contato, e o comprador tem o número do pedido na tela.
+async function registrarPedido(email, identificador, valor) {
+  try {
+    await fetch('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        'form-name': 'pedidos',
+        email,
+        pedido: identificador,
+        valor,
+        'deixe-vazio': '',
+      }).toString(),
+    });
+  } catch {
+    // sem rede ou formulário desligado: não atrapalha a compra
+  }
+}
+
 function linkDeContato(contato, identificador, email) {
   const texto = encodeURIComponent(
     `Olá! Paguei o Pix do acesso aos capítulos.\nPedido: ${identificador}\nE-mail: ${email}`,
@@ -24,7 +46,12 @@ function linkDeContato(contato, identificador, email) {
     return `<a class="botao botao-principal botao-largo"
       href="mailto:${contato.email}?subject=Comprovante%20-%20${identificador}&body=${texto}">Enviar comprovante por e-mail</a>`;
   }
-  return '';
+  return `
+    <div class="recado recado-espera">
+      Guarde o número do pedido. Assim que o pagamento for conferido, o código
+      de acesso chega no e-mail que você informou.
+    </div>
+  `;
 }
 
 async function gerarPix() {
@@ -45,6 +72,8 @@ async function gerarPix() {
       method: 'POST',
       body: JSON.stringify({ email }),
     });
+
+    registrarPedido(email, cobranca.identificador, cobranca.valor);
 
     passoPix.hidden = false;
     passoPix.innerHTML = `

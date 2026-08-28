@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1120" viewBox="0 0 800 1120">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a1830"/>
+      <stop offset="1" stop-color="#12131a"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="1120" fill="url(#g)"/>
+  <g font-family="system-ui, -apple-system, Segoe UI, sans-serif" text-anchor="middle">
+    <text x="400" y="520" fill="#f2f3f7" font-size="54" font-weight="700">Nome da Sua Obra</text>
+    <text x="400" y="580" fill="#9aa0b5" font-size="26">capa de exemplo</text>
+  </g>
+</svg>

@@ -1,0 +1,331 @@
+/* Visual do site. Tema escuro, que é o que leitor de webtoon espera. */
+
+:root {
+  --fundo: #0d0e13;
+  --fundo-cartao: #16181f;
+  --fundo-elevado: #1e212a;
+  --borda: #272b36;
+  --texto: #f2f3f7;
+  --texto-fraco: #99a0b4;
+  --destaque: #e0629b;
+  --destaque-escuro: #b8447a;
+  --aviso: #f0b429;
+  --raio: 14px;
+  --largura: 980px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--fundo);
+  color: var(--texto);
+  font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+a { color: var(--destaque); }
+
+.envolucro {
+  max-width: var(--largura);
+  margin: 0 auto;
+  padding: 0 18px;
+}
+
+/* ---------- cabeçalho ---------- */
+
+.topo {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(13, 14, 19, 0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--borda);
+}
+
+.topo .envolucro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 60px;
+}
+
+.marca {
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--texto);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.selo-18 {
+  border: 1.5px solid var(--destaque);
+  color: var(--destaque);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 1px 6px;
+  letter-spacing: 0.5px;
+}
+
+/* ---------- botões ---------- */
+
+.botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 22px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition: filter 0.15s, opacity 0.15s;
+}
+
+.botao:hover { filter: brightness(1.12); }
+.botao:disabled { opacity: 0.5; cursor: default; }
+
+.botao-principal { background: var(--destaque); color: #17020c; }
+.botao-secundario { background: var(--fundo-elevado); color: var(--texto); border: 1px solid var(--borda); }
+.botao-largo { width: 100%; }
+
+/* ---------- capa e sinopse ---------- */
+
+.capa-obra {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 28px;
+  padding: 34px 0 12px;
+}
+
+.capa-obra img {
+  width: 100%;
+  border-radius: var(--raio);
+  border: 1px solid var(--borda);
+  display: block;
+}
+
+.capa-obra h1 { margin: 0 0 6px; font-size: 32px; line-height: 1.2; }
+.capa-obra .autor { color: var(--texto-fraco); margin: 0 0 16px; }
+.capa-obra .sinopse { color: #c9cee0; }
+
+@media (max-width: 640px) {
+  .capa-obra { grid-template-columns: 1fr; gap: 18px; }
+  .capa-obra img { max-width: 220px; margin: 0 auto; }
+  .capa-obra h1 { font-size: 26px; }
+}
+
+/* ---------- lista de capítulos ---------- */
+
+.titulo-secao {
+  margin: 34px 0 14px;
+  font-size: 20px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.titulo-secao span { font-size: 14px; color: var(--texto-fraco); font-weight: 400; }
+
+.lista-capitulos { display: flex; flex-direction: column; gap: 10px; }
+
+.capitulo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: var(--fundo-cartao);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.capitulo:hover { border-color: #3c4152; background: var(--fundo-elevado); }
+
+.capitulo .numero {
+  flex: 0 0 46px;
+  height: 46px;
+  border-radius: 10px;
+  background: var(--fundo-elevado);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  color: var(--texto-fraco);
+}
+
+.capitulo .corpo { flex: 1; min-width: 0; }
+.capitulo .corpo strong { display: block; font-size: 16px; }
+.capitulo .corpo small { color: var(--texto-fraco); }
+
+.etiqueta {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.etiqueta-gratis { background: #16321f; color: #6ee7a0; }
+.etiqueta-pago { background: #3a1c2c; color: var(--destaque); }
+.etiqueta-liberado { background: #1c2a3a; color: #74b6f5; }
+
+.capitulo.trancado .numero { color: var(--destaque); }
+
+/* ---------- faixa de venda ---------- */
+
+.faixa-venda {
+  margin: 26px 0;
+  padding: 22px;
+  border-radius: var(--raio);
+  border: 1px solid var(--destaque-escuro);
+  background: linear-gradient(140deg, #2a1220, #16181f 65%);
+}
+
+.faixa-venda h2 { margin: 0 0 6px; font-size: 20px; }
+.faixa-venda p { margin: 0 0 16px; color: #d3d7e6; }
+.faixa-venda .preco { font-size: 30px; font-weight: 700; color: var(--destaque); }
+
+/* ---------- leitor ---------- */
+
+.leitor { background: #000; padding: 0 0 40px; }
+.leitor img {
+  display: block;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  border: 0;
+}
+
+.barra-leitor {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.navegacao-capitulo {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  padding: 26px 0 10px;
+  flex-wrap: wrap;
+}
+
+/* ---------- bloqueio do capítulo pago ---------- */
+
+.paredao {
+  max-width: 560px;
+  margin: 40px auto;
+  padding: 30px 24px;
+  text-align: center;
+  background: var(--fundo-cartao);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+}
+
+.paredao .cadeado { font-size: 40px; }
+.paredao h2 { margin: 10px 0 8px; }
+.paredao p { color: var(--texto-fraco); }
+
+/* ---------- formulários ---------- */
+
+.campo { margin-bottom: 14px; text-align: left; }
+.campo label { display: block; font-size: 14px; color: var(--texto-fraco); margin-bottom: 6px; }
+
+.campo input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--borda);
+  background: var(--fundo);
+  color: var(--texto);
+  font: inherit;
+}
+
+.campo input:focus { outline: 2px solid var(--destaque-escuro); outline-offset: 1px; }
+
+.cartao {
+  background: var(--fundo-cartao);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  padding: 24px;
+  max-width: 520px;
+  margin: 30px auto;
+}
+
+.pix-codigo {
+  word-break: break-all;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 13px;
+  background: var(--fundo);
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  padding: 12px;
+  color: #c9cee0;
+}
+
+.qr { display: block; width: 220px; height: 220px; margin: 0 auto 16px; background: #fff; border-radius: 10px; }
+
+.recado { padding: 12px 14px; border-radius: 10px; margin: 14px 0; font-size: 14px; }
+.recado-erro { background: #3a1a1a; color: #ffb4b4; }
+.recado-ok { background: #16321f; color: #92e5b4; }
+.recado-espera { background: var(--fundo-elevado); color: var(--texto-fraco); }
+
+/* ---------- avisos ---------- */
+
+.faixa-demo {
+  background: var(--aviso);
+  color: #23180a;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 14px;
+}
+
+/* ---------- porteiro de idade ---------- */
+
+.porteiro {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #07080b;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.porteiro .caixa {
+  max-width: 420px;
+  text-align: center;
+  background: var(--fundo-cartao);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  padding: 32px 26px;
+}
+
+.porteiro h2 { margin: 12px 0 10px; }
+.porteiro p { color: var(--texto-fraco); font-size: 15px; }
+.porteiro .botoes { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+
+/* ---------- rodapé ---------- */
+
+.rodape {
+  border-top: 1px solid var(--borda);
+  margin-top: 50px;
+  padding: 26px 0 40px;
+  color: var(--texto-fraco);
+  font-size: 14px;
+}
+
+.rodape a { color: var(--texto-fraco); }
+.rodape .linhas { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }

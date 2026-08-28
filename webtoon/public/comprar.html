@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comprar acesso — Nome da Sua Obra</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="/css/estilo.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+
+<header class="topo">
+  <div class="envolucro">
+    <a class="marca" href="/"><span class="selo-18">18+</span> <span>Comprar acesso</span></a>
+    <a class="botao botao-secundario" href="/liberar.html">Já comprei</a>
+  </div>
+</header>
+
+<main class="envolucro">
+  <div class="cartao" id="passo-email">
+    <h1 style="margin-top:0;font-size:22px">Acesso aos capítulos 6 ao 11</h1>
+    <p style="color:var(--texto-fraco)">
+      Pagamento único por Pix. Depois de confirmado, o acesso é seu para sempre —
+      dá para ler em qualquer aparelho usando o mesmo e-mail.
+    </p>
+
+    <div class="campo">
+      <label for="email">Seu e-mail</label>
+      <input type="email" id="email" placeholder="voce@exemplo.com" autocomplete="email" inputmode="email">
+    </div>
+    <p style="font-size:13px;color:var(--texto-fraco);margin-top:-4px">
+      É por esse e-mail que o acesso vai ser liberado. Anote qual você usou.
+    </p>
+
+    <button class="botao botao-principal botao-largo" id="gerar">Gerar o Pix</button>
+    <div id="recado-email"></div>
+  </div>
+
+  <div class="cartao" id="passo-pix" hidden></div>
+</main>
+
+<footer class="rodape">
+  <div class="envolucro">
+    <div class="linhas"><a href="/">Voltar aos capítulos</a><a href="/termos.html">Termos</a></div>
+  </div>
+</footer>
+
+<script type="module" src="/js/comprar.js"></script>
+</body>
+</html>

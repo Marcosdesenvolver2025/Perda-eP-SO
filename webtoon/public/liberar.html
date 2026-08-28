@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Liberar meu acesso — Nome da Sua Obra</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="/css/estilo.css">
+</head>
+<body>
+
+<header class="topo">
+  <div class="envolucro">
+    <a class="marca" href="/"><span class="selo-18">18+</span> <span>Liberar acesso</span></a>
+    <a class="botao botao-secundario" href="/">Capítulos</a>
+  </div>
+</header>
+
+<main class="envolucro">
+  <div class="cartao">
+    <h1 style="margin-top:0;font-size:22px">Já comprei</h1>
+    <p style="color:var(--texto-fraco)">
+      Digite o e-mail que você usou na compra e o código de acesso que recebeu.
+      Serve também para abrir os capítulos em outro celular ou computador —
+      o código continua valendo.
+    </p>
+
+    <div class="campo">
+      <label for="email">E-mail da compra</label>
+      <input type="email" id="email" placeholder="voce@exemplo.com" autocomplete="email" inputmode="email">
+    </div>
+
+    <div class="campo">
+      <label for="codigo">Código de acesso</label>
+      <input type="text" id="codigo" placeholder="AAAAA-BBBBB" autocomplete="one-time-code" spellcheck="false">
+    </div>
+
+    <button class="botao botao-principal botao-largo" id="liberar">Liberar meus capítulos</button>
+    <div id="recado"></div>
+
+    <p style="font-size:13px;color:var(--texto-fraco);margin-top:18px">
+      Ainda não comprou? <a href="/comprar.html">Ver como funciona</a>.
+    </p>
+  </div>
+</main>
+
+<footer class="rodape">
+  <div class="envolucro">
+    <div class="linhas"><a href="/">Capítulos</a><a href="/termos.html">Termos</a></div>
+  </div>
+</footer>
+
+<script type="module" src="/js/liberar.js"></script>
+</body>
+</html>

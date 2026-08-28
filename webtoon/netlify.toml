@@ -1,0 +1,61 @@
+# Publicação do site de capítulos.
+#
+# ATENÇÃO: este arquivo NÃO é o netlify.toml da raiz do repositório — aquele é
+# do aplicativo Vendas Itinga e continua valendo para o site dele. São dois
+# sites diferentes saindo do mesmo repositório.
+#
+# Para o Netlify enxergar ESTE arquivo, crie um site novo apontando para este
+# repositório e, em Site configuration -> Build & deploy -> Base directory,
+# escreva:  webtoon
+#
+# Com a base configurada, tudo aqui passa a ser lido a partir de webtoon/.
+#
+# ---------------------------------------------------------------------------
+# VARIÁVEIS DE AMBIENTE (Site configuration -> Environment variables)
+# ---------------------------------------------------------------------------
+#   SEGREDO_ACESSO   OBRIGATÓRIA. Assina os crachás de acesso. Gere com
+#                    `openssl rand -hex 32`. Se você trocar essa chave, todos
+#                    os crachás já emitidos param de valer e os compradores
+#                    precisam recuperar o acesso pelo código da compra.
+#
+#   MP_ACCESS_TOKEN  Token da sua conta Mercado Pago. Com ele, o Pix é real.
+#
+#   MODO_DEMO        Só para testar sem cobrar: com MODO_DEMO=1 e SEM
+#                    MP_ACCESS_TOKEN, o Pix é fingido e "cai" sozinho em ~8
+#                    segundos. NUNCA no site publicado — nesse modo qualquer
+#                    visitante libera os capítulos pagos de graça.
+# ---------------------------------------------------------------------------
+
+[build]
+  # Não há empacotamento: o site é HTML, CSS e JavaScript direto.
+  command = "echo 'sem etapa de build'"
+  publish = "public"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+  # As páginas pagas ficam FORA de public/ e viajam junto com as funções.
+  # É isto que impede alguém de baixá-las direto pelo endereço.
+  included_files = ["conteudo/**"]
+
+# Nada de capítulo pago em cache de CDN: cada leitura passa pela conferência.
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "no-store"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "SAMEORIGIN"
+
+# As páginas grátis podem ficar em cache: são públicas mesmo.
+[[headers]]
+  for = "/paginas/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"

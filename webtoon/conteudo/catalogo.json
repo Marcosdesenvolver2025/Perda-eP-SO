@@ -1,0 +1,37 @@
+{
+  "obra": {
+    "titulo": "Nome da Sua Obra",
+    "autor": "Seu estúdio",
+    "sinopse": "Troque este texto pela sinopse da sua história. Ele aparece na página inicial, embaixo da capa.",
+    "capa": "/paginas/capa.svg",
+    "classificacao": "18",
+    "aviso": "Conteúdo adulto. Proibido para menores de 18 anos."
+  },
+  "preco": {
+    "centavos": 1000,
+    "rotulo": "R$ 10,00",
+    "descricao": "Acesso vitalício aos capítulos 6 ao 11."
+  },
+  "pix": {
+    "chave": "68124592000197",
+    "nome": "LOJA DIGITAL",
+    "cidade": "ITINGA",
+    "contato": {
+      "whatsapp": "5533900000000",
+      "email": "seu-email@exemplo.com.br"
+    }
+  },
+  "capitulos": [
+    { "numero": 1,  "titulo": "O reencontro",       "paginas": 8,  "pago": false, "resumo": "A volta para a cidade pequena." },
+    { "numero": 2,  "titulo": "Vizinhança",         "paginas": 8,  "pago": false, "resumo": "Quem mora na casa ao lado." },
+    { "numero": 3,  "titulo": "O convite",          "paginas": 8,  "pago": false, "resumo": "Um jantar que não devia ter acontecido." },
+    { "numero": 4,  "titulo": "Segredo de família", "paginas": 8,  "pago": false, "resumo": "O que ninguém conta no almoço de domingo." },
+    { "numero": 5,  "titulo": "A promessa",         "paginas": 8,  "pago": false, "resumo": "O último capítulo aberto. A partir daqui a história vira." },
+    { "numero": 6,  "titulo": "Depois da porta",    "paginas": 10, "pago": true,  "resumo": "" },
+    { "numero": 7,  "titulo": "Sem plateia",        "paginas": 10, "pago": true,  "resumo": "" },
+    { "numero": 8,  "titulo": "Madrugada",          "paginas": 10, "pago": true,  "resumo": "" },
+    { "numero": 9,  "titulo": "O que ela quer",     "paginas": 10, "pago": true,  "resumo": "" },
+    { "numero": 10, "titulo": "Ponto sem volta",    "paginas": 10, "pago": true,  "resumo": "" },
+    { "numero": 11, "titulo": "Amanhecer",          "paginas": 10, "pago": true,  "resumo": "" }
+  ]
+}

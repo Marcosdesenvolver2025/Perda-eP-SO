@@ -183,11 +183,16 @@ function marcarEntregueDoVendedor(p: PedidoDemo, por: NonNullable<Pedido['confir
   p.podePedirReembolso = p.lado === 'compra';
 }
 
-function resumoDaCompra(a: Anuncio, modalidade: Anuncio['modalidadeEntrega']) {
-  const d = calcularDescontos(a.preco, modalidade);
+function resumoDaCompra(
+  a: Anuncio,
+  modalidade: Anuncio['modalidadeEntrega'],
+  valorCombinado?: number,
+) {
+  const preco = valorCombinado ?? a.preco;
+  const d = calcularDescontos(preco, modalidade);
   return {
-    valorProduto: a.preco,
-    valorTotal: a.preco,
+    valorProduto: preco,
+    valorTotal: preco,
     taxaComissao: COMISSAO,
     valorComissao: d.comissao,
     valorTarifa: d.tarifa,
@@ -658,7 +663,15 @@ const rotas: Array<[string, string, Manipulador]> = [
       if (!a) throw new ErroDemo(404, 'Anúncio não encontrado.');
       const modalidade =
         (r.busca.get('modalidade') as Anuncio['modalidadeEntrega']) ?? a.modalidadeEntrega;
-      return resumoDaCompra(a, modalidade);
+
+      const combinada = estado.ofertas.find(
+        (o) =>
+          o.id === r.busca.get('oferta') &&
+          o.estado === 'ACEITA' &&
+          o.meuPapel === 'COMPRADOR' &&
+          o.anuncio.id === a.id,
+      );
+      return resumoDaCompra(a, modalidade, combinada?.valorAtual);
     },
   ],
   [
@@ -668,15 +681,25 @@ const rotas: Array<[string, string, Manipulador]> = [
       const a = estado.anuncios.find((x) => x.id === r.corpo.anuncioId);
       if (!a) throw new ErroDemo(404, 'Anúncio não encontrado.');
       const modalidade = a.modalidadeEntrega;
-      const d = calcularDescontos(a.preco, modalidade);
+
+      // oferta aceita minha, deste anúncio: vale o valor combinado
+      const combinada = estado.ofertas.find(
+        (o) =>
+          o.id === r.corpo.ofertaId &&
+          o.estado === 'ACEITA' &&
+          o.meuPapel === 'COMPRADOR' &&
+          o.anuncio.id === a.id,
+      );
+      const preco = combinada?.valorAtual ?? a.preco;
+      const d = calcularDescontos(preco, modalidade);
       const id = `ped-${Date.now()}`;
       const novo: PedidoDemo = {
         id,
         codigo: `VI-${String(Date.now()).slice(-6)}`,
         estado: modalidade === 'VENDEDOR' ? 'AGUARDANDO_ENTREGA_DO_VENDEDOR' : 'PAGO',
         modalidade,
-        valorProduto: a.preco,
-        valorTotal: a.preco,
+        valorProduto: preco,
+        valorTotal: preco,
         valorComissao: d.comissao,
         valorTarifa: d.tarifa,
         taxaComissao: COMISSAO,

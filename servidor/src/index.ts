@@ -22,6 +22,7 @@ import { rotasConta } from './rotas/conta';
 import { rotasEntregas } from './rotas/entregas';
 import { rotasMensagens } from './rotas/mensagens';
 import { rotasPedidos } from './rotas/pedidos';
+import { rotasOfertas, rotasVendedores } from './rotas/social';
 import { rotasRecebedores } from './rotas/recebedores';
 import { rotasWebhooks } from './rotas/webhooks';
 import { agendarTarefas } from './servicos/tarefas';
@@ -78,6 +79,8 @@ app.get('/configuracoes', (_req, res) =>
 app.use('/auth', rotasAutenticacao);
 app.use('/anuncios', rotasAnuncios);
 app.use('/pedidos', rotasPedidos);
+app.use('/ofertas', rotasOfertas);
+app.use('/vendedores', rotasVendedores);
 app.use('/entregas', rotasEntregas);
 app.use('/recebedores', rotasRecebedores);
 app.use('/mensagens', rotasMensagens);

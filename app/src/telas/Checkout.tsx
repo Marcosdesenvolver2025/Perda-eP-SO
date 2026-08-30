@@ -58,7 +58,10 @@ export function TelaCheckout({ navigation, route }: Props) {
 
 
       try {
-        setResumo(await api<ResumoDaCompra>(`/pedidos/simular?anuncio=${anuncio.id}`));
+        setResumo(await api<ResumoDaCompra>(
+          `/pedidos/simular?anuncio=${anuncio.id}` +
+            (route.params.ofertaId ? `&oferta=${route.params.ofertaId}` : ''),
+        ));
       } catch (e) {
         setErro((e as Error).message);
       }
@@ -90,6 +93,9 @@ export function TelaCheckout({ navigation, route }: Props) {
           metodo: 'POST',
           corpo: {
             anuncioId: anuncio.id,
+            // quando a compra vem de uma oferta aceita, o servidor cobra o
+            // valor combinado em vez do preço do anúncio
+            ...(route.params.ofertaId ? { ofertaId: route.params.ofertaId } : {}),
             pagamento,
             // o endereço é escolhido na tela de endereços; aqui vai o principal
             ...(modalidade === 'PLATAFORMA' ? { enderecoId: route.params.enderecoId } : {}),

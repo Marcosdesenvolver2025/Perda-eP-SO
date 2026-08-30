@@ -6,6 +6,7 @@
  */
 
 import React from 'react';
+import { StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer, type Theme } from '@react-navigation/native';
@@ -20,7 +21,7 @@ import { Carregando } from '../componentes/base';
 import { useAutenticacao } from '../contextos/Autenticacao';
 import { referenciaDeNavegacao } from '../demo/navegacao';
 import { TelaRoteiro } from '../demo/TelaRoteiro';
-import { cores } from '../tema';
+import { cores, raio } from '../tema';
 import { TelaAreaDoEntregador } from '../telas/AreaDoEntregador';
 import { TelaBusca } from '../telas/Busca';
 import { TelaCheckout } from '../telas/Checkout';
@@ -77,17 +78,27 @@ function NavegadorDeAbas() {
     <Abas.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: cores.verdeEscuro,
+        tabBarActiveTintColor: cores.verdeProfundo,
         tabBarInactiveTintColor: cores.textoSuave,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
-        tabBarStyle: { borderTopColor: cores.borda, height: 60, paddingBottom: 6, paddingTop: 6 },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
+        tabBarStyle: {
+          borderTopColor: cores.borda,
+          height: 68,
+          paddingBottom: 8,
+          paddingTop: 8,
+        },
         tabBarLabel: rotulos[route.name],
-        tabBarIcon: ({ color, focused, size }) => (
-          <Ionicons
-            name={focused ? icones[route.name] : (`${icones[route.name]}-outline` as never)}
-            size={size ?? 22}
-            color={color}
-          />
+        // A aba ativa ganha uma pílula verde atrás do ícone, em vez de só
+        // trocar a cor. É o detalhe que dá rosto próprio à barra — e, de
+        // quebra, o alvo fica maior e mais fácil de acertar com o polegar.
+        tabBarIcon: ({ focused }) => (
+          <View style={[e.pilulaAba, focused && e.pilulaAbaAtiva]}>
+            <Ionicons
+              name={focused ? icones[route.name] : (`${icones[route.name]}-outline` as never)}
+              size={21}
+              color={focused ? cores.branco : cores.textoSuave}
+            />
+          </View>
         ),
       })}
     >
@@ -99,6 +110,17 @@ function NavegadorDeAbas() {
     </Abas.Navigator>
   );
 }
+
+const e = StyleSheet.create({
+  pilulaAba: {
+    minWidth: 52,
+    height: 30,
+    borderRadius: raio.pilula,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pilulaAbaAtiva: { backgroundColor: cores.verdeEscuro },
+});
 
 const tema: Theme = {
   dark: false,

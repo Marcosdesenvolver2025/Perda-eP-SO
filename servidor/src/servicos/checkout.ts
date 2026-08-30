@@ -15,6 +15,7 @@ import { randomBytes } from 'node:crypto';
 
 import { ambiente } from '../ambiente';
 import { calcularSplit, montarRegrasSplit } from '../dominio/comissao';
+import * as ofertasServico from './ofertas';
 import { validarMedidas } from '../dominio/frete';
 import type { ModalidadeEntrega } from '../dominio/regras';
 import { conflito, erroDeValidacao, naoEncontrado } from '../erros';
@@ -37,6 +38,8 @@ export interface PedidoDeCompra {
   compradorId: string;
   anuncioId: string;
   enderecoId?: string;
+  /** Oferta aceita que define o preço. Sem ela, vale o preço do anúncio. */
+  ofertaId?: string;
   pagamento:
     | { tipo: 'credit_card'; tokenCartao: string; parcelas: number }
     | { tipo: 'pix' };
@@ -133,8 +136,30 @@ export async function comprar(entrada: PedidoDeCompra) {
     throw conflito('O vendedor ainda não informou o endereço de coleta deste anúncio.');
   }
 
+  /**
+   * Preço a cobrar. É o do anúncio, salvo quando existe uma oferta ACEITA
+   * desta pessoa para este anúncio — aí vale o valor combinado.
+   *
+   * `valorCombinado` devolve null em qualquer caso duvidoso (oferta de outra
+   * pessoa, de outro anúncio, já usada em outra compra, ou não aceita), e o
+   * preço do anúncio é o padrão seguro: o erro caro aqui seria cobrar menos
+   * do que o combinado.
+   *
+   * Daqui para baixo nada muda: o valor entra no `calcularSplit` de sempre,
+   * e comissão, tarifa e repasse saem do mesmo cálculo. Como a tarifa é por
+   * faixa, uma oferta que derruba o valor para outra faixa derruba a tarifa
+   * junto — é a tabela funcionando.
+   */
+  const valorDaOferta = entrada.ofertaId
+    ? await ofertasServico.valorCombinado(
+        entrada.ofertaId,
+        entrada.compradorId,
+        anuncio.id,
+      )
+    : null;
+
   const split = calcularSplit({
-    valorProduto: anuncio.preco,
+    valorProduto: valorDaOferta ?? anuncio.preco,
     modalidade,
     taxaComissao: ambiente.COMISSAO,
   });
@@ -156,6 +181,7 @@ export async function comprar(entrada: PedidoDeCompra) {
       // congelado: se a política mudar, este pedido mantém a regra da venda
       modalidade,
       estado: 'AGUARDANDO_PAGAMENTO',
+      ofertaId: valorDaOferta != null ? entrada.ofertaId : null,
       valorProduto: split.valorProduto,
       valorTotal: split.total,
       taxaComissao: split.taxaComissao,

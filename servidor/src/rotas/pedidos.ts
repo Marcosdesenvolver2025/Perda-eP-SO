@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 import { ambiente } from '../ambiente';
 import { diasRestantesParaTestar, dentroDaJanelaDeTeste } from '../dominio/reembolso';
-import { naoEncontrado, semPermissao } from '../erros';
+import { erroDeValidacao, naoEncontrado, semPermissao } from '../erros';
 import { exigirLogin } from '../middlewares/autenticacao';
 import { prisma } from '../prisma';
 import * as checkout from '../servicos/checkout';
@@ -35,6 +35,8 @@ rotasPedidos.get('/simular', async (req, res, next) => {
 const comprarEsquema = z.object({
   anuncioId: z.string(),
   enderecoId: z.string().optional(),
+  /** Oferta aceita que define o preço. O serviço confere se é mesmo minha. */
+  ofertaId: z.string().optional(),
   pagamento: z.discriminatedUnion('tipo', [
     z.object({
       tipo: z.literal('credit_card'),
@@ -281,6 +283,53 @@ rotasPedidos.post('/:id/reembolso', async (req, res, next) => {
       compradorId: req.sessao!.usuarioId,
     });
     return res.status(201).json(reembolso);
+  } catch (erro) {
+    return next(erro);
+  }
+});
+
+
+/**
+ * POST /pedidos/:id/avaliar — nota de 1 a 5 para quem vendeu.
+ *
+ * Só depois do pedido concluído: avaliar antes de o prazo de teste vencer
+ * seria avaliar uma compra que ainda pode virar devolução.
+ */
+rotasPedidos.post('/:id/avaliar', async (req, res, next) => {
+  try {
+    const { nota, comentario } = z
+      .object({ nota: z.number().int().min(1).max(5), comentario: z.string().max(1000).optional() })
+      .parse(req.body);
+
+    const usuarioId = req.sessao!.usuarioId;
+    const pedido = await prisma.pedido.findUnique({
+      where: { id: req.params.id! },
+      select: { id: true, estado: true, compradorId: true, vendedorId: true },
+    });
+
+    if (!pedido) throw naoEncontrado('Pedido não encontrado.');
+    if (pedido.compradorId !== usuarioId) {
+      throw semPermissao('Só quem comprou pode avaliar este pedido.');
+    }
+    if (pedido.estado !== 'CONCLUIDO') {
+      throw erroDeValidacao(
+        'A avaliação abre quando o pedido é concluído, depois do prazo de teste.',
+      );
+    }
+
+    const avaliacao = await prisma.avaliacao.upsert({
+      where: { pedidoId_autorId: { pedidoId: pedido.id, autorId: usuarioId } },
+      create: {
+        pedidoId: pedido.id,
+        autorId: usuarioId,
+        avaliadoId: pedido.vendedorId,
+        nota,
+        comentario: comentario ?? null,
+      },
+      update: {},
+    });
+
+    return res.status(201).json(avaliacao);
   } catch (erro) {
     return next(erro);
   }

@@ -18,6 +18,7 @@ import {
 import { erroDeValidacao, naoEncontrado, semPermissao } from '../erros';
 import { exigirLogin, loginOpcional } from '../middlewares/autenticacao';
 import { prisma } from '../prisma';
+import * as ofertasServico from '../servicos/ofertas';
 
 export const rotasAnuncios = Router();
 
@@ -95,7 +96,7 @@ rotasAnuncios.get('/', loginOpcional, async (req, res, next) => {
 rotasAnuncios.get('/:id', loginOpcional, async (req, res, next) => {
   try {
     const anuncio = await prisma.anuncio.findUnique({
-      where: { id: req.params.id },
+      where: { id: req.params.id! },
       include: {
         fotos: { orderBy: { ordem: 'asc' } },
         categoria: true,
@@ -224,7 +225,7 @@ rotasAnuncios.post('/', exigirLogin, async (req, res, next) => {
 /** PATCH /anuncios/:id — edita o próprio anúncio. */
 rotasAnuncios.patch('/:id', exigirLogin, async (req, res, next) => {
   try {
-    const anuncio = await prisma.anuncio.findUnique({ where: { id: req.params.id } });
+    const anuncio = await prisma.anuncio.findUnique({ where: { id: req.params.id! } });
     if (!anuncio) throw naoEncontrado('Anúncio não encontrado.');
     if (anuncio.vendedorId !== req.sessao!.usuarioId) throw semPermissao();
 
@@ -254,7 +255,7 @@ rotasAnuncios.patch('/:id', exigirLogin, async (req, res, next) => {
 /** DELETE /anuncios/:id — tira o anúncio do ar. */
 rotasAnuncios.delete('/:id', exigirLogin, async (req, res, next) => {
   try {
-    const anuncio = await prisma.anuncio.findUnique({ where: { id: req.params.id } });
+    const anuncio = await prisma.anuncio.findUnique({ where: { id: req.params.id! } });
     if (!anuncio) throw naoEncontrado('Anúncio não encontrado.');
     if (anuncio.vendedorId !== req.sessao!.usuarioId) throw semPermissao();
 
@@ -277,6 +278,81 @@ rotasAnuncios.get('/meus/lista', exigirLogin, async (req, res, next) => {
       include: { fotos: { take: 1, orderBy: { ordem: 'asc' } } },
     });
     return res.json({ itens: anuncios });
+  } catch (erro) {
+    return next(erro);
+  }
+});
+
+
+/** POST /anuncios/:id/curtir — alterna a curtida. */
+rotasAnuncios.post('/:id/curtir', exigirLogin, async (req, res, next) => {
+  try {
+    const usuarioId = req.sessao!.usuarioId;
+    const anuncioId = req.params.id!;
+
+    const anuncio = await prisma.anuncio.findUnique({
+      where: { id: anuncioId },
+      select: { id: true },
+    });
+    if (!anuncio) throw naoEncontrado('Anúncio não encontrado.');
+
+    const chave = { usuarioId_anuncioId: { usuarioId, anuncioId } };
+    const existente = await prisma.favorito.findUnique({ where: chave });
+
+    if (existente) {
+      await prisma.favorito.delete({ where: chave });
+    } else {
+      await prisma.favorito.create({ data: { usuarioId, anuncioId } });
+    }
+
+    return res.json({
+      curtido: !existente,
+      curtidas: await prisma.favorito.count({ where: { anuncioId } }),
+    });
+  } catch (erro) {
+    return next(erro);
+  }
+});
+
+/** GET /anuncios/curtidos — minha lista de desejos. */
+rotasAnuncios.get('/curtidos', exigirLogin, async (req, res, next) => {
+  try {
+    const favoritos = await prisma.favorito.findMany({
+      where: { usuarioId: req.sessao!.usuarioId },
+      include: {
+        anuncio: {
+          include: {
+            fotos: { orderBy: { ordem: 'asc' } },
+            vendedor: { select: { id: true, nome: true, apelidoLoja: true, bairro: true } },
+          },
+        },
+      },
+      orderBy: { criadoEm: 'desc' },
+      take: 100,
+    });
+    return res.json({
+      itens: favoritos.map((f) => ({ ...f.anuncio, curtido: true })),
+    });
+  } catch (erro) {
+    return next(erro);
+  }
+});
+
+/** POST /anuncios/:id/ofertas — o comprador propõe um valor. */
+rotasAnuncios.post('/:id/ofertas', exigirLogin, async (req, res, next) => {
+  try {
+    const { valor, recado } = z
+      .object({ valor: z.number().int().positive(), recado: z.string().max(300).optional() })
+      .parse(req.body);
+
+    return res.status(201).json(
+      await ofertasServico.propor({
+        anuncioId: req.params.id!,
+        compradorId: req.sessao!.usuarioId,
+        valor,
+        recado,
+      }),
+    );
   } catch (erro) {
     return next(erro);
   }

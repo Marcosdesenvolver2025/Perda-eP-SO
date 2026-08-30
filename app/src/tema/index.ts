@@ -5,6 +5,14 @@
  * usado como referência. O verde puro é forte demais para texto sobre fundo
  * branco (contraste baixo), então textos e ícones usam `verdeEscuro`, e o
  * `verde` fica para preenchimentos, botões e destaques.
+ *
+ * O **âmbar** é a segunda cor da marca e existe para diferenciar: marketplace
+ * de usados costuma ser de uma cor só com branco. Aqui ele marca desconto,
+ * oferta em aberto e prazo correndo — coisas que pedem urgência, onde o verde
+ * (que significa "tudo certo") passaria a mensagem errada. Nunca como fundo de
+ * bloco grande: é tempero, não base.
+ *
+ * O **coral** é só para o coração de curtido e para o contador de curtidas.
  */
 
 import { Platform } from 'react-native';
@@ -19,6 +27,15 @@ export const cores = {
   /** Fundo claro esverdeado para cards de destaque. */
   verdeClaro: '#E8FFEA',
   verdeSuave: '#B6F7BC',
+
+  /** Segunda cor: desconto, oferta em aberto, prazo correndo. */
+  ambar: '#FF9F1C',
+  ambarClaro: '#FFF3E0',
+  /** Âmbar escurecido o bastante para virar texto sobre branco. */
+  ambarEscuro: '#8A4B00',
+
+  /** Curtidas. Só o coração e o contador. */
+  coral: '#FF3D68',
 
   preto: '#111813',
   texto: '#1B2320',
@@ -44,10 +61,19 @@ export const espaco = {
   xxl: 32,
 } as const;
 
+/**
+ * Cantos. O app usa cantos mais retos que o comum em marketplace de usados —
+ * é parte de ter cara própria. `pilula` fica para filtro e selo pequeno;
+ * botão grande usa `botao`, que é quase reto.
+ */
 export const raio = {
-  sm: 8,
-  md: 12,
-  lg: 16,
+  sm: 6,
+  md: 10,
+  lg: 14,
+  /** Botão principal: canto discreto, não cápsula. */
+  botao: 12,
+  /** Cartão de produto e blocos de conteúdo. */
+  cartao: 18,
   pilula: 999,
 } as const;
 

@@ -63,6 +63,18 @@ export function TelaHome({ navigation }: Props) {
     void carregar();
   }, [carregar]);
 
+  async function curtir(id: string) {
+    // muda na hora; se o servidor recusar, o próximo carregamento corrige
+    setAnuncios((atuais) =>
+      atuais.map((a) =>
+        a.id === id
+          ? { ...a, curtido: !a.curtido, curtidas: (a.curtidas ?? 0) + (a.curtido ? -1 : 1) }
+          : a,
+      ),
+    );
+    await api(`/anuncios/${id}/curtir`, { metodo: 'POST' }).catch(() => undefined);
+  }
+
   const abrirProduto = (id: string) => navigation.navigate('Produto', { id });
   const abrirBusca = (filtro?: string) => navigation.navigate('Busca', { termo: filtro });
 
@@ -142,6 +154,7 @@ export function TelaHome({ navigation }: Props) {
               anuncios={novidades}
               textoDoBotao="ver tudo"
               aoTocarProduto={abrirProduto}
+              aoCurtir={curtir}
               aoVerTudo={() => abrirBusca()}
             />
 
@@ -159,6 +172,7 @@ export function TelaHome({ navigation }: Props) {
               anuncios={abaixoDeCem}
               textoDoBotao="quero ver"
               aoTocarProduto={abrirProduto}
+              aoCurtir={curtir}
               aoVerTudo={() => abrirBusca()}
             />
 
@@ -168,6 +182,7 @@ export function TelaHome({ navigation }: Props) {
               anuncios={semiNovos}
               textoDoBotao="espia só"
               aoTocarProduto={abrirProduto}
+              aoCurtir={curtir}
               aoVerTudo={() => abrirBusca()}
             />
 
@@ -185,6 +200,7 @@ export function TelaHome({ navigation }: Props) {
               anuncios={perto}
               textoDoBotao="ver a cidade toda"
               aoTocarProduto={abrirProduto}
+              aoCurtir={curtir}
               aoVerTudo={() => abrirBusca()}
             />
 

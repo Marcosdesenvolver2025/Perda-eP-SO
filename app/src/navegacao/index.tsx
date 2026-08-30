@@ -12,6 +12,10 @@ import { NavigationContainer, type Theme } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { MODO_DEMONSTRACAO } from '../api/cliente';
+import { TelaAvaliar } from '../telas/Avaliar';
+import { TelaCurtidos } from '../telas/Curtidos';
+import { TelaFazerOferta } from '../telas/FazerOferta';
+import { TelaOfertas } from '../telas/Ofertas';
 import { Carregando } from '../componentes/base';
 import { useAutenticacao } from '../contextos/Autenticacao';
 import { referenciaDeNavegacao } from '../demo/navegacao';
@@ -164,6 +168,18 @@ export function Navegacao() {
           options={{ presentation: 'modal' }}
         />
         <Pilha.Screen name="ComoFunciona" component={TelaComoFunciona} />
+        <Pilha.Screen
+          name="FazerOferta"
+          component={TelaFazerOferta}
+          options={{ presentation: 'modal' }}
+        />
+        <Pilha.Screen name="Ofertas" component={TelaOfertas} />
+        <Pilha.Screen name="Curtidos" component={TelaCurtidos} />
+        <Pilha.Screen
+          name="Avaliar"
+          component={TelaAvaliar}
+          options={{ presentation: 'modal' }}
+        />
         {MODO_DEMONSTRACAO ? (
           <Pilha.Screen name="Roteiro" component={TelaRoteiro} />
         ) : null}

@@ -96,3 +96,56 @@ export function calcularDescontos(
   const total = comissao + tarifa;
   return { comissao, tarifa, total, vendedor: Math.max(0, preco - total) };
 }
+
+// ---------------------------------------------------------------------------
+// Ofertas — espelho de `servidor/src/dominio/ofertas.ts`
+// ---------------------------------------------------------------------------
+
+/** Quantos dias uma proposta fica de pé esperando resposta. */
+export const DIAS_PARA_RESPONDER_OFERTA = 3;
+
+/** Piso da proposta, como fração do preço pedido. */
+export const FRACAO_MINIMA_DA_OFERTA = 0.5;
+
+/**
+ * A menor oferta aceitável neste anúncio.
+ * Nunca abaixo do mínimo de venda: metade de R$ 12,00 daria R$ 6,00, e com
+ * esse valor o pedido nem poderia ser criado.
+ */
+export function valorMinimoDaOferta(precoAnunciado: number): number {
+  return Math.max(
+    Math.ceil(precoAnunciado * FRACAO_MINIMA_DA_OFERTA),
+    VALOR_MINIMO_VENDA,
+  );
+}
+
+function emReais(centavos: number): string {
+  return `R$ ${(centavos / 100).toFixed(2).replace('.', ',')}`;
+}
+
+/**
+ * Valida a proposta antes de mandar para o servidor, para a pessoa saber na
+ * hora em vez de esperar a resposta. O servidor valida de novo — é ele que manda.
+ */
+export function validarProposta(
+  valorProposto: number,
+  precoAnunciado: number,
+): { valido: boolean; motivo: string } {
+  if (!Number.isInteger(valorProposto) || valorProposto <= 0) {
+    return { valido: false, motivo: 'Informe um valor válido.' };
+  }
+  if (valorProposto >= precoAnunciado) {
+    return {
+      valido: false,
+      motivo: `Esse valor é igual ou maior que o preço pedido. Para levar por ${emReais(precoAnunciado)}, é só comprar direto.`,
+    };
+  }
+  const minimo = valorMinimoDaOferta(precoAnunciado);
+  if (valorProposto < minimo) {
+    return {
+      valido: false,
+      motivo: `A menor oferta possível aqui é ${emReais(minimo)}.`,
+    };
+  }
+  return { valido: true, motivo: '' };
+}

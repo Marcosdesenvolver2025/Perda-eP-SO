@@ -90,6 +90,20 @@ enum EstadoReembolso {
   CONCLUIDO // produto devolvido e estorno feito
 }
 
+enum EstadoOferta {
+  ABERTA
+  CONTRAPROPOSTA
+  ACEITA
+  RECUSADA
+  EXPIRADA
+  CANCELADA
+}
+
+enum AtorDaOferta {
+  COMPRADOR
+  VENDEDOR
+}
+
 enum EstadoRecebedor {
   PENDENTE // cadastrado na pagar.me, aguardando aprovação
   ATIVO
@@ -137,6 +151,11 @@ model Usuario {
   avaliacoesFeitas Avaliacao[]  @relation("Autor")
   avaliacoesRecebidas Avaliacao[] @relation("Avaliado")
   dispositivos  Dispositivo[]
+  favoritos     Favorito[]
+  seguindo      Seguidor[]      @relation("Seguindo")
+  seguidores    Seguidor[]      @relation("Seguidores")
+  ofertasFeitas    Oferta[]     @relation("OfertasFeitas")
+  ofertasRecebidas Oferta[]     @relation("OfertasRecebidas")
 
   @@index([cidade, papel])
   @@index([papel, entregadorDisponivel])
@@ -238,6 +257,7 @@ model Anuncio {
   fotos     FotoAnuncio[]
   pedidos   Pedido[]
   favoritos Favorito[]
+  ofertas   Oferta[]
 
   @@index([estado, criadoEm])
   @@index([vendedorId, estado])
@@ -254,14 +274,83 @@ model FotoAnuncio {
   @@index([anuncioId, ordem])
 }
 
+/// Curtida. É a lista de desejos do comprador e o termômetro do vendedor:
+/// anúncio muito curtido e pouco vendido costuma ser preço fora do lugar.
 model Favorito {
   id        String   @id @default(cuid())
   usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   anuncioId String
   anuncio   Anuncio  @relation(fields: [anuncioId], references: [id], onDelete: Cascade)
   criadoEm  DateTime @default(now())
 
   @@unique([usuarioId, anuncioId])
+  @@index([usuarioId, criadoEm])
+}
+
+/// Quem segue a lojinha de quem. Serve para avisar de anúncio novo.
+model Seguidor {
+  id         String   @id @default(cuid())
+  seguidorId String
+  seguidor   Usuario  @relation("Seguindo", fields: [seguidorId], references: [id], onDelete: Cascade)
+  seguidoId  String
+  seguido    Usuario  @relation("Seguidores", fields: [seguidoId], references: [id], onDelete: Cascade)
+  criadoEm   DateTime @default(now())
+
+  @@unique([seguidorId, seguidoId])
+  @@index([seguidoId])
+}
+
+/// Negociação de preço. Regras em `src/dominio/ofertas.ts`.
+///
+/// `valorAtual` é o último lance — proposta do comprador ou contraproposta do
+/// vendedor. Quando o estado vira ACEITA, é esse valor que o checkout cobra,
+/// entrando no split como se fosse o preço do anúncio.
+model Oferta {
+  id          String       @id @default(cuid())
+  anuncioId   String
+  anuncio     Anuncio      @relation(fields: [anuncioId], references: [id], onDelete: Cascade)
+  compradorId String
+  comprador   Usuario      @relation("OfertasFeitas", fields: [compradorId], references: [id], onDelete: Cascade)
+  vendedorId  String
+  vendedor    Usuario      @relation("OfertasRecebidas", fields: [vendedorId], references: [id], onDelete: Cascade)
+
+  /// Preço do anúncio quando a negociação começou. Congelado: se o vendedor
+  /// mudar o preço no meio da conversa, a oferta continua valendo o que valia.
+  precoAnunciado Int
+  /// Último lance, em centavos.
+  valorAtual     Int
+  estado         EstadoOferta   @default(ABERTA)
+  /// Quem fez o último lance. Define de quem é a vez de responder.
+  ultimoLancePor AtorDaOferta   @default(COMPRADOR)
+  /// Recado curto de quem propôs.
+  recado         String?
+
+  /// Começa a contar do último lance, não da criação.
+  lanceEm     DateTime  @default(now())
+  respondidoEm DateTime?
+  criadoEm    DateTime  @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  lances  LanceDaOferta[]
+  pedido  Pedido?
+
+  @@index([vendedorId, estado])
+  @@index([compradorId, estado])
+  @@index([anuncioId, estado])
+}
+
+/// Histórico da negociação, para as duas partes verem como chegaram no valor.
+model LanceDaOferta {
+  id       String       @id @default(cuid())
+  ofertaId String
+  oferta   Oferta       @relation(fields: [ofertaId], references: [id], onDelete: Cascade)
+  por      AtorDaOferta
+  valor    Int
+  recado   String?
+  criadoEm DateTime     @default(now())
+
+  @@index([ofertaId, criadoEm])
 }
 
 model Pedido {
@@ -279,6 +368,11 @@ model Pedido {
 
   modalidade ModalidadeEntrega
   estado     EstadoPedido      @default(AGUARDANDO_PAGAMENTO)
+
+  /// Preenchido quando o pedido nasceu de uma oferta aceita. Guarda por que
+  /// o `valorProduto` é menor que o preço do anúncio.
+  ofertaId   String?           @unique
+  oferta     Oferta?           @relation(fields: [ofertaId], references: [id])
 
   /// valores congelados no momento da compra (centavos)
   /// O comprador paga só `valorProduto`; não há cobrança separada de frete.

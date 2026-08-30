@@ -70,6 +70,7 @@ export function TelaRoteiro({ navigation }: Props) {
   const pedidoComCodigo = acharPorEstado('AGUARDANDO_ENTREGA_DO_VENDEDOR');
   const pedidoDeclarado = acharPorEstado('ENTREGA_DECLARADA');
   const pedidoParaDevolver = pedidos.find((p) => p.podePedirReembolso);
+  const pedidoParaAvaliar = pedidos.find((p) => p.podeAvaliar);
 
   async function recomecar() {
     reiniciarDemonstracao();
@@ -144,7 +145,54 @@ export function TelaRoteiro({ navigation }: Props) {
           />
         </Cartao>
 
-        <Text style={[fonte.secao, { marginTop: espaco.xl }]}>3. entrega pelo vendedor</Text>
+        <Text style={[fonte.secao, { marginTop: espaco.xl }]}>3. negociar, curtir, seguir</Text>
+        <Text style={e.explica}>
+          o que faz um brechó parecer brechó: pechinchar, guardar o que gostou e acompanhar
+          quem vende bem.
+        </Text>
+
+        <Cartao estilo={{ marginTop: espaco.md }}>
+          <Atalho
+            icone="pricetags-outline"
+            titulo="negociações"
+            descricao="ofertas dos dois lados; tem uma esperando você responder"
+            aoTocar={() => navigation.navigate('Ofertas')}
+          />
+          <Separador />
+          <Atalho
+            icone="heart-outline"
+            titulo="o que eu curti"
+            descricao="a lista de desejos, com o coração em cada anúncio"
+            aoTocar={() => navigation.navigate('Curtidos')}
+          />
+          <Separador />
+          <Atalho
+            icone="storefront-outline"
+            titulo="lojinha da Rubia"
+            descricao="seguir, seguidores e nota do vendedor"
+            aoTocar={() => navigation.navigate('Loja', { vendedorId: 'v-rubia' })}
+          />
+          <Separador />
+          <Atalho
+            icone="star-outline"
+            titulo="avaliar uma compra"
+            descricao={
+              pedidoParaAvaliar
+                ? `pedido ${pedidoParaAvaliar.codigo} — cinco estrelas e um comentário`
+                : 'nenhum pedido concluído aguardando avaliação'
+            }
+            desabilitado={!pedidoParaAvaliar}
+            aoTocar={() =>
+              pedidoParaAvaliar &&
+              navigation.navigate('Avaliar', {
+                pedidoId: pedidoParaAvaliar.id,
+                vendedor: pedidoParaAvaliar.vendedor?.nome ?? 'vendedor',
+              })
+            }
+          />
+        </Cartao>
+
+        <Text style={[fonte.secao, { marginTop: espaco.xl }]}>4. entrega pelo vendedor</Text>
         <Text style={e.explica}>
           as três telas do fluxo sem entregador. o código é o mesmo pedido visto dos dois lados.
         </Text>
@@ -211,7 +259,7 @@ export function TelaRoteiro({ navigation }: Props) {
         </Cartao>
 
         {/* ---------------- limites ---------------- */}
-        <Text style={[fonte.secao, { marginTop: espaco.xl }]}>4. o bloqueio por tamanho</Text>
+        <Text style={[fonte.secao, { marginTop: espaco.xl }]}>5. o bloqueio por tamanho</Text>
         <Text style={e.explica}>
           em “criar anúncio”, digite 25 kg, ou 120 cm de largura, ou 120 cm de altura. a opção
           “entrega pela plataforma” trava e o app explica o motivo; a do vendedor continua livre.
@@ -223,7 +271,7 @@ export function TelaRoteiro({ navigation }: Props) {
         </View>
 
         {/* ---------------- degraus ---------------- */}
-        <Text style={[fonte.secao, { marginTop: espaco.xl }]}>5. os degraus da tarifa</Text>
+        <Text style={[fonte.secao, { marginTop: espaco.xl }]}>6. os degraus da tarifa</Text>
         <Text style={e.explica}>
           cada par abaixo está anunciado na vitrine com um centavo de diferença. o líquido do
           vendedor é o da entrega pela plataforma.

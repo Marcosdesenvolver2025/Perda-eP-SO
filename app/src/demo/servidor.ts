@@ -18,21 +18,36 @@
 
 import type {
   Anuncio,
+  AtorDaOferta,
+  Avaliacao,
   Corrida,
   EstadoEntrega,
+  EstadoOferta,
+  Oferta,
   Pedido,
   SolicitacaoDeDevolucao,
   Usuario,
 } from '../api/tipos';
-import { calcularDescontos, COMISSAO, DIAS_PARA_CONFIRMACAO_AUTOMATICA } from '../regras/limites';
+import {
+  calcularDescontos,
+  COMISSAO,
+  DIAS_PARA_CONFIRMACAO_AUTOMATICA,
+  DIAS_PARA_RESPONDER_OFERTA,
+  validarProposta,
+  valorMinimoDaOferta,
+} from '../regras/limites';
 import {
   anunciosSemente,
+  avaliacoesSemente,
   conversasSemente,
   corridasSemente,
+  curtidasSemente,
   devolucoesSemente,
   enderecosSemente,
   entregadoresDemo,
+  ofertasSemente,
   pedidosSemente,
+  seguidoresSemente,
   usuarioDemo,
 } from './dados';
 
@@ -47,6 +62,15 @@ interface Estado {
   enderecos: typeof enderecosSemente;
   conversas: typeof conversasSemente;
   entregadorDisponivel: boolean;
+  /** ids de anúncio que eu curti. */
+  curtidas: Set<string>;
+  /** quantas curtidas cada anúncio tem, de todo mundo. */
+  curtidasPorAnuncio: Record<string, number>;
+  /** ids de vendedor que eu sigo. */
+  seguindo: Set<string>;
+  seguidoresPorVendedor: Record<string, number>;
+  ofertas: Oferta[];
+  avaliacoes: Avaliacao[];
 }
 
 function semear(): Estado {
@@ -60,6 +84,12 @@ function semear(): Estado {
     enderecos: enderecosSemente.map((e) => ({ ...e })),
     conversas: conversasSemente.map((c) => ({ ...c, mensagens: [...c.mensagens] })),
     entregadorDisponivel: true,
+    curtidas: new Set(curtidasSemente.minhas),
+    curtidasPorAnuncio: { ...curtidasSemente.porAnuncio },
+    seguindo: new Set(seguidoresSemente.sigo),
+    seguidoresPorVendedor: { ...seguidoresSemente.porVendedor },
+    ofertas: ofertasSemente(anuncios),
+    avaliacoes: avaliacoesSemente(),
   };
 }
 
@@ -166,6 +196,69 @@ function resumoDaCompra(a: Anuncio, modalidade: Anuncio['modalidadeEntrega']) {
   };
 }
 
+/**
+ * Enriquece o anúncio com o que depende de quem está olhando: curtidas,
+ * se eu curti, e se tenho negociação em aberto nele.
+ */
+function comContexto(a: Anuncio): Anuncio {
+  const minha = estado.ofertas.find(
+    (o) => o.anuncio.id === a.id && o.meuPapel === 'COMPRADOR' && emAberto(o.estado),
+  );
+  return {
+    ...a,
+    curtidas: estado.curtidasPorAnuncio[a.id] ?? 0,
+    curtido: estado.curtidas.has(a.id),
+    // quem vende não negocia consigo mesmo
+    aceitaOferta: a.vendedor.id !== estado.usuario.id,
+    minhaOferta: minha
+      ? { id: minha.id, estado: minha.estado, valorAtual: minha.valorAtual }
+      : null,
+  };
+}
+
+function emAberto(e: EstadoOferta): boolean {
+  return e === 'ABERTA' || e === 'CONTRAPROPOSTA';
+}
+
+function oferta(id: string): Oferta {
+  const o = estado.ofertas.find((x) => x.id === id);
+  if (!o) throw new ErroDemo(404, 'Oferta não encontrada nesta demonstração.');
+  return o;
+}
+
+/** Registra o lance e passa a vez para o outro lado. */
+function registrarLance(o: Oferta, por: AtorDaOferta, valor: number, recado?: string) {
+  o.valorAtual = valor;
+  o.ultimoLancePor = por;
+  o.lanceEm = agora();
+  o.prazoAte = emDias(DIAS_PARA_RESPONDER_OFERTA);
+  o.recado = recado ?? null;
+  o.lances = [
+    ...(o.lances ?? []),
+    { id: `l-${Date.now()}`, por, valor, recado: recado ?? null, criadoEm: agora() },
+  ];
+  o.minhaVez = deQuemEAVezDemo(o) === o.meuPapel;
+}
+
+function deQuemEAVezDemo(o: Oferta): AtorDaOferta | null {
+  if (o.estado === 'ABERTA') return 'VENDEDOR';
+  if (o.estado === 'CONTRAPROPOSTA') return 'COMPRADOR';
+  return null;
+}
+
+/** Encerra a negociação e tira a vez de todo mundo. */
+function encerrar(o: Oferta, estadoFinal: EstadoOferta) {
+  o.estado = estadoFinal;
+  o.minhaVez = false;
+}
+
+/** Média das notas recebidas, com uma casa. */
+function notaMedia(): number | null {
+  if (estado.avaliacoes.length === 0) return null;
+  const soma = estado.avaliacoes.reduce((s, a) => s + a.nota, 0);
+  return Math.round((soma / estado.avaliacoes.length) * 10) / 10;
+}
+
 // ---------------------------------------------------------------------------
 // Roteador
 // ---------------------------------------------------------------------------
@@ -255,7 +348,7 @@ const rotas: Array<[string, string, Manipulador]> = [
           return b.criadoEm.localeCompare(a.criadoEm);
         });
 
-      return { itens, total: itens.length };
+      return { itens: itens.map(comContexto), total: itens.length };
     },
   ],
   [
@@ -305,7 +398,19 @@ const rotas: Array<[string, string, Manipulador]> = [
   [
     'GET',
     '/anuncios/meus/lista',
-    () => ({ itens: estado.anuncios.filter((a) => a.vendedor.id === estado.usuario.id) }),
+    () => ({
+      itens: estado.anuncios
+        .filter((a) => a.vendedor.id === estado.usuario.id)
+        .map(comContexto),
+    }),
+  ],
+  /** Minha lista de desejos. Vem antes de /anuncios/:id para não ser engolida. */
+  [
+    'GET',
+    '/anuncios/curtidos',
+    () => ({
+      itens: estado.anuncios.filter((a) => estado.curtidas.has(a.id)).map(comContexto),
+    }),
   ],
   [
     'GET',
@@ -313,7 +418,234 @@ const rotas: Array<[string, string, Manipulador]> = [
     (r) => {
       const a = estado.anuncios.find((x) => x.id === r.partes[1]);
       if (!a) throw new ErroDemo(404, 'Anúncio não encontrado nesta demonstração.');
-      return a;
+      return comContexto(a);
+    },
+  ],
+  [
+    'PATCH',
+    '/anuncios/:id',
+    (r) => {
+      const a = estado.anuncios.find((x) => x.id === r.partes[1]);
+      if (!a) throw new ErroDemo(404, 'Anúncio não encontrado.');
+      if (a.vendedor.id !== estado.usuario.id) {
+        throw new ErroDemo(403, 'Este anúncio não é seu.');
+      }
+      if (typeof r.corpo.titulo === 'string') a.titulo = r.corpo.titulo;
+      if (typeof r.corpo.descricao === 'string') a.descricao = r.corpo.descricao;
+      if (typeof r.corpo.preco === 'number') a.preco = r.corpo.preco;
+      if (typeof r.corpo.condicao === 'string') {
+        a.condicao = r.corpo.condicao as Anuncio['condicao'];
+      }
+      // preço mudou: as taxas mostradas mudam junto
+      const d = calcularDescontos(a.preco, a.modalidadeEntrega);
+      a.taxas = { comissao: d.comissao, tarifa: d.tarifa };
+      return comContexto(a);
+    },
+  ],
+  [
+    'POST',
+    '/anuncios/:id/curtir',
+    (r) => {
+      const id = r.partes[1]!;
+      const jaCurtido = estado.curtidas.has(id);
+      const atual = estado.curtidasPorAnuncio[id] ?? 0;
+      if (jaCurtido) {
+        estado.curtidas.delete(id);
+        estado.curtidasPorAnuncio[id] = Math.max(0, atual - 1);
+      } else {
+        estado.curtidas.add(id);
+        estado.curtidasPorAnuncio[id] = atual + 1;
+      }
+      return { curtido: !jaCurtido, curtidas: estado.curtidasPorAnuncio[id] };
+    },
+  ],
+
+  // ----- seguir lojinha -----
+  [
+    'POST',
+    '/vendedores/:id/seguir',
+    (r) => {
+      const id = r.partes[1]!;
+      const jaSigo = estado.seguindo.has(id);
+      const atual = estado.seguidoresPorVendedor[id] ?? 0;
+      if (jaSigo) {
+        estado.seguindo.delete(id);
+        estado.seguidoresPorVendedor[id] = Math.max(0, atual - 1);
+      } else {
+        estado.seguindo.add(id);
+        estado.seguidoresPorVendedor[id] = atual + 1;
+      }
+      return { seguindo: !jaSigo, seguidores: estado.seguidoresPorVendedor[id] };
+    },
+  ],
+  [
+    'GET',
+    '/vendedores/:id',
+    (r) => {
+      const id = r.partes[1]!;
+      const anuncio = estado.anuncios.find((a) => a.vendedor.id === id);
+      const v = anuncio?.vendedor;
+      return {
+        id,
+        nome: v?.nome ?? 'vendedor',
+        apelidoLoja: v?.apelidoLoja ?? null,
+        bairro: v?.bairro ?? null,
+        cidade: 'Itinga',
+        seguidores: estado.seguidoresPorVendedor[id] ?? 0,
+        seguindo: estado.seguindo.has(id),
+        notaMedia: notaMedia(),
+        totalAvaliacoes: estado.avaliacoes.length,
+      };
+    },
+  ],
+  [
+    'GET',
+    '/vendedores/:id/avaliacoes',
+    () => ({ itens: estado.avaliacoes, notaMedia: notaMedia() }),
+  ],
+
+  // ----- ofertas -----
+  [
+    'GET',
+    '/ofertas',
+    () => ({
+      itens: [...estado.ofertas].sort((a, b) => b.lanceEm.localeCompare(a.lanceEm)),
+    }),
+  ],
+  ['GET', '/ofertas/:id', (r) => oferta(r.partes[1]!)],
+  [
+    'POST',
+    '/anuncios/:id/ofertas',
+    (r) => {
+      const a = estado.anuncios.find((x) => x.id === r.partes[1]);
+      if (!a) throw new ErroDemo(404, 'Anúncio não encontrado.');
+      if (a.vendedor.id === estado.usuario.id) {
+        throw new ErroDemo(400, 'Você não pode fazer oferta no seu próprio anúncio.');
+      }
+
+      const valor = Number(r.corpo.valor ?? 0);
+      const validacao = validarProposta(valor, a.preco);
+      if (!validacao.valido) throw new ErroDemo(400, validacao.motivo);
+
+      // uma negociação em aberto por anúncio: a nova substitui a anterior
+      const anterior = estado.ofertas.find(
+        (o) => o.anuncio.id === a.id && o.meuPapel === 'COMPRADOR' && emAberto(o.estado),
+      );
+      if (anterior) encerrar(anterior, 'CANCELADA');
+
+      const nova: Oferta = {
+        id: `of-${Date.now()}`,
+        estado: 'ABERTA',
+        precoAnunciado: a.preco,
+        valorAtual: valor,
+        ultimoLancePor: 'COMPRADOR',
+        recado: (r.corpo.recado as string) ?? null,
+        lanceEm: agora(),
+        prazoAte: emDias(DIAS_PARA_RESPONDER_OFERTA),
+        criadoEm: agora(),
+        meuPapel: 'COMPRADOR',
+        minhaVez: false,
+        anuncio: { id: a.id, titulo: a.titulo, preco: a.preco, fotos: a.fotos },
+        comprador: { id: estado.usuario.id, nome: estado.usuario.nome, fotoUrl: null },
+        vendedor: {
+          id: a.vendedor.id,
+          nome: a.vendedor.nome,
+          apelidoLoja: a.vendedor.apelidoLoja,
+        },
+        lances: [
+          {
+            id: `l-${Date.now()}`,
+            por: 'COMPRADOR',
+            valor,
+            recado: (r.corpo.recado as string) ?? null,
+            criadoEm: agora(),
+          },
+        ],
+      };
+      estado.ofertas.unshift(nova);
+      return nova;
+    },
+  ],
+  [
+    'POST',
+    '/ofertas/:id/aceitar',
+    (r) => {
+      const o = oferta(r.partes[1]!);
+      if (!emAberto(o.estado)) throw new ErroDemo(400, 'Esta negociação já foi encerrada.');
+      if (deQuemEAVezDemo(o) !== o.meuPapel) {
+        throw new ErroDemo(400, 'Agora é a vez da outra pessoa responder.');
+      }
+      encerrar(o, 'ACEITA');
+      return o;
+    },
+  ],
+  [
+    'POST',
+    '/ofertas/:id/recusar',
+    (r) => {
+      const o = oferta(r.partes[1]!);
+      if (!emAberto(o.estado)) throw new ErroDemo(400, 'Esta negociação já foi encerrada.');
+      if (deQuemEAVezDemo(o) !== o.meuPapel) {
+        throw new ErroDemo(400, 'Agora é a vez da outra pessoa responder.');
+      }
+      encerrar(o, 'RECUSADA');
+      return o;
+    },
+  ],
+  [
+    'POST',
+    '/ofertas/:id/cancelar',
+    (r) => {
+      const o = oferta(r.partes[1]!);
+      if (!emAberto(o.estado)) throw new ErroDemo(400, 'Esta negociação já foi encerrada.');
+      if (deQuemEAVezDemo(o) === o.meuPapel) {
+        throw new ErroDemo(400, 'Você não pode cancelar: a proposta em aberto é da outra pessoa.');
+      }
+      encerrar(o, 'CANCELADA');
+      return o;
+    },
+  ],
+  [
+    'POST',
+    '/ofertas/:id/contrapropor',
+    (r) => {
+      const o = oferta(r.partes[1]!);
+      if (o.estado !== 'ABERTA' || o.meuPapel !== 'VENDEDOR') {
+        throw new ErroDemo(400, 'Só o vendedor contrapropõe, e só em proposta aberta.');
+      }
+      const valor = Number(r.corpo.valor ?? 0);
+      if (valor <= o.valorAtual) {
+        throw new ErroDemo(400, 'A contraproposta precisa ser maior que a oferta recebida.');
+      }
+      if (valor >= o.precoAnunciado) {
+        throw new ErroDemo(400, 'A contraproposta precisa ser menor que o preço do anúncio.');
+      }
+      o.estado = 'CONTRAPROPOSTA';
+      registrarLance(o, 'VENDEDOR', valor, r.corpo.recado as string | undefined);
+      return o;
+    },
+  ],
+
+  // ----- avaliações -----
+  [
+    'POST',
+    '/pedidos/:id/avaliar',
+    (r) => {
+      const p = pedido(r.partes[1]!);
+      const nota = Number(r.corpo.nota ?? 0);
+      if (!Number.isInteger(nota) || nota < 1 || nota > 5) {
+        throw new ErroDemo(400, 'A nota vai de 1 a 5 estrelas.');
+      }
+      estado.avaliacoes.unshift({
+        id: `av-${Date.now()}`,
+        nota,
+        comentario: (r.corpo.comentario as string) ?? null,
+        criadoEm: agora(),
+        autor: { nome: estado.usuario.nome, fotoUrl: null },
+        pedido: { codigo: p.codigo, anuncio: { titulo: p.anuncio.titulo } },
+      });
+      p.podeAvaliar = false;
+      return { ok: true, notaMedia: notaMedia() };
     },
   ],
 

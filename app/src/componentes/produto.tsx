@@ -31,10 +31,13 @@ const rotuloCondicao: Record<string, string> = {
 export function CardProduto({
   anuncio,
   aoTocar,
+  aoCurtir,
   largura,
 }: {
   anuncio: Anuncio;
   aoTocar: (id: string) => void;
+  /** Quando informado, o card mostra o coração de curtir. */
+  aoCurtir?: (id: string) => void;
   largura?: number;
 }) {
   const foto = anuncio.fotos?.[0]?.url;
@@ -61,6 +64,23 @@ export function CardProduto({
             <Text style={e.descontoTexto}>-{desconto}%</Text>
           </View>
         ) : null}
+
+        {aoCurtir ? (
+          <Pressable
+            onPress={() => aoCurtir(anuncio.id)}
+            style={e.coracao}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={anuncio.curtido ? 'descurtir' : 'curtir'}
+            accessibilityState={{ selected: !!anuncio.curtido }}
+          >
+            <Ionicons
+              name={anuncio.curtido ? 'heart' : 'heart-outline'}
+              size={18}
+              color={anuncio.curtido ? cores.coral : cores.texto}
+            />
+          </Pressable>
+        ) : null}
       </View>
 
       <Text numberOfLines={1} style={[fonte.rotulo, { marginTop: espaco.sm }]}>
@@ -82,6 +102,7 @@ export function CardProduto({
 
 /** Seção horizontal com título, subtítulo, cards e botão de ver tudo. */
 export function CarrosselDeProdutos({
+  aoCurtir,
   titulo,
   subtitulo,
   anuncios,
@@ -94,6 +115,7 @@ export function CarrosselDeProdutos({
   anuncios: Anuncio[];
   textoDoBotao: string;
   aoTocarProduto: (id: string) => void;
+  aoCurtir?: (id: string) => void;
   aoVerTudo: () => void;
 }) {
   if (anuncios.length === 0) return null;
@@ -111,7 +133,9 @@ export function CarrosselDeProdutos({
         keyExtractor={(item) => item.id}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: espaco.lg, gap: espaco.md }}
-        renderItem={({ item }) => <CardProduto anuncio={item} aoTocar={aoTocarProduto} />}
+        renderItem={({ item }) => (
+          <CardProduto anuncio={item} aoTocar={aoTocarProduto} aoCurtir={aoCurtir} />
+        )}
       />
 
       <Botao
@@ -126,6 +150,7 @@ export function CarrosselDeProdutos({
 
 /** Grade de dois por linha, usada na busca e na lojinha. */
 export function GradeDeProdutos({
+  aoCurtir,
   anuncios,
   aoTocarProduto,
   cabecalho,
@@ -134,6 +159,7 @@ export function GradeDeProdutos({
 }: {
   anuncios: Anuncio[];
   aoTocarProduto: (id: string) => void;
+  aoCurtir?: (id: string) => void;
   cabecalho?: React.ReactElement;
   rodape?: React.ReactElement;
   aoFinalDaLista?: () => void;
@@ -153,7 +179,12 @@ export function GradeDeProdutos({
       onEndReached={aoFinalDaLista}
       onEndReachedThreshold={0.4}
       renderItem={({ item }) => (
-        <CardProduto anuncio={item} aoTocar={aoTocarProduto} largura={larguraCard} />
+        <CardProduto
+          anuncio={item}
+          aoTocar={aoTocarProduto}
+          aoCurtir={aoCurtir}
+          largura={larguraCard}
+        />
       )}
     />
   );
@@ -234,6 +265,17 @@ const e = StyleSheet.create({
     justifyContent: 'center',
   },
   imagem: { width: '100%', height: '100%' },
+  coracao: {
+    position: 'absolute',
+    top: espaco.sm,
+    right: espaco.sm,
+    width: 30,
+    height: 30,
+    borderRadius: raio.pilula,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   desconto: {
     position: 'absolute',
     top: espaco.sm,

@@ -133,11 +133,25 @@ export function Selo({
   tom = 'verde',
 }: {
   texto: string;
-  tom?: 'verde' | 'cinza' | 'alerta';
+  /** `ambar` é para o que está pendente e tem prazo correndo. */
+  tom?: 'verde' | 'cinza' | 'alerta' | 'ambar';
 }) {
   const fundo =
-    tom === 'verde' ? cores.verdeClaro : tom === 'alerta' ? '#FDECEA' : cores.fundoCinza;
-  const cor = tom === 'verde' ? cores.verdeProfundo : tom === 'alerta' ? cores.alerta : cores.textoSuave;
+    tom === 'verde'
+      ? cores.verdeClaro
+      : tom === 'alerta'
+        ? '#FDECEA'
+        : tom === 'ambar'
+          ? cores.ambarClaro
+          : cores.fundoCinza;
+  const cor =
+    tom === 'verde'
+      ? cores.verdeProfundo
+      : tom === 'alerta'
+        ? cores.alerta
+        : tom === 'ambar'
+          ? cores.ambarEscuro
+          : cores.textoSuave;
   return (
     <View style={[e.selo, { backgroundColor: fundo }]}>
       <Text style={{ fontSize: 11, fontWeight: '700', color: cor }}>{texto}</Text>

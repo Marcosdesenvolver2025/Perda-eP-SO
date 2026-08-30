@@ -22,7 +22,7 @@ import { Avatar, Botao, Carregando, Selo, Separador, TelaVazia } from '../compon
 import { LinhaDeMedidas, SeloGarantia } from '../componentes/produto';
 import type { ParametrosApp } from '../navegacao/tipos';
 import { cores, espaco, fonte, raio } from '../tema';
-import { parcelamento, precoCurto, quando } from '../util/formato';
+import { parcelamento, precoCurto, quando, reais } from '../util/formato';
 
 type Props = NativeStackScreenProps<ParametrosApp, 'Produto'>;
 
@@ -37,11 +37,16 @@ export function TelaProduto({ navigation, route }: Props) {
   const [anuncio, setAnuncio] = useState<Anuncio | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [fotoAtual, setFotoAtual] = useState(0);
+  const [curtido, setCurtido] = useState(false);
+  const [curtidas, setCurtidas] = useState(0);
 
   useEffect(() => {
     async function carregar() {
       try {
-        setAnuncio(await api<Anuncio>(`/anuncios/${route.params.id}`, { publico: true }));
+        const a = await api<Anuncio>(`/anuncios/${route.params.id}`, { publico: true });
+        setAnuncio(a);
+        setCurtido(!!a.curtido);
+        setCurtidas(a.curtidas ?? 0);
       } catch {
         setAnuncio(null);
       } finally {
@@ -61,6 +66,18 @@ export function TelaProduto({ navigation, route }: Props) {
         acao={{ titulo: 'voltar', aoTocar: () => navigation.goBack() }}
       />
     );
+  }
+
+  async function alternarCurtida() {
+    const antes = { curtido, curtidas };
+    setCurtido(!curtido);
+    setCurtidas((n) => (curtido ? Math.max(0, n - 1) : n + 1));
+    try {
+      await api(`/anuncios/${anuncio!.id}/curtir`, { metodo: 'POST' });
+    } catch {
+      setCurtido(antes.curtido);
+      setCurtidas(antes.curtidas);
+    }
   }
 
   const diasParaTestar = anuncio.entrega?.diasParaTestar ?? 7;
@@ -103,6 +120,22 @@ export function TelaProduto({ navigation, route }: Props) {
             accessibilityLabel="voltar"
           >
             <Ionicons name="chevron-back" size={24} color={cores.texto} />
+          </Pressable>
+
+          <Pressable
+            onPress={alternarCurtida}
+            style={e.curtir}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={curtido ? 'tirar dos curtidos' : 'curtir'}
+            accessibilityState={{ selected: curtido }}
+          >
+            <Ionicons
+              name={curtido ? 'heart' : 'heart-outline'}
+              size={22}
+              color={curtido ? cores.coral : cores.texto}
+            />
+            {curtidas > 0 ? <Text style={e.contadorCurtidas}>{curtidas}</Text> : null}
           </Pressable>
 
           {anuncio.fotos.length > 1 ? (
@@ -208,10 +241,42 @@ export function TelaProduto({ navigation, route }: Props) {
       </ScrollView>
 
       <View style={e.rodape}>
-        <Botao
-          titulo="comprar agora"
-          aoTocar={() => navigation.navigate('Checkout', { anuncioId: anuncio.id })}
-        />
+        {anuncio.minhaOferta ? (
+          <Pressable
+            onPress={() => navigation.navigate('Ofertas')}
+            style={e.ofertaEmAberto}
+            accessibilityRole="button"
+          >
+            <Ionicons name="pricetags" size={16} color={cores.ambarEscuro} />
+            <Text style={e.ofertaEmAbertoTexto}>
+              você já ofereceu {reais(anuncio.minhaOferta.valorAtual)} — ver negociação
+            </Text>
+          </Pressable>
+        ) : null}
+
+        <View style={{ flexDirection: 'row', gap: espaco.sm }}>
+          {anuncio.aceitaOferta && !anuncio.minhaOferta ? (
+            <View style={{ flex: 1 }}>
+              <Botao
+                titulo="fazer oferta"
+                variante="vazado"
+                aoTocar={() =>
+                  navigation.navigate('FazerOferta', {
+                    anuncioId: anuncio.id,
+                    titulo: anuncio.titulo,
+                    preco: anuncio.preco,
+                  })
+                }
+              />
+            </View>
+          ) : null}
+          <View style={{ flex: anuncio.aceitaOferta && !anuncio.minhaOferta ? 1.2 : 1 }}>
+            <Botao
+              titulo="comprar agora"
+              aoTocar={() => navigation.navigate('Checkout', { anuncioId: anuncio.id })}
+            />
+          </View>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -230,6 +295,35 @@ const e = StyleSheet.create({
     backgroundColor: cores.branco,
     borderRadius: raio.pilula,
     padding: espaco.sm,
+  },
+  curtir: {
+    position: 'absolute',
+    top: espaco.md,
+    right: espaco.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: cores.branco,
+    borderRadius: raio.pilula,
+    paddingHorizontal: espaco.md,
+    paddingVertical: espaco.sm,
+  },
+  contadorCurtidas: { fontSize: 13, fontWeight: '700', color: cores.texto },
+  ofertaEmAberto: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espaco.sm,
+    backgroundColor: cores.ambarClaro,
+    borderRadius: raio.md,
+    paddingHorizontal: espaco.md,
+    paddingVertical: espaco.sm,
+    marginBottom: espaco.md,
+  },
+  ofertaEmAbertoTexto: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: cores.ambarEscuro,
   },
   pontos: {
     position: 'absolute',

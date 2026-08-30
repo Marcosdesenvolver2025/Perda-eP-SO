@@ -38,6 +38,17 @@ export function TelaBusca({ navigation, route }: Props) {
   const [itens, setItens] = useState<Anuncio[]>([]);
   const [carregando, setCarregando] = useState(true);
 
+  async function curtir(id: string) {
+    setItens((atuais) =>
+      atuais.map((a) =>
+        a.id === id
+          ? { ...a, curtido: !a.curtido, curtidas: (a.curtidas ?? 0) + (a.curtido ? -1 : 1) }
+          : a,
+      ),
+    );
+    await api(`/anuncios/${id}/curtir`, { metodo: 'POST' }).catch(() => undefined);
+  }
+
   const buscar = useCallback(async () => {
     setCarregando(true);
 
@@ -128,6 +139,7 @@ export function TelaBusca({ navigation, route }: Props) {
         <GradeDeProdutos
           anuncios={itens}
           aoTocarProduto={(id) => navigation.navigate('Produto', { id })}
+          aoCurtir={curtir}
           cabecalho={
             <Text style={[fonte.pequeno, { paddingHorizontal: espaco.lg, paddingVertical: espaco.md }]}>
               {itens.length} {itens.length === 1 ? 'anúncio' : 'anúncios'} em Itinga

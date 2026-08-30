@@ -209,13 +209,28 @@ export function TelaPedido({ navigation, route }: Props) {
         ) : null}
       </ScrollView>
 
-      {pedido.podePedirReembolso ? (
+      {pedido.podeAvaliar || pedido.podePedirReembolso ? (
         <View style={e.rodape}>
-          <Botao
-            titulo="pedir devolução"
-            variante="vazado"
-            aoTocar={() => navigation.navigate('Reembolso', { pedidoId: pedido.id })}
-          />
+          {pedido.podeAvaliar ? (
+            <Botao
+              titulo="avaliar quem vendeu"
+              icone="star-outline"
+              aoTocar={() =>
+                navigation.navigate('Avaliar', {
+                  pedidoId: pedido.id,
+                  vendedor: pedido.vendedor?.apelidoLoja ?? pedido.vendedor?.nome ?? 'vendedor',
+                })
+              }
+              estilo={pedido.podePedirReembolso ? { marginBottom: espaco.sm } : undefined}
+            />
+          ) : null}
+          {pedido.podePedirReembolso ? (
+            <Botao
+              titulo="pedir devolução"
+              variante="vazado"
+              aoTocar={() => navigation.navigate('Reembolso', { pedidoId: pedido.id })}
+            />
+          ) : null}
         </View>
       ) : null}
     </SafeAreaView>

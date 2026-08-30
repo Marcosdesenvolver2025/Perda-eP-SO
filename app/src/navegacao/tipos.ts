@@ -15,7 +15,7 @@ export type ParametrosApp = {
   Busca: { termo?: string };
   Produto: { id: string };
   Loja: { vendedorId: string };
-  Checkout: { anuncioId: string; enderecoId?: string };
+  Checkout: { anuncioId: string; enderecoId?: string; ofertaId?: string };
   Pedido: { id: string; pixQrCode?: string };
   Reembolso: { pedidoId: string };
   NovoAnuncio: undefined;
@@ -35,6 +35,11 @@ export type ParametrosApp = {
   CodigoDeConfirmacao: { pedidoId: string };
   EntregaDoVendedor: { pedidoId: string };
   ComoFunciona: undefined;
+  /** Negociação de preço. */
+  FazerOferta: { anuncioId: string; titulo: string; preco: number };
+  Ofertas: undefined;
+  Curtidos: undefined;
+  Avaliar: { pedidoId: string; vendedor: string };
   /** Só existe no modo demonstração. */
   Roteiro: undefined;
 };

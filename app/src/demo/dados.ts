@@ -11,11 +11,13 @@
 
 import type {
   Anuncio,
+  Avaliacao,
   Corrida,
   EstadoEntrega,
   EstadoPedido,
   Foto,
   ModalidadeEntrega,
+  Oferta,
   Pedido,
   SolicitacaoDeDevolucao,
   Usuario,
@@ -535,6 +537,17 @@ const moldesDePedido: MoldePedido[] = [
     confirmadaPor: 'codigo',
     repassado: true,
   },
+  {
+    id: 'ped-concluido-compra',
+    codigo: 'VI-9W8V7U',
+    estado: 'CONCLUIDO',
+    anuncioId: 'a-panela',
+    modalidade: 'PLATAFORMA',
+    lado: 'compra',
+    entregueHaDias: 15,
+    estadoEntrega: 'ENTREGUE',
+    confirmadaPor: 'codigo',
+  },
   // ---- modalidade VENDEDOR ----
   {
     id: 'ped-vendedor-aguardando',
@@ -688,6 +701,8 @@ function montarPedido(m: MoldePedido, anuncios: Anuncio[]): Pedido {
       (m.estado === 'ENTREGUE' || m.estado === 'ENTREGA_DECLARADA') &&
       (restantes ?? 0) > 0 &&
       m.lado === 'compra',
+    // avaliação só depois que o prazo de teste passou e o pedido fechou
+    podeAvaliar: m.estado === 'CONCLUIDO' && m.lado === 'compra',
     diasRestantesParaTestar: restantes,
     eventos: [
       { id: `${m.id}-1`, tipo: 'PEDIDO_CRIADO', criadoEm: dias(-((m.entregueHaDias ?? 1) + 1)) },
@@ -921,3 +936,145 @@ export const conversasSemente = [
     ],
   },
 ];
+
+// ---------------------------------------------------------------------------
+// Curtidas, seguidores, ofertas e avaliações
+// ---------------------------------------------------------------------------
+
+/** O que eu curti, e quantas curtidas cada anúncio tem no total. */
+export const curtidasSemente = {
+  minhas: ['a-celular', 'faixa-49999', 'a-jaqueta'],
+  porAnuncio: {
+    'a-celular': 14,
+    'faixa-49999': 9,
+    'a-jaqueta': 6,
+    'a-monitor': 11,
+    'a-tenis': 4,
+    'a-violao': 7,
+    'a-sofa': 3,
+    'faixa-9999': 22,
+    'a-carrinho': 5,
+    'a-geladeira': 2,
+  } as Record<string, number>,
+};
+
+/** Quem eu sigo, e quantos seguidores cada lojinha tem. */
+export const seguidoresSemente = {
+  sigo: ['v-rubia'],
+  porVendedor: {
+    'v-rubia': 38,
+    'v-rondson': 21,
+    'v-cleide': 15,
+    'u-voce': 7,
+  } as Record<string, number>,
+};
+
+/**
+ * Negociações em andamento, uma em cada estado que a tela precisa mostrar.
+ * Os dois lados aparecem: umas em que eu comprei, outras em que eu vendo.
+ */
+export function ofertasSemente(anuncios: Anuncio[]): Oferta[] {
+  const de = (id: string) => anuncios.find((a) => a.id === id)!;
+
+  const negociacao = (
+    id: string,
+    anuncioId: string,
+    estado: Oferta['estado'],
+    valorAtual: number,
+    ultimoLancePor: Oferta['ultimoLancePor'],
+    lado: 'compra' | 'venda',
+    horasAtras: number,
+    recado?: string,
+  ): Oferta => {
+    const a = de(anuncioId);
+    const lanceEm = horas(-horasAtras);
+    const euSouOComprador = lado === 'compra';
+    return {
+      id,
+      estado,
+      precoAnunciado: a.preco,
+      valorAtual,
+      ultimoLancePor,
+      recado: recado ?? null,
+      lanceEm,
+      prazoAte: new Date(new Date(lanceEm).getTime() + 3 * 86_400_000).toISOString(),
+      criadoEm: horas(-horasAtras - 2),
+      meuPapel: euSouOComprador ? 'COMPRADOR' : 'VENDEDOR',
+      minhaVez:
+        (estado === 'ABERTA' && !euSouOComprador) ||
+        (estado === 'CONTRAPROPOSTA' && euSouOComprador),
+      anuncio: { id: a.id, titulo: a.titulo, preco: a.preco, fotos: a.fotos },
+      comprador: euSouOComprador
+        ? { id: usuarioDemo.id, nome: usuarioDemo.nome, fotoUrl: null }
+        : { id: 'v-ana', nome: 'Ana Paula', fotoUrl: null },
+      vendedor: euSouOComprador
+        ? { id: a.vendedor.id, nome: a.vendedor.nome, apelidoLoja: a.vendedor.apelidoLoja }
+        : { id: usuarioDemo.id, nome: usuarioDemo.nome, apelidoLoja: usuarioDemo.apelidoLoja },
+      lances: [
+        {
+          id: `${id}-l1`,
+          por: 'COMPRADOR',
+          valor: estado === 'CONTRAPROPOSTA' ? Math.round(valorAtual * 0.85) : valorAtual,
+          recado: recado ?? null,
+          criadoEm: horas(-horasAtras - 2),
+        },
+        ...(estado === 'CONTRAPROPOSTA'
+          ? [
+              {
+                id: `${id}-l2`,
+                por: 'VENDEDOR' as const,
+                valor: valorAtual,
+                recado: 'consigo fazer por esse valor, fechamos?',
+                criadoEm: lanceEm,
+              },
+            ]
+          : []),
+      ],
+    };
+  };
+
+  return [
+    // eu vendo o violão e recebi uma proposta — é a minha vez de responder
+    negociacao('of-1', 'a-violao', 'ABERTA', 21_000, 'COMPRADOR', 'venda', 5,
+      'levo hoje se você fizer por esse valor'),
+    // eu ofereci na bicicleta e o vendedor devolveu com outro valor
+    negociacao('of-2', 'faixa-49999', 'CONTRAPROPOSTA', 46_000, 'VENDEDOR', 'compra', 20),
+    // minha oferta no celular, esperando o vendedor
+    negociacao('of-3', 'a-celular', 'ABERTA', 68_000, 'COMPRADOR', 'compra', 30,
+      'tenho interesse, aceita?'),
+    // fechada: virou o preço que vou pagar
+    negociacao('of-4', 'a-monitor', 'ACEITA', 37_000, 'VENDEDOR', 'compra', 48),
+    // recusada
+    negociacao('of-5', 'a-geladeira', 'RECUSADA', 80_000, 'COMPRADOR', 'compra', 72),
+  ];
+}
+
+/** Avaliações que a lojinha já recebeu. */
+export function avaliacoesSemente(): Avaliacao[] {
+  return [
+    {
+      id: 'av-1',
+      nota: 5,
+      comentario: 'produto igualzinho ao anúncio, entrega rápida. recomendo!',
+      criadoEm: dias(-4),
+      autor: { nome: 'Ana Paula', fotoUrl: null },
+      pedido: { codigo: 'VI-8R9S1T', anuncio: { titulo: 'fone bluetooth' } },
+    },
+    {
+      id: 'av-2',
+      nota: 5,
+      comentario: 'atendeu no chat na hora e combinou a entrega direitinho.',
+      criadoEm: dias(-11),
+      autor: { nome: 'Rondson', fotoUrl: null },
+      pedido: { codigo: 'VI-4E5F6G', anuncio: { titulo: 'violão nylon com capa' } },
+    },
+    {
+      id: 'av-3',
+      nota: 4,
+      comentario: 'tudo certo, só demorou um pouco pra separar o produto.',
+      criadoEm: dias(-19),
+      autor: { nome: 'Cleide', fotoUrl: null },
+      pedido: { codigo: 'VI-2K3L4M', anuncio: { titulo: 'tênis nike tam 40' } },
+    },
+  ];
+}

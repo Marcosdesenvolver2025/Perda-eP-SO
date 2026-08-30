@@ -95,6 +95,20 @@ export function TelaMinhaConta({ navigation }: Props) {
           />
           <Separador />
           <ItemDeMenu
+            titulo="o que eu curti"
+            descricao="sua lista de desejos"
+            icone="heart-outline"
+            aoTocar={() => navigation.navigate('Curtidos')}
+          />
+          <Separador />
+          <ItemDeMenu
+            titulo="negociações"
+            descricao="ofertas que você fez e recebeu"
+            icone="pricetags-outline"
+            aoTocar={() => navigation.navigate('Ofertas')}
+          />
+          <Separador />
+          <ItemDeMenu
             titulo="minhas vendas"
             icone="storefront-outline"
             aoTocar={() => navigation.navigate('MinhasVendas')}

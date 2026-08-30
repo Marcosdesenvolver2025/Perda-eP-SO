@@ -40,6 +40,56 @@ export type EstadoEntrega =
 
 export type TipoEntrega = 'ENTREGA' | 'DEVOLUCAO';
 
+export type EstadoOferta =
+  | 'ABERTA'
+  | 'CONTRAPROPOSTA'
+  | 'ACEITA'
+  | 'RECUSADA'
+  | 'EXPIRADA'
+  | 'CANCELADA';
+
+export type AtorDaOferta = 'COMPRADOR' | 'VENDEDOR';
+
+/** Uma negociação de preço. Regras em `regras/limites.ts`. */
+export interface Oferta {
+  id: string;
+  estado: EstadoOferta;
+  /** Preço do anúncio quando a conversa começou. */
+  precoAnunciado: number;
+  /** Último lance, em centavos. */
+  valorAtual: number;
+  ultimoLancePor: AtorDaOferta;
+  recado?: string | null;
+  /** Quando o último lance foi feito; o prazo conta daqui. */
+  lanceEm: string;
+  prazoAte?: string | null;
+  criadoEm: string;
+  /** Do ponto de vista de quem está olhando: é a minha vez? */
+  minhaVez?: boolean;
+  /** Sou o comprador ou o vendedor nesta negociação? */
+  meuPapel?: AtorDaOferta;
+  anuncio: { id: string; titulo: string; preco: number; fotos: Foto[] };
+  comprador: { id: string; nome: string; fotoUrl?: string | null };
+  vendedor: { id: string; nome: string; apelidoLoja?: string | null };
+  lances?: Array<{
+    id: string;
+    por: AtorDaOferta;
+    valor: number;
+    recado?: string | null;
+    criadoEm: string;
+  }>;
+}
+
+/** Avaliação de 1 a 5 estrelas depois do pedido concluído. */
+export interface Avaliacao {
+  id: string;
+  nota: number;
+  comentario?: string | null;
+  criadoEm: string;
+  autor: { nome: string; fotoUrl?: string | null };
+  pedido?: { codigo: string; anuncio: { titulo: string } };
+}
+
 export interface Usuario {
   id: string;
   nome: string;
@@ -53,6 +103,12 @@ export interface Usuario {
   cidade?: string;
   recebedor?: 'PENDENTE' | 'ATIVO' | 'RECUSADO' | 'BLOQUEADO' | null;
   precisaCompletarCadastro?: boolean;
+  /** Quantas pessoas seguem esta lojinha. */
+  seguidores?: number;
+  /** Eu sigo esta pessoa? */
+  seguindo?: boolean;
+  notaMedia?: number | null;
+  totalAvaliacoes?: number;
 }
 
 export interface Foto {
@@ -96,6 +152,14 @@ export interface Anuncio {
   };
   /** O que a plataforma desconta desta venda. */
   taxas?: { comissao: number; tarifa: number };
+  /** Quantas pessoas curtiram. */
+  curtidas?: number;
+  /** Eu curti este anúncio? Só vem quando há sessão. */
+  curtido?: boolean;
+  /** O vendedor aceita negociar preço neste anúncio. */
+  aceitaOferta?: boolean;
+  /** Minha negociação em aberto neste anúncio, se houver. */
+  minhaOferta?: { id: string; estado: EstadoOferta; valorAtual: number } | null;
 }
 
 export interface ResumoDaCompra {
@@ -140,6 +204,10 @@ export interface Pedido {
   entregaDevolucao?: { id: string; estado: EstadoEntrega } | null;
   reembolso?: { estado: string; valorReembolsado: number } | null;
   podePedirReembolso?: boolean;
+  /** Pedido concluído e ainda sem avaliação minha. */
+  podeAvaliar?: boolean;
+  /** Preenchido quando o pedido nasceu de uma oferta aceita. */
+  ofertaId?: string | null;
   diasRestantesParaTestar?: number | null;
   eventos?: Array<{ id: string; tipo: string; criadoEm: string }>;
 }

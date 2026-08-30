@@ -18,7 +18,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import type { Anuncio } from '../api/tipos';
-import { cores, espaco, fonte, raio } from '../tema';
+import { cores, espaco, fonte, raio, sombra } from '../tema';
 import { precoCurto } from '../util/formato';
 import { Botao, Selo } from './base';
 
@@ -51,9 +51,17 @@ export function CardProduto({
       onPress={() => aoTocar(anuncio.id)}
       accessibilityRole="button"
       accessibilityLabel={`${anuncio.titulo}, ${precoCurto(anuncio.preco)}`}
-      style={({ pressed }) => [{ width: largura ?? 160 }, pressed && { opacity: 0.9 }]}
+      style={({ pressed }) => [
+        { width: largura ?? 168 },
+        pressed && { transform: [{ scale: 0.97 }] },
+      ]}
     >
-      <View style={[e.foto, { width: largura ?? 160, height: largura ?? 160 }]}>
+      <View
+        style={[
+          e.foto,
+          { width: largura ?? 168, height: Math.round((largura ?? 168) * 1.15) },
+        ]}
+      >
         {foto ? (
           <Image source={{ uri: foto }} style={e.imagem} accessibilityIgnoresInvertColors />
         ) : (
@@ -83,19 +91,26 @@ export function CardProduto({
         ) : null}
       </View>
 
-      <Text numberOfLines={1} style={[fonte.rotulo, { marginTop: espaco.sm }]}>
-        {anuncio.titulo.toLowerCase()}
-      </Text>
+      {/* preço primeiro, título depois: em vitrine de usados a decisão
+          começa no valor, e o olho procura o número antes do nome */}
       <View style={e.linhaPreco}>
         <Text style={fonte.preco}>{precoCurto(anuncio.preco)}</Text>
         {anuncio.precoOriginal && anuncio.precoOriginal > anuncio.preco ? (
           <Text style={e.precoAntigo}>{precoCurto(anuncio.precoOriginal)}</Text>
         ) : null}
       </View>
-      <Text style={fonte.pequeno} numberOfLines={1}>
-        {rotuloCondicao[anuncio.condicao] ?? 'usado'}
-        {anuncio.vendedor?.bairro ? ` · ${anuncio.vendedor.bairro.toLowerCase()}` : ''}
+
+      <Text numberOfLines={1} style={e.tituloCard}>
+        {anuncio.titulo.toLowerCase()}
       </Text>
+
+      <View style={e.linhaMeta}>
+        <View style={e.pontoCondicao} />
+        <Text style={e.meta} numberOfLines={1}>
+          {rotuloCondicao[anuncio.condicao] ?? 'usado'}
+          {anuncio.vendedor?.bairro ? ` · ${anuncio.vendedor.bairro.toLowerCase()}` : ''}
+        </Text>
+      </View>
     </Pressable>
   );
 }
@@ -259,39 +274,59 @@ export function LinhaDeMedidas({
 const e = StyleSheet.create({
   foto: {
     backgroundColor: cores.fundoCinza,
-    borderRadius: raio.md,
+    // foto bem mais arredondada que o resto: é o elemento que mais se repete
+    // na tela, e o canto redondo é o que dá o ar de app novo
+    borderRadius: raio.cartao,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: espaco.md,
   },
   imagem: { width: '100%', height: '100%' },
   coracao: {
     position: 'absolute',
     top: espaco.sm,
     right: espaco.sm,
-    width: 30,
-    height: 30,
+    width: 34,
+    height: 34,
     borderRadius: raio.pilula,
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: 'rgba(255,255,255,0.94)',
     alignItems: 'center',
     justifyContent: 'center',
+    ...(sombra as object),
   },
   desconto: {
     position: 'absolute',
     top: espaco.sm,
     left: espaco.sm,
-    backgroundColor: cores.verde,
-    paddingHorizontal: espaco.sm,
-    paddingVertical: 2,
-    borderRadius: raio.sm,
+    // desconto em âmbar, não em verde: verde aqui competiria com o botão de
+    // comprar e diluiria o significado da cor da marca
+    backgroundColor: cores.ambar,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: raio.pilula,
   },
-  descontoTexto: { color: cores.branco, fontSize: 11, fontWeight: '700' },
-  linhaPreco: { flexDirection: 'row', alignItems: 'baseline', gap: espaco.sm },
+  descontoTexto: { color: cores.preto, fontSize: 11, fontWeight: '800' },
+  linhaPreco: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
   precoAntigo: {
     fontSize: 12,
     color: cores.textoFraco,
     textDecorationLine: 'line-through',
   },
+  tituloCard: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: cores.textoSuave,
+    marginTop: 1,
+  },
+  linhaMeta: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 5 },
+  pontoCondicao: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: cores.verde,
+  },
+  meta: { flex: 1, fontSize: 11, fontWeight: '600', color: cores.textoFraco },
   faixa: {
     flexDirection: 'row',
     alignItems: 'center',

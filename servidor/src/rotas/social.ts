@@ -108,7 +108,7 @@ rotasVendedores.get('/:id', loginOpcional, async (req, res, next) => {
     return res.json({
       ...usuario,
       seguidores,
-      seguindo: !sigo,
+      seguindo: sigo !== null,
       notaMedia: notas._avg.nota ? Math.round(notas._avg.nota * 10) / 10 : null,
       totalAvaliacoes: notas._count,
     });

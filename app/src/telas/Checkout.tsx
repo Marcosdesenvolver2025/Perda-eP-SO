@@ -19,7 +19,7 @@ import type { Anuncio, ModalidadeEntrega, ResumoDaCompra } from '../api/tipos';
 import { Aviso, Botao, Carregando, Separador } from '../componentes/base';
 import { SeloGarantia } from '../componentes/produto';
 import type { ParametrosApp } from '../navegacao/tipos';
-import { cores, espaco, fonte, raio } from '../tema';
+import { cores, espaco, fonte, raio, sombraFlutuante } from '../tema';
 import { reais } from '../util/formato';
 import { COMISSAO, calcularDescontos } from '../regras/limites';
 import { tokenizarCartao, type DadosDoCartao } from '../pagamento/cartao';
@@ -302,8 +302,8 @@ const e = StyleSheet.create({
     right: 0,
     bottom: 0,
     padding: espaco.lg,
+    paddingBottom: espaco.xl,
     backgroundColor: cores.branco,
-    borderTopWidth: 1,
-    borderTopColor: cores.borda,
+    ...(sombraFlutuante as object),
   },
 });

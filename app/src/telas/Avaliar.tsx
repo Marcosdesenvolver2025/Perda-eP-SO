@@ -16,7 +16,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { api } from '../api/cliente';
 import { Aviso, Botao, Campo } from '../componentes/base';
 import type { ParametrosApp } from '../navegacao/tipos';
-import { cores, espaco, fonte, raio } from '../tema';
+import { cores, espaco, fonte, raio, sombraFlutuante } from '../tema';
 
 type Props = NativeStackScreenProps<ParametrosApp, 'Avaliar'>;
 
@@ -143,8 +143,10 @@ const e = StyleSheet.create({
   },
   rodape: {
     padding: espaco.lg,
-    borderTopWidth: 1,
-    borderTopColor: cores.borda,
+    paddingBottom: espaco.xl,
     backgroundColor: cores.fundo,
+    // sombra em vez de linha: a barra passa a flutuar sobre o conteúdo, e
+    // fica claro que ela é a ação principal e não o fim da página
+    ...(sombraFlutuante as object),
   },
 });

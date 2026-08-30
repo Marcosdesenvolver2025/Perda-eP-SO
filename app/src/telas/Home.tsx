@@ -33,7 +33,7 @@ import { CarrosselDeProdutos, FaixaDestaque } from '../componentes/produto';
 import { useAutenticacao } from '../contextos/Autenticacao';
 import { categorias as abasDeCategoria } from '../dados/categorias';
 import type { ParametrosApp } from '../navegacao/tipos';
-import { cores, espaco, fonte } from '../tema';
+import { cores, espaco, fonte, raio } from '../tema';
 
 type Props = NativeStackScreenProps<ParametrosApp, 'Abas'>;
 
@@ -98,20 +98,31 @@ export function TelaHome({ navigation }: Props) {
             accessibilityLabel="Vendas Itinga"
           />
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: espaco.lg }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: espaco.sm }}>
+          {/* ícones dentro de um círculo cinza: soltos sobre o branco eles
+              somem, e o topo fica com cara de rascunho */}
+          <Pressable
+            onPress={() => navigation.navigate('Curtidos')}
+            style={({ pressed }) => [e.acaoTopo, pressed && { transform: [{ scale: 0.94 }] }]}
+            accessibilityRole="button"
+            accessibilityLabel="o que eu curti"
+          >
+            <Ionicons name="heart-outline" size={21} color={cores.texto} />
+          </Pressable>
           <Pressable
             onPress={() => navigation.navigate('MinhasCompras')}
+            style={({ pressed }) => [e.acaoTopo, pressed && { transform: [{ scale: 0.94 }] }]}
             accessibilityRole="button"
             accessibilityLabel="minhas compras"
           >
-            <Ionicons name="bag-handle-outline" size={26} color={cores.verdeEscuro} />
+            <Ionicons name="bag-handle-outline" size={21} color={cores.texto} />
           </Pressable>
           <Pressable
             onPress={() => navigation.navigate('Abas', { screen: 'MinhaConta' })}
             accessibilityRole="button"
             accessibilityLabel="minha conta"
           >
-            <Avatar url={usuario?.fotoUrl} nome={usuario?.nome} tamanho={34} />
+            <Avatar url={usuario?.fotoUrl} nome={usuario?.nome} tamanho={38} />
           </Pressable>
         </View>
       </View>
@@ -223,4 +234,12 @@ const e = StyleSheet.create({
     paddingBottom: espaco.md,
   },
   marca: { flexDirection: 'row', alignItems: 'center' },
+  acaoTopo: {
+    width: 38,
+    height: 38,
+    borderRadius: raio.pilula,
+    backgroundColor: cores.fundoCinza,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

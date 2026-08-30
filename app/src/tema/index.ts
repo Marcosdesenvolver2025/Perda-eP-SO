@@ -82,21 +82,83 @@ export const raio = {
  * informal, de vizinho vendendo pro vizinho.
  */
 export const fonte = {
-  titulo: { fontSize: 22, fontWeight: '700' as const, color: cores.texto },
-  secao: { fontSize: 19, fontWeight: '700' as const, color: cores.texto },
+  /**
+   * Títulos usam peso 800 e `letterSpacing` negativo. É o que dá a impressão
+   * de tipografia desenhada em vez de tipografia padrão do sistema — e é
+   * barato: não precisa carregar fonte nenhuma.
+   */
+  titulo: {
+    fontSize: 25,
+    fontWeight: '800' as const,
+    letterSpacing: -0.6,
+    color: cores.texto,
+  },
+  secao: {
+    fontSize: 20,
+    fontWeight: '800' as const,
+    letterSpacing: -0.4,
+    color: cores.texto,
+  },
   subtitulo: { fontSize: 14, fontWeight: '400' as const, color: cores.textoSuave },
-  corpo: { fontSize: 15, fontWeight: '400' as const, color: cores.texto },
-  rotulo: { fontSize: 13, fontWeight: '600' as const, color: cores.texto },
-  pequeno: { fontSize: 12, fontWeight: '400' as const, color: cores.textoSuave },
-  preco: { fontSize: 17, fontWeight: '700' as const, color: cores.texto },
+  corpo: { fontSize: 15, fontWeight: '400' as const, lineHeight: 22, color: cores.texto },
+  rotulo: { fontSize: 13, fontWeight: '700' as const, color: cores.texto },
+  pequeno: { fontSize: 12, fontWeight: '500' as const, color: cores.textoSuave },
+  preco: {
+    fontSize: 18,
+    fontWeight: '800' as const,
+    letterSpacing: -0.4,
+    color: cores.texto,
+  },
 };
 
+/**
+ * Três níveis de elevação, em vez de um só.
+ *
+ * A diferença entre um app que parece caseiro e um que parece caro está mais
+ * na sombra do que na cor: sombra única e dura achata tudo no mesmo plano.
+ * Aqui o cartão quase encosta na página, o que flutua sobe de verdade, e o
+ * botão principal ganha um halo da própria cor — truque barato que faz o
+ * verde parecer aceso.
+ */
 export const sombra = Platform.select({
   android: { elevation: 2 },
   default: {
-    shadowColor: '#000',
+    shadowColor: '#0B1F0E',
     shadowOpacity: 0.06,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
+  },
+});
+
+/** Cartões e blocos apoiados na página. */
+export const sombraCartao = Platform.select({
+  android: { elevation: 3 },
+  default: {
+    shadowColor: '#0B1F0E',
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+  },
+});
+
+/** Barra de ação, modal, coisas que ficam por cima do conteúdo. */
+export const sombraFlutuante = Platform.select({
+  android: { elevation: 8 },
+  default: {
+    shadowColor: '#0B1F0E',
+    shadowOpacity: 0.14,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 },
+  },
+});
+
+/** Halo verde do botão principal. Faz a cor parecer acesa, não chapada. */
+export const sombraVerde = Platform.select({
+  android: { elevation: 4 },
+  default: {
+    shadowColor: cores.verdeProfundo,
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
   },
 });

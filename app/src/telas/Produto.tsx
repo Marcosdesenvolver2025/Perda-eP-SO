@@ -21,7 +21,7 @@ import type { Anuncio } from '../api/tipos';
 import { Avatar, Botao, Carregando, Selo, Separador, TelaVazia } from '../componentes/base';
 import { LinhaDeMedidas, SeloGarantia } from '../componentes/produto';
 import type { ParametrosApp } from '../navegacao/tipos';
-import { cores, espaco, fonte, raio } from '../tema';
+import { cores, espaco, fonte, raio, sombraFlutuante } from '../tema';
 import { parcelamento, precoCurto, quando, reais } from '../util/formato';
 
 type Props = NativeStackScreenProps<ParametrosApp, 'Produto'>;
@@ -151,17 +151,18 @@ export function TelaProduto({ navigation, route }: Props) {
         </View>
 
         <View style={{ padding: espaco.lg }}>
-          <Text style={[fonte.titulo, { fontSize: 20 }]}>{anuncio.titulo.toLowerCase()}</Text>
-
-          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: espaco.sm, marginTop: espaco.sm }}>
-            <Text style={{ fontSize: 26, fontWeight: '700', color: cores.texto }}>
-              {precoCurto(anuncio.preco)}
-            </Text>
+          {/* preço primeiro e grande: é o número que decide a compra */}
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: espaco.sm }}>
+            <Text style={e.precoGrande}>{precoCurto(anuncio.preco)}</Text>
             {anuncio.precoOriginal && anuncio.precoOriginal > anuncio.preco ? (
               <Text style={e.precoAntigo}>{precoCurto(anuncio.precoOriginal)}</Text>
             ) : null}
           </View>
           {parcelas ? <Text style={fonte.pequeno}>{parcelas} no cartão</Text> : null}
+
+          <Text style={[fonte.corpo, { marginTop: espaco.md, fontWeight: '600' }]}>
+            {anuncio.titulo.toLowerCase()}
+          </Text>
 
           <View style={{ flexDirection: 'row', gap: espaco.sm, marginTop: espaco.md, flexWrap: 'wrap' }}>
             <Selo texto={rotuloCondicao[anuncio.condicao] ?? 'usado'} />
@@ -339,6 +340,12 @@ const e = StyleSheet.create({
     backgroundColor: cores.branco,
     opacity: 0.9,
   },
+  precoGrande: {
+    fontSize: 32,
+    fontWeight: '800',
+    letterSpacing: -1.2,
+    color: cores.texto,
+  },
   precoAntigo: {
     fontSize: 15,
     color: cores.textoFraco,
@@ -362,8 +369,8 @@ const e = StyleSheet.create({
     right: 0,
     bottom: 0,
     padding: espaco.lg,
+    paddingBottom: espaco.xl,
     backgroundColor: cores.branco,
-    borderTopWidth: 1,
-    borderTopColor: cores.borda,
+    ...(sombraFlutuante as object),
   },
 });

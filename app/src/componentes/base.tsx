@@ -22,7 +22,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { cores, espaco, fonte, raio, sombra } from '../tema';
+import { cores, espaco, fonte, raio, sombra, sombraCartao, sombraVerde } from '../tema';
 
 // ---------------------------------------------------------------------------
 // Botões
@@ -49,7 +49,7 @@ export function Botao({
 }: BotaoProps) {
   const inativo = desabilitado || carregando;
   const cheio = variante === 'cheio';
-  const corDoTexto = cheio ? cores.branco : cores.verdeEscuro;
+  const corDoTexto = cheio ? cores.branco : cores.verdeProfundo;
 
   return (
     <Pressable
@@ -60,15 +60,21 @@ export function Botao({
       accessibilityState={{ disabled: !!inativo, busy: !!carregando }}
       style={({ pressed }) => [
         e.botao,
-        cheio && { backgroundColor: cores.verde },
+        cheio && [{ backgroundColor: cores.verde }, sombraVerde as object],
         variante === 'vazado' && {
           borderWidth: 1.5,
-          borderColor: cores.verdeEscuro,
-          backgroundColor: 'transparent',
+          borderColor: cores.borda,
+          backgroundColor: cores.branco,
         },
-        variante === 'texto' && { backgroundColor: 'transparent', paddingVertical: espaco.sm },
-        inativo && { opacity: 0.5 },
-        pressed && !inativo && { opacity: 0.85 },
+        variante === 'texto' && {
+          backgroundColor: 'transparent',
+          paddingVertical: espaco.sm,
+          minHeight: 0,
+        },
+        inativo && { opacity: 0.45, shadowOpacity: 0, elevation: 0 },
+        // afundar um pouco ao tocar dá a sensação de botão físico; sem isso
+        // o toque só "pisca" e a tela parece morta
+        pressed && !inativo && { transform: [{ scale: 0.97 }], opacity: 0.92 },
         estilo,
       ]}
     >
@@ -77,7 +83,7 @@ export function Botao({
       ) : (
         <View style={e.linhaCentro}>
           {icone ? (
-            <Ionicons name={icone} size={18} color={corDoTexto} style={{ marginRight: 6 }} />
+            <Ionicons name={icone} size={18} color={corDoTexto} style={{ marginRight: 7 }} />
           ) : null}
           <Text style={[e.botaoTexto, { color: corDoTexto }]}>{titulo}</Text>
         </View>
@@ -290,7 +296,13 @@ export function BarraDeBusca({
   );
 }
 
-/** Abas horizontais de categoria, como no topo da home. */
+/**
+ * Categorias no topo da home.
+ *
+ * São chips preenchidos, não abas sublinhadas. Aba sublinhada é o padrão de
+ * quase todo marketplace; o chip preenchido dá peso à categoria escolhida e
+ * deixa a barra com cara própria — além de ser alvo maior para o polegar.
+ */
 export function AbasDeCategoria({
   itens,
   ativa,
@@ -304,8 +316,12 @@ export function AbasDeCategoria({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ paddingHorizontal: espaco.lg, gap: espaco.xl }}
-      style={e.abas}
+      contentContainerStyle={{
+        paddingHorizontal: espaco.lg,
+        gap: espaco.sm,
+        paddingVertical: espaco.sm,
+      }}
+      style={{ flexGrow: 0 }}
     >
       {itens.map((item) => {
         const selecionada = item.chave === ativa;
@@ -315,13 +331,18 @@ export function AbasDeCategoria({
             onPress={() => aoTrocar(item.chave)}
             accessibilityRole="tab"
             accessibilityState={{ selected: selecionada }}
-            style={[e.aba, selecionada && { borderBottomColor: cores.verde }]}
+            style={({ pressed }) => [
+              e.chipCategoria,
+              selecionada && e.chipCategoriaAtivo,
+              pressed && { transform: [{ scale: 0.96 }] },
+            ]}
           >
             <Text
               style={{
-                fontSize: 15,
-                fontWeight: selecionada ? '700' : '400',
-                color: selecionada ? cores.verdeEscuro : cores.textoSuave,
+                fontSize: 14,
+                fontWeight: '700',
+                letterSpacing: -0.2,
+                color: selecionada ? cores.branco : cores.textoSuave,
               }}
             >
               {item.rotulo}
@@ -332,10 +353,6 @@ export function AbasDeCategoria({
     </ScrollView>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Estados de tela
-// ---------------------------------------------------------------------------
 
 export function Carregando({ texto = 'carregando...' }: { texto?: string }) {
   return (
@@ -448,26 +465,29 @@ export function Separador() {
 
 const e = StyleSheet.create({
   botao: {
-    borderRadius: raio.pilula,
-    paddingVertical: 14,
+    // canto discreto em vez de cápsula: é o formato que mais diferencia a
+    // casca do app de qualquer outro marketplace de usados
+    borderRadius: raio.botao,
+    minHeight: 52,
+    paddingVertical: 15,
     paddingHorizontal: espaco.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  botaoTexto: { fontSize: 15, fontWeight: '700' },
+  botaoTexto: { fontSize: 15.5, fontWeight: '800', letterSpacing: -0.2 },
   linhaCentro: { flexDirection: 'row', alignItems: 'center' },
   cartao: {
     backgroundColor: cores.branco,
-    borderRadius: raio.lg,
+    borderRadius: raio.cartao,
     padding: espaco.lg,
-    borderWidth: 1,
-    borderColor: cores.borda,
-    ...(sombra as object),
+    // sombra em vez de borda: a borda desenha uma caixa, a sombra apoia o
+    // bloco na página. Bloco apoiado parece produto acabado
+    ...(sombraCartao as object),
   },
   selo: {
-    paddingHorizontal: espaco.sm,
-    paddingVertical: 3,
-    borderRadius: raio.sm,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: raio.pilula,
     alignSelf: 'flex-start',
   },
   itemMenu: {
@@ -479,32 +499,32 @@ const e = StyleSheet.create({
   campo: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: cores.borda,
-    borderRadius: raio.md,
-    paddingHorizontal: espaco.md,
-    paddingVertical: 12,
+    borderRadius: raio.lg,
+    paddingHorizontal: espaco.lg,
+    paddingVertical: 14,
     backgroundColor: cores.branco,
   },
   busca: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: cores.fundoCinza,
-    borderRadius: raio.pilula,
+    backgroundColor: cores.branco,
+    borderRadius: raio.lg,
+    borderWidth: 1.5,
+    borderColor: cores.borda,
     paddingHorizontal: espaco.lg,
-    paddingVertical: 12,
+    paddingVertical: 14,
     marginHorizontal: espaco.lg,
+    ...(sombra as object),
   },
-  abas: {
-    borderBottomWidth: 1,
-    borderBottomColor: cores.borda,
-    flexGrow: 0,
+  chipCategoria: {
+    paddingHorizontal: espaco.lg,
+    paddingVertical: 9,
+    borderRadius: raio.pilula,
+    backgroundColor: cores.fundoCinza,
   },
-  aba: {
-    paddingVertical: espaco.md,
-    borderBottomWidth: 3,
-    borderBottomColor: 'transparent',
-  },
+  chipCategoriaAtivo: { backgroundColor: cores.preto },
   centralizado: {
     flex: 1,
     alignItems: 'center',

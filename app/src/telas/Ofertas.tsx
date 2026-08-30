@@ -239,7 +239,7 @@ export function TelaOfertas({ navigation }: Props) {
                         {!souComprador ? (
                           <View style={{ flex: 1 }}>
                             <Botao
-                              titulo="oferecer outro valor"
+                              titulo="outro valor"
                               variante="vazado"
                               aoTocar={() => setContrapropondo(o.id)}
                             />

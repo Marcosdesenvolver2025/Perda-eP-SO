@@ -77,7 +77,7 @@ Essas regras vivem em dois lugares e são checadas por teste automatizado:
 pessoa antes de ela perder tempo).
 
 ```bash
-cd servidor && npm test    # 60 testes: taxas, faixas, prazo, reembolso, estados e atribuição
+cd servidor && npm test    # 85 testes: taxas, faixas, ofertas, prazo, reembolso, estados e atribuição
 ```
 
 ---

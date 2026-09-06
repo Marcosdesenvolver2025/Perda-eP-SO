@@ -9,6 +9,11 @@
 
 ---
 
+> **Começando agora?** Leia
+> **[`documentos/o-que-ja-foi-feito.md`](documentos/o-que-ja-foi-feito.md)** —
+> o estado do projeto inteiro em um arquivo: regras, telas, o que falta e por
+> que cada decisão foi tomada.
+
 ## O que é
 
 O Vendas Itinga é um app de compra e venda de produtos novos e usados dentro de

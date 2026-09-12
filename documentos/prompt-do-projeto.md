@@ -308,6 +308,39 @@ informado pelo vendedor. É de onde o entregador tira o produto.
 - **o endereço de coleta só aparece para o entregador depois que ele aceita a
   corrida.** Antes disso fica mascarado, pela mesma razão do telefone.
 
+### Como o entregador pega a corrida
+
+O entregador abre o app e vê o **mural**: a lista das entregas disponíveis, cada
+uma com bairro de coleta, bairro de entrega, distância aproximada e o valor da
+corrida. Toca em **"pegar essa entrega"** e ela é dele.
+
+**A partir daí a corrida some do mural de todo mundo.** Nenhum outro entregador
+consegue pegar, abrir ou concluir aquela entrega. Cada corrida tem um dono só.
+
+> **A armadilha aqui é uma corrida de dois cliques simultâneos**, e ela vai
+> acontecer: dois entregadores tocam no mesmo item no mesmo segundo. Se o código
+> for "leio se está livre, depois gravo meu nome", os dois leem livre e os dois
+> gravam — o segundo sobrescreve o primeiro e a bagunça está feita.
+>
+> **Faça a tomada em uma operação só, condicional**, do tipo:
+>
+> ```sql
+> UPDATE corrida SET entregador_id = :eu, estado = 'ATRIBUIDA'
+>  WHERE id = :corrida AND entregador_id IS NULL
+> ```
+>
+> e **confira quantas linhas mudaram**. Uma linha: a corrida é sua. Zero linhas:
+> outro chegou antes, e a tela responde *"essa entrega já foi pega por outro
+> entregador"* e some com o item da lista. Nunca leia-e-depois-grave.
+>
+> Escreva um teste que dispara duas tomadas ao mesmo tempo na mesma corrida e
+> exige que **exatamente uma** vença.
+
+Depois de pegar, só esse entregador vê os endereços completos e só ele consegue
+mover a corrida. Se não puder mais fazer, ele **devolve a corrida** — ela volta
+ao mural e o motivo fica registrado. Devolver depois de já ter coletado o
+produto não é possível pelo app: aí é caso para o dono resolver na mão.
+
 ### O trajeto
 
 ```
@@ -426,7 +459,79 @@ estratégia **por distância escrita e testada**, desligada por uma linha.
 
 ---
 
-## 8. As funcionalidades que vêm do Enjoei
+## 8. Contas, papéis e quem enxerga o quê
+
+### Uma conta só, que compra e vende ao mesmo tempo
+
+Como no Enjoei: a pessoa **entra com a conta Google** e pronto. Não existe
+"cadastro de vendedor" separado, nem tela de escolher se você é comprador ou
+vendedor. **Toda conta já é as duas coisas.**
+
+- entrou com o Google, já pode comprar;
+- tocou em "vender", já pode anunciar;
+- a mesma pessoa compra hoje e vende amanhã, sem trocar de conta nem de perfil.
+
+Os dados extras de vendedor são pedidos **só quando ele precisa deles, na hora
+que precisa** — nunca num cadastro grande no começo, que é o que faz a pessoa
+desistir:
+
+| Quando | O que pede |
+|---|---|
+| Ao publicar o primeiro anúncio | endereço de coleta (se escolher entrega pela plataforma) |
+| Ao fazer a primeira venda | conta de recebimento |
+| Ao comprar pela primeira vez | endereço de entrega |
+
+### Os três papéis
+
+| Papel | Quem é | Como vira |
+|---|---|---|
+| **Usuário** | comprador e vendedor, a mesma conta | entrou com o Google |
+| **Entregador** | parceiro que faz as corridas | o dono habilita a conta dele |
+| **Dono (admin)** | você | marcado direto no banco, nunca pelo app |
+
+Entregador e admin **não se cadastram sozinhos**. Ninguém vira entregador
+apertando um botão: o dono habilita a conta de quem ele contratou. E não existe
+tela nenhuma que promova alguém a admin — se existir, é buraco de segurança.
+
+### Quem enxerga o quê
+
+Esta tabela é regra de autorização, não sugestão de interface. **Cheque no
+servidor, em toda rota.** Esconder o botão na tela não é proteger o dado.
+
+| Informação | Usuário | Entregador | Dono |
+|---|---|---|---|
+| Anúncios, vitrine, busca | ✅ | ✅ | ✅ |
+| Os próprios pedidos e vendas | ✅ | — | ✅ |
+| Mural de corridas disponíveis | ❌ | ✅ | ✅ |
+| Endereço completo de coleta e entrega | ❌ | **só da corrida que ele pegou** | ✅ |
+| Telefone do cliente | ❌ | **só depois de aceitar a corrida** | ✅ |
+| **Qual entregador está com qual pedido** | ❌ | só o dele | ✅ **só você** |
+| **Onde está cada produto, no mapa da operação** | ❌ | só o dele | ✅ **só você** |
+| Painel com a fila inteira de entregas | ❌ | ❌ | ✅ |
+| Devoluções, estornos e repasses | ❌ | ❌ | ✅ |
+| Faturamento e comissões | ❌ | ❌ | ✅ |
+
+### O painel do dono
+
+Só você abre. É onde a operação inteira aparece de uma vez:
+
+- **a fila de entregas**, com o estado de cada uma e há quanto tempo está parada;
+- **qual entregador está com qual pedido**, e onde o produto está no trajeto;
+- as corridas paradas há tempo demais, em destaque;
+- os pedidos perto do cancelamento automático;
+- as devoluções esperando decisão;
+- o dinheiro: retido, a repassar, repassado.
+
+> **O que o comprador vê do entregador.** Depois que a corrida é pega, o
+> comprador vê no seu pedido **o primeiro nome do entregador e o estado da
+> entrega** — é o que outros apps fazem e evita a ligação de "cadê meu produto".
+> O que ele **não** vê é o resto da operação: quantos entregadores existem, o
+> que cada um está levando, ou o endereço de coleta do vendedor. O quadro
+> completo é seu.
+
+---
+
+## 9. As funcionalidades que vêm do Enjoei
 
 São o que faz o app se comportar como brechó em vez de loja.
 
@@ -476,7 +581,7 @@ pode virar devolução.
 
 ---
 
-## 9. As telas
+## 10. As telas
 
 ### As cinco abas
 
@@ -507,7 +612,7 @@ app.
 
 ---
 
-## 10. A identidade visual — como não parecer cópia
+## 11. A identidade visual — como não parecer cópia
 
 ### Paleta
 
@@ -549,7 +654,7 @@ Tudo sai de um script só: `python3 tools/gerar_marca.py` gera todos os ícones.
 
 ---
 
-## 11. Pagamento — deixe pronto, não ligue
+## 12. Pagamento — deixe pronto, não ligue
 
 **Escreva e teste toda a lógica, mas não ligue em produção.** O combinado é:
 estruturar primeiro, ligar depois, quando as credenciais chegarem.
@@ -631,7 +736,7 @@ taxa de entrega) e o que é apenas dinheiro de passagem do vendedor.
 
 ---
 
-## 12. Como o código tem que estar organizado
+## 13. Como o código tem que estar organizado
 
 ### Regra pura, separada de tudo
 
@@ -675,7 +780,7 @@ na tela em vez de quebrar**.
 
 ---
 
-## 13. Publicação
+## 14. Publicação
 
 ### Site PWA
 
@@ -705,7 +810,7 @@ privacidade, termos de uso e página de exclusão de conta.
 
 ---
 
-## 14. O que fica pendente do lado do dono
+## 15. O que fica pendente do lado do dono
 
 Deixe explícito e não invente valor no lugar:
 
@@ -724,7 +829,7 @@ Deixe explícito e não invente valor no lugar:
 
 ---
 
-## 15. Restrições
+## 16. Restrições
 
 **Não remova, reescreva, duplique ou altere a lógica financeira existente.**
 Preserve integralmente os fluxos atuais de checkout, cobrança, split, taxas,
@@ -748,7 +853,7 @@ economia e as que mais custam caro.
 
 ---
 
-## 16. Decisões já encerradas
+## 17. Decisões já encerradas
 
 Para ninguém refazer discussão já resolvida.
 
@@ -773,5 +878,9 @@ Para ninguém refazer discussão já resolvida.
 | A promessa pula o fim de semana, o cancelamento não | a promessa conta só os dias em que a plataforma opera, senão ela nasce quebrada; o cancelamento é teto de quanto tempo o dinheiro do comprador fica preso, e para isso todo dia conta igual |
 | Cancelamento automático em 7 dias sem coleta | vendedor que some deixa o dinheiro do comprador preso; o relógio resolve sozinho, sem ninguém precisar abrir chamado |
 | Aviso ao vendedor no 5º dia | cancelar sem avisar é como se perde vendedor; 2 dias é tempo de reagir |
+| Corrida tomada por `UPDATE` condicional, não por ler-e-gravar | dois entregadores tocando no mesmo segundo é questão de tempo, e ler-e-gravar deixa os dois vencerem; a condição no `WHERE` é o que garante um dono só |
+| Uma conta que compra e vende, sem cadastro de vendedor | é o modelo do Enjoei; cadastro grande no começo é onde a pessoa desiste, então os dados de vendedor são pedidos só na hora em que fazem falta |
+| Entregador e admin não se cadastram sozinhos | o dono habilita quem contratou; tela que promove alguém a admin é buraco de segurança, não funcionalidade |
+| O quadro completo da operação é só do dono | o comprador vê o primeiro nome de quem leva o pedido dele e mais nada; quem está com o quê, e onde, é informação da operação |
 | Repasse manual, não automático | devolução antes do repasse deixaria a plataforma no prejuízo |
 | Saque agrupado em carteira | taxa de saque é do vendedor e não pode ser dividida |

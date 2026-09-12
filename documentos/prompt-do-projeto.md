@@ -102,18 +102,18 @@ Cobrada **só na entrega pela plataforma** — ela paga a operação da entrega.
 
 ### 3. Taxa de entrega — paga pelo COMPRADOR
 
-**R$ 7,90, valor único dentro de Itinga**, cobrada no checkout **só quando a
+**R$ 9,00, valor único dentro de Itinga**, cobrada no checkout **só quando a
 entrega é pela plataforma**. Aparece separada do preço do produto, como no
-Enjoei: "produto R$ 50,00 + entrega R$ 7,90 = R$ 57,90".
+Enjoei: "produto R$ 50,00 + entrega R$ 9,00 = R$ 59,00".
 
 Na entrega pelo vendedor **não há taxa nenhuma** — não há entregador para pagar.
 
 > **Por que o comprador paga, e não a plataforma.** É a diferença entre ter e
-> não ter margem. O entregador recebe R$ 5,00 por corrida. Se esse custo saísse
+> não ter margem. O entregador recebe R$ 7,00 por corrida. Se esse custo saísse
 > da comissão, toda venda abaixo de R$ 20,84 daria prejuízo — e contando a taxa
 > do meio de pagamento, a faixa inteira até R$ 24,99 ficaria negativa. Com a
-> taxa cobrada do comprador, **nenhuma faixa dá prejuízo**: sobram R$ 5,88 numa
-> venda de R$ 10,00 e R$ 19,08 numa de R$ 100,00.
+> taxa cobrada do comprador, **nenhuma faixa dá prejuízo**: sobram R$ 4,94 numa
+> venda de R$ 10,00 e R$ 18,14 numa de R$ 100,00.
 
 É valor único porque a cidade é uma só: calcular por distância dentro de Itinga
 custaria mais em complexidade do que a diferença que geraria.
@@ -141,7 +141,7 @@ nem falta.
 
 ### O entregador
 
-Recebe **R$ 5,00 por corrida concluída**, pago assim que confirma a entrega. O
+Recebe **R$ 7,00 por corrida concluída**, pago assim que confirma a entrega. O
 serviço dele já foi prestado e não depende de o comprador aprovar o produto.
 Sai da taxa de entrega cobrada do comprador, e fica **fora do split da
 cobrança** — é um pagamento da plataforma para o entregador, não uma parte da
@@ -151,11 +151,11 @@ venda.
 
 | | |
 |---|---|
-| Comprador paga | R$ 107,90 (produto + entrega) |
+| Comprador paga | R$ 109,00 (produto + entrega) |
 | Vendedor recebe | R$ 79,50 (produto − 12% − tarifa R$ 8,50) |
-| Entregador recebe | R$ 5,00 |
-| Meio de pagamento | ~R$ 4,32 |
-| **Plataforma fica com** | **~R$ 19,08** |
+| Entregador recebe | R$ 7,00 |
+| Meio de pagamento | ~R$ 4,36 |
+| **Plataforma fica com** | **~R$ 18,14** |
 
 ---
 
@@ -168,7 +168,7 @@ a regra mudar amanhã, o pedido de ontem mantém a regra com que foi vendido.
 |---|---|---|
 | Comissão | 12% (ou 18% turbinado) | 12% (ou 18% turbinado) |
 | Tarifa fixa | por faixa | **não há** |
-| Taxa de entrega (comprador) | **R$ 7,90** | **não há** |
+| Taxa de entrega (comprador) | **R$ 9,00** | **não há** |
 | Limite | 20 kg · 100 cm largura · 100 cm altura | **sem limite** |
 | Quem entrega | entregador nosso | o próprio vendedor |
 | Prova de entrega | código digitado pelo entregador | código digitado pelo vendedor |
@@ -186,11 +186,11 @@ por um número.
 
 Na tela de novo anúncio, mostre as duas modalidades **lado a lado**, com o
 valor que o vendedor recebe em cada uma, calculado ao vivo — e avise que na
-entrega pela plataforma o comprador paga R$ 7,90 a mais, porque isso muda a
+entrega pela plataforma o comprador paga R$ 9,00 a mais, porque isso muda a
 chance de a peça vender.
 
 No checkout, a taxa de entrega aparece em **linha separada**, nunca somada
-escondida no preço: "produto R$ 50,00 · entrega R$ 7,90 · total R$ 57,90".
+escondida no preço: "produto R$ 50,00 · entrega R$ 9,00 · total R$ 59,00".
 
 ---
 
@@ -224,7 +224,7 @@ estabelecimento comercial dá ao consumidor 7 dias corridos para desistir, com
 devolução de **todos** os valores pagos. Não é escolha de produto, é lei.
 
 Dentro dos 7 dias a devolução é **integral**: o comprador recebe 100% do que
-pagou, nas duas modalidades — **incluindo a taxa de entrega de R$ 7,90**.
+pagou, nas duas modalidades — **incluindo a taxa de entrega de R$ 9,00**.
 Comissão e tarifa **não** são descontadas. Quem absorve esse custo é a
 plataforma, que ainda paga o entregador da ida e o da coleta reversa. Deixe as
 chaves de retenção existindo no código, mas **desligadas**; reter dentro do
@@ -588,34 +588,46 @@ tela, nem as rotas.
 O entregador recebe as corridas dele por **Pix**, numa chave que **ele mesmo
 cadastra e pode trocar**, na área dele do app.
 
+**A chave não é digitada — é escolhida.** O app mostra as três opções, já
+preenchidas com o que está na ficha dele, e ele marca qual quer usar:
+
+| Opção | Vem de |
+|---|---|
+| **CPF** | o CPF da ficha |
+| **Telefone** | o telefone da ficha |
+| **E-mail** | o Gmail com que ele entra no app |
+
 Como funciona:
 
-1. na primeira vez que ele entra, o app pede a chave Pix — **sem chave, ele até
-   pega corrida, mas não tem como receber**, e o app avisa isso na tela;
-2. ele **digita a chave duas vezes** e confirma. Chave Pix errada manda dinheiro
-   para a conta de um desconhecido, e Pix enviado não volta sozinho;
-3. a tela mostra o **tipo da chave** (CPF, telefone, e-mail ou aleatória) e,
-   antes de salvar, repete o que vai ser gravado, em letra grande, para ele
-   conferir;
-4. pode trocar quando quiser, refazendo a mesma confirmação.
+1. na primeira vez que ele entra, o app pede que escolha uma das três — **sem
+   chave escolhida ele até pega corrida, mas não tem como receber**, e o app
+   avisa isso na tela;
+2. antes de salvar, a tela repete em letra grande qual chave vai ser gravada;
+3. pode trocar entre as três quando quiser, refazendo a confirmação.
 
-> **Trocar chave Pix é o caminho preferido de quem rouba conta.** Quem toma o
-> acesso de um entregador troca a chave e passa a receber no lugar dele. Três
-> travas contra isso, todas obrigatórias:
+> **Escolher em vez de digitar resolve dois problemas de uma vez.**
 >
-> - **se a chave for do tipo CPF, ela tem que bater com o CPF da ficha.** Não
->   bateu, não salva;
-> - **toda troca avisa na hora as duas partes** — o entregador (para ele
->   descobrir se não foi ele quem trocou) e o dono, no painel;
-> - **pagamento fica em espera por 24 horas depois de uma troca.** Se a troca
->   foi golpe, esse é o tempo de alguém perceber antes de o dinheiro sair.
+> O primeiro é o erro de digitação: Pix mandado para chave errada cai na conta
+> de um desconhecido e não volta sozinho. Se a chave só pode ser um dos três
+> valores já conferidos, não existe dígito trocado.
 >
-> Guarde o **histórico das chaves**: qual era, qual virou, quando e a partir de
-> qual dispositivo.
+> O segundo é fraude. Trocar chave Pix é o caminho preferido de quem rouba
+> conta de entregador: toma o acesso, aponta o Pix para si e passa a receber no
+> lugar da pessoa. **Aqui isso não funciona** — as três opções são dados que o
+> dono cadastrou na ficha, então não há para onde apontar o dinheiro. Para
+> desviar o pagamento seria preciso mudar a ficha, e ficha só o dono muda.
+>
+> Mesmo assim, mantenha duas travas: **toda troca avisa na hora o entregador e
+> o dono**, e fica registrado **o histórico** — qual chave era, qual virou e
+> quando.
+
+Se o entregador quiser receber numa chave que não é nenhuma das três, o caminho
+é falar com o dono e **atualizar a ficha** — não existe campo livre. É de
+propósito: o dinheiro só vai para um dado que a empresa conferiu.
 
 ### Como o entregador é pago
 
-O que ele ganha **acumula numa carteira** dentro do app: R$ 5,00 por corrida
+O que ele ganha **acumula numa carteira** dentro do app: R$ 7,00 por corrida
 concluída, creditado assim que ele confirma a entrega.
 
 | Onde | O que mostra |
@@ -626,7 +638,7 @@ concluída, creditado assim que ele confirma a entrega.
 O dono paga por Pix e **marca como pago no painel**, com data e valor. O
 sistema não dispara Pix sozinho: o dono aperta, confere e paga.
 
-> **Acumule em vez de pagar corrida por corrida.** Mandar um Pix de R$ 5,00 por
+> **Acumule em vez de pagar corrida por corrida.** Mandar um Pix de R$ 7,00 por
 > entrega é operação demais para valor de menos. Pague por semana, ou quando o
 > entregador pedir a partir de um mínimo. O que importa é a carteira estar
 > sempre certa e visível para os dois lados — o entregador precisa poder
@@ -1059,8 +1071,8 @@ Para ninguém refazer discussão já resolvida.
 | 7 dias de teste, não 4 | é a lei (CDC art. 49), não é escolha |
 | Devolução integral | mesmo motivo; reter dentro do prazo vira ação no Procon |
 | 12% + tarifa por faixa, não 16/18% fixo | percentual alto assusta em produto caro; a tarifa cobre a operação no produto barato |
-| **Comprador paga a entrega, não a plataforma** | **revertido em setembro/2026.** A ideia original era embutir o frete e mostrar preço final. A conta provou que não fecha: com o entregador custando R$ 5,00, toda venda abaixo de R$ 20,84 dava prejuízo, e a faixa inteira até R$ 24,99 ficava negativa contando o meio de pagamento. É a mecânica do Enjoei, e é o que dá margem em toda faixa |
-| Taxa de entrega única de R$ 7,90 | a cidade é uma só; calcular por distância dentro de Itinga custa mais em complexidade do que a diferença que geraria |
+| **Comprador paga a entrega, não a plataforma** | **revertido em setembro/2026.** A ideia original era embutir o frete e mostrar preço final. A conta provou que não fecha: com o entregador custando R$ 5,00 na época, toda venda abaixo de R$ 20,84 dava prejuízo, e a faixa inteira até R$ 24,99 ficava negativa contando o meio de pagamento. É a mecânica do Enjoei, e é o que dá margem em toda faixa |
+| Taxa de entrega única de R$ 9,00 | a cidade é uma só; calcular por distância dentro de Itinga custa mais em complexidade do que a diferença que geraria |
 | Anúncio turbinado a 18% | mesma mecânica do Enjoei: quem quer aparecer mais paga mais, e é escolha do vendedor |
 | Taxa de saque de R$ 3,00, primeiro grátis no mês | copiada do Enjoei; quem saca uma vez por mês não sente taxa nenhuma |
 | 100 cm de largura e altura, não 60 | 60 cm barrava item comum de casa |
@@ -1087,9 +1099,9 @@ Para ninguém refazer discussão já resolvida.
 | Ficha arquivada em vez de apagada | é preciso saber quem entregou o quê seis meses atrás, mesmo que a pessoa não trabalhe mais |
 | Recados dentro da plataforma, não em app de terceiro | o histórico fica com a empresa, e entregador suspenso perde o canal na hora — coisa que grupo de mensagem externo não faz |
 | Entregador não inicia conversa nem fala com outro em particular | quem abre canal é o dono; conversa paralela entre entregadores fora da vista vira combinação que a operação não enxerga |
-| Chave Pix cadastrada e trocada pelo próprio entregador | é a conta dele; o dono não deve digitar chave de terceiro nem responder por erro de digitação alheio |
-| Chave digitada duas vezes, com aviso e espera de 24h na troca | Pix enviado para chave errada não volta, e trocar chave é o caminho preferido de quem rouba conta |
-| Pagamento do entregador acumulado, pago por Pix fora da Stripe | Pix de R$ 5,00 por corrida é operação demais para valor de menos; e o pagamento do entregador não é parte da venda |
+| Chave Pix escolhida entre CPF, telefone e Gmail da ficha, sem campo livre | mata o erro de digitação e mata o golpe de trocar a chave para receber no lugar do entregador: não há para onde apontar o dinheiro, porque os três valores são os que o dono conferiu |
+| Entregador recebe R$ 7,00 e o comprador paga R$ 9,00 de entrega | sobram R$ 2,00 por corrida para a plataforma; paga-se melhor o entregador do que a margem por entrega pediria, porque entregador que some é problema pior que margem menor |
+| Pagamento do entregador acumulado, pago por Pix fora da Stripe | Pix de R$ 7,00 por corrida é operação demais para valor de menos; e o pagamento do entregador não é parte da venda |
 | O sistema não dispara Pix sozinho | o dono confere e paga; automatizar saída de dinheiro sem conferência é o tipo de facilidade que custa caro uma vez só |
 | O quadro completo da operação é só do dono | o comprador vê o primeiro nome de quem leva o pedido dele e mais nada; quem está com o quê, e onde, é informação da operação |
 | Repasse manual, não automático | devolução antes do repasse deixaria a plataforma no prejuízo |

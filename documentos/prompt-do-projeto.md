@@ -1,7 +1,25 @@
 # Prompt do projeto — Vendas Itinga
 
-Especificação completa e autossuficiente. Quem receber este texto consegue
-construir o aplicativo inteiro sem precisar de mais nada.
+> **Para o agente de IA que vai construir isto.**
+>
+> Este documento é a especificação completa do aplicativo. Construa exatamente
+> o que está escrito aqui, do começo ao fim, sem pedir confirmação a cada
+> passo.
+>
+> Três instruções que valem para o trabalho inteiro:
+>
+> 1. **Onde houver um número, use o número.** Comissão, tarifas, prazos e
+>    limites não são sugestões nem valores de exemplo.
+> 2. **Onde houver uma justificativa em bloco de citação, leia antes de
+>    "melhorar".** Ela existe porque aquela regra já foi discutida e decidida.
+>    Várias parecem detalhe e são o oposto.
+> 3. **Entregue funcionando e testado.** Regras de dinheiro e de estado vão
+>    para módulos puros, com testes automatizados. Não deixe TODO em caminho
+>    de dinheiro.
+>
+> Se algo aqui for genuinamente impossível ou contraditório, construa todo o
+> resto e diga no final o que ficou de fora e por quê. Não trave o trabalho
+> inteiro numa dúvida.
 
 Última atualização: setembro de 2026.
 
@@ -212,19 +230,45 @@ e com o dinheiro.
 
 ## 5. A prova de entrega
 
-Um **código de 4 dígitos** gerado no pedido, que o comprador informa a quem
-entrega. Enquanto o código não é digitado, o pedido não está entregue e o
-relógio dos 7 dias não começa.
+Um **código de 4 dígitos** (a "senha da entrega") é gerado quando o pedido é
+pago e aparece só para o comprador. Quem entrega pede a senha na mão do
+comprador e digita no app. **Enquanto a senha não é digitada, o pedido não está
+entregue e o relógio dos 7 dias não começa.** É o mesmo mecanismo que o Mercado
+Livre usa.
 
-Na modalidade vendedor há **três portas** para o pedido chegar em ENTREGUE, e
-todas passam pela **mesma função interna** — nenhum caminho pode esquecer de
+Senha errada **não** conclui a entrega: o app diz que não confere e deixa
+tentar de novo. Só a senha certa muda o estado do pedido.
+
+### Entrega feita pelo próprio vendedor
+
+O vendedor precisa comprovar **as duas coisas juntas**, na mesma tela:
+
+1. **a senha de 4 dígitos** que o comprador informar; e
+2. **uma foto** do produto entregue, tirada na hora pelo app.
+
+Sem a foto o botão de concluir não habilita, mesmo com a senha certa. A foto
+fica anexada ao pedido e é o que a plataforma tem para mediar se o comprador
+disser depois que não recebeu.
+
+Confirmada a senha, o pedido vira ENTREGUE e **começam os 7 dias de teste e
+devolução que a lei exige**.
+
+### As três portas até ENTREGUE
+
+Todas passam pela **mesma função interna** — nenhum caminho pode esquecer de
 abrir o prazo de teste:
 
-1. o vendedor digita o código de 4 dígitos do comprador;
-2. o comprador toca em "já recebi";
-3. o vendedor declara a entrega sem o código, e o comprador tem **3 dias** para
-   confirmar ou abrir devolução; passado o prazo em silêncio, o sistema
-   confirma sozinho. É o que impede o pedido de travar quando o comprador some.
+| | Caminho | Exige |
+|---|---|---|
+| 1 | o vendedor digita a senha do comprador | **senha + foto** |
+| 2 | o comprador toca em "já recebi" | nada — quem confirma é o dono do dinheiro |
+| 3 | o vendedor declara sem a senha | **foto obrigatória**, e não conclui na hora |
+
+A porta 3 existe só para o pedido não travar quando o comprador some. Ela
+**não** entrega o pedido imediatamente: abre um aviso ao comprador, que tem
+**3 dias** para confirmar ou abrir devolução. Passado o prazo em silêncio, o
+sistema confirma sozinho. É deliberadamente o caminho mais lento e o único que
+depende da foto como prova — porque é o único em que o comprador não participou.
 
 ---
 
@@ -591,5 +635,6 @@ Para ninguém refazer discussão já resolvida.
 | **Stripe no lugar da pagar.me** | **decidido em setembro/2026 pelo dono.** O padrão passa a ser *separate charges and transfers*, que dá o escrow dos 7 dias sem depender de configuração de recebedor — reter vira o estado padrão. Falta confirmar que o Connect aceita vendedor PF com CPF |
 | Modalidade congelada no pedido | mudar a regra amanhã não pode mexer no pedido de ontem |
 | Estorno só depois do produto voltar | senão o comprador fica com o produto e com o dinheiro |
+| Senha de 4 dígitos + foto na entrega do vendedor | mesmo mecanismo do Mercado Livre; a senha prova que o comprador estava lá, a foto prova o que foi entregue. Sem as duas, a plataforma não tem como mediar um "eu não recebi" |
 | Repasse manual, não automático | devolução antes do repasse deixaria a plataforma no prejuízo |
 | Saque agrupado em carteira | taxa de saque é do vendedor e não pode ser dividida |

@@ -84,9 +84,9 @@ Cobrada **só na entrega pela plataforma** — ela paga a operação da entrega.
 
 ### 3. Taxa de entrega — paga pelo COMPRADOR
 
-**R$ 7,90, valor único dentro de Itinga**, cobrada no checkout **só quando a
+**R$ 8,90, valor único dentro de Itinga**, cobrada no checkout **só quando a
 entrega é pela plataforma**. Aparece separada do preço do produto, como no
-Enjoei: "produto R$ 50,00 + entrega R$ 7,90 = R$ 57,90".
+Enjoei: "produto R$ 50,00 + entrega R$ 8,90 = R$ 58,90".
 
 Na entrega pelo vendedor **não há taxa nenhuma** — não há entregador para pagar.
 
@@ -94,8 +94,8 @@ Na entrega pelo vendedor **não há taxa nenhuma** — não há entregador para 
 > não ter margem. O entregador recebe R$ 5,00 por corrida. Se esse custo saísse
 > da comissão, toda venda abaixo de R$ 20,84 daria prejuízo — e contando a taxa
 > do meio de pagamento, a faixa inteira até R$ 24,99 ficaria negativa. Com a
-> taxa cobrada do comprador, **nenhuma faixa dá prejuízo**: sobram R$ 5,88 numa
-> venda de R$ 10,00 e R$ 19,08 numa de R$ 100,00.
+> taxa cobrada do comprador, **nenhuma faixa dá prejuízo**: sobram R$ 6,84 numa
+> venda de R$ 10,00 e R$ 20,04 numa de R$ 100,00.
 
 É valor único porque a cidade é uma só: calcular por distância dentro de Itinga
 custaria mais em complexidade do que a diferença que geraria.
@@ -132,11 +132,11 @@ venda.
 
 | | |
 |---|---|
-| Comprador paga | R$ 107,90 (produto + entrega) |
+| Comprador paga | R$ 108,90 (produto + entrega) |
 | Vendedor recebe | R$ 79,50 (produto − 12% − tarifa R$ 8,50) |
 | Entregador recebe | R$ 5,00 |
 | Meio de pagamento | ~R$ 4,32 |
-| **Plataforma fica com** | **~R$ 19,08** |
+| **Plataforma fica com** | **~R$ 20,04** |
 
 ---
 
@@ -149,7 +149,7 @@ a regra mudar amanhã, o pedido de ontem mantém a regra com que foi vendido.
 |---|---|---|
 | Comissão | 12% (ou 18% turbinado) | 12% (ou 18% turbinado) |
 | Tarifa fixa | por faixa | **não há** |
-| Taxa de entrega (comprador) | **R$ 7,90** | **não há** |
+| Taxa de entrega (comprador) | **R$ 8,90** | **não há** |
 | Limite | 20 kg · 100 cm largura · 100 cm altura | **sem limite** |
 | Quem entrega | entregador nosso | o próprio vendedor |
 | Prova de entrega | código digitado pelo entregador | código digitado pelo vendedor |
@@ -167,11 +167,11 @@ por um número.
 
 Na tela de novo anúncio, mostre as duas modalidades **lado a lado**, com o
 valor que o vendedor recebe em cada uma, calculado ao vivo — e avise que na
-entrega pela plataforma o comprador paga R$ 7,90 a mais, porque isso muda a
+entrega pela plataforma o comprador paga R$ 8,90 a mais, porque isso muda a
 chance de a peça vender.
 
 No checkout, a taxa de entrega aparece em **linha separada**, nunca somada
-escondida no preço: "produto R$ 50,00 · entrega R$ 7,90 · total R$ 57,90".
+escondida no preço: "produto R$ 50,00 · entrega R$ 8,90 · total R$ 58,90".
 
 ---
 
@@ -190,7 +190,7 @@ estabelecimento comercial dá ao consumidor 7 dias corridos para desistir, com
 devolução de **todos** os valores pagos. Não é escolha de produto, é lei.
 
 Dentro dos 7 dias a devolução é **integral**: o comprador recebe 100% do que
-pagou, nas duas modalidades — **incluindo a taxa de entrega de R$ 7,90**.
+pagou, nas duas modalidades — **incluindo a taxa de entrega de R$ 8,90**.
 Comissão e tarifa **não** são descontadas. Quem absorve esse custo é a
 plataforma, que ainda paga o entregador da ida e o da coleta reversa. Deixe as
 chaves de retenção existindo no código, mas **desligadas**; reter dentro do
@@ -393,7 +393,7 @@ dinheiro de terceiro, que exige autorização do Banco Central.
 | Peça | Detalhe |
 |---|---|
 | Split físico na cobrança | a cobrança já nasce dividida entre vendedor e plataforma |
-| Taxa de entrega no split | a cobrança total é produto + R$ 7,90; a taxa de entrega vai **inteira para a plataforma**, nunca para o vendedor, e o entregador é pago à parte |
+| Taxa de entrega no split | a cobrança total é produto + R$ 8,90; a taxa de entrega vai **inteira para a plataforma**, nunca para o vendedor, e o entregador é pago à parte |
 | Escrow | recebedores criados com `transfer_enabled: false` — o dinheiro fica no saldo, não sai para o banco |
 | Repasse manual | job de hora em hora procura pedido com prazo de teste vencido e sem devolução aberta |
 | Estorno parcial | com `split_rules` **explícito** — sem isso a pagar.me estorna proporcional e a conta não fecha |
@@ -550,7 +550,7 @@ Para ninguém refazer discussão já resolvida.
 | Devolução integral | mesmo motivo; reter dentro do prazo vira ação no Procon |
 | 12% + tarifa por faixa, não 16/18% fixo | percentual alto assusta em produto caro; a tarifa cobre a operação no produto barato |
 | **Comprador paga a entrega, não a plataforma** | **revertido em setembro/2026.** A ideia original era embutir o frete e mostrar preço final. A conta provou que não fecha: com o entregador custando R$ 5,00, toda venda abaixo de R$ 20,84 dava prejuízo, e a faixa inteira até R$ 24,99 ficava negativa contando o meio de pagamento. É a mecânica do Enjoei, e é o que dá margem em toda faixa |
-| Taxa de entrega única de R$ 7,90 | a cidade é uma só; calcular por distância dentro de Itinga custa mais em complexidade do que a diferença que geraria |
+| Taxa de entrega única de R$ 8,90 | a cidade é uma só; calcular por distância dentro de Itinga custa mais em complexidade do que a diferença que geraria |
 | Anúncio turbinado a 18% | mesma mecânica do Enjoei: quem quer aparecer mais paga mais, e é escolha do vendedor |
 | Taxa de saque de R$ 3,00, primeiro grátis no mês | copiada do Enjoei; quem saca uma vez por mês não sente taxa nenhuma |
 | 100 cm de largura e altura, não 60 | 60 cm barrava item comum de casa |

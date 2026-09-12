@@ -102,9 +102,9 @@ Cobrada **só na entrega pela plataforma** — ela paga a operação da entrega.
 
 ### 3. Taxa de entrega — paga pelo COMPRADOR
 
-**R$ 9,00, valor único dentro de Itinga**, cobrada no checkout **só quando a
+**R$ 9,90, valor único dentro de Itinga**, cobrada no checkout **só quando a
 entrega é pela plataforma**. Aparece separada do preço do produto, como no
-Enjoei: "produto R$ 50,00 + entrega R$ 9,00 = R$ 59,00".
+Enjoei: "produto R$ 50,00 + entrega R$ 9,90 = R$ 59,90".
 
 Na entrega pelo vendedor **não há taxa nenhuma** — não há entregador para pagar.
 
@@ -112,8 +112,8 @@ Na entrega pelo vendedor **não há taxa nenhuma** — não há entregador para 
 > não ter margem. O entregador recebe R$ 7,00 por corrida. Se esse custo saísse
 > da comissão, toda venda abaixo de R$ 20,84 daria prejuízo — e contando a taxa
 > do meio de pagamento, a faixa inteira até R$ 24,99 ficaria negativa. Com a
-> taxa cobrada do comprador, **nenhuma faixa dá prejuízo**: sobram R$ 4,94 numa
-> venda de R$ 10,00 e R$ 18,14 numa de R$ 100,00.
+> taxa cobrada do comprador, **nenhuma faixa dá prejuízo**: sobram R$ 5,80 numa
+> venda de R$ 10,00 e R$ 19,00 numa de R$ 100,00.
 
 É valor único porque a cidade é uma só: calcular por distância dentro de Itinga
 custaria mais em complexidade do que a diferença que geraria.
@@ -151,11 +151,11 @@ venda.
 
 | | |
 |---|---|
-| Comprador paga | R$ 109,00 (produto + entrega) |
+| Comprador paga | R$ 109,90 (produto + entrega) |
 | Vendedor recebe | R$ 79,50 (produto − 12% − tarifa R$ 8,50) |
 | Entregador recebe | R$ 7,00 |
-| Meio de pagamento | ~R$ 4,36 |
-| **Plataforma fica com** | **~R$ 18,14** |
+| Meio de pagamento | ~R$ 4,40 |
+| **Plataforma fica com** | **~R$ 19,00** |
 
 ---
 
@@ -168,7 +168,7 @@ a regra mudar amanhã, o pedido de ontem mantém a regra com que foi vendido.
 |---|---|---|
 | Comissão | 12% (ou 18% turbinado) | 12% (ou 18% turbinado) |
 | Tarifa fixa | por faixa | **não há** |
-| Taxa de entrega (comprador) | **R$ 9,00** | **não há** |
+| Taxa de entrega (comprador) | **R$ 9,90** | **não há** |
 | Limite | 20 kg · 100 cm largura · 100 cm altura | **sem limite** |
 | Quem entrega | entregador nosso | o próprio vendedor |
 | Prova de entrega | código digitado pelo entregador | código digitado pelo vendedor |
@@ -186,11 +186,11 @@ por um número.
 
 Na tela de novo anúncio, mostre as duas modalidades **lado a lado**, com o
 valor que o vendedor recebe em cada uma, calculado ao vivo — e avise que na
-entrega pela plataforma o comprador paga R$ 9,00 a mais, porque isso muda a
+entrega pela plataforma o comprador paga R$ 9,90 a mais, porque isso muda a
 chance de a peça vender.
 
 No checkout, a taxa de entrega aparece em **linha separada**, nunca somada
-escondida no preço: "produto R$ 50,00 · entrega R$ 9,00 · total R$ 59,00".
+escondida no preço: "produto R$ 50,00 · entrega R$ 9,90 · total R$ 59,90".
 
 ---
 
@@ -224,7 +224,7 @@ estabelecimento comercial dá ao consumidor 7 dias corridos para desistir, com
 devolução de **todos** os valores pagos. Não é escolha de produto, é lei.
 
 Dentro dos 7 dias a devolução é **integral**: o comprador recebe 100% do que
-pagou, nas duas modalidades — **incluindo a taxa de entrega de R$ 9,00**.
+pagou, nas duas modalidades — **incluindo a taxa de entrega de R$ 9,90**.
 Comissão e tarifa **não** são descontadas. Quem absorve esse custo é a
 plataforma, que ainda paga o entregador da ida e o da coleta reversa. Deixe as
 chaves de retenção existindo no código, mas **desligadas**; reter dentro do
@@ -1072,7 +1072,7 @@ Para ninguém refazer discussão já resolvida.
 | Devolução integral | mesmo motivo; reter dentro do prazo vira ação no Procon |
 | 12% + tarifa por faixa, não 16/18% fixo | percentual alto assusta em produto caro; a tarifa cobre a operação no produto barato |
 | **Comprador paga a entrega, não a plataforma** | **revertido em setembro/2026.** A ideia original era embutir o frete e mostrar preço final. A conta provou que não fecha: com o entregador custando R$ 5,00 na época, toda venda abaixo de R$ 20,84 dava prejuízo, e a faixa inteira até R$ 24,99 ficava negativa contando o meio de pagamento. É a mecânica do Enjoei, e é o que dá margem em toda faixa |
-| Taxa de entrega única de R$ 9,00 | a cidade é uma só; calcular por distância dentro de Itinga custa mais em complexidade do que a diferença que geraria |
+| Taxa de entrega única de R$ 9,90 | a cidade é uma só; calcular por distância dentro de Itinga custa mais em complexidade do que a diferença que geraria |
 | Anúncio turbinado a 18% | mesma mecânica do Enjoei: quem quer aparecer mais paga mais, e é escolha do vendedor |
 | Taxa de saque de R$ 3,00, primeiro grátis no mês | copiada do Enjoei; quem saca uma vez por mês não sente taxa nenhuma |
 | 100 cm de largura e altura, não 60 | 60 cm barrava item comum de casa |
@@ -1100,7 +1100,7 @@ Para ninguém refazer discussão já resolvida.
 | Recados dentro da plataforma, não em app de terceiro | o histórico fica com a empresa, e entregador suspenso perde o canal na hora — coisa que grupo de mensagem externo não faz |
 | Entregador não inicia conversa nem fala com outro em particular | quem abre canal é o dono; conversa paralela entre entregadores fora da vista vira combinação que a operação não enxerga |
 | Chave Pix escolhida entre CPF, telefone e Gmail da ficha, sem campo livre | mata o erro de digitação e mata o golpe de trocar a chave para receber no lugar do entregador: não há para onde apontar o dinheiro, porque os três valores são os que o dono conferiu |
-| Entregador recebe R$ 7,00 e o comprador paga R$ 9,00 de entrega | sobram R$ 2,00 por corrida para a plataforma; paga-se melhor o entregador do que a margem por entrega pediria, porque entregador que some é problema pior que margem menor |
+| Entregador recebe R$ 7,00 e o comprador paga R$ 9,90 de entrega | sobram R$ 2,90 por corrida para a plataforma. O entregador é pago acima do que a margem exigiria porque entregador que some custa mais caro que margem menor, e a taxa foi ajustada para o aumento não sair do bolso da plataforma |
 | Pagamento do entregador acumulado, pago por Pix fora da Stripe | Pix de R$ 7,00 por corrida é operação demais para valor de menos; e o pagamento do entregador não é parte da venda |
 | O sistema não dispara Pix sozinho | o dono confere e paga; automatizar saída de dinheiro sem conferência é o tipo de facilidade que custa caro uma vez só |
 | O quadro completo da operação é só do dono | o comprador vê o primeiro nome de quem leva o pedido dele e mais nada; quem está com o quê, e onde, é informação da operação |

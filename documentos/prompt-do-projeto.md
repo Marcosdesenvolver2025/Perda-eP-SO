@@ -198,17 +198,24 @@ escondida no preço: "produto R$ 50,00 · entrega R$ 7,90 · total R$ 57,90".
 
 | Prazo | Quanto | Onde vale |
 |---|---|---|
-| **Entrega prometida ao comprador** | **7 dias corridos** do pagamento | entrega pela plataforma |
+| **Entrega prometida ao comprador** | **4 dias corridos** do pagamento | entrega pela plataforma |
 | **Cancelamento automático por atraso** | **7 dias corridos** do pagamento | sempre |
 | Teste e devolução | **7 dias corridos** da entrega | sempre |
 | Confirmação automática | **3 dias** da declaração | entrega pelo vendedor |
 | Resposta a uma oferta | **3 dias** do último lance | negociação |
 
-> **Cuidado para não confundir os dois "7 dias".** O primeiro corre **do
-> pagamento até a entrega** e é o prazo do vendedor: estourou, o pedido é
-> cancelado. O segundo corre **da entrega em diante** e é o prazo do comprador:
-> é o direito de arrependimento. São relógios diferentes, com donos diferentes,
-> e nunca correm ao mesmo tempo.
+> **São três relógios diferentes. Não os misture.**
+>
+> | Relógio | Conta de | Dono | Estourou? |
+> |---|---|---|---|
+> | Promessa de entrega — 4 dias | pagamento | plataforma | atrasou, mas o pedido segue |
+> | Cancelamento — 7 dias | pagamento | vendedor | pedido morre, comprador reembolsado |
+> | Teste e devolução — 7 dias | **entrega** | comprador | acabou o direito de arrependimento |
+>
+> Os dois primeiros correm juntos, do mesmo ponto de partida. O terceiro só
+> começa quando os outros dois já acabaram. **Prometer 4 e cancelar em 7 é de
+> propósito:** são 3 dias de folga entre quebrar a promessa e matar o pedido,
+> tempo de um entregador resolver um imprevisto sem o comprador perder a compra.
 
 ### Por que 7 dias, e por que integral
 
@@ -318,13 +325,14 @@ antes de comprar:
 
 | Onde | O que mostra |
 |---|---|
-| Tela do produto | "chega até **<data>**" — estimativa, calculada como hoje + 7 dias |
+| Tela do produto | "chega até **<data>**" — estimativa, calculada como hoje + 4 dias |
 | Checkout | a mesma data, agora como promessa |
 | Pedido | "chega até **<data>**", contando de quando o pagamento foi aprovado |
 
-**A data é sempre pagamento + 7 dias corridos.** Dentro de uma cidade a entrega
-real leva um ou dois dias — prometer 7 é de propósito: é melhor entregar antes
-do prometido do que explicar atraso. Não invente cálculo por distância.
+**A data é sempre pagamento + 4 dias corridos.** Dentro de uma cidade a entrega
+real leva um ou dois dias — prometer 4 dá folga para um imprevisto sem soar
+lento. É melhor entregar antes do prometido do que explicar atraso. Não invente
+cálculo por distância.
 
 > Guarde a data prometida **no pedido**, não a recalcule na tela. Se a regra
 > mudar amanhã, o pedido de ontem tem que continuar mostrando a data com que
@@ -730,7 +738,8 @@ Para ninguém refazer discussão já resolvida.
 | Modalidade congelada no pedido | mudar a regra amanhã não pode mexer no pedido de ontem |
 | Estorno só depois do produto voltar | senão o comprador fica com o produto e com o dinheiro |
 | Senha de 4 dígitos + foto na entrega do vendedor | mesmo mecanismo do Mercado Livre; a senha prova que o comprador estava lá, a foto prova o que foi entregue. Sem as duas, a plataforma não tem como mediar um "eu não recebi" |
-| Prazo prometido fixo de 7 dias, sem cálculo por distância | dentro de uma cidade a entrega leva um ou dois dias; prometer 7 é folga de propósito, porque entregar antes do combinado não gera reclamação e atraso gera |
+| Prazo prometido fixo de 4 dias, sem cálculo por distância | dentro de uma cidade a entrega leva um ou dois dias; prometer 4 dá folga para imprevisto sem soar lento, e entregar antes do combinado não gera reclamação |
+| Prometer em 4 mas só cancelar em 7 | 3 dias de folga entre quebrar a promessa e matar o pedido; um imprevisto de entregador não pode custar a venda ao vendedor nem a compra ao comprador |
 | Cancelamento automático em 7 dias sem coleta | vendedor que some deixa o dinheiro do comprador preso; o relógio resolve sozinho, sem ninguém precisar abrir chamado |
 | Aviso ao vendedor no 5º dia | cancelar sem avisar é como se perde vendedor; 2 dias é tempo de reagir |
 | Repasse manual, não automático | devolução antes do repasse deixaria a plataforma no prejuízo |

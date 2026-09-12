@@ -45,15 +45,25 @@ Ficam em `servidor/src/dominio/regras.ts`, com espelho em
 `app/src/regras/limites.ts` para o app avisar a pessoa antes de ela perder
 tempo. **O servidor é quem manda**; o app só antecipa.
 
-### Comissão
+A plataforma tem **quatro fontes de receita**, todas copiadas da mecânica do
+Enjoei: comissão, tarifa fixa, taxa de entrega e taxa de saque.
 
-| Regra | Valor |
-|---|---|
-| Comissão da plataforma | **12%** sobre o valor do produto, nas duas modalidades |
-| Venda mínima | **R$ 10,00** |
-| O que o comprador paga | **só o preço do produto** — nunca frete à parte |
+### 1. Comissão — paga pelo vendedor
 
-### Tarifa fixa por faixa de preço
+Dois tipos de anúncio, escolhidos pelo vendedor na hora de publicar:
+
+| Anúncio | Comissão | O que ganha |
+|---|---|---|
+| **Clássico** (padrão) | **12%** | publicação normal |
+| **Turbinado** | **18%** | aparece em destaque na vitrine, no topo da busca e nos carrosséis |
+
+Venda mínima: **R$ 10,00**. A comissão vale nas duas modalidades de entrega.
+
+O turbinado é escolha do vendedor, anúncio por anúncio, e pode ser ligado
+depois de publicado. Mostre na tela quanto ele recebe em cada opção, lado a
+lado, calculado ao vivo — a diferença tem que ficar óbvia antes de ele decidir.
+
+### 2. Tarifa fixa por faixa de preço — paga pelo vendedor
 
 Cobrada **só na entrega pela plataforma** — ela paga a operação da entrega.
 
@@ -72,6 +82,34 @@ Cobrada **só na entrega pela plataforma** — ela paga a operação da entrega.
 > bug, é a forma da tabela. Escreva um teste fixando **cada** degrau: se alguém
 > mexer na tabela e criar um degrau grande, a suíte tem que quebrar.
 
+### 3. Taxa de entrega — paga pelo COMPRADOR
+
+**R$ 7,90, valor único dentro de Itinga**, cobrada no checkout **só quando a
+entrega é pela plataforma**. Aparece separada do preço do produto, como no
+Enjoei: "produto R$ 50,00 + entrega R$ 7,90 = R$ 57,90".
+
+Na entrega pelo vendedor **não há taxa nenhuma** — não há entregador para pagar.
+
+> **Por que o comprador paga, e não a plataforma.** É a diferença entre ter e
+> não ter margem. O entregador recebe R$ 5,00 por corrida. Se esse custo saísse
+> da comissão, toda venda abaixo de R$ 20,84 daria prejuízo — e contando a taxa
+> do meio de pagamento, a faixa inteira até R$ 24,99 ficaria negativa. Com a
+> taxa cobrada do comprador, **nenhuma faixa dá prejuízo**: sobram R$ 5,88 numa
+> venda de R$ 10,00 e R$ 19,08 numa de R$ 100,00.
+
+É valor único porque a cidade é uma só: calcular por distância dentro de Itinga
+custaria mais em complexidade do que a diferença que geraria.
+
+### 4. Taxa de saque — paga pelo vendedor
+
+**R$ 3,00 por saque, com o primeiro saque de cada mês grátis.** O dinheiro fica
+na carteira do vendedor dentro do app; ele saca quando quiser.
+
+Essa taxa é cobrada do vendedor e **não pode ser dividida no split** — por isso
+o saque é agrupado por carteira, não por pedido. Se fosse por pedido, o vendedor
+sentiria uma mordida de 24,7% em vez de 21%. O primeiro grátis existe para quem
+saca uma vez por mês não sentir taxa nenhuma.
+
 ### Como o dinheiro é representado
 
 **Todo valor monetário é inteiro, em centavos.** R$ 129,90 é `12990`. Nunca
@@ -86,8 +124,19 @@ transação se não fechar.
 
 Recebe **R$ 5,00 por corrida concluída**, pago assim que confirma a entrega. O
 serviço dele já foi prestado e não depende de o comprador aprovar o produto.
-Sai da tarifa fixa, **não** de uma cobrança separada ao comprador, e fica
-**fora do split da cobrança**.
+Sai da taxa de entrega cobrada do comprador, e fica **fora do split da
+cobrança** — é um pagamento da plataforma para o entregador, não uma parte da
+venda.
+
+### Resumo de quem paga o quê, numa venda de R$ 100 pela plataforma
+
+| | |
+|---|---|
+| Comprador paga | R$ 107,90 (produto + entrega) |
+| Vendedor recebe | R$ 79,50 (produto − 12% − tarifa R$ 8,50) |
+| Entregador recebe | R$ 5,00 |
+| Meio de pagamento | ~R$ 4,32 |
+| **Plataforma fica com** | **~R$ 19,08** |
 
 ---
 
@@ -98,8 +147,9 @@ a regra mudar amanhã, o pedido de ontem mantém a regra com que foi vendido.
 
 | | entrega pela plataforma | entrega pelo vendedor |
 |---|---|---|
-| Comissão | 12% | 12% |
+| Comissão | 12% (ou 18% turbinado) | 12% (ou 18% turbinado) |
 | Tarifa fixa | por faixa | **não há** |
+| Taxa de entrega (comprador) | **R$ 7,90** | **não há** |
 | Limite | 20 kg · 100 cm largura · 100 cm altura | **sem limite** |
 | Quem entrega | entregador nosso | o próprio vendedor |
 | Prova de entrega | código digitado pelo entregador | código digitado pelo vendedor |
@@ -116,7 +166,12 @@ existe e está documentada: para barrar um cano de 3 m numa moto, basta trocar
 por um número.
 
 Na tela de novo anúncio, mostre as duas modalidades **lado a lado**, com o
-valor que o vendedor recebe em cada uma, calculado ao vivo.
+valor que o vendedor recebe em cada uma, calculado ao vivo — e avise que na
+entrega pela plataforma o comprador paga R$ 7,90 a mais, porque isso muda a
+chance de a peça vender.
+
+No checkout, a taxa de entrega aparece em **linha separada**, nunca somada
+escondida no preço: "produto R$ 50,00 · entrega R$ 7,90 · total R$ 57,90".
 
 ---
 
@@ -135,10 +190,15 @@ estabelecimento comercial dá ao consumidor 7 dias corridos para desistir, com
 devolução de **todos** os valores pagos. Não é escolha de produto, é lei.
 
 Dentro dos 7 dias a devolução é **integral**: o comprador recebe 100% do que
-pagou, nas duas modalidades. Comissão e tarifa **não** são descontadas — quem
-absorve esse custo é a plataforma. Deixe as chaves de retenção existindo no
-código, mas **desligadas**; reter dentro do prazo legal é o tipo de economia
-que vira ação no Procon.
+pagou, nas duas modalidades — **incluindo a taxa de entrega de R$ 7,90**.
+Comissão e tarifa **não** são descontadas. Quem absorve esse custo é a
+plataforma, que ainda paga o entregador da ida e o da coleta reversa. Deixe as
+chaves de retenção existindo no código, mas **desligadas**; reter dentro do
+prazo legal é o tipo de economia que vira ação no Procon.
+
+> O parágrafo único do art. 49 é explícito: voltam **quaisquer valores pagos, a
+> qualquer título**, durante o prazo de reflexão. O frete é um desses valores.
+> Devolver só o produto e segurar a entrega é ilegal, por mais que doa.
 
 ### A ordem importa
 
@@ -333,6 +393,7 @@ dinheiro de terceiro, que exige autorização do Banco Central.
 | Peça | Detalhe |
 |---|---|
 | Split físico na cobrança | a cobrança já nasce dividida entre vendedor e plataforma |
+| Taxa de entrega no split | a cobrança total é produto + R$ 7,90; a taxa de entrega vai **inteira para a plataforma**, nunca para o vendedor, e o entregador é pago à parte |
 | Escrow | recebedores criados com `transfer_enabled: false` — o dinheiro fica no saldo, não sai para o banco |
 | Repasse manual | job de hora em hora procura pedido com prazo de teste vencido e sem devolução aberta |
 | Estorno parcial | com `split_rules` **explícito** — sem isso a pagar.me estorna proporcional e a conta não fecha |
@@ -488,6 +549,10 @@ Para ninguém refazer discussão já resolvida.
 | 7 dias de teste, não 4 | é a lei (CDC art. 49), não é escolha |
 | Devolução integral | mesmo motivo; reter dentro do prazo vira ação no Procon |
 | 12% + tarifa por faixa, não 16/18% fixo | percentual alto assusta em produto caro; a tarifa cobre a operação no produto barato |
+| **Comprador paga a entrega, não a plataforma** | **revertido em setembro/2026.** A ideia original era embutir o frete e mostrar preço final. A conta provou que não fecha: com o entregador custando R$ 5,00, toda venda abaixo de R$ 20,84 dava prejuízo, e a faixa inteira até R$ 24,99 ficava negativa contando o meio de pagamento. É a mecânica do Enjoei, e é o que dá margem em toda faixa |
+| Taxa de entrega única de R$ 7,90 | a cidade é uma só; calcular por distância dentro de Itinga custa mais em complexidade do que a diferença que geraria |
+| Anúncio turbinado a 18% | mesma mecânica do Enjoei: quem quer aparecer mais paga mais, e é escolha do vendedor |
+| Taxa de saque de R$ 3,00, primeiro grátis no mês | copiada do Enjoei; quem saca uma vez por mês não sente taxa nenhuma |
 | 100 cm de largura e altura, não 60 | 60 cm barrava item comum de casa |
 | Verde, não roxo | o Enjoei é roxo; o verde é o maior diferenciador visual que o app tem |
 | Continuar na pagar.me | é a única avaliada em que um vendedor PF se cadastra sem criar conta própria |

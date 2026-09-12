@@ -198,9 +198,17 @@ escondida no preço: "produto R$ 50,00 · entrega R$ 7,90 · total R$ 57,90".
 
 | Prazo | Quanto | Onde vale |
 |---|---|---|
+| **Entrega prometida ao comprador** | **7 dias corridos** do pagamento | entrega pela plataforma |
+| **Cancelamento automático por atraso** | **7 dias corridos** do pagamento | sempre |
 | Teste e devolução | **7 dias corridos** da entrega | sempre |
 | Confirmação automática | **3 dias** da declaração | entrega pelo vendedor |
 | Resposta a uma oferta | **3 dias** do último lance | negociação |
+
+> **Cuidado para não confundir os dois "7 dias".** O primeiro corre **do
+> pagamento até a entrega** e é o prazo do vendedor: estourou, o pedido é
+> cancelado. O segundo corre **da entrega em diante** e é o prazo do comprador:
+> é o direito de arrependimento. São relógios diferentes, com donos diferentes,
+> e nunca correm ao mesmo tempo.
 
 ### Por que 7 dias, e por que integral
 
@@ -272,15 +280,101 @@ depende da foto como prova — porque é o único em que o comprador não partic
 
 ---
 
-## 6. Logística — a máquina de estados
+## 6. O entregador da plataforma
+
+A entrega pela plataforma é feita por **entregadores da nossa própria empresa**,
+dentro de Itinga. O comprador não fala com transportadora nem com Correios: é
+gente nossa que busca e leva.
+
+### O endereço de coleta
+
+Todo anúncio com entrega pela plataforma precisa de um **endereço de coleta**,
+informado pelo vendedor. É de onde o entregador tira o produto.
+
+- o vendedor cadastra o endereço uma vez no perfil e ele vem preenchido nos
+  próximos anúncios, podendo ser trocado por anúncio;
+- **sem endereço de coleta, a opção "entrega pela plataforma" não fica
+  disponível** — o anúncio só pode ser publicado com entrega pelo vendedor;
+- o endereço tem rua, número, bairro, ponto de referência e um campo de
+  observação ("portão azul", "falar com a Dona Maria"). Numa cidade pequena o
+  ponto de referência vale mais que o CEP;
+- **o endereço de coleta só aparece para o entregador depois que ele aceita a
+  corrida.** Antes disso fica mascarado, pela mesma razão do telefone.
+
+### O trajeto
+
+```
+vendedor (endereço de coleta) ──► entregador ──► comprador (endereço de entrega)
+```
+
+O entregador vê os dois endereços na tela da corrida, em sequência: primeiro
+busca no vendedor, depois despacha para o comprador. Um passo por vez, sem
+mostrar a etapa seguinte antes de a atual estar concluída.
+
+### O prazo prometido ao comprador — "chega até"
+
+Como as outras plataformas fazem, o comprador vê uma **data de entrega** desde
+antes de comprar:
+
+| Onde | O que mostra |
+|---|---|
+| Tela do produto | "chega até **<data>**" — estimativa, calculada como hoje + 7 dias |
+| Checkout | a mesma data, agora como promessa |
+| Pedido | "chega até **<data>**", contando de quando o pagamento foi aprovado |
+
+**A data é sempre pagamento + 7 dias corridos.** Dentro de uma cidade a entrega
+real leva um ou dois dias — prometer 7 é de propósito: é melhor entregar antes
+do prometido do que explicar atraso. Não invente cálculo por distância.
+
+> Guarde a data prometida **no pedido**, não a recalcule na tela. Se a regra
+> mudar amanhã, o pedido de ontem tem que continuar mostrando a data com que
+> foi vendido — mesma lógica da modalidade congelada.
+
+### Cancelamento automático em 7 dias
+
+**Se o produto não sair do vendedor em 7 dias corridos contados do pagamento, o
+pedido é cancelado sozinho e o comprador recebe tudo de volta.**
+
+Vale nas duas modalidades, e o que conta é diferente em cada uma:
+
+| Modalidade | O que precisa acontecer em 7 dias |
+|---|---|
+| Entrega pela plataforma | o entregador ter **coletado** o produto com o vendedor |
+| Entrega pelo vendedor | o pedido ter chegado em **ENTREGUE** |
+
+O que o cancelamento faz:
+
+1. estorna **100%** do que o comprador pagou, **incluindo a taxa de entrega**;
+2. libera o anúncio de volta (ou o mantém pausado, se o vendedor sumiu);
+3. registra o motivo no pedido como `CANCELADO_POR_ATRASO_DO_VENDEDOR`, para o
+   histórico do vendedor;
+4. avisa as duas partes.
+
+> **Por que esse estorno é simples.** O dinheiro nunca saiu da conta da
+> plataforma — o `Transfer` para o vendedor só é criado depois dos 7 dias de
+> teste, que nem chegaram a começar. Cancelar antes da entrega é só um `Refund`,
+> sem nada para reverter. É a vantagem de reter ser o estado padrão.
+
+Avise antes de cancelar, não só depois: no **5º dia** o vendedor recebe uma
+notificação de que faltam 2 dias e o pedido será cancelado. Cancelar sem avisar
+é como se perde vendedor.
+
+O job que faz isso roda de hora em hora, junto com o de repasse.
+
+---
+
+## 7. A máquina de estados da entrega
 
 Uma máquina de estados própria, que **não toca em dinheiro**:
 
 ```
 pago → aguardando atribuição → atribuída → aceita → a caminho da coleta
      → chegou → coletado (exige foto + volumes) → em rota → chegou
-     → entregue (exige código de 4 dígitos)
+     → entregue (exige senha de 4 dígitos)
 ```
+
+De qualquer estado anterior a **coletado**, o pedido pode ir para
+**cancelado por atraso** — é a única transição que o relógio dispara sozinho.
 
 Três regras que precisam estar no código, não só no documento:
 
@@ -295,7 +389,7 @@ estratégia **por distância escrita e testada**, desligada por uma linha.
 
 ---
 
-## 7. As funcionalidades que vêm do Enjoei
+## 8. As funcionalidades que vêm do Enjoei
 
 São o que faz o app se comportar como brechó em vez de loja.
 
@@ -345,7 +439,7 @@ pode virar devolução.
 
 ---
 
-## 8. As telas
+## 9. As telas
 
 ### As cinco abas
 
@@ -376,7 +470,7 @@ app.
 
 ---
 
-## 9. A identidade visual — como não parecer cópia
+## 10. A identidade visual — como não parecer cópia
 
 ### Paleta
 
@@ -418,7 +512,7 @@ Tudo sai de um script só: `python3 tools/gerar_marca.py` gera todos os ícones.
 
 ---
 
-## 10. Pagamento — deixe pronto, não ligue
+## 11. Pagamento — deixe pronto, não ligue
 
 **Escreva e teste toda a lógica, mas não ligue em produção.** O combinado é:
 estruturar primeiro, ligar depois, quando as credenciais chegarem.
@@ -500,7 +594,7 @@ taxa de entrega) e o que é apenas dinheiro de passagem do vendedor.
 
 ---
 
-## 11. Como o código tem que estar organizado
+## 12. Como o código tem que estar organizado
 
 ### Regra pura, separada de tudo
 
@@ -544,7 +638,7 @@ na tela em vez de quebrar**.
 
 ---
 
-## 12. Publicação
+## 13. Publicação
 
 ### Site PWA
 
@@ -574,7 +668,7 @@ privacidade, termos de uso e página de exclusão de conta.
 
 ---
 
-## 13. O que fica pendente do lado do dono
+## 14. O que fica pendente do lado do dono
 
 Deixe explícito e não invente valor no lugar:
 
@@ -593,7 +687,7 @@ Deixe explícito e não invente valor no lugar:
 
 ---
 
-## 14. Restrições
+## 15. Restrições
 
 **Não remova, reescreva, duplique ou altere a lógica financeira existente.**
 Preserve integralmente os fluxos atuais de checkout, cobrança, split, taxas,
@@ -617,7 +711,7 @@ economia e as que mais custam caro.
 
 ---
 
-## 15. Decisões já encerradas
+## 16. Decisões já encerradas
 
 Para ninguém refazer discussão já resolvida.
 
@@ -636,5 +730,8 @@ Para ninguém refazer discussão já resolvida.
 | Modalidade congelada no pedido | mudar a regra amanhã não pode mexer no pedido de ontem |
 | Estorno só depois do produto voltar | senão o comprador fica com o produto e com o dinheiro |
 | Senha de 4 dígitos + foto na entrega do vendedor | mesmo mecanismo do Mercado Livre; a senha prova que o comprador estava lá, a foto prova o que foi entregue. Sem as duas, a plataforma não tem como mediar um "eu não recebi" |
+| Prazo prometido fixo de 7 dias, sem cálculo por distância | dentro de uma cidade a entrega leva um ou dois dias; prometer 7 é folga de propósito, porque entregar antes do combinado não gera reclamação e atraso gera |
+| Cancelamento automático em 7 dias sem coleta | vendedor que some deixa o dinheiro do comprador preso; o relógio resolve sozinho, sem ninguém precisar abrir chamado |
+| Aviso ao vendedor no 5º dia | cancelar sem avisar é como se perde vendedor; 2 dias é tempo de reagir |
 | Repasse manual, não automático | devolução antes do repasse deixaria a plataforma no prejuízo |
 | Saque agrupado em carteira | taxa de saque é do vendedor e não pode ser dividida |

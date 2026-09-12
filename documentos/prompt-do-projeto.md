@@ -84,9 +84,9 @@ Cobrada **só na entrega pela plataforma** — ela paga a operação da entrega.
 
 ### 3. Taxa de entrega — paga pelo COMPRADOR
 
-**R$ 8,90, valor único dentro de Itinga**, cobrada no checkout **só quando a
+**R$ 7,90, valor único dentro de Itinga**, cobrada no checkout **só quando a
 entrega é pela plataforma**. Aparece separada do preço do produto, como no
-Enjoei: "produto R$ 50,00 + entrega R$ 8,90 = R$ 58,90".
+Enjoei: "produto R$ 50,00 + entrega R$ 7,90 = R$ 57,90".
 
 Na entrega pelo vendedor **não há taxa nenhuma** — não há entregador para pagar.
 
@@ -94,8 +94,8 @@ Na entrega pelo vendedor **não há taxa nenhuma** — não há entregador para 
 > não ter margem. O entregador recebe R$ 5,00 por corrida. Se esse custo saísse
 > da comissão, toda venda abaixo de R$ 20,84 daria prejuízo — e contando a taxa
 > do meio de pagamento, a faixa inteira até R$ 24,99 ficaria negativa. Com a
-> taxa cobrada do comprador, **nenhuma faixa dá prejuízo**: sobram R$ 6,84 numa
-> venda de R$ 10,00 e R$ 20,04 numa de R$ 100,00.
+> taxa cobrada do comprador, **nenhuma faixa dá prejuízo**: sobram R$ 5,88 numa
+> venda de R$ 10,00 e R$ 19,08 numa de R$ 100,00.
 
 É valor único porque a cidade é uma só: calcular por distância dentro de Itinga
 custaria mais em complexidade do que a diferença que geraria.
@@ -117,8 +117,9 @@ float, em lugar nenhum — nem no app, nem no banco, nem na integração.
 
 A comissão **sempre arredonda para baixo** (`Math.floor`) e a sobra do
 arredondamento fica com a plataforma: o vendedor nunca perde no arredondamento.
-A soma das partes do split tem que bater no centavo — a pagar.me recusa a
-transação se não fechar.
+A soma das partes tem que bater no centavo: o que vai para o vendedor mais o
+que fica com a plataforma tem que dar exatamente o valor cobrado, sem sobra
+nem falta.
 
 ### O entregador
 
@@ -132,11 +133,11 @@ venda.
 
 | | |
 |---|---|
-| Comprador paga | R$ 108,90 (produto + entrega) |
+| Comprador paga | R$ 107,90 (produto + entrega) |
 | Vendedor recebe | R$ 79,50 (produto − 12% − tarifa R$ 8,50) |
 | Entregador recebe | R$ 5,00 |
 | Meio de pagamento | ~R$ 4,32 |
-| **Plataforma fica com** | **~R$ 20,04** |
+| **Plataforma fica com** | **~R$ 19,08** |
 
 ---
 
@@ -149,7 +150,7 @@ a regra mudar amanhã, o pedido de ontem mantém a regra com que foi vendido.
 |---|---|---|
 | Comissão | 12% (ou 18% turbinado) | 12% (ou 18% turbinado) |
 | Tarifa fixa | por faixa | **não há** |
-| Taxa de entrega (comprador) | **R$ 8,90** | **não há** |
+| Taxa de entrega (comprador) | **R$ 7,90** | **não há** |
 | Limite | 20 kg · 100 cm largura · 100 cm altura | **sem limite** |
 | Quem entrega | entregador nosso | o próprio vendedor |
 | Prova de entrega | código digitado pelo entregador | código digitado pelo vendedor |
@@ -167,11 +168,11 @@ por um número.
 
 Na tela de novo anúncio, mostre as duas modalidades **lado a lado**, com o
 valor que o vendedor recebe em cada uma, calculado ao vivo — e avise que na
-entrega pela plataforma o comprador paga R$ 8,90 a mais, porque isso muda a
+entrega pela plataforma o comprador paga R$ 7,90 a mais, porque isso muda a
 chance de a peça vender.
 
 No checkout, a taxa de entrega aparece em **linha separada**, nunca somada
-escondida no preço: "produto R$ 50,00 · entrega R$ 8,90 · total R$ 58,90".
+escondida no preço: "produto R$ 50,00 · entrega R$ 7,90 · total R$ 57,90".
 
 ---
 
@@ -190,7 +191,7 @@ estabelecimento comercial dá ao consumidor 7 dias corridos para desistir, com
 devolução de **todos** os valores pagos. Não é escolha de produto, é lei.
 
 Dentro dos 7 dias a devolução é **integral**: o comprador recebe 100% do que
-pagou, nas duas modalidades — **incluindo a taxa de entrega de R$ 8,90**.
+pagou, nas duas modalidades — **incluindo a taxa de entrega de R$ 7,90**.
 Comissão e tarifa **não** são descontadas. Quem absorve esse custo é a
 plataforma, que ainda paga o entregador da ida e o da coleta reversa. Deixe as
 chaves de retenção existindo no código, mas **desligadas**; reter dentro do
@@ -378,30 +379,57 @@ Tudo sai de um script só: `python3 tools/gerar_marca.py` gera todos os ícones.
 **Escreva e teste toda a lógica, mas não ligue em produção.** O combinado é:
 estruturar primeiro, ligar depois, quando as credenciais chegarem.
 
-### Provedor: pagar.me v5
+### Provedor: Stripe (Connect)
 
-Não é preferência: é a única avaliada em que um **vendedor pessoa física se
-cadastra como recebedor sem precisar abrir conta própria** — decisivo para
-marketplace de bairro, onde quase todo vendedor é PF.
+O vendedor é um **connected account** do tipo Express, criado pelo próprio app
+com o onboarding hospedado da Stripe. A plataforma é a conta principal.
 
-Um banco comum não serve como split: receber tudo na conta do CNPJ colocaria o
-GMV inteiro como receita tributável, e a retenção de 7 dias viraria custódia de
-dinheiro de terceiro, que exige autorização do Banco Central.
+> **Verifique antes de codar:** confirme que o Stripe Connect da sua conta
+> brasileira aceita cadastrar vendedor **pessoa física com CPF** e pagar em
+> conta dele, e que **Pix** está habilitado como método de cobrança. Isso é o
+> que decide se o modelo funciona num marketplace de bairro, onde quase todo
+> vendedor é PF e informal. Se o cadastro exigir CNPJ, o modelo não fecha e
+> precisa ser reavaliado antes de qualquer linha de código.
+
+Um banco comum não serve no lugar disso: receber tudo na conta do CNPJ
+colocaria o GMV inteiro como receita tributável, e a retenção de 7 dias viraria
+custódia de dinheiro de terceiro, que exige autorização do Banco Central.
+
+### O padrão a usar: separate charges and transfers
+
+**Não use destination charges.** O modelo certo aqui é *separate charges and
+transfers*: a cobrança inteira cai na conta da plataforma, e a transferência
+para o vendedor só é criada **depois** dos 7 dias. É o que dá o escrow de
+graça, sem depender de configuração de payout.
+
+```
+1. PaymentIntent na conta da plataforma  → comprador paga produto + entrega
+2. dinheiro fica retido no saldo da plataforma
+3. entrega confirmada → começam os 7 dias
+4. prazo vencido sem devolução → Transfer para o connected account do vendedor
+5. o vendedor saca da carteira quando quiser (taxa de R$ 3,00, 1ª do mês grátis)
+```
 
 ### O que precisa estar escrito
 
 | Peça | Detalhe |
 |---|---|
-| Split físico na cobrança | a cobrança já nasce dividida entre vendedor e plataforma |
-| Taxa de entrega no split | a cobrança total é produto + R$ 8,90; a taxa de entrega vai **inteira para a plataforma**, nunca para o vendedor, e o entregador é pago à parte |
-| Escrow | recebedores criados com `transfer_enabled: false` — o dinheiro fica no saldo, não sai para o banco |
-| Repasse manual | job de hora em hora procura pedido com prazo de teste vencido e sem devolução aberta |
-| Estorno parcial | com `split_rules` **explícito** — sem isso a pagar.me estorna proporcional e a conta não fecha |
-| `Idempotency-Key` | em **toda** chamada que mexe em dinheiro |
-| Webhook | autenticação básica em **tempo constante** e proteção contra evento duplicado |
-| Pagamento do entregador | fora do split da cobrança |
+| Cobrança | `PaymentIntent` na conta da plataforma, valor = produto + taxa de entrega |
+| Escrow | o dinheiro **fica na plataforma**; nenhum `Transfer` é criado antes dos 7 dias |
+| Repasse | `Transfer` para o connected account, disparado por job de hora em hora que procura pedido com prazo vencido e sem devolução aberta |
+| Taxa de entrega | fica **inteira com a plataforma**, nunca entra no `Transfer` do vendedor; o entregador é pago à parte |
+| Estorno | `Refund` do `PaymentIntent`. Como ainda não houve `Transfer` dentro dos 7 dias, **não há transferência para reverter** — é só estornar. Se por algum motivo o repasse já saiu, use `reverse_transfer` |
+| Idempotência | header `Idempotency-Key` em **toda** chamada que mexe em dinheiro |
+| Webhook | verificação de assinatura com `Stripe-Signature` e o webhook secret (`stripe.webhooks.constructEvent`), **nunca** confiando no corpo sem validar; guarde o `event.id` e ignore repetido |
+| Eventos a tratar | `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.refunded`, `transfer.created`, `account.updated` |
+| Pagamento do entregador | `Transfer` separado, fora do fluxo da venda |
 | Oferta aceita | alimentando o mesmo cálculo de sempre |
 | Saque agrupado em carteira | a taxa de saque é cobrada do vendedor e não pode ser dividida; por pedido, ele sentiria 24,7% em vez de 21% |
+
+> **Vantagem de ter migrado:** com *separate charges and transfers*, o escrow
+> deixa de ser uma configuração de recebedor e passa a ser simplesmente "ainda
+> não transferi". É mais difícil de errar: esquecer de reter é impossível,
+> porque reter é o estado padrão.
 
 ### Por que o repasse é manual
 
@@ -412,15 +440,19 @@ vendedor para reaver o valor.
 ### Segurança da credencial
 
 A chave secreta vive **só** no `.env` do servidor, na variável
-`PAGARME_SECRET_KEY`, lida por `process.env`. O `.env` fica no `.gitignore` e
-**nunca** é commitado. A chave pública pode ficar no app.
+`STRIPE_SECRET_KEY`, lida por `process.env`. O webhook secret vai em
+`STRIPE_WEBHOOK_SECRET`, na mesma regra. O `.env` fica no `.gitignore` e
+**nunca** é commitado. Só a publishable key (`pk_...`) pode ficar no app.
 
-Deixe pronto também o **checklist de homologação**: comprar com Pix, comprar
-com cartão, conferir o saldo retido, adiantar o relógio e ver o repasse sair,
-pedir devolução e conferir o estorno integral.
+Deixe pronto também o **checklist de homologação**, com as chaves de teste:
+comprar com Pix, comprar com cartão, conferir que o dinheiro ficou no saldo da
+plataforma e que nenhum `Transfer` foi criado, adiantar o relógio e ver o
+repasse sair, pedir devolução e conferir o estorno integral incluindo a taxa
+de entrega.
 
-Prepare o terreno para a **reforma tributária (IBS/CBS)**: o modelo de split
-por recebedor já separa o que é receita da plataforma do que é do vendedor.
+Prepare o terreno para a **reforma tributária (IBS/CBS)**: separar a cobrança
+do repasse já deixa claro o que é receita da plataforma (comissão, tarifa e
+taxa de entrega) e o que é apenas dinheiro de passagem do vendedor.
 
 ---
 
@@ -451,7 +483,7 @@ A régua é **zero erro**, `tsc` limpo nos dois projetos.
 ### Modo demonstração isolado
 
 Um servidor falso em memória (`app/src/demo/`) responde às mesmas rotas da API,
-para o app rodar no navegador sem banco e sem pagar.me. Garantias de
+para o app rodar no navegador sem banco e sem Stripe. Garantias de
 isolamento:
 
 - **nenhuma tela importa `src/demo/`** — quem desvia é o cliente HTTP;
@@ -512,7 +544,8 @@ Deixe explícito e não invente valor no lugar:
 6. decidir se o comprimento máximo ganha um número;
 7. validar os termos com advogado — os textos aplicam o art. 49 do CDC, mas
    quem assina é o dono;
-8. mandar as credenciais da pagar.me para o pagamento ser ligado.
+8. mandar as credenciais da Stripe para o pagamento ser ligado, e confirmar
+   que o Connect aceita vendedor pessoa física com CPF.
 
 ---
 
@@ -520,7 +553,7 @@ Deixe explícito e não invente valor no lugar:
 
 **Não remova, reescreva, duplique ou altere a lógica financeira existente.**
 Preserve integralmente os fluxos atuais de checkout, cobrança, split, taxas,
-repasses, estornos e webhooks da pagar.me.
+repasses, estornos e webhooks da Stripe.
 
 Mudança visual é mudança **de casca**: botão, cor, sombra, espaçamento,
 tipografia, layout. Não toque em regra de negócio, estrutura nem no cérebro do
@@ -550,12 +583,12 @@ Para ninguém refazer discussão já resolvida.
 | Devolução integral | mesmo motivo; reter dentro do prazo vira ação no Procon |
 | 12% + tarifa por faixa, não 16/18% fixo | percentual alto assusta em produto caro; a tarifa cobre a operação no produto barato |
 | **Comprador paga a entrega, não a plataforma** | **revertido em setembro/2026.** A ideia original era embutir o frete e mostrar preço final. A conta provou que não fecha: com o entregador custando R$ 5,00, toda venda abaixo de R$ 20,84 dava prejuízo, e a faixa inteira até R$ 24,99 ficava negativa contando o meio de pagamento. É a mecânica do Enjoei, e é o que dá margem em toda faixa |
-| Taxa de entrega única de R$ 8,90 | a cidade é uma só; calcular por distância dentro de Itinga custa mais em complexidade do que a diferença que geraria |
+| Taxa de entrega única de R$ 7,90 | a cidade é uma só; calcular por distância dentro de Itinga custa mais em complexidade do que a diferença que geraria |
 | Anúncio turbinado a 18% | mesma mecânica do Enjoei: quem quer aparecer mais paga mais, e é escolha do vendedor |
 | Taxa de saque de R$ 3,00, primeiro grátis no mês | copiada do Enjoei; quem saca uma vez por mês não sente taxa nenhuma |
 | 100 cm de largura e altura, não 60 | 60 cm barrava item comum de casa |
 | Verde, não roxo | o Enjoei é roxo; o verde é o maior diferenciador visual que o app tem |
-| Continuar na pagar.me | é a única avaliada em que um vendedor PF se cadastra sem criar conta própria |
+| **Stripe no lugar da pagar.me** | **decidido em setembro/2026 pelo dono.** O padrão passa a ser *separate charges and transfers*, que dá o escrow dos 7 dias sem depender de configuração de recebedor — reter vira o estado padrão. Falta confirmar que o Connect aceita vendedor PF com CPF |
 | Modalidade congelada no pedido | mudar a regra amanhã não pode mexer no pedido de ontem |
 | Estorno só depois do produto voltar | senão o comprador fica com o produto e com o dinheiro |
 | Repasse manual, não automático | devolução antes do repasse deixaria a plataforma no prejuízo |

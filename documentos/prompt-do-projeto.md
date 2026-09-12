@@ -486,12 +486,80 @@ desistir:
 | Papel | Quem é | Como vira |
 |---|---|---|
 | **Usuário** | comprador e vendedor, a mesma conta | entrou com o Google |
-| **Entregador** | parceiro que faz as corridas | o dono habilita a conta dele |
-| **Dono (admin)** | você | marcado direto no banco, nunca pelo app |
+| **Entregador** | parceiro que faz as corridas | o dono autoriza o e-mail dele |
+| **Dono (admin)** | o dono da operação | e-mail na variável de ambiente do servidor |
 
-Entregador e admin **não se cadastram sozinhos**. Ninguém vira entregador
-apertando um botão: o dono habilita a conta de quem ele contratou. E não existe
-tela nenhuma que promova alguém a admin — se existir, é buraco de segurança.
+Entregador e admin **não se cadastram sozinhos**, e **não existe nenhuma tela
+que promova alguém a qualquer um dos dois**. Se existir, é buraco de segurança,
+não funcionalidade.
+
+### Como a conta de dono é reconhecida
+
+O dono entra pelo Google como qualquer pessoa. O que o torna dono é o servidor
+reconhecer o e-mail dele:
+
+```
+EMAILS_DO_DONO="dono@gmail.com"
+```
+
+Uma variável de ambiente no `.env` do servidor, aceitando uma lista separada
+por vírgula. No login, **depois** de validar o token do Google, o servidor
+compara o e-mail **verificado** que veio do Google com essa lista. Bateu, a
+sessão tem papel de dono; não bateu, é usuário comum.
+
+Regras que precisam ser respeitadas na implementação:
+
+- compare com o e-mail que **o Google confirmou** (`email_verified`), nunca com
+  um campo enviado pelo aplicativo. O app pode mentir; o token do Google, não;
+- a comparação ignora maiúsculas e espaços em volta;
+- **o papel é decidido no servidor, a cada requisição**, a partir da sessão.
+  Nunca confie num "sou admin" que chega do cliente;
+- se a variável estiver vazia ou não existir, **ninguém é dono** — o sistema
+  fica sem admin em vez de eleger alguém por engano;
+- mudar quem é dono exige acesso ao servidor e um novo deploy. É de propósito:
+  ninguém vira dono sem passar por você.
+
+> **Aceite mais de um e-mail nessa lista mesmo que hoje só exista um.** Se a
+> conta do dono for perdida — Google recuperando conta, celular roubado, senha
+> esquecida — sem um segundo e-mail cadastrado o painel fica inacessível até
+> alguém mexer no servidor. Cadastrar um e-mail reserva desde o primeiro dia
+> custa nada e evita ficar trancado do lado de fora da própria operação.
+
+### Como um entregador é autorizado
+
+Ninguém vira entregador por conta própria. O caminho é um só:
+
+1. no painel, o dono abre **"entregadores"** e toca em **autorizar**;
+2. digita o **e-mail Google** da pessoa que ele contratou, e o nome;
+3. o e-mail entra na lista de autorizados, com estado **pendente**;
+4. quando essa pessoa entra no app com aquele mesmo Google, o servidor vê o
+   e-mail verificado na lista e a conta ganha o papel de entregador;
+5. só a partir daí ela enxerga o mural de corridas.
+
+Enquanto o dono não autorizar, a pessoa é usuário comum: compra e vende
+normalmente, e **o mural de corridas simplesmente não existe para ela** — nem a
+tela, nem as rotas.
+
+### Suspender e remover entregador
+
+O dono **suspende ou remove com um toque**, e vale na hora:
+
+| O que acontece | Efeito imediato |
+|---|---|
+| Perde o mural | não vê nem consegue pegar corrida nova |
+| Perde as rotas | qualquer chamada de entregador passa a ser recusada pelo servidor |
+| Corrida já pega, ainda não coletada | volta sozinha para o mural |
+| Corrida com produto já coletado | **fica marcada no painel para o dono resolver na mão** — tem produto de gente com essa pessoa, e isso não se resolve sozinho |
+
+> Suspender é reversível e remover não deveria apagar histórico: as corridas
+> que a pessoa fez continuam registradas, senão você perde o rastro de quem
+> entregou o quê.
+
+### Registro de quem fez o quê
+
+**Toda mudança de estado de uma corrida grava quem fez e quando.** Sem isso, o
+dia em que um produto sumir não há como saber por onde ele passou. O painel
+mostra esse histórico em cada pedido, em ordem.
 
 ### Quem enxerga o quê
 
@@ -881,6 +949,10 @@ Para ninguém refazer discussão já resolvida.
 | Corrida tomada por `UPDATE` condicional, não por ler-e-gravar | dois entregadores tocando no mesmo segundo é questão de tempo, e ler-e-gravar deixa os dois vencerem; a condição no `WHERE` é o que garante um dono só |
 | Uma conta que compra e vende, sem cadastro de vendedor | é o modelo do Enjoei; cadastro grande no começo é onde a pessoa desiste, então os dados de vendedor são pedidos só na hora em que fazem falta |
 | Entregador e admin não se cadastram sozinhos | o dono habilita quem contratou; tela que promove alguém a admin é buraco de segurança, não funcionalidade |
+| Dono reconhecido por e-mail em variável de ambiente | virar dono passa a exigir acesso ao servidor, não um clique no app; e como a comparação é com o e-mail que o Google confirmou, não dá para forjar |
+| Mais de um e-mail de dono aceito desde o começo | conta perdida sem reserva cadastrada significa painel inacessível até alguém mexer no servidor |
+| Entregador autorizado por e-mail, com estado pendente | o dono autoriza antes de a pessoa entrar; enquanto isso ela é usuário comum e o mural não existe para ela |
+| Corrida já coletada não volta sozinha na suspensão | tem produto de gente com a pessoa; isso é caso para o dono resolver na mão, não para o sistema decidir |
 | O quadro completo da operação é só do dono | o comprador vê o primeiro nome de quem leva o pedido dele e mais nada; quem está com o quê, e onde, é informação da operação |
 | Repasse manual, não automático | devolução antes do repasse deixaria a plataforma no prejuízo |
 | Saque agrupado em carteira | taxa de saque é do vendedor e não pode ser dividida |

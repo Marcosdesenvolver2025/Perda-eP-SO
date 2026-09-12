@@ -499,11 +499,12 @@ O dono entra pelo Google como qualquer pessoa. O que o torna dono é o servidor
 reconhecer o e-mail dele:
 
 ```
-EMAILS_DO_DONO="dono@gmail.com"
+EMAILS_DO_DONO="marcosmartins7799@gmail.com,marcosaluno7799@gmail.com"
 ```
 
 Uma variável de ambiente no `.env` do servidor, aceitando uma lista separada
-por vírgula. No login, **depois** de validar o token do Google, o servidor
+por vírgula. **São essas duas contas e mais nenhuma.** A segunda existe como
+reserva: se a primeira for perdida, o painel continua acessível. No login, **depois** de validar o token do Google, o servidor
 compara o e-mail **verificado** que veio do Google com essa lista. Bateu, a
 sessão tem papel de dono; não bateu, é usuário comum.
 
@@ -527,18 +528,83 @@ Regras que precisam ser respeitadas na implementação:
 
 ### Como um entregador é autorizado
 
-Ninguém vira entregador por conta própria. O caminho é um só:
+Ninguém vira entregador por conta própria. **Quem cadastra é o dono, com a
+pessoa na frente dele.** O caminho é um só:
 
 1. no painel, o dono abre **"entregadores"** e toca em **autorizar**;
-2. digita o **e-mail Google** da pessoa que ele contratou, e o nome;
+2. preenche a ficha da pessoa que ele contratou;
 3. o e-mail entra na lista de autorizados, com estado **pendente**;
 4. quando essa pessoa entra no app com aquele mesmo Google, o servidor vê o
    e-mail verificado na lista e a conta ganha o papel de entregador;
 5. só a partir daí ela enxerga o mural de corridas.
 
+### A ficha do entregador
+
+Preenchida pelo dono, no painel, na hora de autorizar:
+
+| Campo | Obrigatório | Para quê |
+|---|---|---|
+| **Foto do rosto** | sim | tirada na hora pelo dono. É o que identifica quem está na porta do cliente |
+| **Nome completo** | sim | identificação |
+| **CPF** | sim | é quem responde por um produto que sumir |
+| **Telefone** | sim | contato da operação |
+| **E-mail Google** | sim | é a chave da autorização: tem que ser o mesmo com que a pessoa vai entrar |
+
+Sem os cinco preenchidos, **não autoriza**. Meia ficha é ficha que não serve no
+dia em que precisar.
+
+O entregador aceita as **normas da empresa** na primeira vez que abre o app.
+Fica registrada a data do aceite e a versão do texto aceito.
+
+> **Esses dados são dados pessoais e precisam ser tratados como tais** (LGPD).
+> Regras mínimas na implementação:
+>
+> - **só o dono lê a ficha completa.** Não existe rota que devolva CPF, telefone
+>   ou foto de um entregador para outro entregador, para vendedor ou para
+>   comprador. Nem "por engano" dentro de um objeto maior — cheque o que a API
+>   devolve, não só o que a tela mostra;
+> - a **foto vai para armazenamento privado**, com URL assinada de validade
+>   curta. Nunca num endereço público que qualquer um adivinha;
+> - o **CPF fica cifrado no banco** e aparece mascarado na tela
+>   (`***.456.789-**`), com o valor inteiro só quando o dono pede para ver;
+> - o comprador **nunca** recebe CPF nem telefone do entregador. O que ele vê é
+>   o primeiro nome e a foto do rosto — o suficiente para saber quem bateu na
+>   porta dele, e nada além;
+> - entregador removido tem a ficha **arquivada, não apagada**: você precisa
+>   saber quem fez as entregas de seis meses atrás. Mas a foto e o CPF saem de
+>   circulação assim que ele deixa de ser entregador.
+
 Enquanto o dono não autorizar, a pessoa é usuário comum: compra e vende
 normalmente, e **o mural de corridas simplesmente não existe para ela** — nem a
 tela, nem as rotas.
+
+### Recados para os entregadores
+
+O dono fala com a equipe **de dentro da plataforma**, sem depender de aplicativo
+de terceiro. Dois canais:
+
+**1. Mural da equipe** — o grupo. O dono publica um recado e **todos os
+entregadores autorizados veem**, com notificação:
+
+> *"hoje tem feira no centro, rua principal fechada até as 14h"*
+> *"a partir de segunda, foto do produto obrigatória também na coleta"*
+
+Os entregadores podem responder no mural, e uns veem as respostas dos outros —
+é um grupo, e é assim que ele serve para combinar as coisas.
+
+**2. Conversa individual** — dono e um entregador, só os dois. Para o que não é
+assunto de todo mundo: um atraso, uma cobrança, um acerto.
+
+Regras dos dois canais:
+
+- **quem abre conversa é sempre o dono.** O entregador responde, não inicia;
+- entregador **não fala com outro entregador** em particular pela plataforma —
+  só no mural, à vista de todos;
+- entregador **suspenso perde os dois canais na hora**, e o histórico fica
+  guardado para o dono;
+- o mural **não é o lugar de dado de cliente**. Endereço e telefone de comprador
+  aparecem na corrida, para quem pegou aquela corrida — nunca num recado que a
+  equipe inteira lê.
 
 ### Suspender e remover entregador
 
@@ -578,6 +644,10 @@ servidor, em toda rota.** Esconder o botão na tela não é proteger o dado.
 | Painel com a fila inteira de entregas | ❌ | ❌ | ✅ |
 | Devoluções, estornos e repasses | ❌ | ❌ | ✅ |
 | Faturamento e comissões | ❌ | ❌ | ✅ |
+| Entregas concluídas, o histórico inteiro | ❌ | só as dele | ✅ |
+| **Ficha do entregador: CPF, telefone, foto** | ❌ | só a própria | ✅ **só você** |
+| Cadastrar, suspender e remover entregador | ❌ | ❌ | ✅ |
+| Mural da equipe de entregadores | ❌ | ✅ ler e responder | ✅ publicar |
 
 ### O painel do dono
 
@@ -953,6 +1023,11 @@ Para ninguém refazer discussão já resolvida.
 | Mais de um e-mail de dono aceito desde o começo | conta perdida sem reserva cadastrada significa painel inacessível até alguém mexer no servidor |
 | Entregador autorizado por e-mail, com estado pendente | o dono autoriza antes de a pessoa entrar; enquanto isso ela é usuário comum e o mural não existe para ela |
 | Corrida já coletada não volta sozinha na suspensão | tem produto de gente com a pessoa; isso é caso para o dono resolver na mão, não para o sistema decidir |
+| Ficha do entregador preenchida pelo dono, com a pessoa presente | foto tirada na hora e CPF conferido pessoalmente valem mais que formulário preenchido de casa; é quem responde por um produto que sumir |
+| CPF cifrado, foto em armazenamento privado, ficha só do dono | são dados pessoais de terceiro sob a guarda da empresa; vazar CPF de entregador é problema da plataforma, não dele |
+| Ficha arquivada em vez de apagada | é preciso saber quem entregou o quê seis meses atrás, mesmo que a pessoa não trabalhe mais |
+| Recados dentro da plataforma, não em app de terceiro | o histórico fica com a empresa, e entregador suspenso perde o canal na hora — coisa que grupo de mensagem externo não faz |
+| Entregador não inicia conversa nem fala com outro em particular | quem abre canal é o dono; conversa paralela entre entregadores fora da vista vira combinação que a operação não enxerga |
 | O quadro completo da operação é só do dono | o comprador vê o primeiro nome de quem leva o pedido dele e mais nada; quem está com o quê, e onde, é informação da operação |
 | Repasse manual, não automático | devolução antes do repasse deixaria a plataforma no prejuízo |
 | Saque agrupado em carteira | taxa de saque é do vendedor e não pode ser dividida |

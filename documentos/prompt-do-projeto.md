@@ -583,6 +583,58 @@ Enquanto o dono não autorizar, a pessoa é usuário comum: compra e vende
 normalmente, e **o mural de corridas simplesmente não existe para ela** — nem a
 tela, nem as rotas.
 
+### A chave Pix do entregador
+
+O entregador recebe as corridas dele por **Pix**, numa chave que **ele mesmo
+cadastra e pode trocar**, na área dele do app.
+
+Como funciona:
+
+1. na primeira vez que ele entra, o app pede a chave Pix — **sem chave, ele até
+   pega corrida, mas não tem como receber**, e o app avisa isso na tela;
+2. ele **digita a chave duas vezes** e confirma. Chave Pix errada manda dinheiro
+   para a conta de um desconhecido, e Pix enviado não volta sozinho;
+3. a tela mostra o **tipo da chave** (CPF, telefone, e-mail ou aleatória) e,
+   antes de salvar, repete o que vai ser gravado, em letra grande, para ele
+   conferir;
+4. pode trocar quando quiser, refazendo a mesma confirmação.
+
+> **Trocar chave Pix é o caminho preferido de quem rouba conta.** Quem toma o
+> acesso de um entregador troca a chave e passa a receber no lugar dele. Três
+> travas contra isso, todas obrigatórias:
+>
+> - **se a chave for do tipo CPF, ela tem que bater com o CPF da ficha.** Não
+>   bateu, não salva;
+> - **toda troca avisa na hora as duas partes** — o entregador (para ele
+>   descobrir se não foi ele quem trocou) e o dono, no painel;
+> - **pagamento fica em espera por 24 horas depois de uma troca.** Se a troca
+>   foi golpe, esse é o tempo de alguém perceber antes de o dinheiro sair.
+>
+> Guarde o **histórico das chaves**: qual era, qual virou, quando e a partir de
+> qual dispositivo.
+
+### Como o entregador é pago
+
+O que ele ganha **acumula numa carteira** dentro do app: R$ 5,00 por corrida
+concluída, creditado assim que ele confirma a entrega.
+
+| Onde | O que mostra |
+|---|---|
+| App do entregador | quanto ele já juntou, corrida por corrida, e o que já foi pago |
+| Painel do dono | quanto deve a cada entregador, com a chave Pix de cada um |
+
+O dono paga por Pix e **marca como pago no painel**, com data e valor. O
+sistema não dispara Pix sozinho: o dono aperta, confere e paga.
+
+> **Acumule em vez de pagar corrida por corrida.** Mandar um Pix de R$ 5,00 por
+> entrega é operação demais para valor de menos. Pague por semana, ou quando o
+> entregador pedir a partir de um mínimo. O que importa é a carteira estar
+> sempre certa e visível para os dois lados — o entregador precisa poder
+> conferir a conta dele sem perguntar nada a ninguém.
+
+**O pagamento do entregador não passa pela Stripe.** É Pix da conta da empresa
+para a conta dele, e o app é só o caderno que registra o que foi feito.
+
 ### Recados para os entregadores
 
 O dono fala com a equipe **de dentro da plataforma**, sem depender de aplicativo
@@ -651,6 +703,8 @@ servidor, em toda rota.** Esconder o botão na tela não é proteger o dado.
 | Faturamento e comissões | ❌ | ❌ | ✅ |
 | Entregas concluídas, o histórico inteiro | ❌ | só as dele | ✅ |
 | **Ficha do entregador: CPF, telefone, foto** | ❌ | só a própria | ✅ **só você** |
+| Chave Pix do entregador | ❌ | **só a própria** — cadastra e troca | ✅ vê a de todos, para pagar |
+| Carteira do entregador: quanto ele tem a receber | ❌ | só a própria | ✅ de todos |
 | Cadastrar, suspender e remover entregador | ❌ | ❌ | ✅ |
 | Mural da equipe de entregadores | ❌ | ✅ ler e responder | ✅ publicar |
 
@@ -1033,6 +1087,10 @@ Para ninguém refazer discussão já resolvida.
 | Ficha arquivada em vez de apagada | é preciso saber quem entregou o quê seis meses atrás, mesmo que a pessoa não trabalhe mais |
 | Recados dentro da plataforma, não em app de terceiro | o histórico fica com a empresa, e entregador suspenso perde o canal na hora — coisa que grupo de mensagem externo não faz |
 | Entregador não inicia conversa nem fala com outro em particular | quem abre canal é o dono; conversa paralela entre entregadores fora da vista vira combinação que a operação não enxerga |
+| Chave Pix cadastrada e trocada pelo próprio entregador | é a conta dele; o dono não deve digitar chave de terceiro nem responder por erro de digitação alheio |
+| Chave digitada duas vezes, com aviso e espera de 24h na troca | Pix enviado para chave errada não volta, e trocar chave é o caminho preferido de quem rouba conta |
+| Pagamento do entregador acumulado, pago por Pix fora da Stripe | Pix de R$ 5,00 por corrida é operação demais para valor de menos; e o pagamento do entregador não é parte da venda |
+| O sistema não dispara Pix sozinho | o dono confere e paga; automatizar saída de dinheiro sem conferência é o tipo de facilidade que custa caro uma vez só |
 | O quadro completo da operação é só do dono | o comprador vê o primeiro nome de quem leva o pedido dele e mais nada; quem está com o quê, e onde, é informação da operação |
 | Repasse manual, não automático | devolução antes do repasse deixaria a plataforma no prejuízo |
 | Saque agrupado em carteira | taxa de saque é do vendedor e não pode ser dividida |

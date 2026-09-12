@@ -503,8 +503,13 @@ EMAILS_DO_DONO="marcosmartins7799@gmail.com,marcosaluno7799@gmail.com"
 ```
 
 Uma variável de ambiente no `.env` do servidor, aceitando uma lista separada
-por vírgula. **São essas duas contas e mais nenhuma.** A segunda existe como
-reserva: se a primeira for perdida, o painel continua acessível. No login, **depois** de validar o token do Google, o servidor
+por vírgula. **São essas duas contas e mais nenhuma.**
+
+A primeira é a conta de uso diário e a segunda é a reserva, mas isso é
+organização do dono, não regra do sistema: **as duas têm exatamente o mesmo
+poder**. A ordem na lista não cria hierarquia — não implemente "dono principal"
+e "dono secundário", nem dê permissão diferente para uma ou outra. Quem está na
+lista é dono, ponto. No login, **depois** de validar o token do Google, o servidor
 compara o e-mail **verificado** que veio do Google com essa lista. Bateu, a
 sessão tem papel de dono; não bateu, é usuário comum.
 

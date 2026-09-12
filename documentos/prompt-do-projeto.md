@@ -198,7 +198,7 @@ escondida no preço: "produto R$ 50,00 · entrega R$ 7,90 · total R$ 57,90".
 
 | Prazo | Quanto | Onde vale |
 |---|---|---|
-| **Entrega prometida ao comprador** | **4 dias corridos** do pagamento | entrega pela plataforma |
+| **Entrega prometida ao comprador** | **4 dias** do pagamento, **pulando sábado e domingo** | entrega pela plataforma |
 | **Cancelamento automático por atraso** | **7 dias corridos** do pagamento | sempre |
 | Teste e devolução | **7 dias corridos** da entrega | sempre |
 | Confirmação automática | **3 dias** da declaração | entrega pelo vendedor |
@@ -329,10 +329,39 @@ antes de comprar:
 | Checkout | a mesma data, agora como promessa |
 | Pedido | "chega até **<data>**", contando de quando o pagamento foi aprovado |
 
-**A data é sempre pagamento + 4 dias corridos.** Dentro de uma cidade a entrega
-real leva um ou dois dias — prometer 4 dá folga para um imprevisto sem soar
-lento. É melhor entregar antes do prometido do que explicar atraso. Não invente
-cálculo por distância.
+**A data é pagamento + 4 dias, pulando sábado e domingo.** Dentro de uma cidade
+a entrega real leva um ou dois dias — prometer 4 dá folga para um imprevisto sem
+soar lento. É melhor entregar antes do prometido do que explicar atraso. Não
+invente cálculo por distância.
+
+### Sábado e domingo
+
+**A entrega no fim de semana não é obrigatória, mas pode acontecer.**
+
+Deixe isso escrito na tela, com estas palavras ou parecidas:
+
+> *não garantimos entrega aos sábados e domingos, mas se rolar entregador
+> disponível, seu pedido pode chegar antes.*
+
+O aviso aparece no checkout, junto da data prometida, e na tela do pedido.
+
+O que isso significa no código:
+
+- **a contagem dos 4 dias da promessa pula sábado e domingo.** Comprou na
+  quinta, a data prometida cai na quarta seguinte, não na segunda. Prometer
+  dia que a operação não roda é quebrar a promessa de propósito;
+- **o entregador pode aceitar e concluir corrida em qualquer dia**, inclusive
+  fim de semana e feriado. Nada no sistema bloqueia isso — a entrega de sábado
+  é bem-vinda, só não é prometida;
+- **a entrega pelo vendedor não tem essa restrição**: ele combina direto com o
+  comprador e entrega no dia que os dois quiserem.
+
+> **Por que a promessa pula o fim de semana e o cancelamento não.** São coisas
+> diferentes: a promessa é o que a plataforma se compromete a cumprir, então
+> conta só os dias em que ela opera. O cancelamento é o teto de quanto tempo o
+> dinheiro do comprador pode ficar preso, e para ele todo dia conta igual —
+> 7 dias corridos sempre contêm pelo menos 5 dias úteis, tempo de sobra para o
+> vendedor ter entregado o produto.
 
 > Guarde a data prometida **no pedido**, não a recalcule na tela. Se a regra
 > mudar amanhã, o pedido de ontem tem que continuar mostrando a data com que
@@ -740,6 +769,8 @@ Para ninguém refazer discussão já resolvida.
 | Senha de 4 dígitos + foto na entrega do vendedor | mesmo mecanismo do Mercado Livre; a senha prova que o comprador estava lá, a foto prova o que foi entregue. Sem as duas, a plataforma não tem como mediar um "eu não recebi" |
 | Prazo prometido fixo de 4 dias, sem cálculo por distância | dentro de uma cidade a entrega leva um ou dois dias; prometer 4 dá folga para imprevisto sem soar lento, e entregar antes do combinado não gera reclamação |
 | Prometer em 4 mas só cancelar em 7 | 3 dias de folga entre quebrar a promessa e matar o pedido; um imprevisto de entregador não pode custar a venda ao vendedor nem a compra ao comprador |
+| Fim de semana não é obrigatório, mas é permitido | a operação é pequena e não dá para garantir escala de sábado; travar a entrega no sistema seria pior, porque perderia a corrida que o entregador aceitaria de bom grado |
+| A promessa pula o fim de semana, o cancelamento não | a promessa conta só os dias em que a plataforma opera, senão ela nasce quebrada; o cancelamento é teto de quanto tempo o dinheiro do comprador fica preso, e para isso todo dia conta igual |
 | Cancelamento automático em 7 dias sem coleta | vendedor que some deixa o dinheiro do comprador preso; o relógio resolve sozinho, sem ninguém precisar abrir chamado |
 | Aviso ao vendedor no 5º dia | cancelar sem avisar é como se perde vendedor; 2 dias é tempo de reagir |
 | Repasse manual, não automático | devolução antes do repasse deixaria a plataforma no prejuízo |

@@ -211,6 +211,7 @@ quem se desloca.
 | **Cancelamento automático por atraso** | **7 dias corridos** | do pagamento |
 | Teste e devolução | **7 dias corridos** | **da entrega** |
 | Tentativas de entrega | **5 no total** | entrega pelo vendedor |
+| Contestação da entrega declarada | **3 dias**, depois vai para o painel | entrega pelo vendedor |
 | Resposta a uma oferta | **3 dias** | do último lance |
 
 > **São dois "7 dias" diferentes e eles nunca correm juntos.**
@@ -419,7 +420,61 @@ abrir o prazo de teste:
 | 3 | o comprador toca em "já recebi" | nada — quem confirma é o dono do dinheiro | as duas formas |
 
 **São só essas três, e todas passam por senha conferida ou pelo próprio
-comprador.** Não existe quarta porta.
+comprador.** Nenhuma delas deixa o vendedor concluir sozinho.
+
+### Impedir que a senha seja esquecida
+
+A senha esquecida é o começo de quase todo problema deste capítulo. **Atacar
+isso é mais barato que resolver depois**, então o app insiste:
+
+- no momento em que o pedido é pago, as duas partes recebem uma notificação
+  explicando que **a entrega só vale com a senha conferida**;
+- a tela do pedido mostra a pendência em **faixa destacada no topo**, não num
+  canto: *"esta entrega ainda não foi confirmada"*;
+- **lembretes em 24h e em 48h** para os dois, enquanto a senha não for
+  conferida;
+- a senha **não vence**. Se ninguém digitou na hora, o vendedor pede pelo chat
+  do pedido depois e digita — o caminho normal continua aberto até o fim do
+  prazo.
+
+### Quando o comprador recebeu e não confirma
+
+O produto já está com ele, a senha não foi conferida, e ele não responde. **Sem
+uma saída aqui, o vendedor honesto perde o produto e o dinheiro** quando o
+cancelamento automático estourar — e a troca de senhas, que existe para
+proteger os dois lados, estaria protegendo só um.
+
+O vendedor abre **"entreguei e não consegui a senha"**:
+
+1. **foto da entrega**, tirada na hora, com data e hora;
+2. o motivo em uma linha;
+3. o comprador é avisado na hora: *"o vendedor diz que entregou. Confirme ou
+   conteste em 3 dias."*
+
+Se o comprador confirmar, vira ENTREGUE. Se contestar, abre disputa.
+
+**E se ele não responder nada, o pedido NÃO é confirmado nem cancelado pelo
+relógio: cai no painel do dono**, marcado como `ENTREGA_CONTESTAVEL`, com a
+foto, o chat do pedido e os horários. Quem decide é você:
+
+| O que você vê | O que costuma ser |
+|---|---|
+| foto do produto na porta do comprador, com horário, e chat combinando a entrega | a Maria entregou; libere o vendedor |
+| foto genérica, sem contexto, sem conversa nenhuma no chat | não houve entrega; cancele e devolva |
+| chat com o comprador reclamando do produto | não é caso de entrega, é de devolução |
+
+> **A diferença entre isto e a confirmação automática que foi removida é uma
+> só, e é toda a diferença: quem decide.**
+>
+> Lá era o relógio: o vendedor declarava, o comprador não via a notificação, e
+> três dias depois o sistema dava ganho de causa a quem falou por último. Aqui
+> é uma pessoa olhando uma foto com data e hora, ao lado da conversa das duas
+> partes. Vendedor mentiroso não tem o que mostrar; vendedor honesto tem.
+>
+> Custa alguns casos por mês no seu painel. É o preço de os dois lados estarem
+> protegidos em vez de um só.
+
+Não existe quarta porta **automática**.
 
 > **Não crie uma porta "o vendedor declara e o sistema confirma depois de
 > alguns dias".** Ela parece resolver o caso do comprador que some, e é
@@ -427,9 +482,9 @@ comprador.** Não existe quarta porta.
 > senha por telefone — ou nem isso — para receber por uma entrega que nunca
 > aconteceu, e o comprador que não viu a notificação descobre tarde demais.
 >
-> O caso do comprador sumido está resolvido pelas **5 tentativas** e pelo
-> **painel do dono**: alguém olha a prova e decide. É mais trabalhoso e é o
-> preço de não ter porta dos fundos.
+> Os dois casos difíceis — o comprador que não abre a porta e o comprador que
+> recebeu e não confirma — terminam no **painel do dono**, com foto e
+> histórico. Nenhum relógio libera dinheiro sozinho, em nenhuma direção.
 
 ---
 
@@ -929,6 +984,9 @@ Para ninguém refazer discussão já resolvida.
 | 5 tentativas de entrega, com foto em cada uma | tentativa prova que o vendedor **foi**, não que o comprador **recebeu** — por isso ela alimenta a decisão do dono, e nunca libera dinheiro sozinha |
 | Esgotadas as tentativas, quem decide é o dono | o caso do comprador sumido é raro e ambíguo demais para relógio resolver; com as 5 fotos em ordem, uma pessoa decide em trinta segundos |
 | **Sem confirmação automática por tempo** | era a última porta dos fundos: bastava declarar e esperar para receber por entrega que nunca aconteceu, e quem não visse a notificação descobriria tarde demais |
+| Entrega declarada vai para o painel, não para o relógio | a troca de senhas existe para proteger os dois lados; sem uma saída para o vendedor que entregou e não conseguiu a senha, ela protegeria só o comprador |
+| Lembretes em 24h e 48h enquanto a senha não é conferida | senha esquecida é o começo de quase todo problema deste capítulo, e insistir custa menos que arbitrar depois |
+| A senha não vence | o vendedor que esqueceu de digitar na hora pede pelo chat depois; fechar essa porta criaria um problema onde não havia |
 | Uma conta que compra e vende, sem cadastro de vendedor | é o modelo do Enjoei; cadastro grande no começo é onde a pessoa desiste, então os dados de vendedor são pedidos só na hora em que fazem falta |
 | Dono reconhecido por e-mail em variável de ambiente | virar dono passa a exigir acesso ao servidor, não um clique no app; e como a comparação é com o e-mail que o Google confirmou, não dá para forjar |
 | Mais de um e-mail de dono aceito desde o começo | conta perdida sem reserva cadastrada significa painel inacessível até alguém mexer no servidor |

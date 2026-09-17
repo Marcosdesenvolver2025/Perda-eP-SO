@@ -165,7 +165,7 @@ aceita em cada anúncio.
 | Tarifa fixa | por faixa | por faixa |
 | Custo de frete | **não há** | **não há** |
 | Limite de peso/tamanho | **não há** | **não há** |
-| Prova | senha + foto | senha + foto, **dos dois lados** |
+| Prova | senha do comprador + foto | **troca de senhas**: cada um digita a do outro |
 
 O vendedor pode marcar **as duas** no mesmo anúncio. Aí quem escolhe é o
 comprador, na hora de comprar — e a escolha **fica gravada no pedido**.
@@ -276,19 +276,29 @@ ficaria com o produto e com o dinheiro.
 É o coração da confiança do aplicativo. **Sem senha conferida, nada é
 entregue** — e o relógio dos 7 dias não começa.
 
-Quando o pedido é pago, o sistema gera uma **senha de 4 dígitos** que aparece
-**só para o comprador**, na tela do pedido dele. É o mesmo mecanismo que o
-Mercado Livre usa.
+Quando o pedido é pago, o sistema gera as senhas de 4 dígitos. **Quantas
+senhas depende da forma de entrega:**
 
-Regras que valem sempre, nas duas formas:
+| Forma | Senhas |
+|---|---|
+| Entrega pelo vendedor | **uma** — a do comprador |
+| Retirada no local | **duas** — uma de cada lado |
 
-- a senha **nunca** aparece para o vendedor em lugar nenhum do app. Se
-  aparecesse, ele concluiria a entrega sozinho e a prova não valeria nada;
+É o mesmo mecanismo que o Mercado Livre usa, com a troca dupla acrescentada na
+retirada.
+
+Regras que valem sempre, para qualquer senha:
+
+- **cada senha aparece só para o dono dela**, em lugar nenhum mais do app. Se
+  o outro lado conseguisse ver, ele concluiria sozinho e a prova não valeria
+  nada;
 - **senha errada não conclui**: o app diz que não confere e deixa tentar de
   novo. Só a senha certa muda o estado do pedido;
 - **limite de tentativas**: 5 erros seguidos travam a conferência por 30
   minutos e avisam o dono. Senha de 4 dígitos é curta, e sem limite alguém
   tenta as dez mil;
+- as senhas são **geradas pelo servidor** e nunca derivadas do número do pedido,
+  da data ou de qualquer coisa que dê para adivinhar de fora;
 - **foto obrigatória**, tirada na hora pelo app — não vale escolher da galeria.
   A foto fica anexada ao pedido;
 - fica registrado **quem conferiu, quando e de qual conta**.
@@ -304,29 +314,49 @@ Sem a foto o botão de concluir não habilita, mesmo com a senha certa.
 
 Conferida a senha, o pedido vira **ENTREGUE** e começam os 7 dias.
 
-### Forma 2 — o comprador retira no local
+### Forma 2 — o comprador retira no local: **troca de senhas**
 
-Aqui **os dois confirmam**, cada um do seu lado, e o pedido só fecha com as
-duas confirmações. É a forma mais protegida das duas, porque ninguém conclui
-nada sozinho.
+Aqui **cada um tem a sua senha e passa para o outro**. São duas senhas
+diferentes, geradas no mesmo pedido:
 
-Na hora do encontro:
-
-| Quem | O que faz | Prova o quê |
+| Senha | Aparece só para | É digitada por |
 |---|---|---|
-| **Comprador** | mostra a senha de 4 dígitos e toca em **"retirei o produto"**, com uma **foto do produto que recebeu** | que ele esteve lá e levou a peça |
-| **Vendedor** | **digita a senha** que o comprador mostrou e tira uma **foto da entrega** | que ele entregou, e para quem |
+| **Senha do comprador** | o comprador | **o vendedor** |
+| **Senha do vendedor** | o vendedor | **o comprador** |
 
-O pedido vira **ENTREGUE** quando **o vendedor digita a senha certa**. A
-confirmação do comprador, com a foto dele, entra no pedido como a segunda
-prova.
+Na hora do encontro, os dois abrem o app e fazem a troca:
 
-> **Por que a senha sozinha já resolve, e a foto dos dois é o reforço.** A
-> senha só existe no app do comprador: se o vendedor conseguiu digitá-la, o
-> comprador estava na frente dele. Isso mata a discussão de "não recebi". As
-> duas fotos matam a outra discussão, a de **o quê** foi recebido — uma mostra
-> o que saiu da mão do vendedor, a outra o que chegou na mão do comprador. Se
-> as duas fotos mostram coisas diferentes, o dono tem o que olhar.
+1. o comprador fala a senha dele → **o vendedor digita**;
+2. o vendedor fala a senha dele → **o comprador digita**;
+3. o vendedor tira a **foto** do produto entregue.
+
+**O pedido só vira ENTREGUE quando as duas senhas estiverem conferidas.** Uma
+sozinha não conclui nada.
+
+> **Por que duas senhas são muito mais seguras que uma senha e uma foto.**
+>
+> Com uma senha só, existe um golpe conhecido: o vendedor liga para o comprador
+> antes do encontro e pede o código "só para confirmar o pedido". Com o código
+> na mão, ele marca como entregue sem nunca ter entregado nada — e o comprador
+> só descobre quando o prazo de devolução já venceu.
+>
+> Com duas senhas isso não funciona, porque **cada um precisa de um número que
+> só existe no celular do outro**. Não há como completar a troca por telefone
+> sem que os dois percebam que estão trocando, e não há como um lado concluir
+> sozinho. O encontro presencial deixa de ser combinado e passa a ser exigido
+> pela mecânica.
+>
+> Foto é prova do **quê** foi entregue. Senha é prova de **quem** estava lá.
+> São coisas diferentes, e a segunda é a que resolve discussão.
+
+**Se só uma das senhas for conferida**, o pedido fica em "retirada pela metade"
+e **avisa o dono depois de 24 horas**. Metade da troca é sinal de que algo saiu
+do roteiro — desistência na hora, discussão sobre o produto, ou tentativa de
+golpe. Não conclua sozinho nem cancele sozinho: quem olha é você.
+
+A foto do comprador é **opcional** aqui. Com as duas senhas conferidas, a prova
+de presença já está feita; a foto dele serve só se ele quiser registrar o estado
+em que recebeu.
 
 ### As portas até ENTREGUE
 
@@ -335,18 +365,20 @@ abrir o prazo de teste:
 
 | | Caminho | Exige | Vale em |
 |---|---|---|---|
-| 1 | o vendedor digita a senha do comprador | **senha + foto** | as duas formas |
-| 2 | o comprador toca em "já recebi" | nada — quem confirma é o dono do dinheiro | as duas formas |
-| 3 | o vendedor declara sem a senha | **foto obrigatória**, e não conclui na hora | só entrega pelo vendedor |
+| 1 | o vendedor digita a senha do comprador | **senha + foto** | só entrega pelo vendedor |
+| 2 | **os dois trocam as senhas** | **as duas senhas + foto do vendedor** | só retirada no local |
+| 3 | o comprador toca em "já recebi" | nada — quem confirma é o dono do dinheiro | as duas formas |
+| 4 | o vendedor declara sem a senha | **foto obrigatória**, e não conclui na hora | só entrega pelo vendedor |
 
-A porta 3 existe só para o pedido não travar quando o comprador some depois de
+A porta 4 existe só para o pedido não travar quando o comprador some depois de
 receber. Ela **não** entrega o pedido imediatamente: abre um aviso ao
 comprador, que tem **3 dias** para confirmar ou abrir devolução. Passado o
 prazo em silêncio, o sistema confirma sozinho.
 
-**A porta 3 não vale na retirada no local.** Ali o comprador tem que ter ido
+**A porta 4 não vale na retirada no local.** Ali o comprador tem que ter ido
 até o vendedor — se ele não foi, não há entrega nenhuma a declarar, e o pedido
-segue para o cancelamento automático.
+segue para o cancelamento automático. Deixar o vendedor declarar sozinho uma
+retirada abriria exatamente o buraco que a troca de senhas fecha.
 
 ---
 
@@ -474,7 +506,7 @@ servidor, em toda rota.** Esconder o botão na tela não é proteger o dado.
 | Anúncios, vitrine, busca | ✅ | ✅ |
 | Os próprios pedidos e vendas | ✅ | ✅ |
 | Endereço e telefone da outra parte | **só do próprio pedido, depois de pago** | ✅ |
-| Senha de 4 dígitos | **só o comprador, só do pedido dele** | ✅ |
+| Senha de 4 dígitos | **só o dono dela, só no pedido dele** | ✅ |
 | Fotos da entrega | as duas partes daquele pedido | ✅ |
 | **A fila inteira de pedidos** | ❌ | ✅ **só você** |
 | Pedidos perto do cancelamento automático | ❌ | ✅ |
@@ -563,11 +595,12 @@ pode virar devolução.
 ### As telas
 
 **Comprar:** Home, Busca, Produto, Loja, Checkout, Pedido (com linha do tempo),
-Reembolso, Curtidos, FazerOferta, Ofertas, Avaliar, **SenhaDaEntrega** (onde o
-comprador vê os 4 dígitos), **ConfirmarRetirada** (foto + "retirei o produto")
+Reembolso, Curtidos, FazerOferta, Ofertas, Avaliar, **MinhaSenha** (os 4 dígitos
+do comprador), **ConfirmarRetirada** (digitar a senha do vendedor)
 
 **Vender:** Vendas, NovoAnuncio, MinhaLoja, MinhasVendas, **ConfirmarEntrega**
-(digitar a senha + foto), **PontoDeRetirada** (cadastrar endereço e horários)
+(digitar a senha do comprador + foto), **MinhaSenhaDeVendedor** (os 4 dígitos
+que o comprador vai digitar), **PontoDeRetirada** (endereço e horários)
 
 **Administrar:** PainelAdmin (fila de pedidos, devoluções, faturamento)
 
@@ -834,7 +867,8 @@ Para ninguém refazer discussão já resolvida.
 | **A plataforma não entrega nada** | **decidido em setembro/2026.** A operação de entregadores foi desenhada inteira e descartada antes de existir: cadastro com CPF e foto, pagamento por corrida, coleta reversa na devolução e responsabilidade sobre produto de terceiro em trânsito. É muita máquina e muito risco para uma cidade onde as pessoas se encontram na rua |
 | Tarifa fixa passa a valer em toda venda | é o modelo do Enjoei, onde a tarifa não tem relação com quem leva o produto; sem ela a receita seria só a comissão, e uma venda de R$ 50,00 renderia R$ 4,00 à plataforma |
 | Comprador não paga nada além do preço do anúncio | sem entrega própria não há frete a cobrar; preço de vitrine igual a preço final é o maior argumento de venda que o app tem |
-| Retirada no local com confirmação dos dois lados | é a forma mais protegida: ninguém conclui sozinho, e as duas fotos resolvem a discussão de **o quê** foi entregue |
+| Retirada no local com **troca de senhas** | cada um precisa de um número que só existe no celular do outro, então ninguém conclui sozinho e o encontro presencial passa a ser exigido pela mecânica. Fecha o golpe de pedir o código por telefone e marcar como entregue sem entregar |
+| Senha do comprador digitada pelo vendedor, e vice-versa | senha que o próprio dono digita não prova nada; o valor está em ela atravessar de uma pessoa para a outra |
 | Endereço de retirada só depois do pagamento | endereço de casa em anúncio aberto é convite que ninguém precisa fazer |
 | Limite de tentativas na senha | senha de 4 dígitos é curta; sem limite alguém tenta as dez mil |
 | Cancelamento automático culpa os dois lados | sem entregador, o pedido pode travar tanto por vendedor que sumiu quanto por comprador que nunca foi buscar |

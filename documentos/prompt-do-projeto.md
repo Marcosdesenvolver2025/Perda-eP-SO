@@ -165,7 +165,7 @@ aceita em cada anúncio.
 | Tarifa fixa | por faixa | por faixa |
 | Custo de frete | **não há** | **não há** |
 | Limite de peso/tamanho | **não há** | **não há** |
-| Prova | senha do comprador + foto | **troca de senhas**: cada um digita a do outro |
+| Prova | senha do comprador + foto | **QR Code escaneado** pelo vendedor + foto |
 
 O vendedor pode marcar **as duas** no mesmo anúncio. Aí quem escolhe é o
 comprador, na hora de comprar — e a escolha **fica gravada no pedido**.
@@ -369,49 +369,84 @@ O relógio do cancelamento automático de 7 dias **continua correndo durante as
 tentativas** — elas não esticam prazo nenhum. O que elas dão é tempo de alguém
 perceber e resolver antes de o prazo acabar.
 
-### Forma 2 — o comprador retira no local: **troca de senhas**
+### Forma 2 — o comprador retira no local: **QR Code**
 
-Aqui **cada um tem a sua senha e passa para o outro**. São duas senhas
-diferentes, geradas no mesmo pedido:
+Na retirada **não se digita senha nenhuma**. O comprador mostra um **QR Code na
+tela do celular** e o vendedor **escaneia com a câmera do app**. Um gesto só,
+feito uma vez, e o pedido está entregue.
 
-| Senha | Aparece só para | É digitada por |
-|---|---|---|
-| **Senha do comprador** | o comprador | **o vendedor** |
-| **Senha do vendedor** | o vendedor | **o comprador** |
+```
+   comprador                          vendedor
+  ┌───────────┐                    ┌───────────┐
+  │  ▄▄▄▄▄▄▄  │                    │    [◉]    │
+  │  █ ▄▄▄ █  │   ──── escaneia ──►│  câmera   │
+  │  █▄▄▄▄▄█  │                    │           │
+  │  ⏱ 18s    │                    │           │
+  └───────────┘                    └───────────┘
+        │                                │
+        └────────► servidor ◄────────────┘
+              ENTREGUE, para os dois
+```
 
-Na hora do encontro, os dois abrem o app e fazem a troca:
-
-1. o comprador fala a senha dele → **o vendedor digita**;
-2. o vendedor fala a senha dele → **o comprador digita**;
-3. o vendedor tira a **foto** do produto entregue.
-
-**O pedido só vira ENTREGUE quando as duas senhas estiverem conferidas.** Uma
-sozinha não conclui nada.
-
-> **Por que duas senhas são muito mais seguras que uma senha e uma foto.**
+> **Por que isto é melhor que trocar senhas digitadas, e não é questão de
+> conforto.**
 >
-> Com uma senha só, existe um golpe conhecido: o vendedor liga para o comprador
-> antes do encontro e pede o código "só para confirmar o pedido". Com o código
-> na mão, ele marca como entregue sem nunca ter entregado nada — e o comprador
-> só descobre quando o prazo de devolução já venceu.
+> Na troca de senhas alguém precisa ir primeiro, e **quem vai depois pode
+> simplesmente não ir**. O comprador passa a senha dele, o vendedor não passa a
+> dele, e o comprador fica sem a confirmação — ou o contrário. O problema não
+> está na senha: está em ser uma troca em dois tempos.
 >
-> Com duas senhas isso não funciona, porque **cada um precisa de um número que
-> só existe no celular do outro**. Não há como completar a troca por telefone
-> sem que os dois percebam que estão trocando, e não há como um lado concluir
-> sozinho. O encontro presencial deixa de ser combinado e passa a ser exigido
-> pela mecânica.
+> **O QR resolve porque não tem dois tempos.** É uma ação só: o código está na
+> tela de um e a câmera é do outro. Quando o servidor recebe o escaneamento,
+> ele já sabe que **as duas pessoas estavam no mesmo lugar, no mesmo segundo** —
+> não existe "primeiro" nem "segundo" para alguém abandonar no meio.
 >
-> Foto é prova do **quê** foi entregue. Senha é prova de **quem** estava lá.
-> São coisas diferentes, e a segunda é a que resolve discussão.
+> E fecha um golpe que a senha digitada não fechava por completo: **QR não se
+> lê por telefone**. Não dá para pedir "me passa o código" e receber por
+> WhatsApp — a câmera tem que estar apontada para a tela, na frente da pessoa.
 
-**Se só uma das senhas for conferida**, o pedido fica em "retirada pela metade"
-e **avisa o dono depois de 24 horas**. Metade da troca é sinal de que algo saiu
-do roteiro — desistência na hora, discussão sobre o produto, ou tentativa de
-golpe. Não conclua sozinho nem cancele sozinho: quem olha é você.
+### Como o QR funciona
 
-A foto do comprador é **opcional** aqui. Com as duas senhas conferidas, a prova
-de presença já está feita; a foto dele serve só se ele quiser registrar o estado
-em que recebeu.
+1. o comprador abre o pedido e toca em **"estou retirando"**. A tela mostra o
+   QR grande, com um **contador regressivo**;
+2. o vendedor abre o pedido dele e toca em **"escanear para entregar"**;
+3. escaneou, os **dois celulares mostram a confirmação ao mesmo tempo**. O
+   pedido vira **ENTREGUE** e começam os 7 dias;
+4. o vendedor tira a **foto** do produto entregue, que fica anexada ao pedido.
+
+Regras de segurança do código, todas obrigatórias:
+
+- o QR carrega um **token sorteado pelo servidor** (`crypto.randomBytes`),
+  ligado àquele pedido e àquela sessão do comprador. Não é o número do pedido,
+  não é nada derivável;
+- **vale 20 segundos e se renova sozinho** na tela. Print de tela mandado por
+  mensagem chega morto;
+- **uso único**: escaneado uma vez, aquele token morre. Não dá para reusar nem
+  para entregar duas coisas com o mesmo código;
+- quem escaneia tem que ser **o vendedor daquele pedido**, autenticado. Scan de
+  terceiro é recusado;
+- a validação é **toda no servidor**. O aplicativo do vendedor não decide nada:
+  ele manda o token e recebe sim ou não;
+- **tudo registrado**: quem escaneou, quando, e de qual conta.
+
+### Se a câmera não funcionar
+
+Celular velho, câmera quebrada, permissão negada, tela rachada. Nesse caso — e
+só nele — o app oferece **"não consigo escanear"**, que cai na **troca de
+senhas digitadas**: cada um digita a do outro, como na forma 1.
+
+É o mesmo nível de prova (os dois presentes), só mais lento e com o problema de
+quem vai primeiro. **Deixe esse caminho escondido atrás do botão**, nunca lado
+a lado com o QR: quem tem câmera deve usar a câmera.
+
+### A ordem no encontro vale igual
+
+> **escaneie com o produto na mão.**
+> *comprador: só mostre o QR com a peça já com você.*
+> *vendedor: só deixe escanear se estiver entregando agora.*
+
+Com o QR isso fica fácil de seguir, porque é um gesto só — não há como fazer
+metade e parar no meio.
 
 ### Os únicos dois caminhos até ENTREGUE
 
@@ -421,7 +456,7 @@ ENTREGUE.**
 | | Caminho | Exige | Vale em |
 |---|---|---|---|
 | 1 | o vendedor digita a senha do comprador | **senha + foto** | entrega pelo vendedor |
-| 2 | **os dois trocam as senhas** | **as duas senhas + foto do vendedor** | retirada no local |
+| 2 | **o vendedor escaneia o QR do comprador** | **scan válido + foto** | retirada no local |
 
 Os dois passam pela **mesma função interna** — nenhum caminho pode esquecer de
 abrir o prazo de teste.
@@ -694,11 +729,11 @@ pode virar devolução.
 
 **Comprar:** Home, Busca, Produto, Loja, Checkout, Pedido (com linha do tempo),
 Reembolso, Curtidos, FazerOferta, Ofertas, Avaliar, **MinhaSenha** (a senha do
-comprador, em letra grande), **ConfirmarRetirada** (digitar a senha do vendedor)
+comprador, em letra grande), **MeuQRCode** (o código da retirada, com contador)
 
 **Vender:** Vendas, NovoAnuncio, MinhaLoja, MinhasVendas, **ConfirmarEntrega**
-(digitar a senha do comprador + foto), **MinhaSenhaDeVendedor** (os 4 dígitos
-que o comprador vai digitar), **PontoDeRetirada** (endereço e horários)
+(digitar a senha do comprador + foto), **EscanearRetirada** (câmera + foto),
+**PontoDeRetirada** (endereço e horários)
 
 **Administrar:** PainelAdmin (fila de pedidos, devoluções, faturamento)
 
@@ -976,7 +1011,10 @@ Para ninguém refazer discussão já resolvida.
 | 5 tentativas de entrega, com foto em cada uma | tentativa prova que o vendedor **foi**, não que o comprador **recebeu** — por isso ela alimenta a decisão do dono, e nunca libera dinheiro sozinha |
 | Esgotadas as tentativas, quem decide é o dono | o caso do comprador sumido é raro e ambíguo demais para relógio resolver; com as 5 fotos em ordem, uma pessoa decide em trinta segundos |
 | **Sem confirmação automática por tempo** | era a última porta dos fundos: bastava declarar e esperar para receber por entrega que nunca aconteceu, e quem não visse a notificação descobriria tarde demais |
-| **Senha é o único caminho, sem exceção nenhuma** | toda exceção examinada — botão de "já recebi", declaração do vendedor, confirmação por tempo, liberação pelo dono — permitia concluir um pedido sem as duas pessoas frente a frente, que é justamente o que a senha prova. Uma regra única e sem brecha protege mais que um conjunto de saídas, mesmo que cada saída pareça razoável sozinha |
+| **Senha ou QR é o único caminho, sem exceção nenhuma** | toda exceção examinada — botão de "já recebi", declaração do vendedor, confirmação por tempo, liberação pelo dono — permitia concluir um pedido sem as duas pessoas frente a frente, que é justamente o que a prova existe para mostrar. Uma regra única e sem brecha protege mais que um conjunto de saídas, mesmo que cada saída pareça razoável sozinha |
+| **QR na retirada, em vez de trocar senhas digitadas** | trocar senhas é uma operação em dois tempos, e quem vai depois pode simplesmente não ir — um lado entrega a prova dele e fica sem a do outro. O scan é uma ação só: quando o servidor o recebe, já sabe que as duas pessoas estavam juntas no mesmo segundo. Não há primeiro nem segundo para abandonar no meio |
+| Token do QR de 20 segundos, uso único | print de tela mandado por mensagem chega morto, e QR não se lê por telefone — fecha o golpe de pedir o código à distância, que a senha falada só fechava em parte |
+| Senha digitada fica como saída para quem não tem câmera | mesmo nível de prova, só mais lenta; escondida atrás de um botão, para quem tem câmera usar a câmera |
 | "Senha primeiro, produto depois" escrito na tela | feita nessa ordem, a troca impede que qualquer um dos dois prejudique o outro; é a regra inteira em cinco palavras, e nenhuma tela conserta depois quem fez ao contrário |
 | Senha nunca conferida cancela e reembolsa | é a consequência assumida de não ter caminho alternativo; cobrir esse caso exigiria abrir exatamente a porta que a regra única fecha |
 | Lembretes em 24h e 48h enquanto a senha não é conferida | senha esquecida é o começo de quase todo problema deste capítulo, e insistir custa menos que arbitrar depois |

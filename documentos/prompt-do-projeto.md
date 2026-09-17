@@ -210,7 +210,7 @@ quem se desloca.
 |---|---|---|
 | **Cancelamento automático por atraso** | **7 dias corridos** | do pagamento |
 | Teste e devolução | **7 dias corridos** | **da entrega** |
-| Confirmação automática | **3 dias** | da declaração do vendedor |
+| Tentativas de entrega | **5 no total** | entrega pelo vendedor |
 | Resposta a uma oferta | **3 dias** | do último lance |
 
 > **São dois "7 dias" diferentes e eles nunca correm juntos.**
@@ -276,29 +276,46 @@ ficaria com o produto e com o dinheiro.
 É o coração da confiança do aplicativo. **Sem senha conferida, nada é
 entregue** — e o relógio dos 7 dias não começa.
 
-Quando o pedido é pago, o sistema gera as senhas de 4 dígitos. **Quantas
-senhas depende da forma de entrega:**
+**Só existe um jeito de um pedido virar ENTREGUE: senha conferida mais foto.**
+Não há declaração, não há botão de atalho, não há confirmação automática por
+tempo. Sem os dois, o pedido não anda.
 
-| Forma | Senhas |
-|---|---|
-| Entrega pelo vendedor | **uma** — a do comprador |
-| Retirada no local | **duas** — uma de cada lado |
+### Como a senha é formada
 
-É o mesmo mecanismo que o Mercado Livre usa, com a troca dupla acrescentada na
-retirada.
+**4 caracteres, sorteados pelo servidor, misturando letras, números e
+símbolos.** Não é PIN numérico.
 
-Regras que valem sempre, para qualquer senha:
+```
+exemplos:  K7#m    9$Qz    P2@w
+```
 
-- **cada senha aparece só para o dono dela**, em lugar nenhum mais do app. Se
-  o outro lado conseguisse ver, ele concluiria sozinho e a prova não valeria
-  nada;
+Regras de geração:
+
+- sorteada com **gerador criptográfico** (`crypto.randomBytes`), nunca com
+  `Math.random()`, e **nunca derivada** do número do pedido, da data, do CPF ou
+  de qualquer coisa que se adivinhe de fora;
+- **fora do alfabeto**: `0 O o 1 l I` e qualquer par que se confunda ao ser
+  falado em voz alta. A senha vai ser lida por uma pessoa para outra, na rua,
+  às vezes com pressa;
+- a tela mostra a senha **em letra grande, com espaço entre os caracteres**, e
+  diz o nome de cada símbolo por extenso embaixo ("cerquilha", "arroba",
+  "cifrão"). Sem isso, símbolo vira discussão no meio da entrega.
+
+> **Por que caractere de símbolo e não só número.** Com 4 dígitos existem dez
+> mil combinações; com letras, números e símbolos passam de vinte milhões.
+> Combinado com o bloqueio por tentativa abaixo, adivinhar deixa de ser um
+> caminho possível.
+
+### Regras que valem para qualquer senha
+
+- **cada senha aparece só para o dono dela**, em lugar nenhum mais do app. Se o
+  outro lado conseguisse ver, concluiria sozinho e a prova não valeria nada;
 - **senha errada não conclui**: o app diz que não confere e deixa tentar de
-  novo. Só a senha certa muda o estado do pedido;
+  novo;
 - **limite de tentativas**: 5 erros seguidos travam a conferência por 30
-  minutos e avisam o dono. Senha de 4 dígitos é curta, e sem limite alguém
-  tenta as dez mil;
-- as senhas são **geradas pelo servidor** e nunca derivadas do número do pedido,
-  da data ou de qualquer coisa que dê para adivinhar de fora;
+  minutos e avisam o dono;
+- a conferência é **sempre no servidor**. A senha não é enviada para o
+  aplicativo do outro lado nem para comparar, nem escondida, nem cifrada;
 - **foto obrigatória**, tirada na hora pelo app — não vale escolher da galeria.
   A foto fica anexada ao pedido;
 - fica registrado **quem conferiu, quando e de qual conta**.
@@ -307,12 +324,44 @@ Regras que valem sempre, para qualquer senha:
 
 O vendedor vai até o comprador. Na mesma tela, ele precisa de **duas coisas**:
 
-1. a **senha de 4 dígitos** que o comprador falar; e
+1. a **senha** que o comprador falar; e
 2. uma **foto** do produto sendo entregue.
 
-Sem a foto o botão de concluir não habilita, mesmo com a senha certa.
+Sem a foto o botão de concluir não habilita, mesmo com a senha certa. Conferida
+a senha, o pedido vira **ENTREGUE** e começam os 7 dias.
 
-Conferida a senha, o pedido vira **ENTREGUE** e começam os 7 dias.
+#### Quando o comprador não está — as 5 tentativas
+
+O vendedor chegou e não conseguiu a senha: o comprador não estava, não atendeu,
+ou pediu para voltar outro dia. **Ele não declara nada.** Registra uma
+**tentativa de entrega**:
+
+- **foto obrigatória** do local, tirada na hora, com data e hora;
+- um motivo em uma linha ("ninguém atendeu", "pediu para voltar sábado").
+
+São **5 tentativas no total** — a primeira e mais quatro. A cada uma, o
+comprador é avisado na hora: *"o vendedor tentou entregar hoje às 14h. Combine
+um horário pelo chat do pedido."*
+
+**Esgotadas as 5 tentativas, o pedido não cancela nem confirma sozinho: cai no
+painel do dono**, marcado como `ENTREGA_NAO_CONCLUIDA`, com as 5 fotos e os 5
+horários em ordem. Quem decide é você, olhando a prova:
+
+| O que você vê | O que costuma ser |
+|---|---|
+| 5 fotos do mesmo portão, em dias e horários diferentes | o vendedor tentou de verdade; o comprador é que sumiu |
+| 5 fotos iguais, tiradas no mesmo minuto | ninguém tentou nada |
+| fotos de lugares diferentes | endereço errado, e aí é conversa |
+
+> **Por que as tentativas não confirmam a entrega sozinhas.** Tentativa prova
+> que o vendedor **foi**, não que o comprador **recebeu**. São coisas
+> diferentes, e só a segunda pode liberar dinheiro. As fotos das tentativas
+> servem para você decidir com informação — não para o sistema decidir sem
+> ninguém olhar.
+
+O relógio do cancelamento automático de 7 dias **continua correndo durante as
+tentativas**. Se ele estourar antes das 5, o pedido também cai no seu painel em
+vez de cancelar direto, porque agora existe prova de que o vendedor tentou.
 
 ### Forma 2 — o comprador retira no local: **troca de senhas**
 
@@ -368,17 +417,19 @@ abrir o prazo de teste:
 | 1 | o vendedor digita a senha do comprador | **senha + foto** | só entrega pelo vendedor |
 | 2 | **os dois trocam as senhas** | **as duas senhas + foto do vendedor** | só retirada no local |
 | 3 | o comprador toca em "já recebi" | nada — quem confirma é o dono do dinheiro | as duas formas |
-| 4 | o vendedor declara sem a senha | **foto obrigatória**, e não conclui na hora | só entrega pelo vendedor |
 
-A porta 4 existe só para o pedido não travar quando o comprador some depois de
-receber. Ela **não** entrega o pedido imediatamente: abre um aviso ao
-comprador, que tem **3 dias** para confirmar ou abrir devolução. Passado o
-prazo em silêncio, o sistema confirma sozinho.
+**São só essas três, e todas passam por senha conferida ou pelo próprio
+comprador.** Não existe quarta porta.
 
-**A porta 4 não vale na retirada no local.** Ali o comprador tem que ter ido
-até o vendedor — se ele não foi, não há entrega nenhuma a declarar, e o pedido
-segue para o cancelamento automático. Deixar o vendedor declarar sozinho uma
-retirada abriria exatamente o buraco que a troca de senhas fecha.
+> **Não crie uma porta "o vendedor declara e o sistema confirma depois de
+> alguns dias".** Ela parece resolver o caso do comprador que some, e é
+> exatamente o buraco que derruba o resto: com ela, basta o vendedor pedir a
+> senha por telefone — ou nem isso — para receber por uma entrega que nunca
+> aconteceu, e o comprador que não viu a notificação descobre tarde demais.
+>
+> O caso do comprador sumido está resolvido pelas **5 tentativas** e pelo
+> **painel do dono**: alguém olha a prova e decide. É mais trabalhoso e é o
+> preço de não ter porta dos fundos.
 
 ---
 
@@ -872,7 +923,12 @@ Para ninguém refazer discussão já resolvida.
 | Endereço de retirada só depois do pagamento | endereço de casa em anúncio aberto é convite que ninguém precisa fazer |
 | Limite de tentativas na senha | senha de 4 dígitos é curta; sem limite alguém tenta as dez mil |
 | Cancelamento automático culpa os dois lados | sem entregador, o pedido pode travar tanto por vendedor que sumiu quanto por comprador que nunca foi buscar |
-| Senha de 4 dígitos + foto na entrega do vendedor | mesmo mecanismo do Mercado Livre; a senha prova que o comprador estava lá, a foto prova o que foi entregue. Sem as duas, a plataforma não tem como mediar um "eu não recebi" |
+| Senha + foto, e **nenhuma outra porta** | a senha prova que o comprador estava lá, a foto prova o que foi entregue. Qualquer atalho que dispense a senha vira o caminho preferido de quem quer receber sem entregar |
+| Senha de 4 caracteres com letras, números e símbolos | mais de vinte milhões de combinações em vez de dez mil; com o bloqueio por tentativa, adivinhar deixa de ser caminho |
+| Alfabeto sem `0 O o 1 l I` e símbolos nomeados na tela | a senha é lida em voz alta, na rua, com pressa; caractere ambíguo vira discussão no meio da entrega |
+| 5 tentativas de entrega, com foto em cada uma | tentativa prova que o vendedor **foi**, não que o comprador **recebeu** — por isso ela alimenta a decisão do dono, e nunca libera dinheiro sozinha |
+| Esgotadas as tentativas, quem decide é o dono | o caso do comprador sumido é raro e ambíguo demais para relógio resolver; com as 5 fotos em ordem, uma pessoa decide em trinta segundos |
+| **Sem confirmação automática por tempo** | era a última porta dos fundos: bastava declarar e esperar para receber por entrega que nunca aconteceu, e quem não visse a notificação descobriria tarde demais |
 | Uma conta que compra e vende, sem cadastro de vendedor | é o modelo do Enjoei; cadastro grande no começo é onde a pessoa desiste, então os dados de vendedor são pedidos só na hora em que fazem falta |
 | Dono reconhecido por e-mail em variável de ambiente | virar dono passa a exigir acesso ao servidor, não um clique no app; e como a comparação é com o e-mail que o Google confirmou, não dá para forjar |
 | Mais de um e-mail de dono aceito desde o começo | conta perdida sem reserva cadastrada significa painel inacessível até alguém mexer no servidor |

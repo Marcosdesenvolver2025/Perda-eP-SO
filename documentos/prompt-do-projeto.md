@@ -211,7 +211,6 @@ quem se desloca.
 | **Cancelamento automático por atraso** | **7 dias corridos** | do pagamento |
 | Teste e devolução | **7 dias corridos** | **da entrega** |
 | Tentativas de entrega | **5 no total** | entrega pelo vendedor |
-| Contestação da entrega declarada | **3 dias**, depois vai para o painel | entrega pelo vendedor |
 | Resposta a uma oferta | **3 dias** | do último lance |
 
 > **São dois "7 dias" diferentes e eles nunca correm juntos.**
@@ -344,9 +343,15 @@ São **5 tentativas no total** — a primeira e mais quatro. A cada uma, o
 comprador é avisado na hora: *"o vendedor tentou entregar hoje às 14h. Combine
 um horário pelo chat do pedido."*
 
-**Esgotadas as 5 tentativas, o pedido não cancela nem confirma sozinho: cai no
-painel do dono**, marcado como `ENTREGA_NAO_CONCLUIDA`, com as 5 fotos e os 5
-horários em ordem. Quem decide é você, olhando a prova:
+**As tentativas não entregam o pedido e não liberam dinheiro.** Elas são
+registro, e existem para duas coisas: o comprador saber que o vendedor foi
+até lá, e o pedido chegar ao **painel do dono** marcado como
+`ENTREGA_NAO_CONCLUIDA`, com as 5 fotos e os 5 horários em ordem.
+
+No painel você vê o que aconteceu e **fala com as duas partes** — o que quase
+sempre destrava: o comprador combina um horário e a entrega acontece, com a
+senha, do jeito normal. Se não destravar, o pedido segue para o cancelamento
+e o comprador é reembolsado.
 
 | O que você vê | O que costuma ser |
 |---|---|
@@ -354,15 +359,15 @@ horários em ordem. Quem decide é você, olhando a prova:
 | 5 fotos iguais, tiradas no mesmo minuto | ninguém tentou nada |
 | fotos de lugares diferentes | endereço errado, e aí é conversa |
 
-> **Por que as tentativas não confirmam a entrega sozinhas.** Tentativa prova
-> que o vendedor **foi**, não que o comprador **recebeu**. São coisas
-> diferentes, e só a segunda pode liberar dinheiro. As fotos das tentativas
-> servem para você decidir com informação — não para o sistema decidir sem
-> ninguém olhar.
+> **Por que as tentativas não confirmam a entrega, nem mesmo com você
+> aprovando.** Tentativa prova que o vendedor **foi**, não que o comprador
+> **recebeu**. São coisas diferentes, e só a segunda pode liberar dinheiro.
+> Nem o dono conclui um pedido no lugar da senha — se isso fosse possível, a
+> senha deixaria de ser a regra e passaria a ser a primeira tentativa.
 
 O relógio do cancelamento automático de 7 dias **continua correndo durante as
-tentativas**. Se ele estourar antes das 5, o pedido também cai no seu painel em
-vez de cancelar direto, porque agora existe prova de que o vendedor tentou.
+tentativas** — elas não esticam prazo nenhum. O que elas dão é tempo de alguém
+perceber e resolver antes de o prazo acabar.
 
 ### Forma 2 — o comprador retira no local: **troca de senhas**
 
@@ -408,83 +413,70 @@ A foto do comprador é **opcional** aqui. Com as duas senhas conferidas, a prova
 de presença já está feita; a foto dele serve só se ele quiser registrar o estado
 em que recebeu.
 
-### As portas até ENTREGUE
+### Os únicos dois caminhos até ENTREGUE
 
-Todas passam pela **mesma função interna** — nenhum caminho pode esquecer de
-abrir o prazo de teste:
+**Senha conferida. Só isso. Em nenhuma outra circunstância um pedido vira
+ENTREGUE.**
 
 | | Caminho | Exige | Vale em |
 |---|---|---|---|
-| 1 | o vendedor digita a senha do comprador | **senha + foto** | só entrega pelo vendedor |
-| 2 | **os dois trocam as senhas** | **as duas senhas + foto do vendedor** | só retirada no local |
-| 3 | o comprador toca em "já recebi" | nada — quem confirma é o dono do dinheiro | as duas formas |
+| 1 | o vendedor digita a senha do comprador | **senha + foto** | entrega pelo vendedor |
+| 2 | **os dois trocam as senhas** | **as duas senhas + foto do vendedor** | retirada no local |
 
-**São só essas três, e todas passam por senha conferida ou pelo próprio
-comprador.** Nenhuma delas deixa o vendedor concluir sozinho.
+Os dois passam pela **mesma função interna** — nenhum caminho pode esquecer de
+abrir o prazo de teste.
+
+> **NÃO CRIE UM TERCEIRO CAMINHO.** Nem botão de "já recebi", nem "declarar
+> entrega", nem confirmação automática por tempo, nem liberação por decisão do
+> dono. Cada um deles parece resolver um caso difícil e todos têm o mesmo
+> defeito: permitem que um pedido seja concluído **sem que as duas pessoas
+> estejam frente a frente**. É exatamente isso que a senha existe para provar.
+>
+> Um botão de "já recebi" tocado por engano entrega o pedido e começa a contar
+> o prazo de devolução sem o comprador ter recebido nada. Uma declaração do
+> vendedor aceita por silêncio paga quem não entregou. **A regra única é o que
+> dá segurança: o pedido só anda quando as senhas são trocadas na hora, no
+> lugar, entre as duas pessoas.**
+
+### A ordem no encontro: senha primeiro, produto depois
+
+Escreva isso na tela, no momento da entrega, para os dois lados:
+
+> **troque as senhas antes de entregar o produto.**
+> *vendedor: só solte a peça depois que as duas senhas estiverem conferidas.*
+> *comprador: só passe sua senha quando o produto estiver na sua mão.*
+
+Parece detalhe e é a regra inteira. Feita nessa ordem, **nenhum dos dois
+consegue prejudicar o outro**: o comprador não leva a peça sem confirmar, e o
+vendedor não confirma sem entregar. Feita ao contrário, alguém fica na mão — e
+não há tela que conserte isso depois.
+
+O app mostra esse aviso:
+
+- na notificação do pagamento, para os dois;
+- em **faixa destacada no topo do pedido**, enquanto a senha não for conferida;
+- na própria tela de conferir a senha, em cima do campo.
 
 ### Impedir que a senha seja esquecida
 
-A senha esquecida é o começo de quase todo problema deste capítulo. **Atacar
-isso é mais barato que resolver depois**, então o app insiste:
-
-- no momento em que o pedido é pago, as duas partes recebem uma notificação
-  explicando que **a entrega só vale com a senha conferida**;
-- a tela do pedido mostra a pendência em **faixa destacada no topo**, não num
-  canto: *"esta entrega ainda não foi confirmada"*;
 - **lembretes em 24h e em 48h** para os dois, enquanto a senha não for
   conferida;
 - a senha **não vence**. Se ninguém digitou na hora, o vendedor pede pelo chat
   do pedido depois e digita — o caminho normal continua aberto até o fim do
-  prazo.
+  prazo de 7 dias;
+- **se só uma das senhas for conferida** na retirada, o pedido fica em "retirada
+  pela metade" e **avisa o dono depois de 24 horas**. Ele não conclui nem
+  cancela sozinho: metade da troca é sinal de que algo saiu do roteiro.
 
-### Quando o comprador recebeu e não confirma
+### Se a senha nunca for conferida
 
-O produto já está com ele, a senha não foi conferida, e ele não responde. **Sem
-uma saída aqui, o vendedor honesto perde o produto e o dinheiro** quando o
-cancelamento automático estourar — e a troca de senhas, que existe para
-proteger os dois lados, estaria protegendo só um.
+O pedido **cancela no prazo de 7 dias e o comprador é reembolsado**. É a
+consequência de não ter caminho alternativo, e é assumida de propósito.
 
-O vendedor abre **"entreguei e não consegui a senha"**:
-
-1. **foto da entrega**, tirada na hora, com data e hora;
-2. o motivo em uma linha;
-3. o comprador é avisado na hora: *"o vendedor diz que entregou. Confirme ou
-   conteste em 3 dias."*
-
-Se o comprador confirmar, vira ENTREGUE. Se contestar, abre disputa.
-
-**E se ele não responder nada, o pedido NÃO é confirmado nem cancelado pelo
-relógio: cai no painel do dono**, marcado como `ENTREGA_CONTESTAVEL`, com a
-foto, o chat do pedido e os horários. Quem decide é você:
-
-| O que você vê | O que costuma ser |
-|---|---|
-| foto do produto na porta do comprador, com horário, e chat combinando a entrega | a Maria entregou; libere o vendedor |
-| foto genérica, sem contexto, sem conversa nenhuma no chat | não houve entrega; cancele e devolva |
-| chat com o comprador reclamando do produto | não é caso de entrega, é de devolução |
-
-> **A diferença entre isto e a confirmação automática que foi removida é uma
-> só, e é toda a diferença: quem decide.**
->
-> Lá era o relógio: o vendedor declarava, o comprador não via a notificação, e
-> três dias depois o sistema dava ganho de causa a quem falou por último. Aqui
-> é uma pessoa olhando uma foto com data e hora, ao lado da conversa das duas
-> partes. Vendedor mentiroso não tem o que mostrar; vendedor honesto tem.
->
-> Custa alguns casos por mês no seu painel. É o preço de os dois lados estarem
-> protegidos em vez de um só.
-
-Não existe quarta porta **automática**.
-
-> **Não crie uma porta "o vendedor declara e o sistema confirma depois de
-> alguns dias".** Ela parece resolver o caso do comprador que some, e é
-> exatamente o buraco que derruba o resto: com ela, basta o vendedor pedir a
-> senha por telefone — ou nem isso — para receber por uma entrega que nunca
-> aconteceu, e o comprador que não viu a notificação descobre tarde demais.
->
-> Os dois casos difíceis — o comprador que não abre a porta e o comprador que
-> recebeu e não confirma — terminam no **painel do dono**, com foto e
-> histórico. Nenhum relógio libera dinheiro sozinho, em nenhuma direção.
+Por isso a ordem "senha primeiro, produto depois" é martelada na tela: quem
+seguir a ordem nunca chega nesse caso. Quem entregar o produto antes de
+conferir a senha está fazendo um acordo de confiança por fora do aplicativo, e
+o aplicativo não tem como cobrir isso sem abrir a porta que ele fecha.
 
 ---
 
@@ -701,8 +693,8 @@ pode virar devolução.
 ### As telas
 
 **Comprar:** Home, Busca, Produto, Loja, Checkout, Pedido (com linha do tempo),
-Reembolso, Curtidos, FazerOferta, Ofertas, Avaliar, **MinhaSenha** (os 4 dígitos
-do comprador), **ConfirmarRetirada** (digitar a senha do vendedor)
+Reembolso, Curtidos, FazerOferta, Ofertas, Avaliar, **MinhaSenha** (a senha do
+comprador, em letra grande), **ConfirmarRetirada** (digitar a senha do vendedor)
 
 **Vender:** Vendas, NovoAnuncio, MinhaLoja, MinhasVendas, **ConfirmarEntrega**
 (digitar a senha do comprador + foto), **MinhaSenhaDeVendedor** (os 4 dígitos
@@ -984,7 +976,9 @@ Para ninguém refazer discussão já resolvida.
 | 5 tentativas de entrega, com foto em cada uma | tentativa prova que o vendedor **foi**, não que o comprador **recebeu** — por isso ela alimenta a decisão do dono, e nunca libera dinheiro sozinha |
 | Esgotadas as tentativas, quem decide é o dono | o caso do comprador sumido é raro e ambíguo demais para relógio resolver; com as 5 fotos em ordem, uma pessoa decide em trinta segundos |
 | **Sem confirmação automática por tempo** | era a última porta dos fundos: bastava declarar e esperar para receber por entrega que nunca aconteceu, e quem não visse a notificação descobriria tarde demais |
-| Entrega declarada vai para o painel, não para o relógio | a troca de senhas existe para proteger os dois lados; sem uma saída para o vendedor que entregou e não conseguiu a senha, ela protegeria só o comprador |
+| **Senha é o único caminho, sem exceção nenhuma** | toda exceção examinada — botão de "já recebi", declaração do vendedor, confirmação por tempo, liberação pelo dono — permitia concluir um pedido sem as duas pessoas frente a frente, que é justamente o que a senha prova. Uma regra única e sem brecha protege mais que um conjunto de saídas, mesmo que cada saída pareça razoável sozinha |
+| "Senha primeiro, produto depois" escrito na tela | feita nessa ordem, a troca impede que qualquer um dos dois prejudique o outro; é a regra inteira em cinco palavras, e nenhuma tela conserta depois quem fez ao contrário |
+| Senha nunca conferida cancela e reembolsa | é a consequência assumida de não ter caminho alternativo; cobrir esse caso exigiria abrir exatamente a porta que a regra única fecha |
 | Lembretes em 24h e 48h enquanto a senha não é conferida | senha esquecida é o começo de quase todo problema deste capítulo, e insistir custa menos que arbitrar depois |
 | A senha não vence | o vendedor que esqueceu de digitar na hora pede pelo chat depois; fechar essa porta criaria um problema onde não havia |
 | Uma conta que compra e vende, sem cadastro de vendedor | é o modelo do Enjoei; cadastro grande no começo é onde a pessoa desiste, então os dados de vendedor são pedidos só na hora em que fazem falta |

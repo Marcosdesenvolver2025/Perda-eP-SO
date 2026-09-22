@@ -413,8 +413,15 @@ function andarRapido(partida, missao, dt) {
 
   // Bater custa tempo. É a única penalidade do modo, e é a que importa:
   // atravessar o trânsito no talo deixa de ser grátis.
-  if (carro.forcaImpacto > 1.2) {
-    const perda = limitar(carro.forcaImpacto * 0.35, 0.6, 4);
+  //
+  // Mas a cobrança tem carência. Encostado no guarda-corpo o carro produz um
+  // impacto por QUADRO, e sem carência raspar a mureta por dois segundos
+  // custava a partida inteira — castigo que não ensina nada, porque quem está
+  // raspando já está pagando em velocidade.
+  missao.carencia = Math.max(0, (missao.carencia || 0) - dt);
+  if (carro.forcaImpacto > 1.2 && missao.carencia <= 0) {
+    const perda = limitar(carro.forcaImpacto * 0.30, 0.5, 2.5);
+    missao.carencia = 1.2;
     missao.tempoLimite -= perda;
     missao.aviso = `−${perda.toFixed(1)}s`;
     return { tipo: 'aviso', texto: `−${perda.toFixed(1)}s`, cor: '#e8563a' };

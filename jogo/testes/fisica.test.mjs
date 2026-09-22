@@ -333,3 +333,31 @@ test('o automático continua trocando sozinho', () => {
   assert.equal(carro.afogando, 0, 'no automático nunca afoga');
   assert.equal(carro.cortando, false, 'nem fica no corte');
 });
+
+/**
+ * O SINAL DO VOLANTE.
+ *
+ * Este teste existe porque o jogo passou semanas com a direção invertida: o
+ * volante girava para a direita e o carro ia para a esquerda. Nenhum teste
+ * pegava, porque todos conferiam magnitude — "virou", "virou mais", "voltou ao
+ * meio" — e nunca PARA QUE LADO. Quem joga corrige sozinho em dois minutos e
+ * acha que a culpa é sua.
+ *
+ * A referência é a do próprio código: `direita(a) = (cos a, -sen a)`. Virando
+ * para a direita, o carro tem que terminar deslocado NESSA direção.
+ */
+test('volante para a direita leva o carro para a direita', () => {
+  for (const anguloInicial of [0, Math.PI / 2, -2.1, 3.0]) {
+    const direitaX = Math.cos(anguloInicial);
+    const direitaZ = -Math.sin(anguloInicial);
+
+    for (const [rotulo, volante, esperado] of [['direita', 1, 1], ['esquerda', -1, -1]]) {
+      const carro = criarCarro(carroPorId('diplomata').ficha, { x: 0, z: 0 }, anguloInicial);
+      simular(carro, { ...FUNDO, volante }, 2.2);
+      const desvio = carro.x * direitaX + carro.z * direitaZ;
+      assert.ok(Math.sign(desvio) === esperado && Math.abs(desvio) > 0.8,
+        `largando em ${anguloInicial.toFixed(2)} rad e virando para a ${rotulo}, `
+        + `o carro andou ${desvio.toFixed(2)} m para a direita do motorista`);
+    }
+  }
+});

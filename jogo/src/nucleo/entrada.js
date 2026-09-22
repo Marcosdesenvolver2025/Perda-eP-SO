@@ -172,6 +172,9 @@ export class Entrada {
       }
     }
     this.volanteVisual += (this.volanteAlvo - this.volanteVisual) * Math.min(1, dt * 18);
+    // Positivo = direita, que é para onde o aro girou na tela (o y da tela
+    // aponta para baixo, então ângulo crescente é sentido horário). Quem
+    // converte isso em esterço é a física.
     c.volante = limitar(this.volanteAlvo / GIRO_MAXIMO, -1, 1);
 
     const acelerando = teclaFrente || this.tocando('acelerador');

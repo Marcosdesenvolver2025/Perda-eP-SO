@@ -98,15 +98,38 @@ export function resolverColisoes(carro, colisores, aoBater) {
     caixaCarro.z = carro.z;
 
     const severidade = c.leve ? 0.35 : c.parede ? 1.0 : 0.8;
-    if (velocidade > 0.35) {
+
+    // Batida é velocidade CONTRA a parede, não velocidade no geral.
+    //
+    // Enquanto isto media a velocidade total, quem encostasse o nariz no
+    // guarda-corpo com o pé no acelerador levava uma batida por quadro: o
+    // solver empurrava para fora, o motor empurrava de volta, e o carro se
+    // destruía sozinho parado ali em doze segundos. Raspar a mureta de lado
+    // tem que custar velocidade, não lataria.
+    const seno = Math.sin(carro.angulo), cosseno = Math.cos(carro.angulo);
+    const mundoX = -seno * carro.vx + cosseno * carro.vy;
+    const mundoZ = -cosseno * carro.vx - seno * carro.vy;
+    const aproximacao = mundoX * toque.nx + mundoZ * toque.nz;
+
+    // E mesmo uma aproximação de verdade só conta uma vez a cada carência: um
+    // toque dura vários quadros, e cada quadro não é uma batida nova.
+    if (aproximacao > 0.55 && carro.toqueRecente <= 0) {
+      carro.toqueRecente = 0.45;
       relatorio.batidas++;
-      relatorio.forca = Math.max(relatorio.forca, velocidade * severidade);
-      bater(carro, -toque.nx, -toque.nz, severidade);
-      if (aoBater) aoBater(c, velocidade * severidade);
+      relatorio.forca = Math.max(relatorio.forca, aproximacao * severidade);
+      bater(carro, -toque.nx, -toque.nz, severidade, aproximacao);
+      if (aoBater) aoBater(c, aproximacao * severidade);
     } else {
-      // Encostou parado: só trava, sem contar dano.
-      carro.vx *= 0.2;
-      carro.vy *= 0.2;
+      // Encostado: perde o que estava indo para dentro da parede e segue.
+      if (aproximacao > 0) {
+        const perde = aproximacao * 1.02;
+        const px = mundoX - perde * toque.nx;
+        const pz = mundoZ - perde * toque.nz;
+        carro.vx = -seno * px - cosseno * pz;
+        carro.vy = cosseno * px - seno * pz;
+      }
+      carro.vx *= 0.86;
+      carro.vy *= 0.86;
     }
 
     if (c.leve && velocidade > 2.2) {

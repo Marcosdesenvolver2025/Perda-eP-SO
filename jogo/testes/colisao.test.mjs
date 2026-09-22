@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import {
   caixaDoCarro, caixaDoColisor, sobreposicao, resolverColisoes, dentroDe, encaixe,
 } from '../src/jogo/colisao.js';
-import { criarCarro } from '../src/jogo/fisica.js';
+import { criarCarro, passo } from '../src/jogo/fisica.js';
 import { carroPorId } from '../src/jogo/carros.js';
 
 const MODELO = carroPorId('pipoca');   // 3.72 m × 1.60 m
@@ -55,7 +55,9 @@ test('o giro do retângulo é levado em conta', () => {
 });
 
 test('resolver a colisão tira o carro de dentro do obstáculo', () => {
-  const carro = carroEm(0, 0);
+  // Virado para +X e andando para lá: o bloco em x=1.2 está no CAMINHO dele.
+  // frente(-PI/2) = (1, 0).
+  const carro = carroEm(0, 0, -Math.PI / 2);
   carro.vx = 10;
   const colisores = [bloco(1.2, 0, 2, 2)];
   resolverColisoes(carro, colisores);
@@ -63,6 +65,36 @@ test('resolver a colisão tira o carro de dentro do obstáculo', () => {
   assert.equal(ainda, null, 'depois de resolver, não pode sobrar sobreposição');
   assert.ok(Math.abs(carro.vx) < 10, 'a batida tem que custar velocidade');
   assert.ok(carro.dano > 0, 'a batida tem que marcar a lataria');
+});
+
+test('passar raspando na parede custa velocidade, não lataria', () => {
+  // Andando ao longo da parede, encostado nela. A velocidade é alta, mas
+  // nenhuma parte dela vai CONTRA a parede — não é batida, é raspão.
+  const carro = carroEm(0, 0);
+  carro.vx = 18;
+  const parede = { ...bloco(1.55, 0, 0.4, 40), parede: true };
+  const relatorio = resolverColisoes(carro, [parede]);
+  assert.equal(relatorio.batidas, 0, 'raspar de lado virou batida');
+  assert.equal(carro.dano, 0, 'raspar de lado machucou a lataria');
+});
+
+/**
+ * O caso que destruía o carro sozinho: nariz no guarda-corpo, pé no
+ * acelerador. O solver empurra para fora, o motor empurra de volta, e
+ * enquanto a batida era medida pela velocidade TOTAL isso contava uma batida
+ * por quadro — doze segundos parado ali e o carro estava perdido.
+ */
+test('encostado na parede acelerando não se destrói sozinho', () => {
+  const carro = carroEm(0, 0, -Math.PI / 2);
+  const parede = { ...bloco(2.4, 0, 0.5, 40), parede: true };
+  for (let i = 0; i < 360; i++) {          // 6 segundos a 60 quadros
+    carro.vx = Math.max(carro.vx, 0.9);    // o motor insistindo contra o muro
+    passo(carro, { acelerador: 1, freio: 0, volante: 0, mao: false, sentido: 1 }, 1 / 60);
+    resolverColisoes(carro, [parede]);
+  }
+  assert.ok(carro.dano < 0.35,
+    `seis segundos encostado no muro tiraram ${Math.round(carro.dano * 100)}% da lataria`);
+  assert.ok(carro.x < 2.4, 'e o carro não pode ter furado o muro');
 });
 
 test('bater com tudo não atravessa a parede', () => {

@@ -56,6 +56,7 @@ export function criarCarro(ficha, posicao = { x: 0, z: 0 }, angulo = 0) {
     aceleracaoLateral: 0,   // em g — a carga frágil se importa com isso
     aceleracaoFrontal: 0,
     forcaImpacto: 0,        // pico do último toque, zerado por quem consome
+    toqueRecente: 0,        // carência entre batidas: um toque dura vários quadros
     distancia: 0,           // metros rodados
     combustivelGasto: 0,
     noChao: true,
@@ -79,7 +80,21 @@ export function passo(carro, comandos, dt, pista = { atrito: 1 }) {
   // velocidade para o carro não ficar nervoso demais na reta.
   const velocidade = Math.hypot(carro.vx, carro.vy);
   const reducao = 1 / (1 + velocidade * f.reducaoEsterco);
-  const alvoEsterco = comandos.volante * f.estercoMaximo * Math.max(0.28, reducao);
+
+  // O MENOS AQUI É O ASSUNTO INTEIRO.
+  //
+  // `comandos.volante` é positivo para a DIREITA — é o que a tecla da direita
+  // manda e é para onde o dedo girou o aro na tela. Só que o ângulo do carro
+  // cresce para o outro lado: `frente(a) = (-sen a, -cos a)` gira para -X, e
+  // -X é a ESQUERDA do motorista, porque `direita(a) = (cos a, -sen a)` dá +X.
+  //
+  // Sem este menos o jogo dirigia invertido: volante para a direita, carro
+  // para a esquerda. É um erro que não derruba teste nenhum — todos mediam
+  // QUANTO o carro virava, nenhum media PARA QUE LADO — e que some jogando,
+  // porque a pessoa corrige sozinha em dois minutos e acha que é ela que está
+  // errada. O esterço segue positivo-para-a-esquerda daqui para dentro, que é
+  // o que deixa a roda dianteira desenhada como `angulo + esterco`.
+  const alvoEsterco = -comandos.volante * f.estercoMaximo * Math.max(0.28, reducao);
   const taxa = f.velocidadeVolante * dt;
   carro.esterco += limitar(alvoEsterco - carro.esterco, -taxa, taxa);
 
@@ -87,6 +102,7 @@ export function passo(carro, comandos, dt, pista = { atrito: 1 }) {
   carro.sentido = comandos.sentido;
   atualizarMarcha(carro, comandos, dt);
   if (carro.trocouMarcha > 0) carro.trocouMarcha = Math.max(0, carro.trocouMarcha - dt);
+  if (carro.toqueRecente > 0) carro.toqueRecente = Math.max(0, carro.toqueRecente - dt);
 
   // --- carga nos eixos, com transferência de peso -----------------------
   // Acelerar joga peso para trás (a traseira ganha aderência), frear joga para
@@ -346,9 +362,18 @@ function gastarCombustivel(carro, acelerador, dt) {
   carro.combustivelGasto += litros;
 }
 
-/** Aplica um impacto: perde velocidade, ganha dano, dá um tranco no giro. */
-export function bater(carro, normalX, normalZ, severidade) {
-  const velocidade = Math.hypot(carro.vx, carro.vy);
+/**
+ * Aplica um impacto: perde velocidade, ganha dano, dá um tranco no giro.
+ *
+ * `velocidadeDeImpacto` é a velocidade CONTRA o obstáculo. Quem chama sabe
+ * disso melhor que aqui — de lado, raspando, a velocidade total é alta e o
+ * impacto é quase nada. Sem ela, cai na velocidade total, que é o pior
+ * palpite possível mas é melhor que nenhum.
+ */
+export function bater(carro, normalX, normalZ, severidade, velocidadeDeImpacto) {
+  const velocidade = velocidadeDeImpacto !== undefined
+    ? Math.abs(velocidadeDeImpacto)
+    : Math.hypot(carro.vx, carro.vy);
   const impacto = velocidade * severidade;
   carro.forcaImpacto = Math.max(carro.forcaImpacto, impacto);
   carro.dano = limitar(carro.dano + impacto * 0.012, 0, 1);

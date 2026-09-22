@@ -347,7 +347,8 @@ export function trocarMarcha(carro, direcao) {
   const nova = limitar(carro.marcha + direcao, 1, f.relacoes.length);
   if (nova === carro.marcha) return 'no-limite';
   carro.marcha = nova;
-  carro.trocouMarcha = 0.22;
+  // Câmbio melhorado corta menos tempo de embreagem pisada.
+  carro.trocouMarcha = 0.22 * (1 - (f.trocaMaisRapida || 0));
   return 'trocou';
 }
 

@@ -17,6 +17,7 @@ import { construirCarro } from './motor/modelos.js';
 
 import { criarCarro, passo as passoFisica, trocarMarcha } from './jogo/fisica.js';
 import { carroPorId } from './jogo/carros.js';
+import { fichaMelhorada, niveisDe, comprarMelhoria } from './jogo/melhorias.js';
 import { clima, atritoDe } from './jogo/clima.js';
 import { gerarMundo, pisoEm } from './jogo/mundo.js';
 import { resolverColisoes } from './jogo/colisao.js';
@@ -155,6 +156,12 @@ class Jogo {
         if (r.ok) this.som.vitoria(); else this.som.derrota();
         this.abrirGaragem();
       },
+      melhorar: (modelo, peca) => {
+        const r = comprarMelhoria(this.progresso, modelo.id, peca);
+        if (r.ok) { Progresso.salvar(this.progresso); this.som.ponto(); }
+        else this.som.derrota();
+        this.abrirGaragem();
+      },
     });
   }
 
@@ -251,7 +258,14 @@ class Jogo {
   }
 
   montarPartida(descritor) {
-    const modelo = carroPorId(this.progresso.carroAtual);
+    const base = carroPorId(this.progresso.carroAtual);
+    // O carro que entra na pista é o de fábrica MAIS o que foi comprado de
+    // melhoria. A ficha do catálogo fica intacta: ela é usada também pelo
+    // trânsito e pelos carros estacionados, que não são seus.
+    const modelo = {
+      ...base,
+      ficha: fichaMelhorada(base, niveisDe(this.progresso, base.id)),
+    };
     const ambiente = { ...clima(descritor.clima) };
 
     let missao;
@@ -790,8 +804,172 @@ class Jogo {
       }
     }
     ctx.restore();
+
+    this.desenharInstrumentos(ctx, p, L, A, topo);
+  }
+
+  /**
+   * Os instrumentos do painel, na câmera de dentro do carro.
+   *
+   * Velocímetro grande no meio, marcador de combustível à direita, as duas
+   * setas e o triângulo do pisca-alerta entre eles — a disposição de painel de
+   * carro popular, que é o que o carro do jogo é. De fora da cabine nada disso
+   * aparece: lá o painel é o mostradorzinho do HUD.
+   */
+  desenharInstrumentos(ctx, p, L, A, topo) {
+    const carro = p.carro;
+    const alturaPainel = A - topo;
+    if (alturaPainel < A * 0.12) return;
+
+    const cy = topo + alturaPainel * 0.60;
+    const raio = Math.min(alturaPainel * 0.40, L * 0.075);
+    const cx = L * 0.42;
+
+    // Velocímetro.
+    relogioDoPainel(ctx, cx, cy, raio, {
+      valor: Math.abs(p.carro.vx) * 3.6,
+      maximo: 200,
+      passo: 20,
+      rotulo: 'km/h',
+      corPonteiro: '#e03a2a',
+      digitos: true,
+    });
+
+    // Combustível, menor e à direita.
+    const raioTanque = raio * 0.66;
+    const cxTanque = cx + raio + raioTanque + L * 0.045;
+    const tanque = p.missao.combustivel !== undefined
+      ? carro.combustivel / p.missao.combustivel
+      : carro.combustivel / carro.ficha.tanque;
+    relogioDoPainel(ctx, cxTanque, cy, raioTanque, {
+      valor: limitar(tanque, 0, 1),
+      maximo: 1,
+      passo: 0.5,
+      extremos: ['E', 'F'],
+      corPonteiro: tanque < 0.18 ? '#ff5b4a' : '#e03a2a',
+    });
+
+    // Setas e pisca-alerta, entre os dois relógios.
+    const meio = (cx + raio + cxTanque - raioTanque) / 2;
+    const piscando = Math.sin(this.tempoReal * 5.2) > 0;
+    const volante = this.entrada.comandos.volante;
+    const seta = (x, lado, aceso) => {
+      ctx.save();
+      ctx.translate(x, cy - raio * 0.12);
+      ctx.scale(lado, 1);
+      ctx.fillStyle = aceso ? '#4ee07a' : 'rgba(80,96,84,0.55)';
+      ctx.beginPath();
+      ctx.moveTo(-raio * 0.20, 0);
+      ctx.lineTo(0, -raio * 0.20);
+      ctx.lineTo(0, -raio * 0.09);
+      ctx.lineTo(raio * 0.20, -raio * 0.09);
+      ctx.lineTo(raio * 0.20, raio * 0.09);
+      ctx.lineTo(0, raio * 0.09);
+      ctx.lineTo(0, raio * 0.20);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    };
+    seta(meio - raio * 0.34, -1, piscando && volante < -0.35);
+    seta(meio + raio * 0.34, 1, piscando && volante > 0.35);
+
+    // Triângulo do pisca-alerta: acende quando a lataria está no limite.
+    const alerta = carro.dano > 0.66;
+    ctx.save();
+    ctx.strokeStyle = alerta && piscando ? '#ff5b4a' : 'rgba(120,70,60,0.55)';
+    ctx.lineWidth = Math.max(2, raio * 0.07);
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(meio, cy + raio * 0.10);
+    ctx.lineTo(meio + raio * 0.20, cy + raio * 0.44);
+    ctx.lineTo(meio - raio * 0.20, cy + raio * 0.44);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
   }
 }
+
+/**
+ * Um relógio de painel: aro escuro, riscos, números e ponteiro.
+ *
+ * Serve tanto para o velocímetro quanto para o marcador de combustível — o
+ * segundo é só menor, com menos riscos e com letra em vez de número nas
+ * pontas. Um desenho só para os dois evita que eles fiquem de famílias
+ * diferentes no mesmo painel, que é o que mais denuncia painel montado às
+ * pressas.
+ */
+function relogioDoPainel(ctx, cx, cy, raio, opcoes) {
+  const inicio = Math.PI * 0.76;
+  const fim = Math.PI * 2.24;
+  const fracao = limitar(opcoes.valor / opcoes.maximo, 0, 1);
+
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const fundo = ctx.createRadialGradient(cx - raio * 0.3, cy - raio * 0.4, raio * 0.1, cx, cy, raio);
+  fundo.addColorStop(0, '#2a2f36');
+  fundo.addColorStop(1, '#0d1013');
+  ctx.fillStyle = fundo;
+  ctx.beginPath();
+  ctx.arc(cx, cy, raio, 0, TAU);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(210,216,224,0.55)';
+  ctx.lineWidth = Math.max(2, raio * 0.055);
+  ctx.stroke();
+
+  // Riscos e números.
+  const quantos = Math.round(opcoes.maximo / opcoes.passo);
+  for (let i = 0; i <= quantos; i++) {
+    const t = i / quantos;
+    const a = inicio + (fim - inicio) * t;
+    const grande = i % 2 === 0;
+    ctx.strokeStyle = t > 0.82 ? 'rgba(232,74,58,0.9)' : 'rgba(236,240,246,0.78)';
+    ctx.lineWidth = Math.max(1.4, raio * (grande ? 0.045 : 0.028));
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * raio * 0.84, cy + Math.sin(a) * raio * 0.84);
+    ctx.lineTo(cx + Math.cos(a) * raio * (grande ? 0.68 : 0.74),
+      cy + Math.sin(a) * raio * (grande ? 0.68 : 0.74));
+    ctx.stroke();
+
+    if (opcoes.digitos && grande) {
+      ctx.fillStyle = 'rgba(236,240,246,0.85)';
+      ctx.font = `600 ${Math.round(raio * 0.17)}px ${FONTE_PAINEL}`;
+      ctx.fillText(String(Math.round(opcoes.maximo * t)),
+        cx + Math.cos(a) * raio * 0.54, cy + Math.sin(a) * raio * 0.54);
+    }
+  }
+  if (opcoes.extremos) {
+    ctx.fillStyle = 'rgba(236,240,246,0.85)';
+    ctx.font = `700 ${Math.round(raio * 0.26)}px ${FONTE_PAINEL}`;
+    ctx.fillText(opcoes.extremos[0],
+      cx + Math.cos(inicio) * raio * 0.52, cy + Math.sin(inicio) * raio * 0.52);
+    ctx.fillText(opcoes.extremos[1],
+      cx + Math.cos(fim) * raio * 0.52, cy + Math.sin(fim) * raio * 0.52);
+  }
+  if (opcoes.rotulo) {
+    ctx.fillStyle = 'rgba(236,240,246,0.55)';
+    ctx.font = `600 ${Math.round(raio * 0.15)}px ${FONTE_PAINEL}`;
+    ctx.fillText(opcoes.rotulo, cx, cy + raio * 0.42);
+  }
+
+  // Ponteiro, com o eixo por cima.
+  const a = inicio + (fim - inicio) * fracao;
+  ctx.strokeStyle = opcoes.corPonteiro;
+  ctx.lineWidth = Math.max(2, raio * 0.055);
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx - Math.cos(a) * raio * 0.14, cy - Math.sin(a) * raio * 0.14);
+  ctx.lineTo(cx + Math.cos(a) * raio * 0.78, cy + Math.sin(a) * raio * 0.78);
+  ctx.stroke();
+  ctx.fillStyle = '#20242a';
+  ctx.beginPath();
+  ctx.arc(cx, cy, raio * 0.11, 0, TAU);
+  ctx.fill();
+  ctx.restore();
+}
+
+const FONTE_PAINEL = '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
 
 /**
  * Vinheta de leve. O visual que o jogo persegue é de dia claro e ar limpo —

@@ -430,3 +430,55 @@ kbd {
 @media (prefers-reduced-motion: reduce) {
   .girar-o-celular svg { animation: none; transform: rotate(-90deg); }
 }
+
+/* --- melhorias do carro -------------------------------------------------- */
+
+.cartao__selo {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: var(--texto-fraco);
+}
+.cartao__selo--S { color: #ff9a3c; }
+.cartao__selo--A { color: #ffd24a; }
+.cartao__selo--B { color: #7fd1ff; }
+.cartao__selo--C { color: #8fe08a; }
+
+.melhorias {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin: 12px 0 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--borda);
+}
+
+.melhoria {
+  color: var(--cor-melhoria, #7fd1ff);
+  background: rgba(10, 16, 26, 0.45);
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  padding: 8px 8px 9px;
+  text-align: center;
+}
+.melhoria__icone { line-height: 0; }
+.melhoria__icone svg { width: 30px; height: 30px; }
+.melhoria__nome {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texto);
+  margin: 2px 0 5px;
+}
+.melhoria__niveis { display: flex; gap: 3px; justify-content: center; margin-bottom: 7px; }
+.melhoria__niveis i {
+  flex: 1;
+  max-width: 14px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.14);
+}
+.melhoria__niveis i.cheio { background: currentColor; }
+.melhoria .botao { width: 100%; padding: 7px 4px; font-size: 12px; }

@@ -15,6 +15,9 @@ import { FICHA_DOS_TIPOS } from '../jogo/missoes.js';
 import { FICHA_DOS_MODOS, LISTA_MODOS } from '../jogo/modos.js';
 import { formatarDinheiro, formatarTempo, limitar } from '../nucleo/matematica.js';
 import { temCarro } from '../jogo/progresso.js';
+import {
+  MELHORIAS, NIVEL_MAXIMO, niveisDe, precoDoProximo, classeDe, totalDeNiveis,
+} from '../jogo/melhorias.js';
 
 export class Telas {
   constructor(raiz) {
@@ -120,13 +123,22 @@ export class Telas {
       palco.appendChild(volanteTela);
       cartao.appendChild(palco);
 
+      const niveis = niveisDe(progresso, modelo.id);
+      const classe = classeDe(modelo, niveis);
       cartao.insertAdjacentHTML('beforeend', `
+        <p class="cartao__selo cartao__selo--${classe}">CLASSE ${classe}</p>
         <h3>${modelo.nome}</h3>
-        <p class="cartao__classe">${modelo.classe}</p>
+        <p class="cartao__classe">${modelo.classe} · nível ${totalDeNiveis(niveis)}/${MELHORIAS.length * NIVEL_MAXIMO}</p>
         <p class="cartao__texto">${modelo.descricao}</p>
         <p class="cartao__volante-nome">Volante: <strong>${modelo.volante.apelido}</strong></p>
         ${barrasDeFicha(modelo)}
       `);
+
+      // As melhorias só aparecem no carro que é seu: não dá para turbinar o
+      // que está na vitrine, e mostrar o botão apagado só confunde.
+      if (meu) {
+        cartao.appendChild(painelDeMelhorias(progresso, modelo, niveis, acoes));
+      }
 
       const rodapeCartao = elemento('div', 'cartao__acoes');
       if (atual) {
@@ -445,6 +457,85 @@ function barrasDeFicha(modelo) {
  * conteúdo desenhado é conteúdo que dá para mudar de cor, de tamanho e de
  * ideia sem reabrir editor nenhum.
  */
+/**
+ * A fileira de melhorias de um carro: motor, freio, pneu, câmbio.
+ *
+ * Cada uma mostra o ícone, o nível em cinco tracinhos e o que custa subir
+ * mais um. É a tela onde o dinheiro de um serviço vira alguma coisa — e é por
+ * isso que ela fica junto do carro e não escondida num menu.
+ */
+function painelDeMelhorias(progresso, modelo, niveis, acoes) {
+  const no = elemento('div', 'melhorias');
+  for (const m of MELHORIAS) {
+    const nivel = niveis[m.id];
+    const preco = precoDoProximo(m.id, nivel);
+    const noMaximo = preco === null;
+    const podePagar = !noMaximo && progresso.dinheiro >= preco;
+
+    const item = elemento('div', 'melhoria');
+    item.style.setProperty('--cor-melhoria', m.cor);
+    item.title = m.resumo;
+    item.insertAdjacentHTML('beforeend', `
+      <div class="melhoria__icone">${iconeDeMelhoria(m.icone)}</div>
+      <div class="melhoria__nome">${m.nome}</div>
+      <div class="melhoria__niveis">${
+  Array.from({ length: NIVEL_MAXIMO },
+    (_, i) => `<i class="${i < nivel ? 'cheio' : ''}"></i>`).join('')
+}</div>
+    `);
+    const b = botao(
+      noMaximo ? 'MÁX' : `+1 · ${formatarDinheiro(preco)}`,
+      noMaximo ? 'desabilitado' : podePagar ? 'principal' : 'desabilitado',
+      noMaximo || !podePagar ? null : () => acoes.melhorar(modelo, m.id),
+    );
+    if (noMaximo || !podePagar) b.disabled = true;
+    item.appendChild(b);
+    no.appendChild(item);
+  }
+  return no;
+}
+
+/** Os ícones das melhorias, desenhados aqui mesmo. */
+function iconeDeMelhoria(tipo) {
+  const abre = '<svg viewBox="0 0 40 40" width="40" height="40" aria-hidden="true">';
+  if (tipo === 'motor') {
+    return `${abre}
+      <path d="M6 24V17h5l3-4h9l2 4h4a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3h-3v3H12v-3H9a3 3 0 0 1-3-3z"
+        fill="currentColor" opacity="0.9"/>
+      <path d="M19 10l-3 7h5l-2 7 7-9h-5l3-5z" fill="#1b1f26"/>
+    </svg>`;
+  }
+  if (tipo === 'freio') {
+    return `${abre}
+      <circle cx="20" cy="20" r="13" fill="none" stroke="currentColor" stroke-width="3.5"/>
+      <circle cx="20" cy="20" r="5" fill="currentColor"/>
+      <g fill="currentColor" opacity="0.75">
+        <circle cx="20" cy="11" r="1.9"/><circle cx="20" cy="29" r="1.9"/>
+        <circle cx="11" cy="20" r="1.9"/><circle cx="29" cy="20" r="1.9"/>
+      </g>
+      <path d="M30 9a15 15 0 0 1 0 22" fill="none" stroke="currentColor"
+        stroke-width="4" stroke-linecap="round" opacity="0.55"/>
+    </svg>`;
+  }
+  if (tipo === 'pneu') {
+    return `${abre}
+      <circle cx="20" cy="20" r="14" fill="currentColor" opacity="0.28"/>
+      <circle cx="20" cy="20" r="14" fill="none" stroke="currentColor" stroke-width="4"/>
+      <circle cx="20" cy="20" r="6.5" fill="none" stroke="currentColor" stroke-width="3"/>
+      <g stroke="currentColor" stroke-width="2.4">
+        <path d="M20 6.5v4M20 29.5v4M6.5 20h4M29.5 20h4"/>
+      </g>
+    </svg>`;
+  }
+  return `${abre}
+    <path d="M20 7v20" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/>
+    <path d="M20 13h9M20 20H11" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/>
+    <circle cx="20" cy="30" r="4.5" fill="currentColor"/>
+    <circle cx="30" cy="13" r="3" fill="currentColor" opacity="0.7"/>
+    <circle cx="10" cy="20" r="3" fill="currentColor" opacity="0.7"/>
+  </svg>`;
+}
+
 function selosDeModo(id) {
   const abre = '<svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">';
   if (id === 'estacionamento') {

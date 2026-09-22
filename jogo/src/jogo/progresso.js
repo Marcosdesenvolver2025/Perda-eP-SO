@@ -16,6 +16,8 @@ export function padrao() {
     estrelas: {},
     // O melhor placar de cada modo avulso. É o que faz voltar nele.
     recordes: { estacionamento: 0, rapido: 0, drift: 0 },
+    // Melhorias por carro: { besouro: { motor: 3, freio: 1, pneu: 0, cambio: 2 } }.
+    melhorias: {},
     ajustes: { qualidade: 'alta', som: true, camera: 'perseguicao', cambio: 'automatico' },
     numeros: { missoes: 0, metros: 0, batidas: 0, estrelas: 0 },
   };
@@ -35,6 +37,7 @@ export function carregar() {
       ajustes: { ...base.ajustes, ...(dados.ajustes || {}) },
       numeros: { ...base.numeros, ...(dados.numeros || {}) },
       recordes: { ...base.recordes, ...(dados.recordes || {}) },
+      melhorias: dados.melhorias || {},
       garagem: Array.isArray(dados.garagem) && dados.garagem.length ? dados.garagem : base.garagem,
       estrelas: dados.estrelas || {},
     };

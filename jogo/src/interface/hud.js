@@ -56,7 +56,9 @@ export class Hud {
     this.placar(ctx, partida, escala, L, margem);
     this.bussola(ctx, partida, escala, L, A, margem);
     this.minimapa(ctx, partida, escala, L, margem);
-    this.painelDoCarro(ctx, partida, escala, arranjo);
+    // Na cabine o painel do carro tem velocímetro e marcador de verdade,
+    // desenhados junto com o painel; o mostradorzinho aqui seria o segundo.
+    if (!arranjo.naCabine) this.painelDoCarro(ctx, partida, escala, arranjo);
     this.controles(ctx, partida, entrada, escala, L, A, margem, arranjo);
     this.avisos(ctx, partida, escala, L, A);
     this.desenharRecados(ctx, escala, L, A);
@@ -104,7 +106,9 @@ export class Hud {
       largura: larguraCambio,
       alturaLetra,
       x: L - margem * 0.6 - larguraCambio,
-      y: Math.max(margem + 150 * escala,
+      // Abaixo dos botões de câmera e pausa, que moram no mesmo canto: o
+      // botão é desenhado depois e estava cobrindo o P da alavanca.
+      y: Math.max(margem + 215 * escala,
         volante.y - raioVolante - alturaLetra * 4 - 10 * escala),
     };
 

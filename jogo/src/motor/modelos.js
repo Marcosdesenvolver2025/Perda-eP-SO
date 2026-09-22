@@ -386,6 +386,17 @@ export function grade(comprimento, altura) {
   });
 }
 
+/** Meio-fio: a guia baixa que cerca a ilha da rotatória. */
+export function meioFio(comprimento) {
+  return memo(`meioFio:${comprimento.toFixed(2)}`, () => {
+    const b = new Construtor();
+    b.caixa(0, 0.11, 0, 0.42, 0.22, comprimento, 0xdcd8cc,
+      { cores: { topo: 0xf0ece0 } });
+    b.caixa(0, 0.20, 0, 0.30, 0.06, comprimento, 0xd94434);
+    return b.terminar();
+  });
+}
+
 export function barreira(comprimento) {
   return memo(`barreira:${comprimento}`, () => {
     const b = new Construtor();

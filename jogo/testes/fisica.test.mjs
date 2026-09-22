@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { criarCarro, passo, bater, cantos, paraKmh } from '../src/jogo/fisica.js';
+import { criarCarro, passo, bater, cantos, paraKmh, trocarMarcha } from '../src/jogo/fisica.js';
 import { CARROS, carroPorId } from '../src/jogo/carros.js';
 import { normalizarAngulo } from '../src/nucleo/matematica.js';
 
@@ -241,4 +241,95 @@ test('nenhum carro do catálogo tem ficha faltando', () => {
     assert.ok(modelo.ficha.distribuicaoTraseira > 0.2 && modelo.ficha.distribuicaoTraseira < 0.8,
       `${modelo.nome} tem distribuição de peso impossível`);
   }
+});
+
+// ---------------------------------------------------------------------------
+// CÂMBIO MANUAL
+// ---------------------------------------------------------------------------
+
+const MANUAL = { ...FUNDO, cambio: 'manual' };
+
+test('no manual o carro não troca de marcha sozinho', () => {
+  const carro = criarCarro(carroPorId('pipoca').ficha);
+  simular(carro, MANUAL, 10);
+  assert.equal(carro.marcha, 1, 'ninguém pediu para trocar, então tem que continuar na primeira');
+  assert.ok(carro.cortando, 'na primeira a 10 s o motor tem que estar no corte');
+});
+
+test('o corte do limitador tira a aceleração', () => {
+  const carro = criarCarro(carroPorId('pipoca').ficha);
+  simular(carro, MANUAL, 8);
+  assert.ok(carro.cortando, 'precisa estar no corte para o teste valer');
+  const antes = carro.vx;
+  simular(carro, MANUAL, 3);
+  assert.ok(carro.vx - antes < 0.6,
+    `no corte o carro quase não ganha velocidade (ganhou ${(carro.vx - antes).toFixed(2)} m/s)`);
+});
+
+test('subir a marcha no corte destrava a aceleração', () => {
+  const carro = criarCarro(carroPorId('pipoca').ficha);
+  simular(carro, MANUAL, 8);
+  const noCorte = carro.vx;
+  assert.equal(trocarMarcha(carro, 1), 'trocou');
+  assert.equal(carro.marcha, 2);
+  simular(carro, MANUAL, 3);
+  assert.ok(carro.vx > noCorte + 2,
+    `depois de subir a marcha o carro tem que voltar a acelerar `
+    + `(foi de ${noCorte.toFixed(1)} para ${carro.vx.toFixed(1)} m/s)`);
+});
+
+test('sair do lugar em marcha alta afoga o motor', () => {
+  const daPrimeira = criarCarro(carroPorId('pipoca').ficha);
+  simular(daPrimeira, MANUAL, 4);
+
+  const daQuinta = criarCarro(carroPorId('pipoca').ficha);
+  daQuinta.marcha = 5;
+  simular(daQuinta, MANUAL, 4);
+
+  assert.ok(daQuinta.afogando > 0.5, 'parado em quinta o motor tem que estar afogando');
+  assert.ok(daQuinta.vx < daPrimeira.vx * 0.55,
+    `sair em quinta tem que ser bem pior que em primeira `
+    + `(${daQuinta.vx.toFixed(1)} contra ${daPrimeira.vx.toFixed(1)} m/s)`);
+});
+
+test('a embreagem protege a saída em primeira e segunda', () => {
+  for (const marcha of [1, 2]) {
+    const carro = criarCarro(carroPorId('pipoca').ficha);
+    carro.marcha = marcha;
+    simular(carro, MANUAL, 1.5);
+    assert.ok(carro.afogando < 0.2,
+      `saindo em ${marcha}ª o motor não pode afogar (afogando ${carro.afogando.toFixed(2)})`);
+    assert.ok(carro.vx > 1, `saindo em ${marcha}ª o carro tem que sair do lugar`);
+  }
+});
+
+test('trocar de marcha respeita os limites e a ré', () => {
+  const carro = criarCarro(carroPorId('pipoca').ficha);   // 5 marchas
+  assert.equal(trocarMarcha(carro, -1), 'no-limite', 'abaixo da primeira não há');
+  for (let i = 1; i < 5; i++) assert.equal(trocarMarcha(carro, 1), 'trocou');
+  assert.equal(carro.marcha, 5);
+  assert.equal(trocarMarcha(carro, 1), 'no-limite', 'acima da última não há');
+
+  carro.sentido = -1;
+  assert.equal(trocarMarcha(carro, 1), 'sem-cambio', 'na ré não se troca marcha');
+
+  const eletrico = criarCarro(carroPorId('silencio').ficha);
+  assert.equal(trocarMarcha(eletrico, 1), 'sem-cambio', 'elétrico não tem marcha para trocar');
+});
+
+test('a troca custa um instante de embreagem pisada', () => {
+  const carro = criarCarro(carroPorId('pipoca').ficha);
+  simular(carro, MANUAL, 6);
+  trocarMarcha(carro, 1);
+  assert.ok(carro.trocouMarcha > 0, 'logo depois da troca a embreagem está pisada');
+  simular(carro, MANUAL, 0.5);
+  assert.equal(carro.trocouMarcha, 0, 'e passa sozinha');
+});
+
+test('o automático continua trocando sozinho', () => {
+  const carro = criarCarro(carroPorId('pipoca').ficha);
+  simular(carro, FUNDO, 10);
+  assert.ok(carro.marcha > 2, `o automático tinha que ter subido as marchas (está na ${carro.marcha}ª)`);
+  assert.equal(carro.afogando, 0, 'no automático nunca afoga');
+  assert.equal(carro.cortando, false, 'nem fica no corte');
 });

@@ -18,7 +18,11 @@ export class Entrada {
     this.teclas = new Set();
     this.comandos = {
       acelerador: 0, freio: 0, volante: 0, mao: false, sentido: 1,
+      cambio: 'automatico',
     };
+    // Trocar de marcha é um ATO, não um estado: vale uma vez, não a cada
+    // passo de física. Fica guardado aqui até alguém consumir.
+    this.trocaPendente = 0;
     this.volanteVisual = 0;     // ângulo desenhado, em radianos
     this.volanteAlvo = 0;
     this.areaVolante = { x: 0, y: 0, raio: 80 };
@@ -26,6 +30,8 @@ export class Entrada {
     this.areaFreio = null;
     this.areaMarcha = null;
     this.areaMao = null;
+    this.areaSobeMarcha = null;
+    this.areaDesceMarcha = null;
     this.areaCamera = null;
     this.areaPausa = null;
 
@@ -48,6 +54,8 @@ export class Entrada {
       this.teclas.add(k);
       if (k === 'c') this.pedeCamera = true;
       if (k === 'escape' || k === 'p') this.pedePausa = true;
+      if (k === 'x' || k === 'e') this.trocaPendente = 1;
+      if (k === 'z' || k === 'q') this.trocaPendente = -1;
       if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) e.preventDefault();
     });
     window.addEventListener('keyup', (e) => this.teclas.delete(e.key.toLowerCase()));
@@ -73,7 +81,9 @@ export class Entrada {
           giroInicial: this.volanteAlvo,
         };
       }
-      if (alvo === 'marcha') this.trocarMarcha();
+      if (alvo === 'marcha') this.trocarSentido();
+      if (alvo === 'sobe-marcha') this.trocaPendente = 1;
+      if (alvo === 'desce-marcha') this.trocaPendente = -1;
       if (alvo === 'camera') this.pedeCamera = true;
       if (alvo === 'pausa') this.pedePausa = true;
       e.preventDefault();
@@ -112,6 +122,8 @@ export class Entrada {
     if (dentro(this.areaAcelerador)) return 'acelerador';
     if (dentro(this.areaFreio)) return 'freio';
     if (dentro(this.areaMarcha)) return 'marcha';
+    if (dentro(this.areaSobeMarcha)) return 'sobe-marcha';
+    if (dentro(this.areaDesceMarcha)) return 'desce-marcha';
     if (dentro(this.areaMao)) return 'mao';
     if (dentro(this.areaCamera)) return 'camera';
     if (dentro(this.areaPausa)) return 'pausa';
@@ -125,8 +137,16 @@ export class Entrada {
     return false;
   }
 
-  trocarMarcha() {
+  /** O botão D/R: troca o SENTIDO, não a marcha. */
+  trocarSentido() {
     this.comandos.sentido = this.comandos.sentido > 0 ? -1 : 1;
+  }
+
+  /** Devolve -1, 0 ou +1 e esquece — quem chama é quem aplica. */
+  consumirTrocaDeMarcha() {
+    const v = this.trocaPendente;
+    this.trocaPendente = 0;
+    return v;
   }
 
   /** Junta teclado e dedo e entrega um só conjunto de comandos. */
@@ -200,6 +220,7 @@ export class Entrada {
     this.comandos.freio = 0;
     this.comandos.volante = 0;
     this.comandos.sentido = 1;
+    this.trocaPendente = 0;
     this.ponteiros.clear();
     this.arrasto = null;
   }

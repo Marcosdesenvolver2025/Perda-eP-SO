@@ -23,6 +23,7 @@ import { paraKmh } from './fisica.js';
 import * as modelos from '../motor/modelos.js';
 import { CARROS } from './carros.js';
 import { construirCarro } from '../motor/modelos.js';
+import { montarModo, andarModo, avaliarModo, alvoDoModo } from './modos.js';
 
 export const TIPOS = ['baliza', 'vaga', 'entrega', 'economia', 'slalom', 'escolta', 'carga'];
 
@@ -125,6 +126,10 @@ export function gerarCarreira(semente, quantidade = 40) {
 
 /** Constrói o mundo que a missão precisa e cria os objetivos. */
 export function montarMissao(descritor, modeloCarro) {
+  // Modo avulso é outra coisa: mesma forma de missão, outras regras. Quem
+  // monta é o modos.js, e daqui para frente nada mais precisa saber disso.
+  if (descritor.modo) return montarModo(descritor, modeloCarro);
+
   const sortear = criarSorteio(descritor.semente ^ 0x7b31);
   const precisaPatio = descritor.tipo === 'vaga';
 
@@ -478,6 +483,7 @@ function comprimentoDoPercurso(inicio, pontos) {
 export function atualizarMissao(partida, dt) {
   const missao = partida.missao;
   if (missao.concluida || missao.falhou) return null;
+  if (missao.descritor.modo) return andarModo(partida, dt);
   const carro = partida.carro;
   let evento = null;
 
@@ -641,6 +647,7 @@ function terminar(missao, sucesso, motivo) {
  */
 export function avaliarMissao(partida) {
   const missao = partida.missao;
+  if (missao.descritor.modo) return avaliarModo(partida);
   const carro = partida.carro;
   const e = partida.estatisticas;
 
@@ -718,6 +725,7 @@ export function avaliarMissao(partida) {
 
 /** Para onde a bússola aponta agora. */
 export function alvoAtual(missao) {
+  if (missao.descritor.modo) return alvoDoModo(missao);
   switch (missao.descritor.tipo) {
     case 'baliza':
     case 'vaga': return missao.vagaAlvo;

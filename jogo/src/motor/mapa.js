@@ -36,6 +36,8 @@ export function gerarMapa(mundo, ambiente, qualidade = 'alta') {
 
   // 2. Calçada por baixo, asfalto por cima: a calçada vira a moldura da rua.
   for (const via of mundo.vias) faixaDaVia(ctx, via, mundo.calcada, f.corCalcada, true);
+  for (const anel of mundo.aneis) faixaCircular(ctx, anel, mundo.calcada, f.corCalcada, true);
+  for (const r of mundo.rotatorias) faixaCircular(ctx, r, mundo.calcada, f.corCalcada, true);
   for (const via of mundo.vias) faixaDaVia(ctx, via, 0, f.corAsfalto, false);
 
   if (mundo.patio) {
@@ -52,6 +54,20 @@ export function gerarMapa(mundo, ambiente, qualidade = 'alta') {
   // 4. Pintura de trânsito.
   if (!f.terra) for (const via of mundo.vias) pintarVia(ctx, via, mundo, sortear);
   faixasDePedestre(ctx, mundo, sortear);
+
+  // 4b. O anel e a rotatória vêm DEPOIS da rua, e por cima dela. É o que
+  //     resolve a emenda: a faixa da rua morre na borda da pista circular em
+  //     vez de atravessá-la, e a rotatória não fica com risco de rua no meio.
+  //     A ordem aqui é a mesma da hierarquia viária de verdade.
+  for (const anel of mundo.aneis) faixaCircular(ctx, anel, 0, f.corAsfalto, false);
+  for (const r of mundo.rotatorias) faixaCircular(ctx, r, 0, f.corAsfalto, false);
+  desgastarCirculos(ctx, mundo, sortear);
+  if (!f.terra) {
+    for (const anel of mundo.aneis) pintarAnel(ctx, anel);
+    for (const r of mundo.rotatorias) pintarRotatoria(ctx, r, mundo);
+  }
+  for (const r of mundo.rotatorias) ilhaDaRotatoria(ctx, r, f, sortear);
+  if (mundo.largada && mundo.aneis.length) pintarLargada(ctx, mundo.aneis[0], mundo.largada.angulo);
 
   // 5. Vagas. A vaga da missão é pintada de verde e com o miolo tingido: é
   //    ela que a pessoa tem que achar do outro lado do quarteirão.
@@ -96,6 +112,241 @@ function faixaDaVia(ctx, via, folga, cor, comMeioFio) {
       ctx.fillRect(via.centro + largura / 2 - 0.18, via.de, 0.18, via.ate - via.de);
     }
   }
+}
+
+/** A faixa de asfalto (ou de calçada) de uma pista circular. */
+function faixaCircular(ctx, pista, folga, cor, comMeioFio) {
+  ctx.save();
+  ctx.strokeStyle = corTexto(cor);
+  ctx.lineWidth = pista.largura + folga * 2;
+  ctx.beginPath();
+  ctx.arc(pista.x, pista.z, pista.raio, 0, TAU);
+  ctx.stroke();
+  if (comMeioFio) {
+    ctx.strokeStyle = corTexto(VIA.meioFio);
+    ctx.lineWidth = 0.18;
+    for (const lado of [-1, 1]) {
+      ctx.beginPath();
+      ctx.arc(pista.x, pista.z, pista.raio + lado * (pista.largura / 2 + folga), 0, TAU);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+/** A ilha do meio da rotatória: jardim com guia em volta. */
+function ilhaDaRotatoria(ctx, r, f, sortear) {
+  const interno = r.raio - r.largura / 2;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(r.x, r.z, interno, 0, TAU);
+  ctx.clip();
+  ctx.fillStyle = corTexto(f.base);
+  ctx.fillRect(r.x - interno, r.z - interno, interno * 2, interno * 2);
+  // Manchas de grama: sem isso a ilha fica um disco chapado no meio da tela,
+  // e disco chapado é a coisa que mais denuncia chão desenhado.
+  for (let i = 0; i < 16; i++) {
+    const a = entre(sortear, 0, TAU);
+    const d = entre(sortear, 0, interno);
+    const raio = entre(sortear, interno * 0.12, interno * 0.4);
+    ctx.fillStyle = corTexto(tonalizar(f.base, entre(sortear, 0.84, 1.14))) + '66';
+    ctx.beginPath();
+    ctx.ellipse(r.x + Math.cos(a) * d, r.z + Math.sin(a) * d,
+      raio, raio * entre(sortear, 0.5, 1), entre(sortear, 0, TAU), 0, TAU);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Guia branca e vermelha em volta: é o que se vê de longe e avisa que tem
+  // ilha ali — o meio-fio 3D só aparece de perto.
+  ctx.save();
+  ctx.lineWidth = 0.55;
+  ctx.strokeStyle = corTexto(0xf2eee2);
+  ctx.beginPath();
+  ctx.arc(r.x, r.z, interno, 0, TAU);
+  ctx.stroke();
+  ctx.strokeStyle = corTexto(0xd04a3c);
+  ctx.lineWidth = 0.55;
+  ctx.setLineDash([1.5, 1.5]);
+  ctx.beginPath();
+  ctx.arc(r.x, r.z, interno, 0, TAU);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+/** O mesmo desgaste das ruas, mas seguindo a pista circular. */
+function desgastarCirculos(ctx, mundo, sortear) {
+  const f = mundo.ficha;
+  const pistas = [...mundo.aneis, ...mundo.rotatorias];
+  for (const pista of pistas) {
+    const quantos = Math.round((TAU * pista.raio) / 13);
+    for (let i = 0; i < quantos; i++) {
+      const a = entre(sortear, 0, TAU);
+      const d = pista.raio + entre(sortear, -pista.largura / 2 + 0.4, pista.largura / 2 - 0.4);
+      const x = pista.x + Math.cos(a) * d;
+      const z = pista.z + Math.sin(a) * d;
+      const tipo = sortear();
+      ctx.save();
+      if (tipo < 0.55) {
+        ctx.fillStyle = corTexto(tonalizar(f.corAsfalto, entre(sortear, 0.8, 1.18)));
+        ctx.globalAlpha = 0.20;
+        ctx.beginPath();
+        ctx.ellipse(x, z, entre(sortear, 0.6, 2.6), entre(sortear, 0.4, 1.7), a, 0, TAU);
+        ctx.fill();
+      } else if (tipo < 0.8) {
+        ctx.globalAlpha = 0.09;
+        ctx.fillStyle = '#0b0b0d';
+        ctx.beginPath();
+        ctx.ellipse(x, z, entre(sortear, 0.3, 0.8), entre(sortear, 0.2, 0.55), 0, 0, TAU);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+}
+
+function pintarAnel(ctx, anel) {
+  const meia = anel.largura / 2;
+  ctx.save();
+  ctx.strokeStyle = corTexto(VIA.faixa);
+  ctx.lineWidth = 0.18;
+  for (const lado of [-1, 1]) {
+    ctx.beginPath();
+    ctx.arc(anel.x, anel.z, anel.raio + lado * (meia - 0.7), 0, TAU);
+    ctx.stroke();
+  }
+  // Eixo tracejado. O tracejado segue o arco sozinho — é a mesma conta de
+  // linha pontilhada, só que o "comprimento" anda pela circunferência.
+  ctx.strokeStyle = corTexto(VIA.faixaAmarela);
+  ctx.lineWidth = 0.20;
+  ctx.setLineDash([3.2, 3.0]);
+  ctx.beginPath();
+  ctx.arc(anel.x, anel.z, anel.raio, 0, TAU);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function pintarRotatoria(ctx, r, mundo) {
+  const meia = r.largura / 2;
+  ctx.save();
+  // Linha de "dê a preferência": tracejado grosso na entrada da rotatória.
+  ctx.strokeStyle = corTexto(VIA.faixa);
+  ctx.lineWidth = 0.42;
+  ctx.setLineDash([1.1, 1.1]);
+  ctx.beginPath();
+  ctx.arc(r.x, r.z, r.raio + meia - 0.35, 0, TAU);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Uma faixa tracejada no miolo, para a rotatória não parecer um prato liso.
+  ctx.strokeStyle = corTexto(VIA.faixa) + 'aa';
+  ctx.lineWidth = 0.14;
+  ctx.setLineDash([1.8, 2.4]);
+  ctx.beginPath();
+  ctx.arc(r.x, r.z, r.raio, 0, TAU);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Setas curvas dizendo para que lado se gira. Sem elas a rotatória é só um
+  // anel; com elas, a pessoa sabe de que lado entrar antes de chegar.
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * TAU + Math.PI / 4;
+    setaCurva(ctx, r.x, r.z, r.raio, a, 0.5);
+  }
+  ctx.restore();
+
+  if (mundo) dentesDePreferencia(ctx, r, mundo);
+}
+
+/** Seta desenhada sobre o arco, apontando no sentido de giro. */
+function setaCurva(ctx, cx, cz, raio, angulo, abertura) {
+  ctx.save();
+  ctx.strokeStyle = corTexto(VIA.faixa) + 'cc';
+  ctx.lineWidth = 0.28;
+  ctx.lineCap = 'butt';
+  ctx.beginPath();
+  ctx.arc(cx, cz, raio, angulo, angulo + abertura);
+  ctx.stroke();
+
+  // A ponta: um triângulo na tangente do fim do arco.
+  const fim = angulo + abertura;
+  const px = cx + Math.cos(fim) * raio;
+  const pz = cz + Math.sin(fim) * raio;
+  const tx = -Math.sin(fim), tz = Math.cos(fim);   // tangente
+  const nx = Math.cos(fim), nz = Math.sin(fim);    // normal (para fora)
+  ctx.fillStyle = corTexto(VIA.faixa) + 'cc';
+  ctx.beginPath();
+  ctx.moveTo(px + tx * 1.1, pz + tz * 1.1);
+  ctx.lineTo(px - nx * 0.55, pz - nz * 0.55);
+  ctx.lineTo(px + nx * 0.55, pz + nz * 0.55);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+/** Os "dentes de tubarão" onde cada rua desemboca na rotatória. */
+function dentesDePreferencia(ctx, r, mundo) {
+  const borda = r.raio + r.largura / 2;
+  ctx.save();
+  ctx.fillStyle = corTexto(VIA.faixa) + 'e0';
+  for (const via of mundo.vias) {
+    const desvio = via.eixo === 'x' ? via.centro - r.z : via.centro - r.x;
+    if (Math.abs(desvio) >= borda) continue;
+    const meio = Math.sqrt(borda * borda - desvio * desvio);
+    for (const lado of [-1, 1]) {
+      // Ponto onde o eixo da rua encosta na borda da rotatória.
+      const px = via.eixo === 'x' ? r.x + lado * meio : via.centro;
+      const pz = via.eixo === 'x' ? via.centro : r.z + lado * meio;
+      if (via.eixo === 'x' ? (px < via.de || px > via.ate) : (pz < via.de || pz > via.ate)) continue;
+      // Recuado 1,2 m para fora: o dente fica ANTES da rotatória, não nela.
+      const rx = via.eixo === 'x' ? px + lado * 1.2 : px;
+      const rz = via.eixo === 'x' ? pz : pz + lado * 1.2;
+      // Só a metade da pista por onde se entra (mão da direita).
+      const meiaVia = via.largura / 2;
+      for (let t = 0.15; t < 0.95; t += 0.16) {
+        const off = (via.eixo === 'x' ? -lado : lado) * t * meiaVia;
+        const dx = via.eixo === 'x' ? rx : rx + off;
+        const dz = via.eixo === 'x' ? rz + off : rz;
+        dente(ctx, dx, dz, via.eixo === 'x' ? -lado : 0, via.eixo === 'x' ? 0 : -lado);
+      }
+    }
+  }
+  ctx.restore();
+}
+
+function dente(ctx, x, z, dx, dz) {
+  const px = -dz, pz = dx;   // perpendicular
+  ctx.beginPath();
+  ctx.moveTo(x + dx * 0.9, z + dz * 0.9);
+  ctx.lineTo(x + px * 0.28, z + pz * 0.28);
+  ctx.lineTo(x - px * 0.28, z - pz * 0.28);
+  ctx.closePath();
+  ctx.fill();
+}
+
+/** O quadriculado da largada, atravessado na pista. */
+function pintarLargada(ctx, anel, angulo) {
+  const interno = anel.raio - anel.largura / 2;
+  const colunas = 10;
+  const linhas = 3;
+  const passoR = anel.largura / colunas;
+  const passoA = 1.0 / anel.raio;          // ~1 m de comprimento por quadrado
+  ctx.save();
+  for (let i = 0; i < colunas; i++) {
+    for (let j = 0; j < linhas; j++) {
+      ctx.fillStyle = (i + j) % 2 ? '#f4f2ea' : '#1c1d20';
+      const r0 = interno + i * passoR;
+      const a0 = angulo + (j - linhas / 2) * passoA;
+      ctx.beginPath();
+      ctx.arc(anel.x, anel.z, r0, a0, a0 + passoA);
+      ctx.arc(anel.x, anel.z, r0 + passoR, a0 + passoA, a0, true);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+  ctx.restore();
 }
 
 function pintarVia(ctx, via, mundo, sortear) {

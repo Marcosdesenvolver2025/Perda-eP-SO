@@ -14,7 +14,9 @@ export function padrao() {
     carroAtual: 'besouro',
     carreira: { semente: Math.floor(Math.random() * 1e9), indice: 0 },
     estrelas: {},
-    ajustes: { qualidade: 'alta', som: true, camera: 'perseguicao' },
+    // O melhor placar de cada modo avulso. É o que faz voltar nele.
+    recordes: { estacionamento: 0, rapido: 0, drift: 0 },
+    ajustes: { qualidade: 'alta', som: true, camera: 'perseguicao', cambio: 'automatico' },
     numeros: { missoes: 0, metros: 0, batidas: 0, estrelas: 0 },
   };
 }
@@ -32,6 +34,7 @@ export function carregar() {
       carreira: { ...base.carreira, ...(dados.carreira || {}) },
       ajustes: { ...base.ajustes, ...(dados.ajustes || {}) },
       numeros: { ...base.numeros, ...(dados.numeros || {}) },
+      recordes: { ...base.recordes, ...(dados.recordes || {}) },
       garagem: Array.isArray(dados.garagem) && dados.garagem.length ? dados.garagem : base.garagem,
       estrelas: dados.estrelas || {},
     };
@@ -87,6 +90,22 @@ export function registrarResultado(progresso, indiceMissao, resultado, partida) 
   progresso.numeros.batidas += partida.estatisticas.batidas;
   salvar(progresso);
   return progresso;
+}
+
+/**
+ * Guarda o resultado de uma partida de modo avulso. Devolve se o placar é
+ * recorde — é essa informação que a tela de resultado precisa mostrar, e ela
+ * tem que ser lida ANTES de o recorde novo ser gravado.
+ */
+export function registrarModo(progresso, modo, resultado, partida) {
+  const anterior = progresso.recordes[modo] || 0;
+  const recorde = resultado.pontos > anterior;
+  if (recorde) progresso.recordes[modo] = resultado.pontos;
+  progresso.dinheiro += resultado.premio;
+  progresso.numeros.metros += Math.round(partida.carro.distancia);
+  progresso.numeros.batidas += partida.estatisticas.batidas;
+  salvar(progresso);
+  return { recorde, anterior };
 }
 
 export function totalDeEstrelas(progresso) {

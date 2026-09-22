@@ -23,6 +23,8 @@ export class Hud {
   constructor() {
     this.recados = [];
     this.piscaAlerta = 0;
+    this.brilhoDeTempo = 0;
+    this.ultimoTempoGanho = 0;
   }
 
   recado(texto, cor = '#ffffff', duracao = 2.4) {
@@ -32,6 +34,7 @@ export class Hud {
 
   atualizar(dt) {
     this.piscaAlerta += dt;
+    this.brilhoDeTempo = Math.max(0, this.brilhoDeTempo - dt * 0.9);
     for (const r of this.recados) r.restante -= dt;
     this.recados = this.recados.filter((r) => r.restante > 0);
   }
@@ -50,6 +53,7 @@ export class Hud {
 
     this.cartaoDaMissao(ctx, partida, escala, margem);
     this.relogio(ctx, partida, escala, L, margem);
+    this.placar(ctx, partida, escala, L, margem);
     this.bussola(ctx, partida, escala, L, margem);
     this.minimapa(ctx, partida, escala, L, margem);
     this.painelDoCarro(ctx, partida, escala, arranjo);
@@ -134,6 +138,9 @@ export class Hud {
     const missao = partida.missao;
     if (missao.livre) return 'Sem relógio e sem cobrança. Ande por aí.';
     if (missao.aviso) return missao.aviso;
+    // Os modos escrevem a própria linha: ela muda a cada quadro (ângulo,
+    // multiplicador, tempo de volta) e não cabe numa frase fixa por tipo.
+    if (missao.instrucao) return missao.instrucao;
     switch (missao.descritor.tipo) {
       case 'baliza': return 'Encaixe o carro na vaga marcada e pare.';
       case 'vaga': return missao.deRe ? 'Entre de ré na vaga verde.' : 'Estacione na vaga verde.';
@@ -167,10 +174,63 @@ export class Hud {
     ctx.fillText(texto, L / 2, margem + 26 * escala);
   }
 
+  /**
+   * O placar dos modos avulsos: o número que a pessoa está tentando fazer
+   * subir. Fica logo abaixo do relógio porque relógio e placar são a mesma
+   * pergunta vista dos dois lados — quanto tempo sobra, quanto já rendeu.
+   */
+  placar(ctx, partida, escala, L, margem) {
+    const missao = partida.missao;
+    if (missao.pontuacao === undefined) return;
+
+    const d = missao.drift;
+    const emDrift = !!(d && d.ativo);
+    const largura = 186 * escala;
+    const altura = 46 * escala;
+    const x = L / 2 - largura / 2;
+    const y = margem + 56 * escala;
+
+    caixa(ctx, x, y, largura, altura, 15 * escala,
+      emDrift ? 'rgba(126,62,10,0.80)' : 'rgba(14,20,30,0.66)');
+
+    // No drift o número mostrado inclui o que ainda está PENDENTE: é isso que
+    // faz doer perder o combo — a pessoa viu o número que ia ganhar.
+    const pendente = d ? d.pendente * d.multiplicador : 0;
+    const total = Math.round(missao.pontuacao + pendente);
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = emDrift ? '#ffd24a' : '#ffffff';
+    ctx.font = `700 ${Math.round(22 * escala)}px ${FONTE}`;
+    ctx.fillText(total.toLocaleString('pt-BR'), L / 2, y + 18 * escala);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.font = `600 ${Math.round(10 * escala)}px ${FONTE}`;
+    const rodape = emDrift
+      ? `SEGURANDO  ×${d.multiplicador}`
+      : `${missao.contador} ${missao.unidade === 'm' ? 'voltas' : missao.unidade}`;
+    ctx.fillText(rodape.toUpperCase(), L / 2, y + 35 * escala);
+
+    // Tempo que acabou de entrar no relógio, subindo e sumindo.
+    if (missao.tempoGanho && missao.tempoGanho !== this.ultimoTempoGanho) {
+      this.brilhoDeTempo = 1;
+      this.ultimoTempoGanho = missao.tempoGanho;
+    }
+    if (this.brilhoDeTempo > 0) {
+      ctx.globalAlpha = this.brilhoDeTempo;
+      ctx.fillStyle = '#5ad07a';
+      ctx.font = `700 ${Math.round(13 * escala)}px ${FONTE}`;
+      ctx.fillText('+ TEMPO', L / 2 + largura * 0.42,
+        y + 22 * escala - (1 - this.brilhoDeTempo) * 16 * escala);
+      ctx.globalAlpha = 1;
+    }
+  }
+
   /** A seta que aponta o próximo objetivo, presa acima do relógio. */
   bussola(ctx, partida, escala, L, margem) {
     const alvo = alvoAtual(partida.missao);
     if (!alvo) return;
+    // Com placar na tela a bússola desce: os dois moram no mesmo eixo central.
+    if (partida.missao.pontuacao !== undefined) margem += 56 * escala;
     const carro = partida.carro;
     const distancia = distanciaPlana(carro.x, carro.z, alvo.x, alvo.z);
 
@@ -301,14 +361,21 @@ export class Hud {
     const maxima = 180;
     const kmh = Math.abs(paraKmh(carro.vx));
 
-    // Arco de rotação, por fora do mostrador.
-    const rotacao = limitar(carro.rotacao / carro.ficha.rotacaoMaxima, 0, 1);
+    // Arco de rotação, por fora do mostrador, com a faixa vermelha marcada.
+    const f = carro.ficha;
+    const rotacao = limitar(carro.rotacao / f.rotacaoMaxima, 0, 1);
+    const ondeTroca = limitar(f.rotacaoTroca / f.rotacaoMaxima, 0, 1);
     ctx.lineWidth = 5 * escala;
     ctx.strokeStyle = 'rgba(255,255,255,0.12)';
     ctx.beginPath();
     ctx.arc(cx, cy, raio - 3 * escala, inicio, fim);
     ctx.stroke();
-    ctx.strokeStyle = rotacao > 0.88 ? '#ff5b4a' : '#7fd1ff';
+    // a faixa onde se deve trocar fica desenhada mesmo com o motor parado
+    ctx.strokeStyle = 'rgba(224,74,60,0.42)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, raio - 3 * escala, inicio + (fim - inicio) * ondeTroca, fim);
+    ctx.stroke();
+    ctx.strokeStyle = rotacao > ondeTroca ? '#ff5b4a' : '#7fd1ff';
     ctx.beginPath();
     ctx.arc(cx, cy, raio - 3 * escala, inicio, inicio + (fim - inicio) * rotacao);
     ctx.stroke();
@@ -343,10 +410,14 @@ export class Hud {
     ctx.font = `600 ${Math.round(9 * escala)}px ${FONTE}`;
     ctx.fillText('km/h', cx, cy + 14 * escala);
 
-    // Marcha, no alto do mostrador.
-    const marcha = carro.sentido < 0 ? 'R' : carro.ficha.eletrico ? 'D' : String(carro.marcha);
-    ctx.fillStyle = carro.sentido < 0 ? '#ff8b5b' : '#7fd1ff';
-    ctx.font = `700 ${Math.round(15 * escala)}px ${FONTE}`;
+    // Marcha, no alto do mostrador. Fica vermelha quando o motor está afogando
+    // e branca piscando quando bateu no corte — os dois erros de manual.
+    const marcha = carro.sentido < 0 ? 'R' : f.eletrico ? 'D' : String(carro.marcha);
+    let corDaMarcha = carro.sentido < 0 ? '#ff8b5b' : '#7fd1ff';
+    if (carro.cortando) corDaMarcha = Math.sin(this.piscaAlerta * 14) > 0 ? '#ffffff' : '#ff5b4a';
+    else if (carro.afogando > 0.35) corDaMarcha = '#e0a02a';
+    ctx.fillStyle = corDaMarcha;
+    ctx.font = `700 ${Math.round(17 * escala)}px ${FONTE}`;
     ctx.fillText(marcha, cx, cy - 24 * escala);
 
     // Combustível e lataria: duas tirinhas DENTRO do mostrador, para não
@@ -420,6 +491,29 @@ export class Hud {
       partida.carro.sentido < 0, escala, partida.carro.sentido < 0 ? 0xf08c2a : 0x3a86d6, 13);
     botao(ctx, entrada.areaMao, 'MÃO', entrada.tocando('mao'), escala, 0xd0a32e, 13);
 
+    // Câmbio manual: uma terceira fileira, acima das outras. Só aparece quando
+    // é você quem troca — no automático esses botões não teriam o que fazer.
+    const carro = partida.carro;
+    const manual = entrada.comandos.cambio === 'manual' && carro.ficha.relacoes.length > 1;
+    if (manual) {
+      const alturaMarcha = altura * 0.66;
+      const pyMarcha = pyFreio - alturaMarcha - folga;
+      entrada.areaSobeMarcha = { x: px, y: pyMarcha, largura, altura: alturaMarcha };
+      entrada.areaDesceMarcha = { x: px - largura - folga, y: pyMarcha, largura, altura: alturaMarcha };
+
+      // O botão de subir acende quando está na hora de trocar. É a luz de
+      // troca do painel de corrida, só que onde o dedo já está olhando.
+      const naHora = carro.rotacao > carro.ficha.rotacaoTroca && carro.sentido > 0;
+      const naUltima = carro.marcha >= carro.ficha.relacoes.length;
+      botao(ctx, entrada.areaSobeMarcha, 'MARCHA ▲',
+        naHora && !naUltima, escala, naHora && !naUltima ? 0x35c46a : 0x4a5a70, 13);
+      botao(ctx, entrada.areaDesceMarcha, 'MARCHA ▼',
+        carro.afogando > 0.35, escala, carro.afogando > 0.35 ? 0xe0a02a : 0x4a5a70, 13);
+    } else {
+      entrada.areaSobeMarcha = null;
+      entrada.areaDesceMarcha = null;
+    }
+
     // Cantinho de cima: câmera e pausa.
     const pequeno = 44 * escala;
     entrada.areaCamera = { x: L - margem - pequeno, y: margem + 148 * escala, largura: pequeno, altura: pequeno };
@@ -441,6 +535,8 @@ export class Hud {
     if (partida.missao.combustivel !== undefined
       && carro.combustivel / partida.missao.combustivel < 0.15) alertas.push(['COMBUSTÍVEL', '#e8b93a']);
     if (partida.foraDaPista > 1.2) alertas.push(['VOLTE PARA A PISTA', '#7fd1ff']);
+    if (carro.cortando) alertas.push(['SUBA A MARCHA', '#ff8b5b']);
+    else if (carro.afogando > 0.5) alertas.push(['MOTOR AFOGANDO — DESÇA A MARCHA', '#e0a02a']);
     if (!alertas.length) return;
 
     const piscar = Math.sin(this.piscaAlerta * 7) > -0.2;

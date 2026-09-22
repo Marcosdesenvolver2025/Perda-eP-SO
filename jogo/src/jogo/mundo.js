@@ -90,10 +90,23 @@ export function gerarMundo(semente, opcoes = {}) {
     colisores: [],
     marcasNoChao: [],
     rotas: [],
+    aneis: [],        // pista circular fechada — o traçado do modo rápido
+    rotatorias: [],   // rotatória com ilha no meio
     limite: meio + 2,
   };
 
+  // O traçado "circuito" é outro bairro: em vez de grade de ruas, uma pista
+  // fechada em volta e uma rotatória no meio. É onde os modos rápido e drift
+  // acontecem — grade de esquina não deixa ninguém passar de 60 por hora.
+  if (opcoes.tracado === 'circuito') {
+    montarCircuito(mundo, sortear, cenario);
+    cercarOMundo(mundo, sortear, cenario);
+    mundo.inicio = escolherInicio(mundo, sortear, opcoes);
+    return mundo;
+  }
+
   if (opcoes.estacionamento) montarEstacionamento(mundo, sortear, opcoes.estacionamento);
+  if (opcoes.rotatoria) montarRotatoriaNoCruzamento(mundo, sortear);
 
   povoarQuadras(mundo, sortear, cenario, opcoes);
   cercarOMundo(mundo, sortear, cenario);
@@ -101,6 +114,150 @@ export function gerarMundo(semente, opcoes = {}) {
 
   mundo.inicio = escolherInicio(mundo, sortear, opcoes);
   return mundo;
+}
+
+// ---------------------------------------------------------------------------
+// CIRCUITO: ANEL + ROTATÓRIA
+// ---------------------------------------------------------------------------
+
+/**
+ * Pista fechada em anel, com uma rotatória no meio e duas retas ligando as
+ * duas. Dá voltas, dá para abrir o carro e dá curva longa para atravessar de
+ * lado — que é exatamente o que os modos rápido e drift precisam.
+ */
+function montarCircuito(mundo, sortear, cenario) {
+  const raio = mundo.meio * 0.66;
+  const largura = 14;
+  mundo.aneis.push({ x: 0, z: 0, raio, largura });
+
+  const raioRotatoria = 13;
+  const larguraRotatoria = 9;
+  mundo.rotatorias.push({ x: 0, z: 0, raio: raioRotatoria, largura: larguraRotatoria });
+
+  // A linha de largada fica num ângulo fixo do anel. Quem conta volta é o modo;
+  // aqui só existe o lugar, pintado no chão e guardado no mundo.
+  mundo.largada = { angulo: 0, x: raio, z: 0 };
+
+  // As duas retas que ligam a rotatória ao anel. Ficam como "vias" comuns,
+  // então tudo que já sabe lidar com via (pintura, piso, trânsito) funciona.
+  const alcance = raio + largura / 2;
+  mundo.vias.length = 0;
+  mundo.vias.push(
+    { eixo: 'x', centro: 0, de: -alcance, ate: alcance, largura: 11, principal: true },
+    { eixo: 'z', centro: 0, de: -alcance, ate: alcance, largura: 11, principal: true },
+  );
+
+  guardaCorpoDoAnel(mundo, raio - largura / 2 - 0.9, 'dentro');
+  guardaCorpoDoAnel(mundo, raio + largura / 2 + 0.9, 'fora');
+  meioFioDaIlha(mundo, raioRotatoria - larguraRotatoria / 2);
+
+  // Dentro da ilha da rotatória: um pedaço de jardim que se vê de longe.
+  plantarArvore(mundo, sortear, cenario, 0, 0);
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * TAU + 0.3;
+    const d = (raioRotatoria - larguraRotatoria / 2) * 0.55;
+    if (sortear() < 0.7) {
+      adicionar(mundo, {
+        tipo: 'arbusto', malha: modelos.arbusto(0.9, Math.floor(sortear() * 1e6)),
+        x: Math.cos(a) * d, z: Math.sin(a) * d, guinada: entre(sortear, 0, TAU), raio: 1.3,
+      }, { largura: 1.4, comprimento: 1.4, solido: true, leve: true, altura: 1.4 });
+    }
+  }
+
+  // Cenário: fora do anel, o bairro; dentro, entre a rotatória e a pista,
+  // um parque. Nada encosta na pista — ela tem que ficar livre.
+  povoarEmVolta(mundo, sortear, cenario, raio + largura / 2 + 6, mundo.meio - 4, 26);
+  povoarEmVolta(mundo, sortear, cenario, raioRotatoria + larguraRotatoria, raio - largura / 2 - 6, 14);
+
+  // Trânsito dando voltas, nos dois sentidos, em faixas diferentes.
+  for (const sentido of [1, -1]) {
+    const faixa = raio + sentido * largura * 0.22;
+    const pontos = [];
+    const passos = 28;
+    for (let i = 0; i < passos; i++) {
+      const a = (sentido > 0 ? i : passos - i) / passos * TAU;
+      pontos.push({ x: Math.cos(a) * faixa, z: Math.sin(a) * faixa });
+    }
+    mundo.rotas.push({ pontos, anel: mundo.aneis[0], sentido });
+  }
+}
+
+/** Guarda-corpo em volta da pista: sem ele, sair da pista é sair do jogo. */
+function guardaCorpoDoAnel(mundo, raio, lado) {
+  const passo = 11;
+  const quantos = Math.max(12, Math.round((TAU * raio) / passo));
+  for (let i = 0; i < quantos; i++) {
+    const a = (i / quantos) * TAU;
+    const x = Math.cos(a) * raio;
+    const z = Math.sin(a) * raio;
+    const comprimento = (TAU * raio) / quantos + 0.6;
+    // A barreira fica tangente ao círculo: o ângulo dela é o da tangente.
+    const guinada = -a;
+    adicionar(mundo, {
+      tipo: 'barreira', malha: modelos.barreira(comprimento),
+      x, z, guinada, raio: comprimento, lado,
+    }, {
+      largura: 0.6, comprimento, guinada, solido: true, parede: true, altura: 0.8,
+    });
+  }
+}
+
+/** O meio-fio da ilha da rotatória, que impede cortar caminho por cima. */
+function meioFioDaIlha(mundo, raio) {
+  const quantos = Math.max(10, Math.round((TAU * raio) / 4));
+  for (let i = 0; i < quantos; i++) {
+    const a = (i / quantos) * TAU;
+    const comprimento = (TAU * raio) / quantos + 0.4;
+    adicionar(mundo, {
+      tipo: 'meio-fio', malha: modelos.meioFio(comprimento),
+      x: Math.cos(a) * raio, z: Math.sin(a) * raio, guinada: -a, raio: comprimento,
+    }, {
+      largura: 0.5, comprimento, guinada: -a, solido: true, altura: 0.35, leve: false,
+    });
+  }
+}
+
+/** Enche uma coroa circular de cenário, sem encostar nas bordas. */
+function povoarEmVolta(mundo, sortear, cenario, raioInterno, raioExterno, quantos) {
+  if (raioExterno <= raioInterno + 2) return;
+  for (let i = 0; i < quantos; i++) {
+    const a = entre(sortear, 0, TAU);
+    const d = entre(sortear, raioInterno, raioExterno);
+    const x = Math.cos(a) * d;
+    const z = Math.sin(a) * d;
+    if (colide(mundo.colisores, x, z, 9, 9)) continue;
+
+    if (sortear() < 0.42 && d > raioInterno + 6) {
+      const l = Math.round(entre(sortear, 6, 13));
+      const p = Math.round(entre(sortear, 6, 12));
+      const h = Math.round(entre(sortear, 5, 18));
+      if (colide(mundo.colisores, x, z, l + 4, p + 4)) continue;
+      const cor = escolher(sortear, cenario.fachadas || FACHADAS);
+      adicionar(mundo, {
+        tipo: 'predio', malha: modelos.predio(l, h, p, cor, Math.floor(sortear() * 1e6)),
+        x, z, guinada: 0, raio: Math.hypot(l, p) / 2 + 1,
+      }, { largura: l, comprimento: p, solido: true, altura: h });
+    } else {
+      plantarArvore(mundo, sortear, cenario, x, z);
+    }
+  }
+}
+
+/** Troca um cruzamento da grade por uma rotatória. */
+function montarRotatoriaNoCruzamento(mundo, sortear) {
+  const horizontais = mundo.vias.filter((v) => v.eixo === 'x');
+  const verticais = mundo.vias.filter((v) => v.eixo === 'z');
+  if (!horizontais.length || !verticais.length) return;
+
+  // O cruzamento mais central: é o que tem mais espaço em volta.
+  const h = horizontais.reduce((a, b) => (Math.abs(a.centro) < Math.abs(b.centro) ? a : b));
+  const v = verticais.reduce((a, b) => (Math.abs(a.centro) < Math.abs(b.centro) ? a : b));
+
+  const largura = Math.max(h.largura, v.largura) * 0.82;
+  const raio = largura * 1.35;
+  mundo.rotatorias.push({ x: v.centro, z: h.centro, raio, largura });
+  meioFioDaIlha(mundo, raio - largura / 2);
+  mundo.rotatoriaPrincipal = mundo.rotatorias[0];
 }
 
 /** Distribui n posições no intervalo, respeitando uma folga mínima. */
@@ -336,6 +493,23 @@ function montarRotas(mundo, sortear) {
 
 function escolherInicio(mundo, sortear, opcoes) {
   if (opcoes.inicio) return opcoes.inicio;
+
+  // Num circuito a largada é na pista, apontando para onde ela segue.
+  if (mundo.aneis.length) {
+    const anel = mundo.aneis[0];
+    // Logo ANTES da linha: assim a primeira passagem pela linha já é a largada
+    // de verdade, e não uma volta contada de graça.
+    const a = mundo.largada ? mundo.largada.angulo - 0.07 : entre(sortear, 0, TAU);
+    const faixa = anel.raio + anel.largura * 0.22;
+    // Seguindo o anel no sentido de `a` crescente, a tangente é
+    // (-sen a, cos a). Com frente(ang) = (-sen ang, -cos ang), isso dá
+    // ang = PI - a.
+    return {
+      x: anel.x + Math.cos(a) * faixa,
+      z: anel.z + Math.sin(a) * faixa,
+      angulo: Math.PI - a,
+    };
+  }
   const via = escolher(sortear, mundo.vias.filter((v) => v.principal)) || mundo.vias[0];
   const t = entre(sortear, 0.25, 0.75);
   const p = via.de + t * (via.ate - via.de);
@@ -376,6 +550,18 @@ function colide(colisores, x, z, largura, comprimento) {
 
 /** Que piso tem embaixo do carro — decide aderência e barulho de pneu. */
 export function pisoEm(mundo, x, z) {
+  // Anel e rotatória vêm antes da grade: onde eles passam, mandam eles.
+  for (const anel of mundo.aneis) {
+    const d = Math.hypot(x - anel.x, z - anel.z);
+    if (Math.abs(d - anel.raio) <= anel.largura / 2) return 'asfalto';
+  }
+  for (const r of mundo.rotatorias) {
+    const d = Math.hypot(x - r.x, z - r.z);
+    if (d <= r.raio + r.largura / 2) {
+      // Dentro do meio-fio é a ilha: jardim, não pista.
+      return d < r.raio - r.largura / 2 ? 'grama' : 'asfalto';
+    }
+  }
   for (const via of mundo.vias) {
     if (via.eixo === 'x') {
       if (Math.abs(z - via.centro) <= via.largura / 2 && x >= via.de && x <= via.ate) {

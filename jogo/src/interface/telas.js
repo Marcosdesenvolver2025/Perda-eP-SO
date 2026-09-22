@@ -12,6 +12,7 @@ import { criarCamera, atualizarBase } from '../motor/camera.js';
 import { CLIMAS } from '../jogo/clima.js';
 import { CENARIOS } from '../jogo/mundo.js';
 import { FICHA_DOS_TIPOS } from '../jogo/missoes.js';
+import { FICHA_DOS_MODOS, LISTA_MODOS } from '../jogo/modos.js';
 import { formatarDinheiro, formatarTempo, limitar } from '../nucleo/matematica.js';
 import { temCarro } from '../jogo/progresso.js';
 
@@ -57,6 +58,7 @@ export class Telas {
     const proxima = progresso.carreira.indice + 1;
     lista.append(
       botao(`Continuar carreira · serviço ${proxima}`, 'principal', acoes.carreira),
+      botao('Modos', 'destaque', acoes.modos),
       botao('Serviço avulso', '', acoes.avulso),
       botao('Rua livre', '', acoes.livre),
       botao('Garagem', '', acoes.garagem),
@@ -64,6 +66,35 @@ export class Telas {
     );
     no.appendChild(lista);
     no.appendChild(rodape());
+    this.abrir(no);
+  }
+
+  /** Os três modos avulsos, com o recorde de cada um na cara. */
+  modos(progresso, acoes) {
+    const no = elemento('div', 'tela tela--larga');
+    no.appendChild(cabecalho('Modos', formatarDinheiro(progresso.dinheiro), acoes.voltar));
+
+    const grade = elemento('div', 'grade grade--modos');
+    for (const id of LISTA_MODOS) {
+      const m = FICHA_DOS_MODOS[id];
+      const recorde = (progresso.recordes && progresso.recordes[id]) || 0;
+      const cartao = elemento('article', 'cartao cartao--modo');
+      cartao.style.setProperty('--cor-modo', m.cor);
+      cartao.insertAdjacentHTML('beforeend', `
+        <div class="modo__selo">${selosDeModo(id)}</div>
+        <h3>${m.nome}</h3>
+        <p class="cartao__texto">${m.resumo}</p>
+        <p class="modo__recorde">${recorde
+    ? `recorde <strong>${recorde.toLocaleString('pt-BR')}</strong>`
+    : 'sem recorde ainda'}</p>
+        <p class="cartao__volante-nome">💡 ${m.dica}</p>
+      `);
+      const acoesCartao = elemento('div', 'cartao__acoes');
+      acoesCartao.appendChild(botao('Jogar', 'principal', () => acoes.jogar(id)));
+      cartao.appendChild(acoesCartao);
+      grade.appendChild(cartao);
+    }
+    no.appendChild(grade);
     this.abrir(no);
   }
 
@@ -146,13 +177,21 @@ export class Telas {
     this.abrir(no);
   }
 
-  resultado(resultado, partida, acoes) {
+  resultado(resultado, partida, acoes, extra = {}) {
     const no = elemento('div', 'tela');
     const estrelas = [0, 1, 2].map((i) => `<span class="${i < resultado.estrelas ? 'cheia' : ''}">★</span>`).join('');
+    const modo = resultado.modo ? FICHA_DOS_MODOS[resultado.modo] : null;
 
     no.innerHTML = `
-      <p class="olho">${resultado.sucesso ? 'serviço entregue' : 'não deu'}</p>
-      <h2>${resultado.motivo}</h2>
+      <p class="olho">${modo ? modo.nome.toLowerCase() : resultado.sucesso ? 'serviço entregue' : 'não deu'}</p>
+      ${modo ? `
+        <div class="placar__numero" style="--cor-modo:${modo.cor}">
+          <strong>${resultado.pontos.toLocaleString('pt-BR')}</strong><span>pontos</span>
+        </div>
+        ${extra.recorde
+    ? '<p class="placar__recorde">RECORDE NOVO</p>'
+    : `<p class="placar__anterior">recorde: ${(extra.anterior || 0).toLocaleString('pt-BR')}</p>`}
+      ` : `<h2>${resultado.motivo}</h2>`}
       <div class="estrelas">${estrelas}</div>
       <ul class="placar">
         ${resultado.linhas.map((l) => `
@@ -162,10 +201,18 @@ export class Telas {
       </ul>
     `;
     const acoesNo = elemento('div', 'acoes');
-    if (resultado.sucesso) acoesNo.appendChild(botao('Próximo serviço', 'principal', acoes.proxima));
-    acoesNo.appendChild(botao(resultado.sucesso ? 'Repetir' : 'Tentar de novo',
-      resultado.sucesso ? '' : 'principal', acoes.repetir));
-    acoesNo.appendChild(botao('Menu', '', acoes.menu));
+    if (modo) {
+      acoesNo.append(
+        botao('Jogar de novo', 'principal', acoes.repetir),
+        botao('Outro modo', '', acoes.modos || acoes.menu),
+        botao('Menu', '', acoes.menu),
+      );
+    } else {
+      if (resultado.sucesso) acoesNo.appendChild(botao('Próximo serviço', 'principal', acoes.proxima));
+      acoesNo.appendChild(botao(resultado.sucesso ? 'Repetir' : 'Tentar de novo',
+        resultado.sucesso ? '' : 'principal', acoes.repetir));
+      acoesNo.appendChild(botao('Menu', '', acoes.menu));
+    }
     no.appendChild(acoesNo);
     this.abrir(no);
   }
@@ -200,6 +247,10 @@ export class Telas {
       [[true, 'ligado'], [false, 'desligado']],
       progresso.ajustes.som, acoes.som));
 
+    lista.appendChild(escolha('Câmbio',
+      [['automatico', 'automático'], ['manual', 'manual']],
+      progresso.ajustes.cambio || 'automatico', acoes.cambio));
+
     lista.appendChild(escolha('Câmera',
       [['perseguicao', 'atrás'], ['capo', 'capô'], ['cabine', 'cabine'], ['alto', 'de cima']],
       progresso.ajustes.camera, acoes.camera));
@@ -214,8 +265,8 @@ export class Telas {
       <div class="ajuda">
         <h4>Teclado</h4>
         <p><kbd>W</kbd><kbd>S</kbd> acelera e freia · <kbd>A</kbd><kbd>D</kbd> volante ·
-        <kbd>espaço</kbd> freio de mão · <kbd>C</kbd> câmera · <kbd>shift</kbd> olhar para trás ·
-        <kbd>Esc</kbd> pausa</p>
+        <kbd>X</kbd><kbd>Z</kbd> sobe e desce a marcha · <kbd>espaço</kbd> freio de mão ·
+        <kbd>C</kbd> câmera · <kbd>shift</kbd> olhar para trás · <kbd>Esc</kbd> pausa</p>
         <h4>No dedo</h4>
         <p>Gire o volante no canto de baixo. Ele é o controle — e é diferente em cada carro.
         Parado com o freio afundado, engata a ré sozinho.</p>
@@ -386,6 +437,43 @@ function barrasDeFicha(modelo) {
     <div class="ficha__linha"><span>${nome}</span>
       <div class="ficha__barra"><i style="width:${Math.round(v * 100)}%"></i></div>
     </div>`).join('')}</div>`;
+}
+
+/**
+ * O selo de cada modo, desenhado em SVG na hora. Nenhum arquivo de imagem
+ * entra no jogo — nem aqui, onde seria mais fácil: ícone é conteúdo, e
+ * conteúdo desenhado é conteúdo que dá para mudar de cor, de tamanho e de
+ * ideia sem reabrir editor nenhum.
+ */
+function selosDeModo(id) {
+  const abre = '<svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">';
+  if (id === 'estacionamento') {
+    return `${abre}
+      <rect x="3" y="3" width="42" height="42" rx="9" fill="currentColor" opacity="0.18"/>
+      <rect x="9" y="9" width="30" height="30" rx="5" fill="none"
+        stroke="currentColor" stroke-width="2.4" stroke-dasharray="5 4"/>
+      <path d="M19 33V15h7a6 6 0 0 1 0 12h-7" fill="none"
+        stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+  }
+  if (id === 'rapido') {
+    return `${abre}
+      <circle cx="24" cy="24" r="21" fill="currentColor" opacity="0.18"/>
+      <path d="M8 30a17 17 0 0 1 32 0" fill="none" stroke="currentColor"
+        stroke-width="3.2" stroke-linecap="round"/>
+      <path d="M24 29 34 16" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"/>
+      <circle cx="24" cy="30" r="3.4" fill="currentColor"/>
+      <path d="M12 37h6v-4h-6zM24 37h6v-4h-6z" fill="currentColor" opacity="0.65"/>
+    </svg>`;
+  }
+  return `${abre}
+    <circle cx="24" cy="24" r="21" fill="currentColor" opacity="0.18"/>
+    <path d="M12 34c10 2 16-2 18-8s-2-10-7-9" fill="none" stroke="currentColor"
+      stroke-width="3.2" stroke-linecap="round"/>
+    <path d="M23 17l-5 2 4 3z" fill="currentColor"/>
+    <path d="M9 38c5 0 8-1 11-3M9 31c3 0 5-.6 7-1.6" fill="none"
+      stroke="currentColor" stroke-width="2.2" stroke-linecap="round" opacity="0.6"/>
+  </svg>`;
 }
 
 function rodape() {

@@ -178,6 +178,13 @@ export class Som {
   }
 
   ponto() { this.nota(880, 0.14); this.nota(1320, 0.18, 'triangle', 0.1); }
+
+  /** O tranco da alavanca. Subir soa mais agudo que descer — é o que o ouvido
+   *  usa para confirmar a troca sem precisar olhar para o painel. */
+  marcha(direcao) {
+    this.nota(direcao > 0 ? 320 : 210, 0.05, 'square', 0.05);
+    setTimeout(() => this.nota(direcao > 0 ? 180 : 130, 0.07, 'square', 0.045), 35);
+  }
   vitoria() {
     [660, 880, 1100, 1320].forEach((f, i) => setTimeout(() => this.nota(f, 0.22, 'triangle', 0.16), i * 110));
   }

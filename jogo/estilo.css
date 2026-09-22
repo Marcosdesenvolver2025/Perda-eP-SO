@@ -287,6 +287,61 @@ html, body {
 .estrelas { font-size: 42px; letter-spacing: 8px; margin: 10px 0 18px; color: #223a5c; }
 .estrelas .cheia { color: var(--destaque); text-shadow: 0 0 22px rgba(255, 210, 74, 0.5); }
 
+/* --- modos avulsos ------------------------------------------------------ */
+
+.botao--destaque {
+  background: linear-gradient(180deg, #2f6f57, #1d4a3a);
+  border-color: #47a37c;
+}
+
+.grade--modos { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+
+/* `currentColor` faz o trabalho que o color-mix faria, e roda em WebView
+   velha: a cor do modo entra uma vez em `color`, e borda, selo e brilho se
+   servem dela. Um aparelho de 2019 não pode ficar com o cartão sem cor. */
+.cartao--modo {
+  color: var(--cor-modo, #7fd1ff);
+  border-color: currentColor;
+  box-shadow: inset 0 60px 60px -60px currentColor;
+}
+
+.modo__selo { line-height: 0; margin-bottom: 10px; }
+.modo__selo svg { width: 52px; height: 52px; }
+.cartao--modo h3 { color: var(--texto); }
+
+.modo__recorde {
+  margin: 0 0 10px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--texto-fraco);
+}
+.modo__recorde strong { color: var(--cor-modo, #7fd1ff); font-size: 15px; letter-spacing: 0; }
+
+.placar__numero { margin: 6px 0 2px; line-height: 1; }
+.placar__numero strong {
+  display: block;
+  font-size: 52px;
+  font-weight: 800;
+  color: var(--cor-modo, #ffd24a);
+  text-shadow: 0 0 30px rgba(255, 255, 255, 0.22);
+}
+.placar__numero span {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--texto-fraco);
+}
+
+.placar__recorde {
+  margin: 8px 0 0;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  font-size: 13px;
+  color: var(--destaque);
+}
+.placar__anterior { margin: 8px 0 0; font-size: 12.5px; color: var(--texto-fraco); }
+
 /* --- ajustes ------------------------------------------------------------ */
 
 .ajustes { display: grid; gap: 16px; }

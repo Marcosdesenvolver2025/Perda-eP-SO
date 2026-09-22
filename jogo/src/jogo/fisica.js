@@ -44,6 +44,10 @@ export function criarCarro(ficha, posicao = { x: 0, z: 0 }, angulo = 0) {
     esterco: 0,             // ângulo real das rodas dianteiras, em radianos
     marcha: 1,
     rotacao: ficha.marchaLenta,
+    rotacaoReal: ficha.marchaLenta,  // sem trava: é ela que afoga e que estoura
+    afogando: 0,            // 0..1 — marcha alta demais para a velocidade
+    cortando: false,        // bateu no limitador: precisa subir a marcha
+    trocouMarcha: 0,        // segundos de embreagem pisada ainda por correr
     sentido: 1,             // 1 = drive, -1 = ré
     combustivel: ficha.tanque,
     dano: 0,                // 0..1
@@ -81,7 +85,8 @@ export function passo(carro, comandos, dt, pista = { atrito: 1 }) {
 
   // --- transmissão -----------------------------------------------------
   carro.sentido = comandos.sentido;
-  atualizarMarcha(carro, dt);
+  atualizarMarcha(carro, comandos, dt);
+  if (carro.trocouMarcha > 0) carro.trocouMarcha = Math.max(0, carro.trocouMarcha - dt);
 
   // --- carga nos eixos, com transferência de peso -----------------------
   // Acelerar joga peso para trás (a traseira ganha aderência), frear joga para
@@ -112,7 +117,16 @@ export function passo(carro, comandos, dt, pista = { atrito: 1 }) {
   const acelerador = combustivelAcabou ? 0 : limitar(comandos.acelerador, 0, 1);
 
   if (acelerador > 0) {
-    const torque = curvaDeTorque(carro.rotacao, f) * f.torqueMaximo * acelerador;
+    // No manual, a marcha errada CUSTA. Três penalidades, todas do mundo real:
+    //   afogando  — rotação abaixo da marcha lenta: o motor não tem fôlego
+    //   cortando  — bateu no limitador: a injeção corta e a aceleração some
+    //   trocando  — durante a troca a embreagem está pisada e nada passa
+    let entrega = curvaDeTorque(carro.rotacao, f);
+    if (carro.cortando) entrega *= 0.07;
+    if (carro.afogando > 0) entrega *= 1 - carro.afogando * 0.82;
+    if (carro.trocouMarcha > 0) entrega *= 0.12;
+
+    const torque = entrega * f.torqueMaximo * acelerador;
     const relacao = f.relacoes[carro.marcha - 1] * f.diferencial;
     forcaMotor = (torque * relacao * f.rendimento) / f.raioRoda * carro.sentido;
   }
@@ -247,17 +261,73 @@ function curvaDeTorque(rotacao, ficha) {
   return 0.55 + 0.75 * Math.sin(Math.PI * Math.pow(t, 0.78)) - 0.22 * t * t;
 }
 
-/** Câmbio automático simples: sobe no corte, desce quando afunda demais. */
-function atualizarMarcha(carro, dt) {
+/**
+ * O câmbio.
+ *
+ * No automático ele troca sozinho, como antes. No manual quem troca é você — e
+ * aí a rotação deixa de ser presa na faixa boa: ela AFUNDA se a marcha for
+ * alta demais para a velocidade, e ESTOURA se for baixa demais. É essa conta
+ * solta que faz a marcha certa importar.
+ *
+ * A embreagem protege a saída: parado em primeira ou segunda o motor não
+ * afoga, porque na vida real você patina a embreagem. Da terceira para cima,
+ * sair do lugar é o castigo que tem que ser.
+ */
+function atualizarMarcha(carro, comandos, dt) {
   const f = carro.ficha;
   const relacao = f.relacoes[carro.marcha - 1] * f.diferencial;
   const rotacaoDaRoda = (Math.abs(carro.vx) / f.raioRoda) * relacao * 60 / TAU;
-  const alvo = Math.max(f.marchaLenta, Math.min(f.rotacaoMaxima, rotacaoDaRoda));
-  carro.rotacao = misturar(carro.rotacao, alvo, Math.min(1, dt * 7));
 
-  if (carro.sentido < 0) { carro.marcha = 1; return; }
-  if (carro.rotacao > f.rotacaoTroca && carro.marcha < f.relacoes.length) carro.marcha++;
-  else if (carro.rotacao < f.rotacaoReduz && carro.marcha > 1) carro.marcha--;
+  if (carro.sentido < 0) {
+    carro.marcha = 1;
+    carro.afogando = 0;
+    carro.cortando = false;
+    carro.rotacaoReal = Math.max(f.marchaLenta, rotacaoDaRoda);
+    carro.rotacao = misturar(carro.rotacao, carro.rotacaoReal, Math.min(1, dt * 7));
+    return;
+  }
+
+  if (comandos.cambio !== 'manual' || f.relacoes.length <= 1) {
+    const alvo = Math.max(f.marchaLenta, Math.min(f.rotacaoMaxima, rotacaoDaRoda));
+    carro.rotacao = misturar(carro.rotacao, alvo, Math.min(1, dt * 7));
+    carro.rotacaoReal = alvo;
+    carro.afogando = 0;
+    carro.cortando = false;
+    if (carro.rotacao > f.rotacaoTroca && carro.marcha < f.relacoes.length) carro.marcha++;
+    else if (carro.rotacao < f.rotacaoReduz && carro.marcha > 1) carro.marcha--;
+    return;
+  }
+
+  carro.rotacaoReal = rotacaoDaRoda;
+
+  const piso = f.marchaLenta * 1.3;
+  let afogando = limitar((piso - rotacaoDaRoda) / piso, 0, 1);
+  // Embreagem: sair do lugar em primeira ou segunda é trabalho dela, não do
+  // motor. Em marcha mais alta, você sente.
+  if (carro.marcha <= 2 && Math.abs(carro.vx) < 5) afogando *= 0.12;
+  carro.afogando = afogando;
+  carro.cortando = rotacaoDaRoda > f.rotacaoMaxima;
+
+  const mostrar = limitar(rotacaoDaRoda, f.marchaLenta * 0.72, f.rotacaoMaxima * 1.06);
+  carro.rotacao = misturar(carro.rotacao, mostrar, Math.min(1, dt * 9));
+}
+
+/**
+ * Sobe ou desce uma marcha. Chame UMA vez por quadro, não por passo de física:
+ * trocar de marcha é um ato, não um estado.
+ *
+ * Devolve o que aconteceu, para o som e o painel reagirem:
+ * 'trocou', 'no-limite' (já está na última ou na primeira) ou 'sem-cambio'.
+ */
+export function trocarMarcha(carro, direcao) {
+  const f = carro.ficha;
+  if (f.relacoes.length <= 1) return 'sem-cambio';
+  if (carro.sentido < 0) return 'sem-cambio';
+  const nova = limitar(carro.marcha + direcao, 1, f.relacoes.length);
+  if (nova === carro.marcha) return 'no-limite';
+  carro.marcha = nova;
+  carro.trocouMarcha = 0.22;
+  return 'trocou';
 }
 
 /**

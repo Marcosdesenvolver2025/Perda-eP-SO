@@ -15,7 +15,7 @@ import { gerarMapa, marcarChao } from './motor/mapa.js';
 import { LUZ } from './motor/paleta.js';
 import { construirCarro } from './motor/modelos.js';
 
-import { criarCarro, passo as passoFisica } from './jogo/fisica.js';
+import { criarCarro, passo as passoFisica, trocarMarcha } from './jogo/fisica.js';
 import { carroPorId } from './jogo/carros.js';
 import { clima, atritoDe } from './jogo/clima.js';
 import { gerarMundo, pisoEm } from './jogo/mundo.js';
@@ -23,6 +23,7 @@ import { resolverColisoes } from './jogo/colisao.js';
 import {
   sortearMissao, gerarCarreira, montarMissao, atualizarMissao, avaliarMissao,
 } from './jogo/missoes.js';
+import { descritorDeModo, FICHA_DOS_MODOS } from './jogo/modos.js';
 import {
   criarTransito, atualizarTransito, colisoresDoTransito,
   instanciasDoTransito, empilharCarro,
@@ -103,11 +104,28 @@ class Jogo {
     this.entrada.zerar();
     this.telas.menu(this.progresso, {
       carreira: () => this.abrirBriefing(this.missaoDaCarreira()),
+      modos: () => this.abrirModos(),
       avulso: () => this.abrirBriefing(this.missaoAvulsa(), { avulso: true }),
       livre: () => this.comecarRuaLivre(),
       garagem: () => this.abrirGaragem(),
       ajustes: () => this.abrirAjustes(),
     });
+  }
+
+  abrirModos() {
+    this.estado = 'modos';
+    this.partida = null;
+    this.entrada.zerar();
+    this.telas.modos(this.progresso, {
+      voltar: () => this.irParaMenu(),
+      jogar: (id) => this.comecarModo(id),
+    });
+  }
+
+  comecarModo(id) {
+    const descritor = descritorDeModo(id);
+    this.som.clique();
+    this.comecarMissao(descritor);
   }
 
   missaoDaCarreira() {
@@ -165,6 +183,11 @@ class Jogo {
         Progresso.salvar(this.progresso);
         this.abrirAjustes();
       },
+      cambio: (v) => {
+        this.progresso.ajustes.cambio = v;
+        Progresso.salvar(this.progresso);
+        this.abrirAjustes();
+      },
       apagar: () => {
         this.progresso = Progresso.apagar();
         this.carreira = gerarCarreira(this.progresso.carreira.semente);
@@ -189,7 +212,8 @@ class Jogo {
   // -------------------------------------------------------------------------
 
   comecarMissao(descritor) {
-    this.telas.carregando('montando o bairro…');
+    this.telas.carregando(descritor.modo && descritor.modo !== 'estacionamento'
+      ? 'montando a pista…' : 'montando o bairro…');
     // Dois quadros de respiro para a tela de carregamento aparecer antes de a
     // geração do mapa travar a linha principal.
     requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -200,7 +224,8 @@ class Jogo {
       this.entrada.zerar();
       this.ultimo = performance.now();
       this.acumulado = 0;
-      this.hud.recado(descritor.titulo.toUpperCase(), '#7fd1ff', 2.0);
+      this.hud.recado(descritor.titulo.toUpperCase(),
+        descritor.modo ? FICHA_DOS_MODOS[descritor.modo].cor : '#7fd1ff', 2.0);
     }));
   }
 
@@ -339,7 +364,16 @@ class Jogo {
       Progresso.salvar(this.progresso);
     }
 
+    // O câmbio escolhido nos ajustes vale para a física inteira.
+    this.entrada.comandos.cambio = this.progresso.ajustes.cambio || 'automatico';
     const comandos = this.entrada.atualizar(dt, carro);
+
+    // Trocar de marcha acontece UMA vez por quadro, não a cada passo de física.
+    const troca = this.entrada.consumirTrocaDeMarcha();
+    if (troca && comandos.cambio === 'manual') {
+      const resultado = trocarMarcha(carro, troca);
+      if (resultado === 'trocou') this.som.marcha(troca);
+    }
     p.piso = pisoEm(p.mundo, carro.x, carro.z);
     const foraDoAsfalto = p.piso !== 'asfalto' && p.piso !== 'calcada';
     p.foraDaPista = foraDoAsfalto && Math.abs(carro.vx) > 2
@@ -440,6 +474,13 @@ class Jogo {
     if (evento.tipo === 'ponto') {
       this.som.ponto();
       this.hud.recado(evento.restantes > 0 ? `faltam ${evento.restantes}` : 'último!', '#36c96f', 1.4);
+    } else if (evento.tipo === 'marco') {
+      // Ponto batido num modo: o número que subiu, na cara, e um bipe agudo.
+      this.som.ponto();
+      this.hud.recado(evento.texto, evento.cor || '#ffd24a', 1.8);
+    } else if (evento.tipo === 'aviso') {
+      this.som.nota(200, 0.16, 'sawtooth', 0.1);
+      this.hud.recado(evento.texto, evento.cor || '#e8563a', 1.2);
     } else if (evento.tipo === 'vitoria') {
       this.terminar(true);
     } else if (evento.tipo === 'derrota') {
@@ -456,7 +497,11 @@ class Jogo {
     if (sucesso) this.som.vitoria(); else this.som.derrota();
     this.som.atualizar(p.carro, p.ambiente, false);
 
-    if (!p.descritor.avulso && p.descritor.indice !== undefined) {
+    let extra = {};
+    if (p.descritor.modo) {
+      extra = Progresso.registrarModo(this.progresso, p.descritor.modo, resultado, p);
+      if (extra.recorde && resultado.pontos > 0) this.som.vitoria();
+    } else if (!p.descritor.avulso && p.descritor.indice !== undefined) {
       Progresso.registrarResultado(this.progresso, p.descritor.indice, resultado, p);
     } else if (resultado.sucesso) {
       this.progresso.dinheiro += resultado.premio;
@@ -465,9 +510,14 @@ class Jogo {
 
     this.telas.resultado(resultado, p, {
       proxima: () => this.abrirBriefing(this.missaoDaCarreira()),
-      repetir: () => this.comecarMissao(p.descritor),
+      // Num modo, repetir é uma partida NOVA: semente nova, clima novo. A pista
+      // é a mesma — quem repete quer bater o próprio placar, não decorar o mapa.
+      repetir: () => (p.descritor.modo
+        ? this.comecarModo(p.descritor.modo)
+        : this.comecarMissao(p.descritor)),
+      modos: () => this.abrirModos(),
       menu: () => this.irParaMenu(),
-    });
+    }, extra);
   }
 
   pausar() {
@@ -482,10 +532,13 @@ class Jogo {
     }
     this.estado = 'pausa';
     this.som.atualizar(this.partida.carro, this.partida.ambiente, false);
+    const descritor = this.partida.descritor;
     this.telas.pausa(this.partida, {
       continuar: () => this.despausar(),
-      recomecar: () => this.comecarMissao(this.partida.descritor),
-      menu: () => this.irParaMenu(),
+      recomecar: () => (descritor.modo
+        ? this.comecarModo(descritor.modo)
+        : this.comecarMissao(descritor)),
+      menu: () => (descritor.modo ? this.abrirModos() : this.irParaMenu()),
     });
   }
 

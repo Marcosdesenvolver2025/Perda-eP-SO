@@ -264,6 +264,123 @@ const ESTILOS = {
     cubo(ctx, ficha, raio);
   },
 
+  // Perua: aro fino de plástico e a PASTILHA da buzina atravessada no meio —
+  // aquela barra larga dos carros de família, que ocupa meio volante.
+  pastilha(ctx, ficha, raio, destaque) {
+    const esp = raio * ficha.espessura * 2;
+    aroCompleto(ctx, raio, esp, ficha.corAro, destaque);
+
+    // Dois raios para baixo, às cinco e às sete.
+    ctx.fillStyle = corTexto(ficha.corRaio);
+    for (const a of [56 * G, 124 * G]) {
+      ctx.save();
+      ctx.rotate(a);
+      ctx.beginPath();
+      ctx.moveTo(0, -raio * 0.09);
+      ctx.lineTo(raio - esp * 0.3, -raio * 0.055);
+      ctx.lineTo(raio - esp * 0.3, raio * 0.055);
+      ctx.lineTo(0, raio * 0.09);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // A pastilha: retângulo arredondado atravessado no meio. Ela é grande —
+    // é a graça do volante — mas não pode engolir o aro, senão some o que a
+    // pessoa está de fato girando.
+    const largura = raio * 0.96, altura = raio * 0.30;
+    const g = ctx.createLinearGradient(0, -altura / 2, 0, altura / 2);
+    g.addColorStop(0, corTexto(tonalizar(ficha.corCubo, 1.55)));
+    g.addColorStop(1, corTexto(tonalizar(ficha.corCubo, 0.72)));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    const rc = altura * 0.42;
+    ctx.moveTo(-largura / 2 + rc, -altura / 2);
+    ctx.lineTo(largura / 2 - rc, -altura / 2);
+    ctx.quadraticCurveTo(largura / 2, -altura / 2, largura / 2, -altura / 2 + rc);
+    ctx.lineTo(largura / 2, altura / 2 - rc);
+    ctx.quadraticCurveTo(largura / 2, altura / 2, largura / 2 - rc, altura / 2);
+    ctx.lineTo(-largura / 2 + rc, altura / 2);
+    ctx.quadraticCurveTo(-largura / 2, altura / 2, -largura / 2, altura / 2 - rc);
+    ctx.lineTo(-largura / 2, -altura / 2 + rc);
+    ctx.quadraticCurveTo(-largura / 2, -altura / 2, -largura / 2 + rc, -altura / 2);
+    ctx.fill();
+    ctx.lineWidth = Math.max(1, raio * 0.016);
+    ctx.strokeStyle = corTexto(tonalizar(ficha.corCubo, 0.42));
+    ctx.stroke();
+
+    ctx.save();
+    ctx.translate(-largura * 0.30, 0);
+    desenharEmblema(ctx, ficha.emblema, raio * 0.10, ficha.corDetalhe);
+    ctx.restore();
+  },
+
+  // Cupê: prato fundo, aro de couro grosso e os raios VAZADOS em fenda —
+  // o volante de acessório que todo mundo botava no carro de rua nos anos 70.
+  fenda(ctx, ficha, raio, destaque) {
+    const esp = raio * ficha.espessura * 2;
+    aroCompleto(ctx, raio, esp, ficha.corAro, destaque);
+    if (ficha.costura) costurar(ctx, raio, esp, ficha.corCostura, 60);
+
+    raiosRetos(ctx, 3, -90 * G, raio, esp, corTexto(ficha.corRaio), raio * 0.30);
+
+    // As fendas: buracos alongados, não redondos. É o que separa este volante
+    // do furado do buggy — lá é furo de broca, aqui é rasgo de fresa.
+    ctx.fillStyle = corTexto(tonalizar(ficha.corCubo, 0.35));
+    for (let i = 0; i < 3; i++) {
+      const a = -90 * G + (i * TAU) / 3;
+      ctx.save();
+      ctx.rotate(a);
+      for (const d of [0.50, 0.72]) {
+        ctx.beginPath();
+        ctx.ellipse(raio * d, 0, raio * 0.075, raio * 0.042, 0, 0, TAU);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // Anel cromado da buzina. Fica FORA do cubo, senão o cubo o cobre e o que
+    // sobra na tela é um borrão claro no meio do volante.
+    ctx.lineWidth = raio * 0.045;
+    ctx.strokeStyle = corTexto(tonalizar(ficha.corDetalhe, 1.1));
+    ctx.beginPath();
+    ctx.arc(0, 0, raio * 0.44, 0, TAU);
+    ctx.stroke();
+    cubo(ctx, ficha, raio);
+  },
+
+  // Caminhão: prato grande, dois raios, e a MANOPLA presa no aro — o punho
+  // que o motorista agarra para dar meia volta com uma mão só.
+  manopla(ctx, ficha, raio, destaque) {
+    const esp = raio * ficha.espessura * 2;
+    aroCompleto(ctx, raio, esp, ficha.corAro, destaque);
+    // Dois raios deitados, formando uma barra só de ponta a ponta — é assim
+    // que é o volante de caminhão, e é o que deixa espaço para a manopla.
+    raiosRetos(ctx, 2, 0, raio, esp, corTexto(ficha.corRaio), raio * 0.19);
+    if (ficha.furos) furosNoRaio(ctx, 2, 0, raio, ficha.corCubo);
+
+    // A manopla, às dez horas: base no aro e o punho em cima dela.
+    ctx.save();
+    ctx.rotate(-135 * G);
+    ctx.fillStyle = corTexto(tonalizar(ficha.corDetalhe, 0.6));
+    ctx.beginPath();
+    ctx.ellipse(raio, 0, esp * 0.9, esp * 0.9, 0, 0, TAU);
+    ctx.fill();
+    const g = ctx.createRadialGradient(raio - esp * 0.3, -esp * 0.3, esp * 0.1,
+      raio, 0, esp * 1.5);
+    g.addColorStop(0, corTexto(tonalizar(ficha.corDetalhe, 1.6)));
+    g.addColorStop(1, corTexto(tonalizar(ficha.corDetalhe, 0.75)));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(raio, 0, esp * 1.35, 0, TAU);
+    ctx.fill();
+    ctx.lineWidth = Math.max(1, esp * 0.16);
+    ctx.strokeStyle = corTexto(tonalizar(ficha.corDetalhe, 0.4));
+    ctx.stroke();
+    ctx.restore();
+    cubo(ctx, ficha, raio);
+  },
+
   // Elétrico: manche. Nem é um círculo — tem barra em cima e fundo reto.
   yoke(ctx, ficha, raio, destaque) {
     const esp = raio * ficha.espessura * 2;
@@ -402,6 +519,45 @@ function desenharEmblema(ctx, tipo, r, cor) {
       ctx.lineTo(-r, r * 0.6);
       ctx.closePath();
       ctx.fill();
+      break;
+    case 'estrela':
+      ctx.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const a = -Math.PI / 2 + (i * Math.PI) / 5;
+        const d = i % 2 ? r * 0.42 : r;
+        const px = Math.cos(a) * d, py = Math.sin(a) * d;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+      break;
+    case 'chama':
+      ctx.beginPath();
+      ctx.moveTo(0, r);
+      ctx.quadraticCurveTo(-r * 0.95, r * 0.15, -r * 0.30, -r * 0.35);
+      ctx.quadraticCurveTo(-r * 0.36, -r * 0.05, -r * 0.05, -r * 0.2);
+      ctx.quadraticCurveTo(-r * 0.2, -r * 0.72, r * 0.30, -r);
+      ctx.quadraticCurveTo(r * 0.14, -r * 0.3, r * 0.52, -r * 0.42);
+      ctx.quadraticCurveTo(r * 0.92, r * 0.2, 0, r);
+      ctx.fill();
+      break;
+    case 'engrenagem':
+      for (let i = 0; i < 8; i++) {
+        const a = (i * TAU) / 8;
+        ctx.save();
+        ctx.rotate(a);
+        ctx.fillRect(-r * 0.16, -r, r * 0.32, r * 0.42);
+        ctx.restore();
+      }
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.66, 0, TAU);
+      ctx.fill();
+      ctx.save();
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.28, 0, TAU);
+      ctx.fill();
+      ctx.restore();
       break;
     case 'onda':
     default:

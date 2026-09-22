@@ -90,10 +90,30 @@ export function seguir(camera, carro, dt, olharAtras = false) {
   const ajuste = AJUSTES[camera.modo] || AJUSTES.perseguicao;
   const velocidade = Math.abs(carro.vx);
 
-  // Em velocidade a câmera abre um pouco e afasta: a estrada "respira".
+  // Os números acima foram achados num sedã de 4,86 m por 1,42 m de altura.
+  // Repetidos num caminhão de 5,90 m por 2,55 m, a câmera fica encostada no
+  // baú e não se vê mais a rua; num esportivo rasteiro, fica longe demais.
+  // Então tudo escala com o carro, ancorado nesse sedã.
+  const f = carro.ficha || {};
+  const comprimento = f.comprimento || 4.86;
+  const alturaCarro = f.altura || 1.42;
   const puxada = camera.modo === 'perseguicao' ? Math.min(velocidade * 0.055, 1.5) : 0;
-  const distancia = ajuste.distancia + puxada;
-  const altura = ajuste.altura + puxada * 0.18;
+
+  let distancia;
+  let altura;
+  if (camera.modo === 'capo') {
+    distancia = -comprimento * 0.247;
+    altura = alturaCarro * 0.90;
+  } else if (camera.modo === 'cabine') {
+    distancia = comprimento * 0.072;
+    altura = alturaCarro * 0.86;
+  } else if (camera.modo === 'alto') {
+    distancia = ajuste.distancia + comprimento * 0.2;
+    altura = ajuste.altura + alturaCarro * 1.2;
+  } else {
+    distancia = comprimento * 1.42 + puxada;
+    altura = alturaCarro * 1.35 + 0.93 + puxada * 0.18;
+  }
 
   const alvoGuinada = carro.angulo + (olharAtras ? Math.PI : 0);
   const fator = 1 - Math.exp(-ajuste.suavidade * dt);
@@ -120,7 +140,12 @@ export function seguir(camera, carro, dt, olharAtras = false) {
   }
 
   let inclinacao = ajuste.inclinacao;
-  if (camera.modo === 'perseguicao') inclinacao -= carro.inclinacao * 0.35;
+  if (camera.modo === 'perseguicao') {
+    // Câmera mais alta tem que olhar mais para baixo, senão mira o céu por
+    // cima do carro. A conta é a mesma que o olho faz sozinho.
+    inclinacao -= Math.max(0, (altura - ajuste.altura) / Math.max(1, distancia)) * 0.55;
+    inclinacao -= carro.inclinacao * 0.35;
+  }
   if (camera.modo === 'cabine' || camera.modo === 'capo') inclinacao -= carro.inclinacao * 0.8;
 
   // Tremor: bate em algo e a imagem sacode.

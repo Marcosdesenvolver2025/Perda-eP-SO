@@ -99,6 +99,83 @@ function montarCarro(modelo, corAlternativa) {
     b.caixa(0, topoCorpo + 0.16, cz1 - 0.06, A * 0.98, 0.42, 0.12, escuro);
     b.caixa(-meiaA + 0.06, topoCorpo + 0.16, (cz0 + cz1) / 2, 0.12, 0.42, cz1 - cz0, cor);
     b.caixa(meiaA - 0.06, topoCorpo + 0.16, (cz0 + cz1) / 2, 0.12, 0.42, cz1 - cz0, cor);
+  } else if (c.tipo === 'perua') {
+    // Perua: sedã que não termina. O teto segue reto até a traseira e cai de
+    // uma vez — é a linha do teto comprido que faz a silhueta, não o tamanho.
+    b.tronco(0, baixo + c.alturaCorpo / 2, frente + capo / 2,
+      A * 0.97, c.alturaCorpo, capo, A * 0.92, capo * 0.9, 0, 0.04, cor,
+      { cores: { topo: claro } });
+    b.caixa(0, (baixo + topoCorpo) / 2, (cabineZ0 + tras) / 2,
+      A, c.alturaCorpo, tras - cabineZ0, cor, { cores: { topo: tonalizar(cor, 0.9) } });
+    const fimDoTeto = tras - 0.10;
+    b.tronco(0, (topoCorpo + topoCabine) / 2, (cabineZ0 + fimDoTeto) / 2,
+      A - recuo, alturaCabine, fimDoTeto - cabineZ0,
+      A - recuo * 2.1, (fimDoTeto - cabineZ0) * 0.88, 0, 0.14, cor,
+      { cores: { topo: claro, frente: VIDRO, tras: VIDRO } });
+    // Rack de teto: duas longarinas. É o que diz "perua" antes de qualquer coisa.
+    for (const lado of [-1, 1]) {
+      b.caixa(lado * (A * 0.5 - recuo * 1.5), topoCabine + 0.04,
+        (cabineZ0 + fimDoTeto) / 2 + 0.22, 0.05, 0.06, (fimDoTeto - cabineZ0) * 0.7,
+        tonalizar(cor, 0.35));
+    }
+    janelasLaterais(b, meiaA - recuo * 0.45, topoCorpo + alturaCabine * 0.1,
+      alturaCabine * 0.72, cabineZ0 + 0.16, fimDoTeto - 0.16);
+  } else if (c.tipo === 'cupe') {
+    // Cupê: capô comprido, cabine atrasada e o teto descendo direto na tampa —
+    // a rabeta inteira é uma reta só, que é o que define um fastback.
+    b.tronco(0, baixo + c.alturaCorpo * 0.94 / 2, frente + capo / 2,
+      A * 0.97, c.alturaCorpo * 0.94, capo, A * 0.93, capo * 0.88, 0, 0.05, cor,
+      { cores: { topo: claro } });
+    b.caixa(0, (baixo + topoCorpo) / 2, (cabineZ0 + cabineZ1) / 2,
+      A, c.alturaCorpo, cabineZ1 - cabineZ0, cor, { cores: { topo: tonalizar(cor, 0.9) } });
+    b.tronco(0, baixo + c.alturaCorpo / 2, tras - bagageiro / 2,
+      A * 0.97, c.alturaCorpo, bagageiro, A * 0.94, bagageiro * 0.9, 0, -0.04, cor,
+      { cores: { topo: claro } });
+    // O teto: estreito em cima e ATRASADO, então a linha de trás vira rampa.
+    b.tronco(0, (topoCorpo + topoCabine) / 2, (cabineZ0 + cabineZ1) / 2,
+      A - recuo, alturaCabine, (cabineZ1 - cabineZ0) * 1.24,
+      A - recuo * 3.1, (cabineZ1 - cabineZ0) * 0.40, 0, 0.30, cor,
+      { cores: { topo: claro, frente: VIDRO, tras: VIDRO } });
+    // Faixa de capô, de ponta a ponta. Cupê sem faixa é sedã de duas portas.
+    if (c.faixa) {
+      for (const lado of [-1, 1]) {
+        b.placa(lado * A * 0.10, topoCorpo + 0.002, (frente + cabineZ0) / 2,
+          A * 0.11, capo * 0.88, c.corSecundaria);
+        b.placa(lado * A * 0.10, topoCorpo + 0.002, tras - bagageiro / 2,
+          A * 0.11, bagageiro * 0.8, c.corSecundaria);
+      }
+    }
+    janelasLaterais(b, meiaA - recuo * 0.45, topoCorpo + alturaCabine * 0.12,
+      alturaCabine * 0.62, cabineZ0 + 0.20, cabineZ1 - 0.10);
+  } else if (c.tipo === 'caminhao') {
+    // Caminhãozinho: cabine em cima do motor, baú atrás, e uma folga entre os
+    // dois. A folga é o detalhe — sem ela é um furgão, com ela é um caminhão.
+    const fimCabine = frente + capo + 1.30;
+    b.tronco(0, (baixo + topoCorpo + alturaCabine) / 2, (frente + fimCabine) / 2,
+      A * 0.98, c.alturaCorpo + alturaCabine, fimCabine - frente,
+      A * 0.94, (fimCabine - frente) * 0.94, 0, 0.04, cor,
+      { cores: { topo: claro } });
+    b.tronco(0, topoCorpo + alturaCabine * 0.62, frente + capo * 0.7,
+      A * 0.88, alturaCabine * 0.78, 0.26, A * 0.84, 0.22, 0, 0.20, VIDRO,
+      { cores: { frente: VIDRO_CLARO } });
+    janelasLaterais(b, meiaA, topoCorpo + alturaCabine * 0.22,
+      alturaCabine * 0.72, frente + capo * 0.85, fimCabine - 0.18);
+    // O baú, mais alto que a cabine e recuado.
+    const bau0 = fimCabine + 0.16;
+    const alturaBau = c.alturaBau || 1.5;
+    b.caixa(0, baixo + 0.12 + alturaBau / 2, (bau0 + tras) / 2,
+      A * 0.99, alturaBau, tras - bau0, c.corSecundaria,
+      { cores: { topo: tonalizar(c.corSecundaria, 1.14) } });
+    // Quinas e travessas do baú, que é o que tira a cara de tijolo.
+    for (const t of [0.3, 0.55, 0.8]) {
+      const z = bau0 + (tras - bau0) * t;
+      for (const lado of [-1, 1]) {
+        b.caixa(lado * (A * 0.495 + 0.004), baixo + 0.12 + alturaBau / 2, z,
+          0.01, alturaBau * 0.94, 0.06, tonalizar(c.corSecundaria, 0.72));
+      }
+    }
+    b.caixa(0, baixo + 0.10, (bau0 + tras) / 2, A * 0.99, 0.09, tras - bau0,
+      tonalizar(c.corSecundaria, 0.5));
   } else if (c.tipo === 'buggy') {
     // Buggy: banheira baixa e santo antônio de cano.
     b.tronco(0, (baixo + topoCorpo) / 2, 0, A * 0.92, c.alturaCorpo, L * 0.94,
@@ -160,18 +237,31 @@ function montarCarro(modelo, corAlternativa) {
 
   // Faróis e lanternas. São faces que ignoram a luz: acendem sozinhas.
   const yFarol = baixo + c.alturaCorpo * 0.62;
+  const yLanterna = baixo + c.alturaCorpo * 0.66;
   for (const lado of [-1, 1]) {
-    b.painel(lado * (meiaA - 0.30), yFarol, frente - 0.005, 0.34, 0.20, FAROL, { semLuz: true });
-    b.painel(lado * (meiaA - 0.26), baixo + c.alturaCorpo * 0.66, tras + 0.005, 0.30, 0.20, LANTERNA, { semLuz: true });
+    // Moldura antes da lente: é a moldura que dá profundidade ao farol e o
+    // separa da lataria. Sem ela o farol é um adesivo.
+    b.painel(lado * (meiaA - 0.30), yFarol, frente - 0.003, 0.40, 0.25, tonalizar(cor, 0.34));
+    b.painel(lado * (meiaA - 0.30), yFarol, frente - 0.007, 0.34, 0.20, FAROL, { semLuz: true });
+    b.painel(lado * (meiaA - 0.26), yLanterna, tras + 0.003, 0.36, 0.25, tonalizar(cor, 0.34));
+    b.painel(lado * (meiaA - 0.26), yLanterna, tras + 0.007, 0.30, 0.20, LANTERNA, { semLuz: true });
   }
-  // Grade e placa.
-  b.painel(0, baixo + c.alturaCorpo * 0.36, frente - 0.004, A * 0.42, 0.14, 0x1d2126, { semLuz: true });
-  b.painel(0, baixo + 0.30, tras + 0.006, 0.36, 0.13, CARRO.placa, { semLuz: true });
 
-  // Retrovisores.
+  const geo = {
+    A, meiaA, L, frente, tras, baixo, topoCorpo, alturaCabine, cabineZ0, cabineZ1,
+  };
+  frenteDoCarro(b, c, cor, geo);
+  trasDoCarro(b, c, cor, geo);
+  flancoDoCarro(b, c, f, cor, geo);
+
+  // Retrovisores: a carcaça e o braço que a prende. O braço é meio centímetro
+  // de nada e é ele que tira o espelho de flutuando ao lado da porta.
   for (const lado of [-1, 1]) {
-    b.caixa(lado * (meiaA + 0.07), topoCorpo + alturaCabine * 0.42, cabineZ0 + 0.3,
-      0.16, 0.10, 0.10, escuro);
+    const zEspelho = c.tipo === 'van' || c.tipo === 'picape' ? cabineZ0 + 0.22 : cabineZ0 + 0.3;
+    const yEspelho = topoCorpo + alturaCabine * 0.42;
+    b.caixa(lado * (meiaA + 0.03), yEspelho - 0.02, zEspelho + 0.05, 0.08, 0.035, 0.035, escuro);
+    b.caixa(lado * (meiaA + 0.10), yEspelho, zEspelho, 0.07, 0.11, 0.13, escuro);
+    b.painel(lado * (meiaA + 0.10), yEspelho, zEspelho + 0.068, 0.05, 0.08, CARRO.vidroClaro);
   }
 
   if (c.asa) {
@@ -210,6 +300,116 @@ function montarCarro(modelo, corAlternativa) {
     escapamento: { x: meiaA * 0.55, y: baixo * 0.6, z: tras + 0.02 },
     dimensoes: { comprimento: L, largura: A, altura: topoCabine },
   };
+}
+
+// Três passadas de detalhe que valem para TODOS os carros.
+//
+// Cada uma custa meia dúzia de faces e resolve o mesmo problema: sem elas o
+// carro é um bloco pintado, e bloco pintado é o que denuncia jogo improvisado.
+// O truque é sempre o mesmo — uma lasca fina POR FORA da superfície, a três
+// milésimos de distância, que o ordenador de profundidade desenha por cima.
+
+/** A cara: grade rebaixada, barras e a tomada de ar de baixo. */
+function frenteDoCarro(b, c, cor, g) {
+  if (c.tipo === 'buggy') return;
+  const y = g.baixo + c.alturaCorpo * 0.36;
+  const largura = g.A * (c.tipo === 'van' ? 0.50 : 0.44);
+
+  // O fundo preto da grade. Rebaixado de verdade — é uma caixa curta para
+  // dentro do capô, então de lado dá para ver que ela afunda.
+  b.caixa(0, y, g.frente + 0.04, largura, 0.16, 0.08, 0x15181c);
+  const barras = c.tipo === 'picape' || c.tipo === 'van' ? 2 : 3;
+  for (let i = 0; i < barras; i++) {
+    const yb = y - 0.06 + (i / Math.max(1, barras - 1)) * 0.12;
+    b.painel(0, yb, g.frente - 0.006, largura * 0.94, 0.022,
+      c.tipo === 'sedan' || c.tipo === 'fusca' ? CROMO : tonalizar(cor, 0.52));
+  }
+
+  // Tomada de ar embaixo do pára-choque, e os dois piscas nos cantos.
+  b.painel(0, g.baixo + 0.045, g.frente - 0.006, g.A * 0.52, 0.075, 0x1a1d21);
+  for (const lado of [-1, 1]) {
+    b.painel(lado * (g.meiaA - 0.07), g.baixo + c.alturaCorpo * 0.60, g.frente - 0.006,
+      0.10, 0.11, 0xf0a83a, { semLuz: true });
+  }
+}
+
+/** A traseira: placa com moldura, refletores e a ponta do escapamento. */
+function trasDoCarro(b, c, cor, g) {
+  b.painel(0, g.baixo + 0.30, g.tras + 0.004, 0.42, 0.17, tonalizar(cor, 0.34));
+  b.painel(0, g.baixo + 0.30, g.tras + 0.008, 0.36, 0.13, CARRO.placa, { semLuz: true });
+  for (const lado of [-1, 1]) {
+    b.painel(lado * (g.meiaA - 0.16), g.baixo + 0.10, g.tras + 0.006, 0.09, 0.05, 0xb03028);
+  }
+  // A ponta do escapamento fica ENFIADA embaixo do pára-choque, não saindo
+  // dele: escapamento que ultrapassa a traseira também ultrapassa a caixa de
+  // colisão, e aí o carro bate com uma coisa que ninguém vê.
+  if (c.tipo !== 'eletrico') {
+    b.caixa(g.meiaA * 0.55, g.baixo * 0.62, g.tras - 0.03, 0.085, 0.085, 0.11, 0x53585e);
+  }
+}
+
+/** O flanco: caixa de roda, vinco da porta e a saia embaixo. */
+function flancoDoCarro(b, c, f, cor, g) {
+  const r = c.raioRoda;
+  const eixo = f.entreEixos / 2;
+  const fora = g.meiaA + 0.006;
+  const arco = tonalizar(cor, 0.44);
+
+  // A caixa de roda é um CONTORNO, não um painel cheio.
+  //
+  // Painel cheio foi a primeira tentativa e estava errado: a roda é desenhada
+  // por fora do flanco, mas o CENTRO dela fica para dentro do painel, e o
+  // ordenador de profundidade compara centro com centro. Resultado: o painel
+  // ganhava da roda e a roda de trás virava um buraco preto na lataria.
+  //
+  // Três barras finas que passam por FORA do pneu — duas colunas e o lábio em
+  // cima — não encostam nele, então não há o que ordenar errado. E contorno é
+  // o que o olho lê como arco de roda de qualquer jeito.
+  // O arco acompanha o pneu, mas nunca sobe acima da lataria: num carro baixo
+  // 2,06 raios passa do teto do corpo, e aí o contorno fica boiando no ar em
+  // cima do para-lama. Quem manda é o menor dos dois.
+  const topoArco = Math.min(r * 2.06, g.topoCorpo - 0.04);
+  const baseArco = Math.min(r * 1.16, topoArco - 0.10);
+  for (const z of [-eixo, eixo]) {
+    for (const lado of [-1, 1]) {
+      // Só os ombros do arco: a perna inteira até o chão vira duas barras
+      // pretas ladeando a roda, que é pior que não ter arco nenhum.
+      for (const ponta of [-1, 1]) {
+        b.caixa(lado * fora, (baseArco + topoArco) / 2, z + ponta * r * 1.06,
+          0.008, topoArco - baseArco, 0.04, arco);
+      }
+      b.caixa(lado * fora, topoArco, z, 0.008, 0.042, r * 2.12, arco);
+      // O lábio do para-lama, pousado na borda de cima do arco.
+      b.caixa(lado * (g.meiaA + 0.018), topoArco, z, 0.042, 0.045, r * 1.60,
+        tonalizar(cor, 0.84));
+    }
+  }
+
+  const meioCabine = (g.cabineZ0 + g.cabineZ1) / 2;
+  // O vinco passa da cabine para o capô e para a traseira, mas PARA na
+  // lataria: linha que vaza para fora do carro estica a caixa do modelo, e a
+  // caixa do modelo é o que a colisão e a sombra usam.
+  const vincoZ0 = Math.max(g.frente + 0.18, g.cabineZ0 - 0.35);
+  const vincoZ1 = Math.min(g.tras - 0.18, g.cabineZ1 + 0.35);
+  const cromada = c.tipo === 'fusca' || c.tipo === 'sedan';
+  for (const lado of [-1, 1]) {
+    // Vinco da porta, na altura do ombro: a linha que quebra a chapa lisa.
+    if (vincoZ1 - vincoZ0 > 0.4) {
+      b.caixa(lado * fora, g.topoCorpo - 0.07, (vincoZ0 + vincoZ1) / 2,
+        0.008, 0.028, vincoZ1 - vincoZ0, tonalizar(cor, 0.62));
+    }
+    // Saia: a faixa escura rente ao chão. É ela que assenta o carro.
+    b.caixa(lado * (g.meiaA - 0.004), g.baixo + 0.045, 0,
+      0.012, 0.09, g.L * 0.58, tonalizar(cor, 0.42));
+    // A fresta entre as portas, para o flanco ter onde começar e onde acabar.
+    if (c.tipo !== 'buggy' && g.cabineZ1 - g.cabineZ0 > 1.1) {
+      b.caixa(lado * fora, g.topoCorpo - c.alturaCorpo * 0.34, meioCabine,
+        0.008, c.alturaCorpo * 0.62, 0.018, tonalizar(cor, 0.52));
+    }
+    // Maçaneta.
+    b.caixa(lado * (g.meiaA + 0.012), g.topoCorpo - 0.16, meioCabine - 0.40,
+      0.03, 0.045, 0.16, cromada ? CROMO : tonalizar(cor, 0.5));
+  }
 }
 
 /** A faixa de vidro dos dois lados — uma lasca fina por fora da lataria. */

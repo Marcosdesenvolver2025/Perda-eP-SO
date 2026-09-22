@@ -383,19 +383,12 @@ function povoarQuadras(mundo, sortear, cenario, opcoes) {
     const profundidadeUtil = util.z1 - util.z0;
 
     if (larguraUtil > 7 && profundidadeUtil > 7 && sortear() < 0.78 * densidade + 0.16) {
-      // Quarteirão construído.
-      const quantos = limitar(Math.round(area / 260), 1, 4);
-      for (let i = 0; i < quantos; i++) {
-        const l = Math.round(limitar(entre(sortear, 7, larguraUtil * 0.8), 5, 18));
-        const p = Math.round(limitar(entre(sortear, 7, profundidadeUtil * 0.8), 5, 18));
-        const alturaMax = cenario.perfil === 'industrial' ? 10 : cenario.perfil === 'campo' ? 7 : 24;
-        const h = Math.round(entre(sortear, 5, alturaMax));
-        const x = entre(sortear, util.x0 + l / 2, util.x1 - l / 2);
-        const z = entre(sortear, util.z0 + p / 2, util.z1 - p / 2);
-        if (colide(mundo.colisores, x, z, l + 2, p + 2)) continue;
-        // Qual construção nasce ali é escolhido junto: casa baixa, loja de
-        // rua ou prédio. Rua só com prédio não é bairro, é maquete.
-        construir(mundo, sortear, cenario, x, z, l, h, p);
+      // Quarteirão construído: a construção vai encostada na CALÇADA, de
+      // frente para a rua, formando um corredor. Prédio solto no meio do lote
+      // deixa um vazio de grama dos dois lados da pista, e rua com vazio é o
+      // que faz um bairro parecer maquete em vez de cidade.
+      for (const lado of ['oeste', 'leste', 'norte', 'sul']) {
+        fileiraDeFachadas(mundo, sortear, cenario, quadra, lado, densidade);
       }
     } else {
       // Praça: gramado com árvores e um banco.
@@ -461,7 +454,7 @@ function povoarPatio(mundo, quadra, sortear, cenario) {
  * A altura pedida é só um palpite: casa alta demais vira caixa, então a casa
  * puxa a altura dela para baixo antes de nascer.
  */
-function construir(mundo, sortear, cenario, x, z, largura, altura, profundidade) {
+function construir(mundo, sortear, cenario, x, z, largura, altura, profundidade, guinadaFixa) {
   const semente = Math.floor(sortear() * 1e6);
   const cor = escolher(sortear, cenario.fachadas || FACHADAS);
   const perfil = cenario.perfil;
@@ -477,23 +470,107 @@ function construir(mundo, sortear, cenario, x, z, largura, altura, profundidade)
     const h = limitar(altura, 2.8, 4.2);
     adicionar(mundo, {
       tipo: 'casa', malha: modelos.casa(largura, h, profundidade, cor, semente),
-      x, z, guinada: orientar(sortear, largura, profundidade),
+      x, z, guinada: guinadaFixa ?? orientar(sortear, largura, profundidade),
       raio: Math.hypot(largura, profundidade) / 2 + 1,
-    }, { largura, comprimento: profundidade, solido: true, altura: h + 1.6 });
+    }, {
+      largura, comprimento: profundidade, solido: true, altura: h + 1.6,
+      guinada: guinadaFixa,
+    });
     return;
   }
   if (querLoja) {
     adicionar(mundo, {
       tipo: 'loja', malha: modelos.loja(largura, altura, profundidade, cor, semente),
-      x, z, guinada: orientar(sortear, largura, profundidade),
+      x, z, guinada: guinadaFixa ?? orientar(sortear, largura, profundidade),
       raio: Math.hypot(largura, profundidade) / 2 + 1,
-    }, { largura, comprimento: profundidade, solido: true, altura });
+    }, {
+      largura, comprimento: profundidade, solido: true, altura,
+      guinada: guinadaFixa,
+    });
     return;
   }
   adicionar(mundo, {
     tipo: 'predio', malha: modelos.predio(largura, altura, profundidade, cor, semente),
-    x, z, guinada: 0, raio: Math.hypot(largura, profundidade) / 2 + 1,
-  }, { largura, comprimento: profundidade, solido: true, altura });
+    x, z, guinada: guinadaFixa ?? 0, raio: Math.hypot(largura, profundidade) / 2 + 1,
+  }, {
+    largura, comprimento: profundidade, solido: true, altura,
+    guinada: guinadaFixa,
+  });
+}
+
+/**
+ * Uma fileira de construções encostada num lado do quarteirão, de frente
+ * para a rua daquele lado.
+ *
+ * É assim que uma rua de cidade é feita: fachada, fresta, fachada. O miolo do
+ * quarteirão fica vazio de propósito — ninguém vê o miolo de dentro do carro,
+ * e enchê-lo só custa polígono.
+ *
+ * `quadra.x0/x1/z0/z1` são a borda do ASFALTO. A calçada vai dali para dentro
+ * do quarteirão, então a fachada começa em `x0 + calcada`.
+ */
+function fileiraDeFachadas(mundo, sortear, cenario, quadra, lado, densidade) {
+  const c = mundo.calcada;
+  const aoLongoDeZ = lado === 'oeste' || lado === 'leste';
+  const inicio = aoLongoDeZ ? quadra.z0 : quadra.x0;
+  const fim = aoLongoDeZ ? quadra.z1 : quadra.x1;
+  const fundo = aoLongoDeZ ? quadra.x1 - quadra.x0 : quadra.z1 - quadra.z0;
+  const profundidadeMax = fundo / 2 - c - 0.5;
+  if (fim - inicio < 11 || profundidadeMax < 4.5) return;
+
+  // Para onde a frente aponta. A malha nasce virada para -Z, e
+  // `frente(g) = (-sen g, -cos g)`.
+  const guinada = { norte: 0, sul: Math.PI, oeste: Math.PI / 2, leste: -Math.PI / 2 }[lado];
+  const alturaMax = cenario.perfil === 'industrial' ? 11
+    : cenario.perfil === 'campo' ? 7 : 26;
+
+  let t = inicio + entre(sortear, 0.5, 2.5);
+  while (t < fim - 6) {
+    const frente = Math.min(entre(sortear, 8, 17), fim - 1 - t);
+    if (frente < 6) break;
+    const profundidade = limitar(entre(sortear, 8, 15), 5, profundidadeMax);
+    const altura = Math.round(entre(sortear, 5, alturaMax));
+
+    // O centro fica recuado da borda do asfalto pela calçada mais meia
+    // profundidade — é isso que encosta a fachada na calçada.
+    const recuo = c + profundidade / 2;
+    const meio = t + frente / 2;
+    const x = aoLongoDeZ ? (lado === 'oeste' ? quadra.x0 + recuo : quadra.x1 - recuo) : meio;
+    const z = aoLongoDeZ ? meio : (lado === 'norte' ? quadra.z0 + recuo : quadra.z1 - recuo);
+
+    // Largura da malha é o que se vê da rua; profundidade é o que entra no
+    // quarteirão. Girada, a caixa de colisão acompanha porque ela também
+    // guarda a guinada.
+    if (!colide(mundo.colisores, x, z,
+      aoLongoDeZ ? profundidade + 1 : frente + 1,
+      aoLongoDeZ ? frente + 1 : profundidade + 1)) {
+      if (sortear() < 0.10 * densidade) {
+        // Um lote vago de vez em quando, com um muro baixo. Fachada contínua
+        // sem nenhum buraco vira parede de corredor e cansa.
+        muroDeLote(mundo, x, z, frente, profundidade, guinada, aoLongoDeZ);
+      } else {
+        construir(mundo, sortear, cenario, x, z, frente, altura, profundidade, guinada);
+      }
+    }
+    t += frente + entre(sortear, 0.6, 3.0);
+  }
+}
+
+/** Terreno vago: um muro baixo na testada, e mato atrás. */
+function muroDeLote(mundo, x, z, frente, profundidade, guinada, aoLongoDeZ) {
+  const dx = aoLongoDeZ ? -Math.sin(guinada) : 0;
+  const dz = aoLongoDeZ ? 0 : -Math.cos(guinada);
+  adicionar(mundo, {
+    tipo: 'muro-lote', malha: modelos.muro(frente, 1.5, CENA.muro),
+    x: x + dx * (profundidade / 2 - 0.2), z: z + dz * (profundidade / 2 - 0.2),
+    guinada, raio: frente,
+  }, {
+    // Mesma guinada da fachada: a malha do muro corre no eixo X, e girá-la
+    // pela guinada da construção já a deixa paralela à testada. Somar mais um
+    // quarto de volta punha o muro atravessado na rua.
+    largura: frente, comprimento: 0.5, guinada,
+    solido: true, parede: true, altura: 1.5,
+  });
 }
 
 /**
@@ -646,10 +723,23 @@ function adicionar(mundo, prop, colisor) {
   return prop;
 }
 
+/**
+ * Cabe aqui? Teste grosseiro de caixa contra caixa, mas que respeita o quarto
+ * de volta.
+ *
+ * Sem olhar a guinada, um prédio de 8 por 15 girado 90° era medido como 8 de
+ * largura quando na verdade ocupava 15 — e as esquinas do quarteirão, onde a
+ * fileira de um lado encontra a do outro, empilhavam duas construções no mesmo
+ * lugar. Como toda guinada de construção aqui é múltipla de 90°, basta trocar
+ * largura por comprimento quando ela está de lado.
+ */
 function colide(colisores, x, z, largura, comprimento) {
   for (const c of colisores) {
-    if (Math.abs(c.x - x) < (c.largura + largura) / 2
-      && Math.abs(c.z - z) < (c.comprimento + comprimento) / 2) return true;
+    const deLado = Math.abs(Math.sin(c.guinada || 0)) > 0.5;
+    const cl = deLado ? c.comprimento : c.largura;
+    const cc = deLado ? c.largura : c.comprimento;
+    if (Math.abs(c.x - x) < (cl + largura) / 2
+      && Math.abs(c.z - z) < (cc + comprimento) / 2) return true;
   }
   return false;
 }

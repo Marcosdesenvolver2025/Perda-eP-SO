@@ -14,6 +14,20 @@ e mais mil de teste.
 
 ## Jogar
 
+**No celular (APK):**
+
+```bash
+cd jogo/android
+./construir.sh               # gera volante.apk
+adb install -r volante.apk   # ou copie o arquivo para o celular e toque nele
+```
+
+Como o APK é montado sem Gradle e sem o SDK do Google está em
+**[`android/README.md`](android/README.md)**. Também sai pronto a cada envio,
+na aba **Actions** do repositório.
+
+**No navegador:**
+
 ```bash
 cd jogo
 node servidor-local.mjs      # http://localhost:8080
@@ -78,6 +92,7 @@ src/
   jogo/         física, carros, volantes, colisão, mundo, missões, som, save
   interface/    painel dentro do canvas, telas em HTML
 testes/         93 testes, sem navegador
+android/        embrulha o jogo num APK, sem Gradle
 ```
 
 ### O chão
@@ -229,7 +244,26 @@ estourando o fim da rua.
 
 ---
 
+## Desempenho
+
+O mesmo código roda num celular de mil reais e num computador. O jogo mede
+quantos quadros por segundo está conseguindo e, se estiver abaixo de 38, baixa
+a qualidade sozinho — mexendo em duas coisas de uma vez: quantos pixels de
+verdade por pixel de tela, e em que resolução o chão é calculado. Só desce,
+nunca sobe: ficar alternando daria uma imagem piscando entre duas qualidades,
+que é pior que ficar na mais baixa.
+
+No teste com o APK, num quadro de 2230×1030 pixels: 31 quadros por segundo na
+qualidade alta, 57 depois do ajuste automático.
+
+---
+
 ## Publicar
 
-É um site estático: sobe a pasta `jogo/` em qualquer lugar e funciona. Sem
-build, sem passo de compilação, sem `node_modules`.
+**Na web:** é um site estático. Sobe a pasta `jogo/` em qualquer lugar e
+funciona. Sem build, sem passo de compilação, sem `node_modules`.
+
+**Como aplicativo:** `jogo/android/construir.sh` monta o APK. A chave que ele
+cria serve para testar no seu aparelho, não para publicar em loja — para isso
+é preciso uma chave própria, e o guia está em
+`documentos/publicar-na-play-store.md`.

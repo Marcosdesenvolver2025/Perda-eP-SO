@@ -21,8 +21,11 @@ web-build/
 *.p12
 *.key
 *.mobileprovision
-android/
-ios/
+# Só as pastas que o `expo prebuild` gera dentro do app. Antes eram `android/`
+# e `ios/` soltos, o que engolia QUALQUER pasta com esse nome no projeto —
+# inclusive jogo/android/, que é código escrito à mão e precisa ser versionado.
+app/android/
+app/ios/
 
 # credenciais de publicação
 app/credenciais/

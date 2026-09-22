@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  O aplicativo não pede NENHUMA permissão, de propósito: o jogo inteiro roda
+  dentro do aparelho, sem rede, sem arquivo, sem localização. Não há o que
+  vazar porque não há o que coletar.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="br.com.volante"
+    android:versionCode="1"
+    android:versionName="1.0">
+
+  <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="34" />
+
+  <!-- Roda em tela pequena e grande; nada aqui exige recurso especial. -->
+  <supports-screens
+      android:smallScreens="true"
+      android:normalScreens="true"
+      android:largeScreens="true"
+      android:xlargeScreens="true"
+      android:anyDensity="true" />
+
+  <application
+      android:label="@string/nome_do_app"
+      android:icon="@mipmap/ic_launcher"
+      android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+      android:hardwareAccelerated="true"
+      android:allowBackup="true">
+
+    <!--
+      `configChanges` evita que girar a tela recrie a atividade — o que
+      reiniciaria a partida no meio. Não entra `density` aqui: esse valor só
+      existe a partir da API 24 e a compilação usa o android.jar da 23.
+    -->
+    <activity
+        android:name=".TelaDoJogo"
+        android:exported="true"
+        android:screenOrientation="sensorLandscape"
+        android:launchMode="singleTask"
+        android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode|smallestScreenSize">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity>
+  </application>
+</manifest>

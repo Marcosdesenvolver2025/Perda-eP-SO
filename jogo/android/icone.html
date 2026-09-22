@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Ícone do Volante</title>
+  <style>
+    html, body { margin: 0; background: #222; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+<!--
+  O ícone do aplicativo é desenhado pelo MESMO código que desenha o volante
+  dentro do jogo (src/jogo/volante.js). Não é uma imagem à parte que um dia vai
+  ficar fora de sintonia com o jogo: é o próprio volante, num fundo.
+
+  Uso: abra com ?tamanho=192 e capture o canvas. O script de construção faz
+  isso sozinho para cada densidade de tela do Android.
+-->
+<canvas id="icone"></canvas>
+<script type="module">
+  import { desenharVolante } from '../src/jogo/volante.js';
+
+  const tamanho = Number(new URLSearchParams(location.search).get('tamanho')) || 512;
+  const tela = document.getElementById('icone');
+  tela.width = tamanho;
+  tela.height = tamanho;
+  const ctx = tela.getContext('2d');
+
+  // Fundo: o mesmo azul dos menus, com um clarão em cima à esquerda para o
+  // quadrado não ficar chapado.
+  const fundo = ctx.createLinearGradient(0, 0, tamanho, tamanho);
+  fundo.addColorStop(0, '#1d3f6e');
+  fundo.addColorStop(1, '#0b1728');
+  ctx.fillStyle = fundo;
+  ctx.fillRect(0, 0, tamanho, tamanho);
+
+  const clarao = ctx.createRadialGradient(
+    tamanho * 0.3, tamanho * 0.22, 0,
+    tamanho * 0.3, tamanho * 0.22, tamanho * 0.8);
+  clarao.addColorStop(0, 'rgba(120,190,255,0.30)');
+  clarao.addColorStop(1, 'rgba(120,190,255,0)');
+  ctx.fillStyle = clarao;
+  ctx.fillRect(0, 0, tamanho, tamanho);
+
+  // Sombra do volante, para ele descolar do fundo.
+  ctx.save();
+  ctx.globalAlpha = 0.35;
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.ellipse(tamanho / 2, tamanho * 0.80, tamanho * 0.30, tamanho * 0.05, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // O volante: o clássico de dois raios, em dourado de placa.
+  desenharVolante(ctx, {
+    estilo: 'classico',
+    raio: 1, espessura: 0.062,
+    corAro: 0xffd24a, corRaio: 0xf0c02e, corCubo: 0x2a3d5c, corDetalhe: 0xffe89a,
+    raios: 2, buzinaAnel: true, emblema: 'besouro',
+  }, {
+    x: tamanho / 2,
+    y: tamanho / 2,
+    raio: tamanho * 0.345,
+    angulo: -0.22,
+  });
+
+  document.title = 'pronto';
+</script>
+</body>
+</html>

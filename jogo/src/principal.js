@@ -73,11 +73,19 @@ class Jogo {
     requestAnimationFrame(() => this.quadro());
   }
 
-  ajustarTamanho() {
-    const proporcao = Math.min(window.devicePixelRatio || 1, 2);
+  /** Quantos pixels de verdade por pixel de tela. Celular bom tem 3; nesse
+   *  caso o chão passaria de dois milhões de pixels calculados um a um por
+   *  quadro, e nenhum telefone dá conta disso. O teto acompanha a qualidade. */
+  proporcaoDePixels() {
+    const teto = { alta: 2, media: 1.5, baixa: 1.25 }[this.progresso.ajustes.qualidade] || 2;
+    return Math.min(window.devicePixelRatio || 1, teto);
+  }
+
+  ajustarTamanho(forcar = false) {
+    const proporcao = this.proporcaoDePixels();
     const largura = Math.round(this.tela.clientWidth * proporcao);
     const altura = Math.round(this.tela.clientHeight * proporcao);
-    if (largura === this.tela.width && altura === this.tela.height) return;
+    if (!forcar && largura === this.tela.width && altura === this.tela.height) return;
     this.tela.width = Math.max(320, largura);
     this.tela.height = Math.max(240, altura);
     this.camera.aspecto = this.tela.width / this.tela.height;
@@ -139,8 +147,9 @@ class Jogo {
       qualidade: (v) => {
         this.progresso.ajustes.qualidade = v;
         Progresso.salvar(this.progresso);
-        const r = resolucaoDoChao(this.tela.width, this.tela.height, v);
-        this.terreno.redimensionar(r.largura, r.altura);
+        // `forcar`: a qualidade muda a proporção de pixels, então a tela
+        // precisa ser remontada mesmo que o tamanho em CSS não tenha mudado.
+        this.ajustarTamanho(true);
         this.abrirAjustes();
       },
       som: (v) => {
@@ -279,8 +288,43 @@ class Jogo {
 
     if (this.estado === 'correndo') this.atualizarPartida(dt);
     this.desenhar(dt);
+    this.medirRitmo(dt);
 
     requestAnimationFrame(() => this.quadro());
+  }
+
+  /**
+   * Se o aparelho não está dando conta, o jogo baixa a qualidade sozinho.
+   *
+   * Isto existe porque o mesmo APK vai rodar num celular de mil reais e num de
+   * dez mil, e quem está com o de mil não tem por que descobrir sozinho que
+   * existe um menu de ajustes. Só desce, nunca sobe: ficar subindo e descendo
+   * daria uma imagem piscando entre duas qualidades, que é pior que as duas.
+   */
+  medirRitmo(dt) {
+    if (this.estado !== 'correndo') { this.ritmo = null; return; }
+    if (!this.ritmo) this.ritmo = { tempo: 0, quadros: 0, carencia: 2.5 };
+    const r = this.ritmo;
+
+    // Carência no começo da partida: os primeiros quadros sempre engasgam,
+    // porque é quando o mapa acabou de ser gerado e nada está aquecido.
+    if (r.carencia > 0) { r.carencia -= dt; return; }
+
+    r.tempo += dt;
+    r.quadros++;
+    if (r.tempo < 3) return;
+
+    const porSegundo = r.quadros / r.tempo;
+    r.tempo = 0;
+    r.quadros = 0;
+
+    const abaixo = { alta: 'media', media: 'baixa' }[this.progresso.ajustes.qualidade];
+    if (porSegundo < 38 && abaixo) {
+      this.progresso.ajustes.qualidade = abaixo;
+      Progresso.salvar(this.progresso);
+      this.ajustarTamanho(true);
+      this.hud.recado('qualidade ajustada ao aparelho', '#7fd1ff', 2.6);
+    }
   }
 
   atualizarPartida(dt) {

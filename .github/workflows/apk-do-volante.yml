@@ -1,0 +1,59 @@
+# Monta o APK do Volante a cada mudança no jogo e deixa o arquivo para baixar.
+#
+# Onde pegar: aba Actions → a execução mais recente → "Artifacts" → volante-apk.
+#
+# Não usa o SDK do Google nem Gradle: instala o SDK que o Ubuntu empacota do
+# código-fonte e o dexador do Maven Central, exatamente como o construir.sh
+# espera. Ver jogo/android/README.md para o porquê.
+
+name: APK do Volante
+
+on:
+  push:
+    branches: ['**']
+    paths:
+      - 'jogo/**'
+      - '.github/workflows/apk-do-volante.yml'
+  workflow_dispatch:
+
+jobs:
+  construir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Testes do jogo
+        working-directory: jogo
+        run: node --test "testes/*.test.mjs"
+
+      - name: Ferramentas de Android
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq aapt android-sdk-build-tools \
+            android-sdk-platform-23 apksigner zipalign zip
+
+      - name: Dexador
+        working-directory: jogo/android
+        run: |
+          mkdir -p ferramentas
+          curl -fsSL -o ferramentas/dx.jar \
+            https://repo1.maven.org/maven2/com/jakewharton/android/repackaged/dalvik-dx/11.0.0_r3/dalvik-dx-11.0.0_r3.jar
+
+      - name: Construir o APK
+        working-directory: jogo/android
+        run: ./construir.sh
+
+      - name: Conferir o que saiu
+        working-directory: jogo/android
+        run: |
+          apksigner verify --verbose volante.apk
+          aapt dump badging volante.apk | grep -E "^(package|application-label|launchable-activity|sdkVersion|targetSdkVersion)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: volante-apk
+          path: jogo/android/volante.apk
+          if-no-files-found: error
+          retention-days: 60

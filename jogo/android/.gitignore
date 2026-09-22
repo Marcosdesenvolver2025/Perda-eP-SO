@@ -1,0 +1,6 @@
+# Tudo aqui é resultado de construção, não fonte.
+obra/
+ferramentas/
+volante.apk
+volante.apk.idsig
+*.keystore

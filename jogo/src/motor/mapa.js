@@ -13,7 +13,10 @@ import { VIA } from './paleta.js';
 const LADO_ENTORNO = 256;
 
 export function gerarMapa(mundo, ambiente, qualidade = 'alta') {
-  const pixels = qualidade === 'alta' ? 1600 : qualidade === 'media' ? 1200 : 900;
+  // Um bairro de 300 m numa imagem de 1600 dava cinco pixels por metro: uma
+  // faixa de 15 cm não chegava a ocupar um pixel inteiro, e era daí que vinha
+  // o ar de papelão de perto. 2048 dobra a nitidez onde ela é vista.
+  const pixels = qualidade === 'alta' ? 2048 : qualidade === 'media' ? 1400 : 1000;
   const metros = mundo.metros;
   const escala = pixels / metros;
 
@@ -24,10 +27,18 @@ export function gerarMapa(mundo, ambiente, qualidade = 'alta') {
   const sortear = criarSorteio(mundo.semente ^ 0x2c1b);
   const f = mundo.ficha;
 
-  // 1. Terreno de base, com granulado.
+  // 1. Terreno de base.
+  //
+  // Um verde só, chapado, em metade da tela: era isso que mais entregava que o
+  // chão é uma imagem pintada e não um lugar. O remendo é um ladrilho de mato
+  // de 22 metros feito uma vez e repetido — tufo, talo, clareira — e por cima
+  // as manchas largas, que são o que quebra a repetição do ladrilho.
   ctx.fillStyle = corTexto(f.base);
   ctx.fillRect(0, 0, pixels, pixels);
-  aplicarGranulado(ctx, pixels, f.base, mundo.semente, 0.09);
+  aplicarGranulado(ctx, pixels, f.base, mundo.semente, 0.055);
+  ctx.fillStyle = ctx.createPattern(
+    texturaDoTerreno(f.base, f.piso, mundo.semente, escala), 'repeat');
+  ctx.fillRect(0, 0, pixels, pixels);
   manchasLargas(ctx, pixels, f.base, sortear);
 
   // A partir daqui desenhamos em METROS.
@@ -79,22 +90,66 @@ export function gerarMapa(mundo, ambiente, qualidade = 'alta') {
     else pintarVaga(ctx, vaga, 0xf0ede4);
   }
 
-  // 6. Sombra dos prédios, na direção do sol. É o que assenta a cidade no chão.
+  // 6. Grão do asfalto e faixa de rodado. Vai por ÚLTIMO e por cima de tudo
+  //    que é pista, porque é o acabamento: é ele que tira o ar de papel
+  //    colorido do chão e põe textura onde a câmera passa mais tempo olhando.
+  granuladoDoAsfalto(ctx, mundo, sortear);
+
+  // 7. Sombra dos prédios, na direção do sol. É o que assenta a cidade no chão.
   sombrasNoChao(ctx, mundo, ambiente);
 
   ctx.restore();
 
   if (ambiente.molhado) molhar(ctx, pixels, sortear);
 
-  const dados = ctx.getImageData(0, 0, pixels, pixels).data;
+  const niveis = gerarNiveis(tela, pixels, metros);
   return {
-    dados,
+    dados: niveis[0].dados,
     pixels,
     metros,
     tela,
+    niveis,
     entorno: gerarEntorno(f.base, mundo.semente),
     entornoLado: LADO_ENTORNO,
   };
+}
+
+/**
+ * A escada das faixas.
+ *
+ * O chão é uma imagem só, lida pixel a pixel. Perto da câmera um texel do mapa
+ * cobre uma dúzia de pixels da tela e a faixa amarela vira degrau; longe, o
+ * contrário — meio metro de asfalto cabe num pixel e a textura ferve a cada
+ * quadro. São os dois lados do mesmo problema e cada um pede um remédio.
+ *
+ * Longe é o que se resolve aqui: guardamos a mesma imagem em metade e em um
+ * quarto do tamanho, já borradas pelo próprio navegador, e o terreno escolhe
+ * por linha qual delas ler. Custa uma vez, no carregamento. (Perto se resolve
+ * lendo os quatro texels vizinhos, e isso mora no terreno.js.)
+ */
+function gerarNiveis(tela, pixels, metros) {
+  const niveis = [];
+  let fonte = tela;
+  let lado = pixels;
+  for (let n = 0; n < 3 && lado >= 128; n++) {
+    let dados;
+    if (n === 0) {
+      dados = tela.getContext('2d').getImageData(0, 0, lado, lado).data;
+    } else {
+      const meio = document.createElement('canvas');
+      meio.width = lado;
+      meio.height = lado;
+      const c = meio.getContext('2d', { willReadFrequently: true });
+      c.imageSmoothingEnabled = true;
+      c.imageSmoothingQuality = 'high';
+      c.drawImage(fonte, 0, 0, lado, lado);
+      dados = c.getImageData(0, 0, lado, lado).data;
+      fonte = meio;
+    }
+    niveis.push({ dados, lado, escala: lado / metros, meio: lado / 2 });
+    lado = lado >> 1;
+  }
+  return niveis;
 }
 
 function faixaDaVia(ctx, via, folga, cor, comMeioFio) {
@@ -633,6 +688,98 @@ function desgaste(ctx, mundo, sortear) {
   }
 }
 
+/**
+ * Grão e rodado.
+ *
+ * Duas coisas, e as duas só no asfalto:
+ *
+ *   grão    salpico fino de claro e escuro. Asfalto liso é a superfície que
+ *           mais entrega desenho feito às pressas, porque é a que ocupa metade
+ *           da tela e é a única que se olha o tempo todo.
+ *   rodado  duas faixas mais escuras e polidas onde o pneu passa. Elas
+ *           desenham a trajetória da rua sem nenhuma seta, e é por isso que
+ *           rua de verdade "puxa" o olho para onde se deve ir.
+ */
+function granuladoDoAsfalto(ctx, mundo, sortear) {
+  if (mundo.ficha.terra) return;
+  ctx.save();
+
+  const salpicar = (x, z, l, p) => {
+    const quantos = Math.round((l * p) / 5);
+    for (let i = 0; i < quantos; i++) {
+      const claro = sortear() > 0.5;
+      ctx.fillStyle = claro ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.07)';
+      const px = x + (sortear() - 0.5) * l;
+      const pz = z + (sortear() - 0.5) * p;
+      const r = entre(sortear, 0.08, 0.30);
+      ctx.fillRect(px, pz, r, r);
+    }
+  };
+
+  for (const via of mundo.vias) {
+    const comprimento = via.ate - via.de;
+    const meio = (via.de + via.ate) / 2;
+    if (via.eixo === 'x') salpicar(meio, via.centro, comprimento, via.largura);
+    else salpicar(via.centro, meio, via.largura, comprimento);
+
+    // Rodado: uma faixa de cada lado do eixo, na linha em que o pneu anda.
+    // Fraco de propósito. Escuro demais isso não vira marca de pneu, vira
+    // mancha — e uma mancha larga no asfalto denuncia a emenda com o pedaço
+    // de rua que ela não alcança.
+    ctx.fillStyle = 'rgba(0,0,0,0.045)';
+    const faixa = via.largura * 0.22;
+    const largo = via.largura * 0.052;
+    for (const lado of [-1, 1]) {
+      for (const desvio of [-0.5, 0.5]) {
+        const centro = lado * faixa + desvio * via.largura * 0.055;
+        if (via.eixo === 'x') {
+          ctx.fillRect(via.de, via.centro + centro - largo / 2, comprimento, largo);
+        } else {
+          ctx.fillRect(via.centro + centro - largo / 2, via.de, largo, comprimento);
+        }
+      }
+    }
+  }
+
+  if (mundo.pista) {
+    const pista = mundo.pista;
+    for (let i = 0; i < pista.pontos.length; i += 2) {
+      const p = pista.pontos[i];
+      salpicar(p.x, p.z, pista.largura, pista.largura * 0.6);
+    }
+    // Rodado seguindo o traçado: quatro linhas finas, duas por roda, não duas
+    // tarjas gordas. Pneu polido no asfalto é um risco estreito e claro; o
+    // borrão largo que estava aqui escurecia meia pista e cortava seco onde a
+    // curva jogava a faixa por cima do eixo.
+    ctx.save();
+    ctx.strokeStyle = 'rgba(0,0,0,0.05)';
+    ctx.lineWidth = pista.largura * 0.035;
+    ctx.lineJoin = 'round';
+    for (const off of [-0.25, -0.20, 0.20, 0.25]) {
+      ctx.beginPath();
+      pista.pontos.forEach((p, i) => {
+        const a = pista.pontos[(i - 1 + pista.pontos.length) % pista.pontos.length];
+        const b = pista.pontos[(i + 1) % pista.pontos.length];
+        const dx = b.x - a.x, dz = b.z - a.z;
+        const l = Math.hypot(dx, dz) || 1;
+        const d = off * pista.largura;
+        const x = p.x - (dz / l) * d;
+        const z = p.z + (dx / l) * d;
+        if (i) ctx.lineTo(x, z); else ctx.moveTo(x, z);
+      });
+      ctx.closePath();
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  if (mundo.patio) {
+    const q = mundo.patio;
+    salpicar(q.centroX, q.centroZ, q.largura, q.profundidade);
+  }
+  ctx.restore();
+}
+
 function sombrasNoChao(ctx, mundo, ambiente) {
   const sol = ambiente.direcaoSol;
   if (!sol || sol.y <= 0.05) return;
@@ -683,6 +830,114 @@ function molhar(ctx, pixels, sortear) {
     ctx.fill();
   }
   ctx.restore();
+}
+
+/**
+ * Um ladrilho de terreno que fecha em si mesmo.
+ *
+ * Tudo é desenhado em coordenadas de MAPA (pixel), com o lado do ladrilho
+ * medido em metros, para que o tamanho do tufo não mude com a qualidade. O que
+ * faz o ladrilho fechar é o `marcar`: toda marca perto da borda é desenhada de
+ * novo do outro lado, então nenhuma fica cortada na emenda.
+ */
+function texturaDoTerreno(cor, piso, semente, escala) {
+  const metrosDoLado = 22;
+  const lado = Math.max(96, Math.round(metrosDoLado * escala));
+  const tela = document.createElement('canvas');
+  tela.width = lado;
+  tela.height = lado;
+  const ctx = tela.getContext('2d');
+  const sortear = criarSorteio(semente ^ 0x6b21);
+  const porMetro = lado / metrosDoLado;
+
+  const marcar = (x, y, desenhar) => {
+    for (const dx of [-lado, 0, lado]) {
+      for (const dy of [-lado, 0, lado]) {
+        const px = x + dx, py = y + dy;
+        if (px < -lado * 0.2 || px > lado * 1.2 || py < -lado * 0.2 || py > lado * 1.2) continue;
+        desenhar(px, py);
+      }
+    }
+  };
+
+  if (piso === 'areia') {
+    // Areia: ondinha de vento, comprida e rasa, quase sem contraste.
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 260; i++) {
+      const x = sortear() * lado, y = sortear() * lado;
+      const l = entre(sortear, 1.4, 5.5) * porMetro;
+      const a = entre(sortear, -0.5, 0.5);
+      const claro = sortear() > 0.5;
+      ctx.strokeStyle = corTexto(tonalizar(cor, claro ? 1.07 : 0.94));
+      ctx.globalAlpha = entre(sortear, 0.18, 0.4);
+      ctx.lineWidth = entre(sortear, 0.08, 0.22) * porMetro;
+      const curva = entre(sortear, -0.3, 0.3) * porMetro;
+      marcar(x, y, (px, py) => {
+        ctx.beginPath();
+        ctx.moveTo(px - Math.cos(a) * l / 2, py - Math.sin(a) * l / 2);
+        ctx.quadraticCurveTo(px, py + curva,
+          px + Math.cos(a) * l / 2, py + Math.sin(a) * l / 2);
+        ctx.stroke();
+      });
+    }
+  } else if (piso === 'terra') {
+    // Cascalho: pedrisco miúdo e poça de terra batida.
+    for (let i = 0; i < 90; i++) {
+      const x = sortear() * lado, y = sortear() * lado;
+      const r = entre(sortear, 0.8, 3.2) * porMetro;
+      ctx.fillStyle = corTexto(tonalizar(cor, entre(sortear, 0.84, 1.12)));
+      ctx.globalAlpha = 0.5;
+      const achatar = entre(sortear, 0.55, 1);
+      marcar(x, y, (px, py) => {
+        ctx.beginPath();
+        ctx.ellipse(px, py, r, r * achatar, 0, 0, TAU);
+        ctx.fill();
+      });
+    }
+    for (let i = 0; i < 700; i++) {
+      const x = sortear() * lado, y = sortear() * lado;
+      const r = entre(sortear, 0.05, 0.16) * porMetro;
+      ctx.fillStyle = corTexto(tonalizar(cor, sortear() > 0.5 ? 1.25 : 0.7));
+      ctx.globalAlpha = entre(sortear, 0.3, 0.75);
+      marcar(x, y, (px, py) => ctx.fillRect(px, py, r, r));
+    }
+  } else {
+    // Mato.
+    //
+    // Nada aqui tem tamanho de folha. A sete pixels por metro, talo de grama
+    // vira um pixel solto e mil deles viram um cinza uniforme — flat de novo,
+    // só que mais caro. O que se enxerga a esta escala é CLAREIRA (três a oito
+    // metros) e TUFO (meio metro a um metro e meio), e são esses dois que dão
+    // relevo ao campo quando a câmera passa por cima a cem por hora.
+    for (let i = 0; i < 80; i++) {
+      const x = sortear() * lado, y = sortear() * lado;
+      const r = entre(sortear, 1.6, 5.0) * porMetro;
+      ctx.fillStyle = corTexto(tonalizar(cor, entre(sortear, 0.78, 1.16)));
+      ctx.globalAlpha = entre(sortear, 0.3, 0.58);
+      const achatar = entre(sortear, 0.55, 1);
+      const giro = entre(sortear, 0, TAU);
+      marcar(x, y, (px, py) => {
+        ctx.beginPath();
+        ctx.ellipse(px, py, r, r * achatar, giro, 0, TAU);
+        ctx.fill();
+      });
+    }
+    for (let i = 0; i < 900; i++) {
+      const x = sortear() * lado, y = sortear() * lado;
+      const r = entre(sortear, 0.22, 0.75) * porMetro;
+      ctx.fillStyle = corTexto(tonalizar(cor, sortear() > 0.45 ? 1.2 : 0.74));
+      ctx.globalAlpha = entre(sortear, 0.24, 0.5);
+      const achatar = entre(sortear, 0.5, 1);
+      const giro = entre(sortear, 0, TAU);
+      marcar(x, y, (px, py) => {
+        ctx.beginPath();
+        ctx.ellipse(px, py, r, r * achatar, giro, 0, TAU);
+        ctx.fill();
+      });
+    }
+  }
+  ctx.globalAlpha = 1;
+  return tela;
 }
 
 function aplicarGranulado(ctx, pixels, cor, semente, forca) {

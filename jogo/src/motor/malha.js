@@ -109,6 +109,23 @@ export class Construtor {
     return this;
   }
 
+  /**
+   * O mesmo painel, de frente para ±X — a lateral do prédio.
+   *
+   * Existe por economia: a janela de lateral era uma caixa de três centímetros
+   * de espessura, seis faces para mostrar uma. Num bairro inteiro isso era a
+   * maior conta da cena.
+   */
+  painelX(cx, cy, cz, sz, sy, cor, opcoes = {}) {
+    const hz = sz / 2, hy = sy / 2;
+    const a = this.ponto(cx, cy - hy, cz - hz);
+    const b = this.ponto(cx, cy - hy, cz + hz);
+    const c = this.ponto(cx, cy + hy, cz + hz);
+    const d = this.ponto(cx, cy + hy, cz - hz);
+    this.face([a, b, c, d], cor, { ...opcoes, dupla: true });
+    return this;
+  }
+
   terminar() {
     return {
       vertices: Float32Array.from(this.vertices),

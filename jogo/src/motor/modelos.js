@@ -442,8 +442,8 @@ function construirRoda(raio, largura, chave) {
 // CENÁRIO
 // ---------------------------------------------------------------------------
 
-export function predio(largura, altura, profundidade, cor, semente) {
-  return memo(`predio:${largura}:${altura}:${profundidade}:${cor}:${semente}`, () => {
+export function predio(largura, altura, profundidade, cor, semente, longe = false) {
+  return memo(`predio:${largura}:${altura}:${profundidade}:${cor}:${semente}:${longe ? 'L' : 'P'}`, () => {
     const b = new Construtor();
     const sortear = criarSorteio(semente);
     b.caixa(0, altura / 2, 0, largura, altura, profundidade, cor, {
@@ -454,6 +454,27 @@ export function predio(largura, altura, profundidade, cor, semente) {
     // vira uma parede lisa — e é justamente a lateral que se vê da rua.
     const andares = Math.max(1, Math.floor(altura / 3.1));
     const corJanela = PREDIO.janela;
+
+    // VERSÃO DE LONGE.
+    //
+    // A cem metros ninguém conta janela: o que se vê é a listra escura de cada
+    // andar. Então de longe é isso que se desenha — uma faixa por andar por
+    // face, quatro faces no lugar de cem. É o que deixa a cidade inteira caber
+    // no orçamento de polígono sem que ela perca nada que se enxergue daqui.
+    if (longe) {
+      for (let a = 0; a < andares; a++) {
+        const y = 1.7 + a * 3.1;
+        if (y > altura - 1.1) break;
+        b.painel(0, y, -profundidade / 2 - 0.02, largura * 0.84, 1.3, corJanela);
+        b.painel(0, y, profundidade / 2 + 0.02, largura * 0.84, 1.3, corJanela);
+        b.painelX(-largura / 2 - 0.02, y, 0, profundidade * 0.84, 1.3, corJanela);
+        b.painelX(largura / 2 + 0.02, y, 0, profundidade * 0.84, 1.3, corJanela);
+      }
+      b.caixa(0, altura + 0.18, 0, largura * 1.04, 0.36, profundidade * 1.04,
+        tonalizar(cor, PREDIO.platibanda));
+      return b.terminar();
+    }
+
     const fileira = (extensao, colocar) => {
       const colunas = Math.max(1, Math.floor(extensao / 2.2));
       const passo = extensao / colunas;
@@ -484,7 +505,7 @@ export function predio(largura, altura, profundidade, cor, semente) {
 
 /** Janela numa face voltada para ±X (a lateral do prédio). */
 function janelaLateral(b, x, y, z, comprimento, cor, acesa) {
-  b.caixa(x, y, z, 0.03, 1.3, comprimento, cor, { semLuz: acesa });
+  b.painelX(x, y, z, comprimento, 1.3, cor, { semLuz: acesa });
 }
 
 /**
@@ -549,8 +570,8 @@ export function casa(largura, altura, profundidade, cor, semente) {
  * letreiro não tem letra nenhuma — são blocos de cor do tamanho de palavras,
  * que à distância de quem está dirigindo é exatamente o que uma letra é.
  */
-export function loja(largura, altura, profundidade, cor, semente) {
-  return memo(`loja:${largura}:${altura}:${profundidade}:${cor}:${semente}`, () => {
+export function loja(largura, altura, profundidade, cor, semente, longe = false) {
+  return memo(`loja:${largura}:${altura}:${profundidade}:${cor}:${semente}:${longe ? 'L' : 'P'}`, () => {
     const b = new Construtor();
     const sortear = criarSorteio(semente);
     const frente = -profundidade / 2;
@@ -568,8 +589,9 @@ export function loja(largura, altura, profundidade, cor, semente) {
       alturaTerreo * 0.78, PREDIO.porta);
 
     // Toldo: caixa inclinada saindo da fachada, em faixas de duas cores.
+    // De longe vira um toldo só — a listra a essa distância é um pixel.
     const corToldo = escolherDe(sortear, LOJA.toldos);
-    const faixas = Math.max(3, Math.round(largura / 0.9));
+    const faixas = longe ? 1 : Math.max(3, Math.round(largura / 1.5));
     const passo = (largura * 0.94) / faixas;
     for (let i = 0; i < faixas; i++) {
       const t = -largura * 0.47 + (i + 0.5) * passo;
@@ -586,7 +608,7 @@ export function loja(largura, altura, profundidade, cor, semente) {
     b.caixa(0, yPlaca, frente - 0.12, largura * 0.9, 0.90, 0.16, LOJA.placaFundo);
     const corLetra = escolherDe(sortear, LOJA.letreiros);
     let x = -largura * 0.36;
-    for (let i = 0; i < 3 && x < largura * 0.30; i++) {
+    for (let i = 0; i < (longe ? 1 : 3) && x < largura * 0.30; i++) {
       const comprimento = entre(sortear, largura * 0.10, largura * 0.22);
       b.painel(x + comprimento / 2, yPlaca, frente - 0.21, comprimento, 0.36,
         corLetra, { semLuz: true });
@@ -595,7 +617,7 @@ export function loja(largura, altura, profundidade, cor, semente) {
 
     // Andares de cima: janela comum, que é o que tem em cima de loja.
     const andares = Math.max(0, Math.floor((altura - alturaTerreo - 1.6) / 3.1));
-    const colunas = Math.max(1, Math.floor(largura / 2.2));
+    const colunas = longe ? 1 : Math.max(1, Math.floor(largura / 2.2));
     for (let a = 0; a < andares; a++) {
       const y = alturaTerreo + 2.4 + a * 3.1;
       if (y > altura - 1.1) break;

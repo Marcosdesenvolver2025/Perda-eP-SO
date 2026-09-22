@@ -45,10 +45,12 @@ export class Terreno {
     if (!bw || !bh) return;
 
     const dados = this.imagem.data;
-    const mapaDados = mapa.dados;
-    const mapaLado = mapa.pixels;
-    const escala = mapa.pixels / mapa.metros;
-    const meioMapa = mapa.pixels / 2;
+    const niveis = mapa.niveis || [{
+      dados: mapa.dados, lado: mapa.pixels,
+      escala: mapa.pixels / mapa.metros, meio: mapa.pixels / 2,
+    }];
+    const totalNiveis = niveis.length;
+    const escalaCheia = niveis[0].escala;
 
     const entorno = mapa.entorno;
     const entornoLado = mapa.entornoLado;
@@ -105,19 +107,52 @@ export class Terreno {
       const passoX = t * du * cg;
       const passoZ = -t * du * sg;
 
+      // Quantos texels do mapa cabem num pixel da tela nesta linha. Como a
+      // distância é constante na linha, isso também é — e dá para escolher a
+      // versão certa do mapa uma vez por linha em vez de uma vez por pixel.
+      const texelPorPixel = t * du * escalaCheia;
+      let nivel = 0;
+      while (nivel + 1 < totalNiveis && texelPorPixel > 1.4 * (1 << nivel)) nivel++;
+      const camada = niveis[nivel];
+      const mapaDados = camada.dados;
+      const mapaLado = camada.lado;
+      const escala = camada.escala;
+      const meioMapa = camada.meio;
+      const suave = texelPorPixel < 0.9;   // perto: vale ler os quatro vizinhos
+
       // Névoa: constante na linha inteira, porque a distância é constante.
       let nevoa = 1 - Math.exp(-t / alcance);
       nevoa = nevoa * nevoa * (3 - 2 * nevoa);
       const clareza = (1 - nevoa) * luz * molhado;
       const fogR = nevoa * nevoaR, fogG = nevoa * nevoaG, fogB = nevoa * nevoaB;
 
+      const limiteSuave = mapaLado - 1;
+      let fx = wx * escala + meioMapa;
+      let fz = wz * escala + meioMapa;
+      const dfx = passoX * escala;
+      const dfz = passoZ * escala;
+
       let p = linha;
-      for (let px = 0; px < bw; px++, wx += passoX, wz += passoZ) {
-        const mx = (wx * escala + meioMapa) | 0;
-        const mz = (wz * escala + meioMapa) | 0;
+      for (let px = 0; px < bw; px++, wx += passoX, wz += passoZ, fx += dfx, fz += dfz) {
+        const mx = fx | 0;
+        const mz = fz | 0;
 
         let r, g, b;
-        if (mx >= 0 && mx < mapaLado && mz >= 0 && mz < mapaLado) {
+        if (suave && mx >= 0 && mx < limiteSuave && mz >= 0 && mz < limiteSuave) {
+          // Mistura dos quatro texels vizinhos. É isto que tira o degrau da
+          // faixa amarela quando um texel do mapa vira um quadrado na tela.
+          const tx = fx - mx, tz = fz - mz;
+          const ux = 1 - tx, uz = 1 - tz;
+          const i00 = (mz * mapaLado + mx) << 2;
+          const i01 = i00 + (mapaLado << 2);
+          const w00 = ux * uz, w10 = tx * uz, w01 = ux * tz, w11 = tx * tz;
+          r = mapaDados[i00] * w00 + mapaDados[i00 + 4] * w10
+            + mapaDados[i01] * w01 + mapaDados[i01 + 4] * w11;
+          g = mapaDados[i00 + 1] * w00 + mapaDados[i00 + 5] * w10
+            + mapaDados[i01 + 1] * w01 + mapaDados[i01 + 5] * w11;
+          b = mapaDados[i00 + 2] * w00 + mapaDados[i00 + 6] * w10
+            + mapaDados[i01 + 2] * w01 + mapaDados[i01 + 6] * w11;
+        } else if (mx >= 0 && mx < mapaLado && mz >= 0 && mz < mapaLado) {
           const i = (mz * mapaLado + mx) << 2;
           r = mapaDados[i]; g = mapaDados[i + 1]; b = mapaDados[i + 2];
         } else {

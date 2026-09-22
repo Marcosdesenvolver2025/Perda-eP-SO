@@ -651,10 +651,32 @@ class Jogo {
     const sombras = [];
     const luzes = [];
 
+    // Peneira antes de montar a cena.
+    //
+    // Um bairro cheio tem centenas de coisas e a cena transforma vértice por
+    // vértice, na CPU. Sem peneira, uma árvore atrás do carro custa igual a uma
+    // árvore na frente — e é isso que limitava o mundo a meia dúzia de prédios
+    // espalhados. Aqui cai fora o que está atrás, o que está fora da abertura
+    // lateral e o que está tão longe que não daria um pixel.
+    const tanLateral = camera.tanMeio * camera.aspecto;
     for (const prop of p.mundo.props) {
       if (prop.derrubado) continue;
+      let malha = prop.malha;
+      {
+        const rx = prop.x - camera.x, rz = prop.z - camera.z;
+        const raio = prop.raio || 4;
+        const adiante = rx * camera.fx + rz * camera.fz;
+        if (adiante < -raio - 6) continue;
+        if (adiante > raio + 2) {
+          if (raio < adiante * 0.0035) continue;
+          const lateral = Math.abs(rx * camera.dx + rz * camera.dz);
+          if (lateral > adiante * tanLateral + raio + 3) continue;
+          // Longe, a versão sem janela contada uma a uma.
+          if (prop.malhaLonge && adiante > 62) malha = prop.malhaLonge;
+        }
+      }
       instancias.push({
-        malha: prop.malha,
+        malha,
         x: prop.x, y: prop.y || 0, z: prop.z,
         guinada: prop.guinada || 0,
         raio: prop.raio || 4,

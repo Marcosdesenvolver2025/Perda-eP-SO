@@ -175,8 +175,15 @@ function montarCircuito(mundo, sortear, cenario) {
   // Cenário: fora da pista, o bairro; dentro, um parque. Os outdoors escolhem
   // lugar ANTES do resto: eles têm posição certa (de frente para a pista) e a
   // árvore não tem.
-  outdoorsAoLongoDaPista(mundo, sortear, pista, 9);
-  povoarForaDaPista(mundo, sortear, cenario, pista, 34);
+  //
+  // A ordem importa e é sempre a mesma: primeiro o que tem lugar certo
+  // (outdoor, arborização, cidade em fileira), por último o que só quer um
+  // buraco vazio — porque quem chega depois testa colisão contra quem já está.
+  outdoorsAoLongoDaPista(mundo, sortear, pista, 12);
+  arborizarAPista(mundo, sortear, cenario, pista);
+  cidadeEmVolta(mundo, sortear, cenario, pista);
+  parqueDoMiolo(mundo, sortear, cenario, pista, alcance);
+  povoarForaDaPista(mundo, sortear, cenario, pista, 90);
 
   // Trânsito nos dois sentidos, em faixas diferentes do traçado.
   for (const sentido of [1, -1]) {
@@ -408,6 +415,96 @@ function outdoorsAoLongoDaPista(mundo, sortear, pista, quantos) {
     }, {
       largura, comprimento: 0.6, guinada, solido: true, altura, parede: true,
     });
+  }
+}
+
+/**
+ * Arborização de beira de pista.
+ *
+ * Árvore sorteada no mapa cai longe e não aparece. Árvore ENFILEIRADA junto ao
+ * guarda-corpo aparece o tempo todo, e é ela que dá a sensação de velocidade:
+ * o que faz o carro parecer rápido não é o número no velocímetro, é quantas
+ * coisas passam por segundo na borda da tela.
+ */
+function arborizarAPista(mundo, sortear, cenario, pista) {
+  const passo = 14;
+  const quantos = Math.max(16, Math.round(pista.comprimento / passo));
+  for (const lado of [-1, 1]) {
+    for (let i = 0; i < quantos; i++) {
+      // Passo irregular: fileira de régua vira cerca viva, não arborização.
+      const t = ((i + entre(sortear, -0.3, 0.3)) / quantos) * pista.pontos.length;
+      const p = pista.pontos[Math.floor(t + pista.pontos.length) % pista.pontos.length];
+      if (!p) continue;
+      const afastamento = pista.largura / 2 + entre(sortear, 5.5, 13);
+      const dir = direcao(pista.pontos[(Math.floor(t) + 1) % pista.pontos.length] || p, p);
+      const x = p.x - dir.z * lado * afastamento;
+      const z = p.z + dir.x * lado * afastamento;
+      if (Math.abs(x) > mundo.meio - 3 || Math.abs(z) > mundo.meio - 3) continue;
+      if (naPista(pista, x, z).distancia < pista.largura / 2 + 4) continue;
+      if (colide(mundo.colisores, x, z, 5, 5)) continue;
+      plantarArvore(mundo, sortear, cenario, x, z);
+    }
+  }
+}
+
+/**
+ * A cidade que fica atrás da pista.
+ *
+ * Não é decoração solta: é uma faixa de quarteirões encostada na borda do
+ * mapa, com as fachadas viradas para dentro. De dentro do carro ela se lê como
+ * horizonte construído — a diferença entre correr num bairro e correr num
+ * terreno baldio com dois prédios no meio.
+ */
+function cidadeEmVolta(mundo, sortear, cenario, pista) {
+  const alturaMax = cenario.perfil === 'campo' ? 8 : cenario.perfil === 'industrial' ? 13 : 30;
+  const borda = mundo.meio - 4;
+  // Quatro fileiras, uma por lado do mapa, todas viradas para o centro.
+  // `frente(g) = (-sen g, -cos g)`, então apontar para a origem a partir de
+  // (x, z) é `g = atan2(x, z)` — a mesma conta dos outdoors.
+  const lados = [
+    { guinada: Math.PI, ao: 'x', fixo: -borda },      // fileira no z negativo
+    { guinada: 0, ao: 'x', fixo: borda },             // fileira no z positivo
+    { guinada: -Math.PI / 2, ao: 'z', fixo: -borda }, // fileira no x negativo
+    { guinada: Math.PI / 2, ao: 'z', fixo: borda },   // fileira no x positivo
+  ];
+  for (const lado of lados) {
+    let andado = -borda;
+    while (andado < borda) {
+      const largura = entre(sortear, 9, 20);
+      const profundidade = entre(sortear, 8, 16);
+      const altura = Math.round(entre(sortear, 6, alturaMax));
+      const recuo = entre(sortear, 0, 10);
+      const meio = andado + largura / 2;
+      const distancia = lado.fixo + Math.sign(lado.fixo) * (profundidade / 2 + recuo) * -1;
+      const x = lado.ao === 'x' ? meio : distancia;
+      const z = lado.ao === 'x' ? distancia : meio;
+      andado += largura + entre(sortear, 1.5, 9);
+      if (Math.abs(x) > mundo.meio || Math.abs(z) > mundo.meio) continue;
+      if (naPista(pista, x, z).distancia < pista.largura / 2 + 12) continue;
+      if (colide(mundo.colisores, x, z, largura + 3, profundidade + 3)) continue;
+      construir(mundo, sortear, cenario, x, z, largura, altura, profundidade, lado.guinada);
+    }
+  }
+}
+
+/** O miolo do circuito vira parque: árvore, arbusto e banco ao longo das ruas. */
+function parqueDoMiolo(mundo, sortear, cenario, pista, alcance) {
+  const quantos = 46;
+  for (let i = 0; i < quantos; i++) {
+    const x = entre(sortear, -alcance, alcance);
+    const z = entre(sortear, -alcance, alcance);
+    if (Math.hypot(x, z) > alcance) continue;
+    if (naPista(pista, x, z).distancia < pista.largura / 2 + 7) continue;
+    if (colide(mundo.colisores, x, z, 5, 5)) continue;
+    if (sortear() < 0.22) {
+      const r = entre(sortear, 0.7, 1.4);
+      adicionar(mundo, {
+        tipo: 'arbusto', malha: modelos.arbusto(r, Math.floor(sortear() * 1e6)),
+        x, z, guinada: entre(sortear, 0, TAU), raio: r * 1.4,
+      }, { largura: r * 1.6, comprimento: r * 1.6, solido: true, leve: true, altura: r * 1.5 });
+    } else {
+      plantarArvore(mundo, sortear, cenario, x, z);
+    }
   }
 }
 
@@ -730,6 +827,7 @@ function construir(mundo, sortear, cenario, x, z, largura, altura, profundidade,
   if (querLoja) {
     adicionar(mundo, {
       tipo: 'loja', malha: modelos.loja(largura, altura, profundidade, cor, semente),
+      malhaLonge: modelos.loja(largura, altura, profundidade, cor, semente, true),
       x, z, guinada: guinadaFixa ?? orientar(sortear, largura, profundidade),
       raio: Math.hypot(largura, profundidade) / 2 + 1,
     }, {
@@ -740,6 +838,7 @@ function construir(mundo, sortear, cenario, x, z, largura, altura, profundidade,
   }
   adicionar(mundo, {
     tipo: 'predio', malha: modelos.predio(largura, altura, profundidade, cor, semente),
+    malhaLonge: modelos.predio(largura, altura, profundidade, cor, semente, true),
     x, z, guinada: guinadaFixa ?? 0, raio: Math.hypot(largura, profundidade) / 2 + 1,
   }, {
     largura, comprimento: profundidade, solido: true, altura,

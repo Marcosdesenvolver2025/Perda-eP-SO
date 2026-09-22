@@ -7,14 +7,17 @@
 
 import { Construtor } from './malha.js';
 import { criarSorteio, entre, inteiro, misturarCor, tonalizar } from '../nucleo/matematica.js';
+import {
+  CARRO, PREDIO, VEGETACAO, CENA, FACHADAS, FACHADAS_INDUSTRIAIS,
+} from './paleta.js';
 
-const VIDRO = 0x2a3b46;
-const VIDRO_CLARO = 0x4c6a7a;
-const BORRACHA = 0x181a1c;
-const ARO = 0xb9c0c7;
-const CROMO = 0xc8ced4;
-const FAROL = 0xfff3cf;
-const LANTERNA = 0xd6392e;
+const VIDRO = CARRO.vidro;
+const VIDRO_CLARO = CARRO.vidroClaro;
+const BORRACHA = CARRO.borracha;
+const ARO = CARRO.aro;
+const CROMO = CARRO.cromo;
+const FAROL = CARRO.farol;
+const LANTERNA = CARRO.lanterna;
 
 const cache = new Map();
 
@@ -163,7 +166,7 @@ function montarCarro(modelo, corAlternativa) {
   }
   // Grade e placa.
   b.painel(0, baixo + c.alturaCorpo * 0.36, frente - 0.004, A * 0.42, 0.14, 0x1d2126, { semLuz: true });
-  b.painel(0, baixo + 0.30, tras + 0.006, 0.36, 0.13, 0xdfe3e6, { semLuz: true });
+  b.painel(0, baixo + 0.30, tras + 0.006, 0.36, 0.13, CARRO.placa, { semLuz: true });
 
   // Retrovisores.
   for (const lado of [-1, 1]) {
@@ -243,13 +246,13 @@ export function predio(largura, altura, profundidade, cor, semente) {
     const b = new Construtor();
     const sortear = criarSorteio(semente);
     b.caixa(0, altura / 2, 0, largura, altura, profundidade, cor, {
-      cores: { topo: tonalizar(cor, 0.72) },
+      cores: { topo: tonalizar(cor, PREDIO.topo) },
     });
 
     // Janelas nas QUATRO faces. Só na frente e no fundo, a lateral do prédio
     // vira uma parede lisa — e é justamente a lateral que se vê da rua.
     const andares = Math.max(1, Math.floor(altura / 3.1));
-    const corJanela = 0x1c242e;
+    const corJanela = PREDIO.janela;
     const fileira = (extensao, colocar) => {
       const colunas = Math.max(1, Math.floor(extensao / 2.2));
       const passo = extensao / colunas;
@@ -259,7 +262,7 @@ export function predio(largura, altura, profundidade, cor, semente) {
         for (let j = 0; j < colunas; j++) {
           const t = -extensao / 2 + (j + 0.5) * passo;
           const acesa = sortear() > 0.68;
-          const tom = acesa ? misturarCor(corJanela, 0xffd58a, 0.85) : corJanela;
+          const tom = acesa ? misturarCor(corJanela, PREDIO.janelaAcesa, 0.85) : corJanela;
           colocar(t, y, passo * 0.52, tom, acesa);
         }
       }
@@ -273,7 +276,7 @@ export function predio(largura, altura, profundidade, cor, semente) {
       janelaLateral(b, largura / 2 + 0.02, y, t, l, tom, acesa);
     });
     // Platibanda, para o prédio não terminar num corte seco.
-    b.caixa(0, altura + 0.18, 0, largura * 1.04, 0.36, profundidade * 1.04, tonalizar(cor, 0.6));
+    b.caixa(0, altura + 0.18, 0, largura * 1.04, 0.36, profundidade * 1.04, tonalizar(cor, PREDIO.platibanda));
     return b.terminar();
   });
 }
@@ -288,8 +291,8 @@ export function arvore(altura, semente) {
     const b = new Construtor();
     const sortear = criarSorteio(semente);
     const tronco = altura * 0.36;
-    b.caixa(0, tronco / 2, 0, 0.22, tronco, 0.22, 0x5d4632);
-    const verde = misturarCor(0x2f6b2f, 0x6aa84f, sortear());
+    b.caixa(0, tronco / 2, 0, 0.22, tronco, 0.22, VEGETACAO.tronco);
+    const verde = misturarCor(VEGETACAO.folhagemEscura, VEGETACAO.folhagemClara, sortear());
     const copa = altura - tronco;
     b.tronco(0, tronco + copa * 0.32, 0, altura * 0.72, copa * 0.64, altura * 0.72,
       altura * 0.48, altura * 0.48, 0, 0, verde, { cores: { topo: tonalizar(verde, 1.18) } });
@@ -305,8 +308,8 @@ export function palmeira(altura, semente) {
     const sortear = criarSorteio(semente);
     const tronco = altura * 0.78;
     b.tronco(0, tronco / 2, 0, 0.30, tronco, 0.30, 0.20, 0.20,
-      entre(sortear, -0.25, 0.25), entre(sortear, -0.2, 0.2), 0x7a6247);
-    const verde = 0x3f8b3f;
+      entre(sortear, -0.25, 0.25), entre(sortear, -0.2, 0.2), VEGETACAO.troncoPalmeira);
+    const verde = VEGETACAO.palmeira;
     for (let i = 0; i < 7; i++) {
       const a = (i / 7) * Math.PI * 2 + sortear() * 0.3;
       const comp = altura * 0.32;
@@ -314,7 +317,7 @@ export function palmeira(altura, semente) {
         comp * (Math.abs(Math.cos(a)) + 0.25), 0.07, comp * (Math.abs(Math.sin(a)) + 0.25),
         tonalizar(verde, 0.85 + (i % 3) * 0.12));
     }
-    b.caixa(0, tronco + 0.12, 0, 0.34, 0.24, 0.34, 0x6c4f2a);
+    b.caixa(0, tronco + 0.12, 0, 0.34, 0.24, 0.34, VEGETACAO.tronco);
     return b.terminar();
   });
 }
@@ -323,7 +326,7 @@ export function arbusto(raio, semente) {
   return memo(`arbusto:${raio.toFixed(2)}:${semente}`, () => {
     const b = new Construtor();
     const sortear = criarSorteio(semente);
-    const verde = misturarCor(0x3b6b32, 0x76a64f, sortear());
+    const verde = misturarCor(VEGETACAO.folhagemEscura, VEGETACAO.folhagemClara, sortear());
     for (let i = 0; i < 3; i++) {
       b.caixa(entre(sortear, -raio * 0.4, raio * 0.4), raio * entre(sortear, 0.4, 0.75),
         entre(sortear, -raio * 0.4, raio * 0.4),
@@ -337,10 +340,10 @@ export function arbusto(raio, semente) {
 export function cone() {
   return memo('cone', () => {
     const b = new Construtor();
-    b.caixa(0, 0.03, 0, 0.42, 0.06, 0.42, 0x1f1f1f);
-    b.tronco(0, 0.22, 0, 0.30, 0.32, 0.30, 0.16, 0.16, 0, 0, 0xf05a22);
-    b.tronco(0, 0.48, 0, 0.16, 0.20, 0.16, 0.07, 0.07, 0, 0, 0xf05a22);
-    b.caixa(0, 0.37, 0, 0.19, 0.07, 0.19, 0xf2f2f2);
+    b.caixa(0, 0.03, 0, 0.42, 0.06, 0.42, 0x2b2b2b);
+    b.tronco(0, 0.22, 0, 0.30, 0.32, 0.30, 0.16, 0.16, 0, 0, CENA.cone);
+    b.tronco(0, 0.48, 0, 0.16, 0.20, 0.16, 0.07, 0.07, 0, 0, CENA.cone);
+    b.caixa(0, 0.37, 0, 0.19, 0.07, 0.19, CENA.coneFaixa);
     return b.terminar();
   });
 }
@@ -348,11 +351,11 @@ export function cone() {
 export function poste(altura) {
   return memo(`poste:${altura}`, () => {
     const b = new Construtor();
-    b.caixa(0, 0.10, 0, 0.36, 0.20, 0.36, 0x5a5f66);
-    b.caixa(0, altura / 2, 0, 0.16, altura, 0.16, 0x6b7179);
-    b.caixa(0.55, altura - 0.08, 0, 1.10, 0.13, 0.13, 0x6b7179);
-    b.caixa(1.05, altura - 0.22, 0, 0.52, 0.18, 0.26, 0x2f343a);
-    b.placa(1.05, altura - 0.32, 0, 0.44, 0.22, 0xfff0c0, { semLuz: true });
+    b.caixa(0, 0.10, 0, 0.36, 0.20, 0.36, tonalizar(CENA.poste, 0.8));
+    b.caixa(0, altura / 2, 0, 0.16, altura, 0.16, CENA.poste);
+    b.caixa(0.55, altura - 0.08, 0, 1.10, 0.13, 0.13, CENA.poste);
+    b.caixa(1.05, altura - 0.22, 0, 0.52, 0.18, 0.26, tonalizar(CENA.poste, 0.55));
+    b.placa(1.05, altura - 0.32, 0, 0.44, 0.22, CENA.lampada, { semLuz: true });
     return b.terminar();
   });
 }
@@ -371,7 +374,7 @@ export function muro(comprimento, altura, cor) {
 export function grade(comprimento, altura) {
   return memo(`grade:${comprimento}:${altura}`, () => {
     const b = new Construtor();
-    const cor = 0x8e9aa4;
+    const cor = CENA.grade;
     b.caixa(0, altura - 0.06, 0, comprimento, 0.10, 0.09, cor);
     b.caixa(0, altura * 0.45, 0, comprimento, 0.08, 0.08, cor);
     const barras = Math.max(2, Math.round(comprimento / 0.55));
@@ -386,9 +389,9 @@ export function grade(comprimento, altura) {
 export function barreira(comprimento) {
   return memo(`barreira:${comprimento}`, () => {
     const b = new Construtor();
-    b.tronco(0, 0.36, 0, 0.56, 0.72, comprimento, 0.30, comprimento, 0, 0, 0xe9e4d8,
-      { cores: { topo: 0xd6d0c2 } });
-    b.caixa(0, 0.5, 0, 0.34, 0.24, comprimento * 0.4, 0xd94f2b);
+    b.tronco(0, 0.36, 0, 0.56, 0.72, comprimento, 0.30, comprimento, 0, 0, 0xf2eee4,
+      { cores: { topo: 0xe2ded2 } });
+    b.caixa(0, 0.5, 0, 0.34, 0.24, comprimento * 0.4, CENA.cone);
     return b.terminar();
   });
 }
@@ -418,7 +421,7 @@ export function barril(cor) {
 export function hidrante() {
   return memo('hidrante', () => {
     const b = new Construtor();
-    const cor = 0xc0392b;
+    const cor = CENA.hidrante;
     b.caixa(0, 0.32, 0, 0.26, 0.64, 0.26, cor);
     b.caixa(0, 0.70, 0, 0.32, 0.14, 0.32, tonalizar(cor, 1.2));
     b.caixa(0, 0.80, 0, 0.18, 0.12, 0.18, tonalizar(cor, 0.8));
@@ -431,8 +434,8 @@ export function hidrante() {
 export function placaDeRua(texto) {
   return memo(`placa:${texto}`, () => {
     const b = new Construtor();
-    b.caixa(0, 1.1, 0, 0.08, 2.2, 0.08, 0x808891);
-    b.caixa(0, 2.2, 0, 0.9, 0.5, 0.06, 0x1d6fb8, { cores: { frente: 0x2b86d6 } });
+    b.caixa(0, 1.1, 0, 0.08, 2.2, 0.08, CENA.poste);
+    b.caixa(0, 2.2, 0, 0.9, 0.5, 0.06, 0x2b86d6, { cores: { frente: 0x3d9ae8 } });
     return b.terminar();
   });
 }
@@ -451,10 +454,10 @@ export function pilhaDePneus(quantidade) {
 export function banco() {
   return memo('banco', () => {
     const b = new Construtor();
-    b.caixa(0, 0.40, 0, 1.6, 0.10, 0.48, 0x8a6033);
-    b.caixa(0, 0.66, 0.22, 1.6, 0.42, 0.08, 0x8a6033);
-    b.caixa(-0.7, 0.20, 0, 0.10, 0.40, 0.44, 0x4a4f55);
-    b.caixa(0.7, 0.20, 0, 0.10, 0.40, 0.44, 0x4a4f55);
+    b.caixa(0, 0.40, 0, 1.6, 0.10, 0.48, CENA.banco);
+    b.caixa(0, 0.66, 0.22, 1.6, 0.42, 0.08, CENA.banco);
+    b.caixa(-0.7, 0.20, 0, 0.10, 0.40, 0.44, CENA.poste);
+    b.caixa(0.7, 0.20, 0, 0.10, 0.40, 0.44, CENA.poste);
     return b.terminar();
   });
 }
@@ -477,9 +480,7 @@ export function quarteirao(semente, perfil) {
   return memo(`quarteirao:${semente}:${perfil}`, () => {
     const sortear = criarSorteio(semente);
     const b = new Construtor();
-    const cores = perfil === 'industrial'
-      ? [0x8a8f96, 0x9aa0a6, 0x76797e, 0xa8a093]
-      : [0xd8cfc0, 0xc9b9a3, 0xbfc7cc, 0xd6c2b0, 0xb9a893];
+    const cores = perfil === 'industrial' ? FACHADAS_INDUSTRIAIS : FACHADAS;
     const quantos = inteiro(sortear, 2, 4);
     for (let i = 0; i < quantos; i++) {
       const l = entre(sortear, 5, 11);

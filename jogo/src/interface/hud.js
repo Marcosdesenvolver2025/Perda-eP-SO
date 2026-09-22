@@ -8,6 +8,7 @@
 // couro costurado, o elétrico tem um manche que nem redondo é.
 
 import { desenharVolante } from '../jogo/volante.js';
+import { tonalizar } from '../nucleo/matematica.js';
 import { paraKmh } from '../jogo/fisica.js';
 import {
   TAU, limitar, corTexto, formatarTempo, formatarDinheiro,
@@ -91,7 +92,7 @@ export class Hud {
     const missao = partida.missao;
     const largura = 330 * escala;
     const altura = 92 * escala;
-    caixa(ctx, margem, margem, largura, altura, 14 * escala, 'rgba(12,16,22,0.62)');
+    caixa(ctx, margem, margem, largura, altura, 18 * escala, 'rgba(14,20,30,0.66)');
 
     ctx.fillStyle = '#7fd1ff';
     ctx.font = `600 ${Math.round(13 * escala)}px ${FONTE}`;
@@ -158,12 +159,12 @@ export class Hud {
     const largura = 118 * escala;
     const x = L / 2 - largura / 2;
 
-    caixa(ctx, x, margem, largura, 46 * escala, 12 * escala,
-      apertado ? 'rgba(120,20,20,0.72)' : 'rgba(12,16,22,0.62)');
+    caixa(ctx, x, margem, largura, 50 * escala, 18 * escala,
+      apertado ? 'rgba(170,32,26,0.80)' : 'rgba(14,20,30,0.66)');
     ctx.textAlign = 'center';
     ctx.fillStyle = apertado && Math.sin(this.piscaAlerta * 9) > 0 ? '#ff6b5b' : '#ffffff';
     ctx.font = `700 ${Math.round(26 * escala)}px ${FONTE}`;
-    ctx.fillText(texto, L / 2, margem + 24 * escala);
+    ctx.fillText(texto, L / 2, margem + 26 * escala);
   }
 
   /** A seta que aponta o próximo objetivo, presa acima do relógio. */
@@ -286,8 +287,14 @@ export class Hud {
 
     ctx.beginPath();
     ctx.arc(cx, cy, raio, 0, TAU);
-    ctx.fillStyle = 'rgba(10,13,18,0.72)';
+    const fundo = ctx.createLinearGradient(0, cy - raio, 0, cy + raio);
+    fundo.addColorStop(0, 'rgba(46,56,72,0.92)');
+    fundo.addColorStop(1, 'rgba(18,24,34,0.92)');
+    ctx.fillStyle = fundo;
     ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.lineWidth = 3 * escala;
+    ctx.stroke();
 
     const inicio = Math.PI * 0.78;
     const fim = Math.PI * 2.22;
@@ -307,8 +314,8 @@ export class Hud {
     ctx.stroke();
 
     // Riscos de velocidade.
-    ctx.strokeStyle = 'rgba(255,255,255,0.32)';
-    ctx.lineWidth = 1.5 * escala;
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1.8 * escala;
     for (let v = 0; v <= maxima; v += 20) {
       const a = inicio + (fim - inicio) * (v / maxima);
       const r1 = raio - 10 * escala;
@@ -395,34 +402,36 @@ export class Hud {
     });
 
     // Pedais.
-    const largura = 104 * escala;
-    const altura = 78 * escala;
+    const largura = 112 * escala;
+    const altura = 88 * escala;
+    const folga = 12 * escala;
     const px = L - margem - largura;
     const pyAcelerador = A - margem - altura;
-    const pyFreio = pyAcelerador - altura - 10 * escala;
+    const pyFreio = pyAcelerador - altura * 0.66 - folga;
 
     entrada.areaAcelerador = { x: px, y: pyAcelerador, largura, altura };
-    entrada.areaFreio = { x: px - largura - 10 * escala, y: pyAcelerador, largura, altura };
-    entrada.areaMarcha = { x: px, y: pyFreio, largura, altura: altura * 0.62 };
-    entrada.areaMao = { x: px - largura - 10 * escala, y: pyFreio, largura, altura: altura * 0.62 };
+    entrada.areaFreio = { x: px - largura - folga, y: pyAcelerador, largura, altura };
+    entrada.areaMarcha = { x: px, y: pyFreio, largura, altura: altura * 0.66 };
+    entrada.areaMao = { x: px - largura - folga, y: pyFreio, largura, altura: altura * 0.66 };
 
-    botao(ctx, entrada.areaAcelerador, 'ACELERA', entrada.tocando('acelerador'), escala, '#3fae62');
-    botao(ctx, entrada.areaFreio, 'FREIO', entrada.tocando('freio'), escala, '#b4433a');
+    botao(ctx, entrada.areaAcelerador, 'ACELERA', entrada.tocando('acelerador'), escala, 0x35c46a, 14);
+    botao(ctx, entrada.areaFreio, 'FREIO', entrada.tocando('freio'), escala, 0xe04a3c, 14);
     botao(ctx, entrada.areaMarcha, partida.carro.sentido < 0 ? 'RÉ' : 'DRIVE',
-      partida.carro.sentido < 0, escala, '#4a6b96');
-    botao(ctx, entrada.areaMao, 'MÃO', entrada.tocando('mao'), escala, '#8a6b2f');
+      partida.carro.sentido < 0, escala, partida.carro.sentido < 0 ? 0xf08c2a : 0x3a86d6, 13);
+    botao(ctx, entrada.areaMao, 'MÃO', entrada.tocando('mao'), escala, 0xd0a32e, 13);
 
     // Cantinho de cima: câmera e pausa.
-    const pequeno = 40 * escala;
-    entrada.areaCamera = { x: L - margem - pequeno, y: margem + 144 * escala, largura: pequeno, altura: pequeno };
-    entrada.areaPausa = { x: L - margem - pequeno * 2 - 8 * escala, y: margem + 144 * escala, largura: pequeno, altura: pequeno };
-    botao(ctx, entrada.areaCamera, '◉', false, escala, '#2b3340', 15);
-    botao(ctx, entrada.areaPausa, '❚❚', false, escala, '#2b3340', 13);
+    const pequeno = 44 * escala;
+    entrada.areaCamera = { x: L - margem - pequeno, y: margem + 148 * escala, largura: pequeno, altura: pequeno };
+    entrada.areaPausa = { x: L - margem - pequeno * 2 - 8 * escala, y: margem + 148 * escala, largura: pequeno, altura: pequeno };
+    botao(ctx, entrada.areaCamera, '◉', false, escala, 0x4a5a70, 16);
+    botao(ctx, entrada.areaPausa, '❚❚', false, escala, 0x4a5a70, 13);
 
     ctx.textAlign = 'center';
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
     ctx.font = `600 ${Math.round(9 * escala)}px ${FONTE}`;
-    ctx.fillText(NOMES_DE_MODO[partida.camera.modo] || '', L - margem - pequeno / 2, margem + 144 * escala + pequeno + 9 * escala);
+    ctx.fillText(NOMES_DE_MODO[partida.camera.modo] || '',
+      L - margem - pequeno / 2, margem + 148 * escala + pequeno + 10 * escala);
   }
 
   avisos(ctx, partida, escala, L, A) {
@@ -459,11 +468,16 @@ export class Hud {
 
 // ---------------------------------------------------------------------------
 
-export function caixa(ctx, x, y, largura, altura, raio, cor) {
+export function caixa(ctx, x, y, largura, altura, raio, cor, contorno = 'rgba(255,255,255,0.16)') {
   ctx.fillStyle = cor;
   ctx.beginPath();
   arredondado(ctx, x, y, largura, altura, raio);
   ctx.fill();
+  if (contorno) {
+    ctx.strokeStyle = contorno;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
 }
 
 export function arredondado(ctx, x, y, largura, altura, raio) {
@@ -479,20 +493,55 @@ export function arredondado(ctx, x, y, largura, altura, raio) {
   ctx.quadraticCurveTo(x, y, x + r, y);
 }
 
+/**
+ * Botão gordo de jogo de celular: cor cheia o tempo todo, brilho na metade de
+ * cima, borda branca grossa e texto em caixa alta.
+ *
+ * Botão que só ganha cor quando é apertado obriga a pessoa a procurar onde
+ * ficam os pedais no meio da corrida. Cor sempre visível resolve isso — o
+ * toque muda o brilho, não a identidade do botão.
+ */
 export function botao(ctx, area, texto, ativo, escala, cor, tamanhoFonte = 13) {
   ctx.save();
-  ctx.fillStyle = ativo ? cor : 'rgba(18,22,30,0.62)';
+  const r = Math.min(area.largura, area.altura) * 0.32;
+  const claro = tonalizar(cor, ativo ? 1.35 : 1.12);
+  const escuro = tonalizar(cor, ativo ? 0.95 : 0.72);
+
   ctx.beginPath();
-  arredondado(ctx, area.x, area.y, area.largura, area.altura, 12 * escala);
+  arredondado(ctx, area.x, area.y, area.largura, area.altura, r);
+  const g = ctx.createLinearGradient(0, area.y, 0, area.y + area.altura);
+  g.addColorStop(0, corTexto(claro));
+  g.addColorStop(1, corTexto(escuro));
+  ctx.fillStyle = g;
+  ctx.globalAlpha = ativo ? 1 : 0.9;
   ctx.fill();
-  ctx.strokeStyle = ativo ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.22)';
-  ctx.lineWidth = 1.8 * escala;
+  ctx.globalAlpha = 1;
+
+  // Verniz: uma lasca clara na metade de cima, cortada pela própria forma.
+  ctx.save();
+  ctx.clip();
+  const v = ctx.createLinearGradient(0, area.y, 0, area.y + area.altura * 0.55);
+  v.addColorStop(0, 'rgba(255,255,255,0.32)');
+  v.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = v;
+  ctx.fillRect(area.x, area.y, area.largura, area.altura * 0.55);
+  ctx.restore();
+
+  ctx.strokeStyle = ativo ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.55)';
+  ctx.lineWidth = 3 * escala;
+  ctx.beginPath();
+  arredondado(ctx, area.x, area.y, area.largura, area.altura, r);
   ctx.stroke();
-  ctx.fillStyle = ativo ? '#ffffff' : 'rgba(255,255,255,0.78)';
-  ctx.font = `700 ${Math.round(tamanhoFonte * escala)}px ${FONTE}`;
+
+  ctx.font = `800 ${Math.round(tamanhoFonte * escala)}px ${FONTE}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(texto, area.x + area.largura / 2, area.y + area.altura / 2);
+  const cx = area.x + area.largura / 2;
+  const cy = area.y + area.altura / 2;
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillText(texto, cx, cy + 1.6 * escala);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(texto, cx, cy);
   ctx.restore();
 }
 

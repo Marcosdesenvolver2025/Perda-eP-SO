@@ -3,16 +3,20 @@
    briefing e resultado. */
 
 :root {
-  --fundo: #0b0e13;
-  --fundo-cartao: #151b24;
-  --borda: #262f3c;
-  --texto: #eef2f7;
-  --texto-fraco: #97a3b3;
+  /* Os menus acompanham a paleta do jogo (src/motor/paleta.js): azul de céu,
+     amarelo de placa, verde de sinal. Tema escuro, mas azul — cinza-chumbo
+     brigava com o mundo colorido que aparece atrás. */
+  --fundo: #0e1d33;
+  --fundo-cartao: #1a2d4c;
+  --fundo-item: #14243e;
+  --borda: #2f4a74;
+  --texto: #eef4fb;
+  --texto-fraco: #9ab4d4;
   --destaque: #ffd24a;
-  --acento: #7fd1ff;
-  --bom: #36c96f;
-  --ruim: #e8563a;
-  --raio: 14px;
+  --acento: #4db8ff;
+  --bom: #35c46a;
+  --ruim: #e04a3c;
+  --raio: 16px;
   --fonte: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -49,7 +53,7 @@ html, body {
   align-items: flex-start;
   justify-content: center;
   padding: max(18px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom));
-  background: radial-gradient(120% 90% at 50% 0%, rgba(20, 30, 45, 0.82), rgba(6, 9, 13, 0.94));
+  background: radial-gradient(120% 90% at 50% 0%, rgba(26, 60, 110, 0.80), rgba(8, 18, 34, 0.94));
   backdrop-filter: blur(7px);
   overflow-y: auto;
   z-index: 10;
@@ -61,10 +65,10 @@ html, body {
   width: min(560px, 100%);
   background: var(--fundo-cartao);
   border: 1px solid var(--borda);
-  border-radius: 22px;
+  border-radius: 26px;
   padding: 28px;
   margin: auto;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.10);
   animation: subir 0.22s ease-out;
 }
 
@@ -126,40 +130,49 @@ html, body {
 
 .botao {
   font: inherit;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 16px;
   color: var(--texto);
-  background: #1e2733;
-  border: 1px solid var(--borda);
+  background: linear-gradient(180deg, #2c4670, #1d2f4e);
+  border: 2px solid var(--borda);
   border-radius: var(--raio);
-  padding: 14px 18px;
+  padding: 15px 18px;
   cursor: pointer;
-  transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  transition: transform 0.08s ease, filter 0.15s ease, border-color 0.15s ease;
 }
 
-.botao:hover { background: #26313f; border-color: #3a4757; }
+.botao:hover { filter: brightness(1.16); border-color: #4a6ea8; }
 .botao:active { transform: translateY(1px); }
 .botao:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
 
 .botao--principal {
-  background: linear-gradient(180deg, #ffd85c, #f0b429);
-  color: #241a00;
-  border-color: #f0b429;
+  background: linear-gradient(180deg, #ffdf6e, #f0a81e);
+  color: #2b1d00;
+  border-color: #ffe98c;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
 }
-.botao--principal:hover { background: linear-gradient(180deg, #ffe07a, #ffc53d); }
 
 .botao--discreto {
-  background: transparent;
+  background: none;
   border-color: transparent;
+  box-shadow: none;
   color: var(--texto-fraco);
-  padding: 8px 10px;
+  padding: 9px 12px;
 }
-.botao--discreto:hover { color: var(--texto); background: #1e2733; }
+.botao--discreto:hover { color: var(--texto); background: #22395c; }
 
-.botao--ativo { background: var(--acento); color: #06121c; border-color: var(--acento); }
+.botao--ativo {
+  background: linear-gradient(180deg, #6fcbff, #2f9fe8);
+  color: #05203a;
+  border-color: #a5e0ff;
+}
 
-.botao--perigo { background: transparent; border-color: #5a2b24; color: #e08878; }
-.botao--perigo:hover { background: #2a1512; }
+.botao--perigo {
+  background: linear-gradient(180deg, #5c2a24, #3a1a16);
+  border-color: #7a3a30;
+  color: #f0a396;
+}
 
 .botao:disabled, .botao--desabilitado {
   opacity: 0.45;
@@ -188,7 +201,7 @@ html, body {
 }
 
 .cartao {
-  background: #101720;
+  background: var(--fundo-item);
   border: 1px solid var(--borda);
   border-radius: 18px;
   padding: 14px;
@@ -203,7 +216,7 @@ html, body {
   position: relative;
   border-radius: 12px;
   overflow: hidden;
-  background: #0d1218;
+  background: #0c1a2e;
   margin-bottom: 12px;
   line-height: 0;
 }
@@ -240,7 +253,7 @@ html, body {
 .ficha { display: grid; gap: 5px; margin-bottom: 4px; }
 .ficha__linha { display: grid; grid-template-columns: 84px 1fr; align-items: center; gap: 8px; }
 .ficha__linha span { font-size: 11.5px; color: var(--texto-fraco); }
-.ficha__barra { height: 5px; background: #1c2531; border-radius: 3px; overflow: hidden; }
+.ficha__barra { height: 6px; background: #0e1e34; border-radius: 3px; overflow: hidden; }
 .ficha__barra i { display: block; height: 100%; background: linear-gradient(90deg, var(--acento), var(--destaque)); }
 
 /* --- briefing e resultado ----------------------------------------------- */
@@ -253,7 +266,7 @@ html, body {
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  background: #101720;
+  background: var(--fundo-item);
   font-size: 14.5px;
 }
 .briefing__itens span, .placar span { color: var(--texto-fraco); }
@@ -271,7 +284,7 @@ html, body {
   line-height: 1.5;
 }
 
-.estrelas { font-size: 42px; letter-spacing: 8px; margin: 10px 0 18px; color: #2b3542; }
+.estrelas { font-size: 42px; letter-spacing: 8px; margin: 10px 0 18px; color: #223a5c; }
 .estrelas .cheia { color: var(--destaque); text-shadow: 0 0 22px rgba(255, 210, 74, 0.5); }
 
 /* --- ajustes ------------------------------------------------------------ */
@@ -290,7 +303,7 @@ kbd {
   margin-right: 3px;
   font: inherit;
   font-size: 11.5px;
-  background: #1e2733;
+  background: #24395c;
   border: 1px solid var(--borda);
   border-bottom-width: 2px;
   border-radius: 5px;
@@ -305,14 +318,14 @@ kbd {
   width: 46px;
   height: 46px;
   margin: 0 auto;
-  border: 4px solid #2a3442;
+  border: 4px solid #2c4870;
   border-top-color: var(--destaque);
   border-radius: 50%;
   animation: girar 0.85s linear infinite;
 }
 @keyframes girar { to { transform: rotate(360deg); } }
 
-.rodape { margin: 22px 0 0; font-size: 12px; line-height: 1.6; color: #5f6c7d; text-align: center; }
+.rodape { margin: 22px 0 0; font-size: 12px; line-height: 1.6; color: #6d88ab; text-align: center; }
 
 .sem-script { padding: 40px; text-align: center; }
 

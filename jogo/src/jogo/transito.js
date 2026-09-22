@@ -11,10 +11,9 @@ import {
   criarSorteio, entre, escolher, inteiro, limitar, normalizarAngulo, distanciaPlana,
 } from '../nucleo/matematica.js';
 
-const CORES = [
-  0xd94f2b, 0x2e6fb7, 0xe6b422, 0xf2f2ef, 0x4a4f55, 0x3f8b5c,
-  0x8e44ad, 0xc0392b, 0x16a085, 0x2c3e50, 0xdf7401,
-];
+import { PINTURAS } from '../motor/paleta.js';
+
+const CORES = PINTURAS;
 
 export function criarTransito(mundo, semente, quantidade, opcoes = {}) {
   const sortear = criarSorteio(semente ^ 0x4f21);

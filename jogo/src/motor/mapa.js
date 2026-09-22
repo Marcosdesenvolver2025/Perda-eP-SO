@@ -8,6 +8,7 @@
 // desenha o chão pixel a pixel: o trabalho caro já foi feito antes de começar.
 
 import { TAU, corTexto, criarSorteio, entre, limitar, tonalizar } from '../nucleo/matematica.js';
+import { VIA } from './paleta.js';
 
 const LADO_ENTORNO = 256;
 
@@ -83,14 +84,14 @@ function faixaDaVia(ctx, via, folga, cor, comMeioFio) {
   if (via.eixo === 'x') {
     ctx.fillRect(via.de, via.centro - largura / 2, via.ate - via.de, largura);
     if (comMeioFio) {
-      ctx.fillStyle = corTexto(tonalizar(cor, 0.78));
+      ctx.fillStyle = corTexto(VIA.meioFio);
       ctx.fillRect(via.de, via.centro - largura / 2, via.ate - via.de, 0.18);
       ctx.fillRect(via.de, via.centro + largura / 2 - 0.18, via.ate - via.de, 0.18);
     }
   } else {
     ctx.fillRect(via.centro - largura / 2, via.de, largura, via.ate - via.de);
     if (comMeioFio) {
-      ctx.fillStyle = corTexto(tonalizar(cor, 0.78));
+      ctx.fillStyle = corTexto(VIA.meioFio);
       ctx.fillRect(via.centro - largura / 2, via.de, 0.18, via.ate - via.de);
       ctx.fillRect(via.centro + largura / 2 - 0.18, via.de, 0.18, via.ate - via.de);
     }
@@ -102,16 +103,17 @@ function pintarVia(ctx, via, mundo, sortear) {
   ctx.save();
   ctx.lineCap = 'butt';
 
-  // Bordas contínuas.
-  ctx.strokeStyle = 'rgba(232,228,214,0.62)';
-  ctx.lineWidth = 0.12;
-  traco(ctx, via, -meia + 0.55);
-  traco(ctx, via, meia - 0.55);
+  // Bordas contínuas. Branco forte e linha grossa: num asfalto cinza-médio a
+  // pintura tem que saltar, é ela que diz onde está a pista.
+  ctx.strokeStyle = corTexto(VIA.faixa);
+  ctx.lineWidth = 0.18;
+  traco(ctx, via, -meia + 0.6);
+  traco(ctx, via, meia - 0.6);
 
   // Eixo tracejado.
-  ctx.strokeStyle = 'rgba(240,222,150,0.78)';
-  ctx.lineWidth = 0.14;
-  ctx.setLineDash([2.4, 2.6]);
+  ctx.strokeStyle = corTexto(VIA.faixaAmarela);
+  ctx.lineWidth = 0.20;
+  ctx.setLineDash([2.6, 2.4]);
   traco(ctx, via, 0);
   ctx.setLineDash([]);
 
@@ -147,8 +149,8 @@ function seta(ctx, x, z, angulo) {
   ctx.save();
   ctx.translate(x, z);
   ctx.rotate(angulo);
-  ctx.fillStyle = 'rgba(238,234,222,0.6)';
-  ctx.fillRect(-0.13, -0.6, 0.26, 1.7);
+  ctx.fillStyle = corTexto(VIA.faixa) + 'd0';
+  ctx.fillRect(-0.15, -0.6, 0.30, 1.7);
   ctx.beginPath();
   ctx.moveTo(0, -1.5);
   ctx.lineTo(0.5, -0.5);
@@ -161,7 +163,7 @@ function seta(ctx, x, z, angulo) {
 function faixasDePedestre(ctx, mundo, sortear) {
   const horizontais = mundo.vias.filter((v) => v.eixo === 'x');
   const verticais = mundo.vias.filter((v) => v.eixo === 'z');
-  ctx.fillStyle = 'rgba(240,238,230,0.72)';
+  ctx.fillStyle = corTexto(VIA.faixa) + 'ee';
 
   for (const h of horizontais) {
     for (const v of verticais) {
@@ -235,7 +237,7 @@ function desgaste(ctx, mundo, sortear) {
   const f = mundo.ficha;
   for (const via of mundo.vias) {
     const comprimento = via.ate - via.de;
-    const quantos = Math.round(comprimento / 6);
+    const quantos = Math.round(comprimento / 14);
     for (let i = 0; i < quantos; i++) {
       const p = entre(sortear, via.de, via.ate);
       const d = entre(sortear, -via.largura / 2 + 0.4, via.largura / 2 - 0.4);
@@ -246,13 +248,13 @@ function desgaste(ctx, mundo, sortear) {
       if (tipo < 0.42) {
         // remendo
         ctx.fillStyle = corTexto(tonalizar(f.corAsfalto, entre(sortear, 0.78, 1.2)));
-        ctx.globalAlpha = 0.55;
+        ctx.globalAlpha = 0.22;
         ctx.beginPath();
         ctx.ellipse(x, z, entre(sortear, 0.5, 2.4), entre(sortear, 0.4, 1.8), entre(sortear, 0, TAU), 0, TAU);
         ctx.fill();
       } else if (tipo < 0.62) {
         // trinca
-        ctx.strokeStyle = 'rgba(20,20,22,0.35)';
+        ctx.strokeStyle = 'rgba(20,20,22,0.16)';
         ctx.lineWidth = 0.05;
         ctx.beginPath();
         let cx = x, cz = z;
@@ -265,7 +267,7 @@ function desgaste(ctx, mundo, sortear) {
         ctx.stroke();
       } else if (tipo < 0.76) {
         // mancha de óleo
-        ctx.globalAlpha = 0.20;
+        ctx.globalAlpha = 0.10;
         ctx.fillStyle = '#0b0b0d';
         ctx.beginPath();
         ctx.ellipse(x, z, entre(sortear, 0.25, 0.7), entre(sortear, 0.2, 0.5), 0, 0, TAU);
@@ -297,7 +299,7 @@ function sombrasNoChao(ctx, mundo, ambiente) {
   const comprimento = limitar(1.1 / sol.y, 0.2, 3.2);
   const dx = -sol.x * comprimento;
   const dz = -sol.z * comprimento;
-  const forca = limitar(0.30 * (ambiente.luz ?? 1), 0.05, 0.42);
+  const forca = limitar(0.17 * (ambiente.luz ?? 1), 0.04, 0.24);
 
   ctx.save();
   ctx.fillStyle = `rgba(14,16,22,${forca.toFixed(3)})`;

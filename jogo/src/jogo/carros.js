@@ -51,7 +51,7 @@ export const CARROS = [
       consumoBase: 0.0032,
     },
     corpo: {
-      tipo: 'fusca', cor: 0x6fb3d2, corSecundaria: 0x2f5f78,
+      tipo: 'fusca', cor: 0x67c0e8, corSecundaria: 0x2f6f92,
       alturaChassi: 0.24, alturaCorpo: 0.62, alturaCabine: 0.58, recuoCabine: 0.13,
       capo: 0.94, bagageiro: 0.94, raioRoda: 0.31, larguraRoda: 0.17,
     },
@@ -105,7 +105,7 @@ export const CARROS = [
       consumoBase: 0.0026,
     },
     corpo: {
-      tipo: 'hatch', cor: 0xe5533d, corSecundaria: 0x8c2e20,
+      tipo: 'hatch', cor: 0xe8392f, corSecundaria: 0x9c261d,
       alturaChassi: 0.22, alturaCorpo: 0.58, alturaCabine: 0.56, recuoCabine: 0.11,
       capo: 0.80, bagageiro: 0.26, raioRoda: 0.29, larguraRoda: 0.18,
     },
@@ -159,7 +159,7 @@ export const CARROS = [
       consumoBase: 0.0039,
     },
     corpo: {
-      tipo: 'sedan', cor: 0x1f3d5c, corSecundaria: 0x0f2237,
+      tipo: 'sedan', cor: 0x2a6fbd, corSecundaria: 0x17406f,
       alturaChassi: 0.20, alturaCorpo: 0.60, alturaCabine: 0.50, recuoCabine: 0.12,
       capo: 1.25, bagageiro: 1.05, raioRoda: 0.33, larguraRoda: 0.20,
     },
@@ -213,7 +213,7 @@ export const CARROS = [
       consumoBase: 0.0048,
     },
     corpo: {
-      tipo: 'van', cor: 0xf5f0e6, corSecundaria: 0xc0392b,
+      tipo: 'van', cor: 0xf7f7f2, corSecundaria: 0xd94434,
       alturaChassi: 0.32, alturaCorpo: 1.28, alturaCabine: 0.44, recuoCabine: 0.05,
       capo: 0.52, bagageiro: 0.04, raioRoda: 0.33, larguraRoda: 0.20,
     },
@@ -267,7 +267,7 @@ export const CARROS = [
       consumoBase: 0.0052,
     },
     corpo: {
-      tipo: 'picape', cor: 0xd9a441, corSecundaria: 0x6b4c14,
+      tipo: 'picape', cor: 0xf0a828, corSecundaria: 0x8a5f16,
       alturaChassi: 0.40, alturaCorpo: 0.72, alturaCabine: 0.66, recuoCabine: 0.06,
       capo: 1.30, cacamba: 1.85, raioRoda: 0.38, larguraRoda: 0.24,
     },
@@ -322,7 +322,7 @@ export const CARROS = [
       areia: 1.22,   // multiplicador de aderência fora do asfalto
     },
     corpo: {
-      tipo: 'buggy', cor: 0xe98a15, corSecundaria: 0x2b2b2b,
+      tipo: 'buggy', cor: 0xf07f25, corSecundaria: 0x33383d,
       alturaChassi: 0.46, alturaCorpo: 0.46, alturaCabine: 0.62, recuoCabine: 0.10,
       capo: 0.62, bagageiro: 0.52, raioRoda: 0.40, larguraRoda: 0.28, santoAntonio: true,
     },
@@ -376,7 +376,7 @@ export const CARROS = [
       consumoBase: 0.0058,
     },
     corpo: {
-      tipo: 'esportivo', cor: 0xf0c419, corSecundaria: 0x1b1b1b,
+      tipo: 'esportivo', cor: 0xf5c518, corSecundaria: 0x24282d,
       alturaChassi: 0.16, alturaCorpo: 0.48, alturaCabine: 0.40, recuoCabine: 0.16,
       capo: 1.24, bagageiro: 0.92, raioRoda: 0.33, larguraRoda: 0.25, asa: true,
     },
@@ -433,7 +433,7 @@ export const CARROS = [
       eletrico: true,
     },
     corpo: {
-      tipo: 'eletrico', cor: 0xdfe6ec, corSecundaria: 0x2c3e50,
+      tipo: 'eletrico', cor: 0xe8eef4, corSecundaria: 0x34506b,
       alturaChassi: 0.18, alturaCorpo: 0.56, alturaCabine: 0.46, recuoCabine: 0.10,
       capo: 0.96, bagageiro: 0.86, raioRoda: 0.34, larguraRoda: 0.22,
     },

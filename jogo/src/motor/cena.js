@@ -11,6 +11,7 @@
 // para a área com sinal do polígono já projetado, sem calcular normal nenhuma.
 
 import { TAU, corTexto, limitar, tonalizar } from '../nucleo/matematica.js';
+import { LUZ } from './paleta.js';
 
 const MAX_VERTICES = 20000;
 
@@ -45,7 +46,7 @@ export class Cena {
     const ly = -(solX * camera.cx + solY * camera.cy + solZ * camera.cz);
     const lz = solX * camera.fx + solY * camera.fy + solZ * camera.fz;
 
-    const ambienteLuz = ambiente.ambienteLuz === undefined ? 0.45 : ambiente.ambienteLuz;
+    const ambienteLuz = ambiente.ambienteLuz === undefined ? LUZ.ambiente : ambiente.ambienteLuz;
     const intensidade = ambiente.luz === undefined ? 1 : ambiente.luz;
     const meiaL = largura / 2, meiaA = altura / 2;
     const kx = meiaL / (camera.tanMeio * camera.aspecto);
@@ -262,7 +263,7 @@ function matrizDaInstancia(inst, camera) {
  * tudo parece flutuando um palmo acima da rua.
  */
 export function desenharSombras(ctx, camera, sombras, ambiente, largura, altura) {
-  const forca = ambiente.forcaSombra === undefined ? 0.34 : ambiente.forcaSombra;
+  const forca = ambiente.forcaSombra === undefined ? LUZ.sombra : ambiente.forcaSombra;
   if (forca <= 0.01) return;
   const meiaL = largura / 2, meiaA = altura / 2;
   const kx = meiaL / (camera.tanMeio * camera.aspecto);

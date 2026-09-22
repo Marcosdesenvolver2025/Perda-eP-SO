@@ -12,6 +12,7 @@ import { Ceu } from './motor/ceu.js';
 import { Terreno, resolucaoDoChao } from './motor/terreno.js';
 import { Cena, desenharSombras, desenharLuzes } from './motor/cena.js';
 import { gerarMapa, marcarChao } from './motor/mapa.js';
+import { LUZ } from './motor/paleta.js';
 import { construirCarro } from './motor/modelos.js';
 
 import { criarCarro, passo as passoFisica } from './jogo/fisica.js';
@@ -695,10 +696,16 @@ class Jogo {
   }
 }
 
+/**
+ * Vinheta de leve. O visual que o jogo persegue é de dia claro e ar limpo —
+ * vinheta forte escurece o canto da tela e traz de volta o clima "fotográfico"
+ * que a paleta está justamente tentando tirar.
+ */
 function vinheta(ctx, L, A) {
-  const g = ctx.createRadialGradient(L / 2, A / 2, Math.min(L, A) * 0.42, L / 2, A / 2, Math.max(L, A) * 0.78);
+  if (LUZ.vinheta <= 0.01) return;
+  const g = ctx.createRadialGradient(L / 2, A / 2, Math.min(L, A) * 0.52, L / 2, A / 2, Math.max(L, A) * 0.82);
   g.addColorStop(0, 'rgba(0,0,0,0)');
-  g.addColorStop(1, 'rgba(0,0,0,0.42)');
+  g.addColorStop(1, `rgba(0,0,0,${LUZ.vinheta})`);
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, L, A);
 }

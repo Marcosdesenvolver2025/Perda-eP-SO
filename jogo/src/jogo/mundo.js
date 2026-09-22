@@ -12,27 +12,28 @@ import {
   distanciaPlana, TAU, misturarCor,
 } from '../nucleo/matematica.js';
 import * as modelos from '../motor/modelos.js';
+import { TERRENO, VIA, FACHADAS, FACHADAS_INDUSTRIAIS, CENA } from '../motor/paleta.js';
 
 export const CENARIOS = {
   cidade: {
-    nome: 'centro', perfil: 'cidade', base: 0x6f7a63, piso: 'grama',
-    corAsfalto: 0x3b3f45, corCalcada: 0xa8a49c,
-    arvores: 'arvore', densidade: 1,
+    nome: 'centro', perfil: 'cidade', base: TERRENO.grama, piso: 'grama',
+    corAsfalto: VIA.asfalto, corCalcada: VIA.calcada,
+    fachadas: FACHADAS, arvores: 'arvore', densidade: 1,
   },
   praia: {
-    nome: 'beira-mar', perfil: 'praia', base: 0xdcc89a, piso: 'areia',
-    corAsfalto: 0x4a4a48, corCalcada: 0xcfc4ad,
-    arvores: 'palmeira', densidade: 0.7,
+    nome: 'beira-mar', perfil: 'praia', base: TERRENO.areia, piso: 'areia',
+    corAsfalto: VIA.asfaltoClaro, corCalcada: 0xe8dcc0,
+    fachadas: FACHADAS, arvores: 'palmeira', densidade: 0.7,
   },
   campo: {
-    nome: 'estrada de terra', perfil: 'campo', base: 0x7d8b56, piso: 'grama',
-    corAsfalto: 0x6f6047, corCalcada: 0x8e9a6a, terra: true,
-    arvores: 'arvore', densidade: 0.8,
+    nome: 'estrada de terra', perfil: 'campo', base: TERRENO.gramaClara, piso: 'grama',
+    corAsfalto: VIA.terra, corCalcada: 0x9ac25e, terra: true,
+    fachadas: FACHADAS, arvores: 'arvore', densidade: 0.8,
   },
   industrial: {
-    nome: 'zona industrial', perfil: 'industrial', base: 0x77786f, piso: 'terra',
-    corAsfalto: 0x44464b, corCalcada: 0x8d8e88,
-    arvores: 'arbusto', densidade: 0.45,
+    nome: 'zona industrial', perfil: 'industrial', base: TERRENO.cascalho, piso: 'terra',
+    corAsfalto: VIA.asfalto, corCalcada: 0xd2d0c4,
+    fachadas: FACHADAS_INDUSTRIAIS, arvores: 'arbusto', densidade: 0.45,
   },
 };
 
@@ -199,9 +200,7 @@ function povoarQuadras(mundo, sortear, cenario, opcoes) {
         const x = entre(sortear, util.x0 + l / 2, util.x1 - l / 2);
         const z = entre(sortear, util.z0 + p / 2, util.z1 - p / 2);
         if (colide(mundo.colisores, x, z, l + 2, p + 2)) continue;
-        const cor = escolher(sortear, cenario.perfil === 'industrial'
-          ? [0x8a8f96, 0x9aa0a6, 0x76797e]
-          : [0xd8cfc0, 0xc9b9a3, 0xbfc7cc, 0xd6c2b0, 0xb08f7a, 0xa8b3ab]);
+        const cor = escolher(sortear, cenario.fachadas || FACHADAS);
         adicionar(mundo, {
           tipo: 'predio', malha: modelos.predio(l, h, p, cor, Math.floor(sortear() * 1e6)),
           x, z, guinada: 0, raio: Math.hypot(l, p) / 2 + 1,
@@ -303,7 +302,8 @@ function cercarOMundo(mundo, sortear, cenario) {
     const fazer = (x, z, guinada) => {
       const malha = cenario.perfil === 'praia' || cenario.perfil === 'campo'
         ? modelos.grade(comprimento, 1.3)
-        : modelos.muro(comprimento, 2.4, cenario.perfil === 'industrial' ? 0x8a8d84 : 0xb9ac99);
+        : modelos.muro(comprimento, 2.4,
+          cenario.perfil === 'industrial' ? CENA.muroIndustrial : CENA.muro);
       adicionar(mundo, { tipo: 'muro', malha, x, z, guinada, raio: comprimento }, {
         largura: comprimento, comprimento: 0.4, solido: true, guinada, altura: 2.4, parede: true,
       });

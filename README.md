@@ -47,7 +47,7 @@ diferente**, que é o controle que fica na sua mão.
 ```bash
 cd jogo
 node servidor-local.mjs    # http://localhost:8080
-npm test                   # 80 testes, sem navegador e sem instalar nada
+npm test                   # 93 testes, sem navegador e sem instalar nada
 ```
 
 Como o chão em perspectiva, a física do carro e a geração do bairro funcionam
@@ -323,7 +323,7 @@ jogo/                     VOLANTE — jogo de dirigir, independente do marketpla
   src/motor/              câmera, céu, chão em perspectiva, malhas, desenho
   src/jogo/               física, carros, volantes, colisão, mundo, missões
   src/interface/          painel no canvas e telas em HTML
-  testes/                 80 testes, rodam em Node puro
+  testes/                 93 testes, rodam em Node puro
 ```
 
 ---

@@ -35,7 +35,16 @@ Parado com o freio afundado, a ré engata sozinha.
 
 A referência é o **DR Driving** e os jogos de dirigir de celular da mesma
 escola: chão pintado visto em perspectiva, carro montado com blocos, e uma
-baliza que não perdoa. O que se manteve:
+baliza que não perdoa.
+
+> **Nenhum arquivo daquele jogo foi usado aqui.** As texturas, os modelos e os
+> ícones do DR Driving são obra da SUD Inc. e copiá-los seria violação de
+> direito autoral — além de impedir a publicação deste jogo em qualquer loja.
+> O que foi reconstruído é o *estilo*, que não é protegido: cor, luz, proporção
+> e forma, tudo desenhado do zero pelo próprio jogo em tempo de execução. Não
+> existe um único arquivo de imagem no projeto.
+
+O que se manteve:
 
 | | Como é aqui |
 |---|---|
@@ -65,10 +74,10 @@ O que mudou, e por quê:
 ```
 src/
   nucleo/       matemática, sorteio com semente, entrada (teclado e dedo)
-  motor/        câmera, céu, chão em perspectiva, malhas, modelos, desenho
+  motor/        PALETA, câmera, céu, chão em perspectiva, malhas, desenho
   jogo/         física, carros, volantes, colisão, mundo, missões, som, save
   interface/    painel dentro do canvas, telas em HTML
-testes/         80 testes, sem navegador
+testes/         93 testes, sem navegador
 ```
 
 ### O chão
@@ -134,6 +143,29 @@ A nota é de 1 a 3 estrelas: terminar vale uma, e as outras duas vêm de **como*
 você terminou — sem bater, com tempo de sobra, com combustível no tanque, com a
 carga inteira. É o que separa "passou" de "passou bem".
 
+### Os gráficos
+
+Não há imagem nenhuma: cada pixel é calculado na hora. O visual inteiro sai de
+**`src/motor/paleta.js`** — um arquivo só, com todas as cores e as constantes de
+luz. Mudar uma linha lá muda o jogo inteiro.
+
+Quatro decisões fazem o visual de jogo de dirigir de celular, e nenhuma delas é
+textura:
+
+1. **Cor saturada.** Céu azul de revista, grama verde de plástico, carro de cor
+   de brinquedo. Nada de tom terroso.
+2. **Asfalto cinza-médio, não preto**, com faixa branca limpa por cima. Asfalto
+   escuro engole a pintura e some com a leitura da pista.
+3. **Luz chapada.** A luz ambiente é alta (0.72) e a direcional é fraca, então a
+   diferença entre a face iluminada e a face na sombra é pequena. É isso que faz
+   o carro parecer um brinquedo de plástico em vez de um objeto fotografado.
+4. **Ar limpo.** Pouca névoa, vinheta quase nula. O mundo é nítido até o
+   horizonte.
+
+Quer o caminho inverso, mais "simulador sombrio"? Em `paleta.js`, baixe
+`LUZ.ambiente` para perto de 0.4 e reduza `LUZ.nevoa`. O jogo inteiro muda de
+humor sem tocar em mais nada.
+
 ### O som
 
 Não há arquivo de áudio no projeto. O motor são três osciladores afinados pela
@@ -164,7 +196,7 @@ volante.
 ## Testes
 
 ```bash
-cd jogo && npm test        # 80 testes, sem navegador e sem instalar nada
+cd jogo && npm test        # 93 testes, sem navegador e sem instalar nada
 ```
 
 Rodam em Node puro porque física, mundo, missões e colisão não tocam em `canvas`
@@ -182,6 +214,14 @@ nem em `document`. O que a suíte garante:
 - **colisão** — casos com coordenada conferível no papel, inclusive o carro a
   144 km/h contra a parede
 - **volantes** — que nenhum é igual a outro, em estilo, emblema, apelido ou cor
+- **paleta** — que a faixa contrasta com o asfalto, que a janela aparece na
+  fachada e que nenhum carro some no chão. São duas contas diferentes de
+  propósito: pintura e janela funcionam por CLARIDADE (contraste de luminância
+  da WCAG), carro e cone funcionam por COR (distância perceptual em Lab). Um
+  carro vermelho sobre asfalto cinza tem contraste de luminância de 1,13:1 —
+  reprovado pela WCAG — e mesmo assim salta aos olhos, porque o que difere é o
+  matiz. Medir a coisa errada reprovaria a paleta inteira por um motivo que não
+  existe.
 
 Três bugs foram encontrados por esses testes e não por jogar: poste plantado no
 meio do asfalto, carro nascendo fora da rua na escolta, e portões de slalom

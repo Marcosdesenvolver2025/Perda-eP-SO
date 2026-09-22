@@ -52,14 +52,16 @@ export class Ceu {
         tamanho: entre(sortear, 0.7, 2.1),
       });
     }
+    // Nuvem grande, gorda e branca. É a assinatura do céu de jogo de celular:
+    // poucas e pequenas dão céu de foto, muitas e cheias dão céu de desenho.
     this.nuvens = [];
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 26; i++) {
       this.nuvens.push({
         azimute: entre(sortear, 0, TAU),
-        elevacao: entre(sortear, 0.06, 0.55),
-        largura: entre(sortear, 0.10, 0.34),
-        altura: entre(sortear, 0.018, 0.055),
-        opacidade: entre(sortear, 0.18, 0.62),
+        elevacao: entre(sortear, 0.20, 0.95),
+        largura: entre(sortear, 0.16, 0.46),
+        altura: entre(sortear, 0.030, 0.075),
+        opacidade: entre(sortear, 0.55, 0.95),
         deriva: entre(sortear, -0.004, 0.004),
       });
     }
@@ -72,10 +74,15 @@ export class Ceu {
 
     // Degradê do céu. A âncora é o horizonte, não o topo da tela: assim o céu
     // não "escorrega" quando a câmera olha para baixo.
-    const topo = horizonte - altura * 1.25;
+    //
+    // A altura do degradê acompanha a faixa de céu que REALMENTE aparece. Com
+    // um valor fixo e grande, o azul forte do topo cai fora da tela e sobra só
+    // a parte pálida de baixo — o céu fica leitoso o tempo todo.
+    const alturaDoCeu = Math.max(horizonte * 1.15, altura * 0.42);
+    const topo = horizonte - alturaDoCeu;
     const g = ctx.createLinearGradient(0, topo, 0, horizonte);
     g.addColorStop(0, corTexto(ambiente.corCeuAlto));
-    g.addColorStop(0.62, corTexto(misturarCor(ambiente.corCeuAlto, ambiente.corCeuBaixo, 0.6)));
+    g.addColorStop(0.55, corTexto(misturarCor(ambiente.corCeuAlto, ambiente.corCeuBaixo, 0.55)));
     g.addColorStop(1, corTexto(ambiente.corCeuBaixo));
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, largura, Math.max(0, Math.ceil(horizonte) + 2));
@@ -84,11 +91,11 @@ export class Ceu {
 
     if (ambiente.estrelas) this.desenharEstrelas(ctx, camera, ambiente, largura, altura);
     this.desenharAstro(ctx, camera, ambiente, largura, altura);
-    if (!ambiente.semNuvens) this.desenharNuvens(ctx, camera, ambiente, largura, altura, tempo);
     this.desenharSilhueta(ctx, camera, ambiente, largura, altura, horizonte);
+    if (!ambiente.semNuvens) this.desenharNuvens(ctx, camera, ambiente, largura, altura, tempo);
 
     // Faixa de névoa colada no horizonte: é a cola entre o céu e o chão.
-    const faixa = altura * 0.10;
+    const faixa = altura * 0.065;
     const n = ctx.createLinearGradient(0, horizonte - faixa, 0, horizonte + 1);
     n.addColorStop(0, corTexto(ambiente.corHorizonte) + '00');
     n.addColorStop(1, corTexto(ambiente.corHorizonte));
@@ -176,7 +183,7 @@ export class Ceu {
     const tira = this.silhueta;
     if (!tira) return;
     const fatias = 40;
-    const alturaDestino = altura * 0.30 * (0.62 / camera.tanMeio);
+    const alturaDestino = altura * 0.20 * (0.62 / camera.tanMeio);
     const tanX = camera.tanMeio * camera.aspecto;
 
     ctx.save();
@@ -214,10 +221,12 @@ function desenharSilhueta(semente, perfil) {
   const ctx = tela.getContext('2d');
   const sortear = criarSorteio(semente ^ 0x9d4b);
 
+  // Camadas claras e pouco opacas: a cidade do fundo tem que parecer longe e
+  // ensolarada, não uma parede preta recortada contra o céu.
   const camadas = [
-    { cor: 'rgba(12,18,28,0.30)', escala: 0.62, passo: 1.6 },
-    { cor: 'rgba(10,15,24,0.50)', escala: 0.82, passo: 1.1 },
-    { cor: 'rgba(8,12,20,0.78)', escala: 1.0, passo: 0.8 },
+    { cor: 'rgba(96,126,158,0.26)', escala: 0.62, passo: 1.6 },
+    { cor: 'rgba(78,108,142,0.38)', escala: 0.82, passo: 1.1 },
+    { cor: 'rgba(62,92,126,0.52)', escala: 1.0, passo: 0.8 },
   ];
 
   for (const camada of camadas) {
@@ -257,7 +266,7 @@ function desenharSilhueta(semente, perfil) {
 
   // Janelas acesas — só fazem sentido na cidade.
   if (perfil === 'cidade' || perfil === 'industrial') {
-    ctx.fillStyle = 'rgba(255,214,140,0.55)';
+    ctx.fillStyle = 'rgba(255,224,160,0.5)';
     for (let i = 0; i < 900; i++) {
       const x = sortear() * largura;
       const y = altura - sortear() * altura * 0.8;

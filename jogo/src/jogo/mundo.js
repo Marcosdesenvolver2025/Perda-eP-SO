@@ -166,7 +166,10 @@ function montarCircuito(mundo, sortear, cenario) {
 
   // Cenário: fora do anel, o bairro; dentro, entre a rotatória e a pista,
   // um parque. Nada encosta na pista — ela tem que ficar livre.
-  povoarEmVolta(mundo, sortear, cenario, raio + largura / 2 + 6, mundo.meio - 4, 26);
+  // Os outdoors escolhem lugar ANTES do resto do cenário: eles têm posição
+  // certa (rente à pista, de frente para ela) e a árvore não tem.
+  outdoorsNaPista(mundo, sortear, raio + largura / 2 + 4.6, 7);
+  povoarEmVolta(mundo, sortear, cenario, raio + largura / 2 + 10, mundo.meio - 4, 26);
   povoarEmVolta(mundo, sortear, cenario, raioRotatoria + larguraRotatoria, raio - largura / 2 - 6, 14);
 
   // Trânsito dando voltas, nos dois sentidos, em faixas diferentes.
@@ -179,6 +182,39 @@ function montarCircuito(mundo, sortear, cenario) {
       pontos.push({ x: Math.cos(a) * faixa, z: Math.sin(a) * faixa });
     }
     mundo.rotas.push({ pontos, anel: mundo.aneis[0], sentido });
+  }
+}
+
+/**
+ * Outdoors plantados em volta do anel, de frente para quem passa.
+ *
+ * Servem a duas coisas ao mesmo tempo: enchem o vazio do lado de fora da
+ * pista, e — porque são grandes, coloridos e sempre no mesmo lugar — viram
+ * marcação de curva. Depois de três voltas você freia no outdoor amarelo sem
+ * pensar, que é exatamente como se decora um traçado.
+ */
+function outdoorsNaPista(mundo, sortear, raio, quantos) {
+  // O guarda-corpo é uma parede contínua em volta da pista inteira, então
+  // testar contra ele reprova qualquer lugar e não nasce outdoor nenhum. O
+  // que importa aqui é não subir em cima de árvore ou prédio.
+  const cenario = mundo.colisores.filter((c) => !c.parede);
+  for (let i = 0; i < quantos; i++) {
+    const a = (i / quantos) * TAU + entre(sortear, -0.1, 0.1);
+    const x = Math.cos(a) * raio;
+    const z = Math.sin(a) * raio;
+    if (colide(cenario, x, z, 10, 10)) continue;
+    const largura = entre(sortear, 7, 10);
+    const altura = entre(sortear, 6.5, 8.5);
+    // O painel fica de frente para o centro da pista: a face do cartaz é -Z,
+    // e frente(guinada) = (-sen, -cos), então apontar para dentro pede
+    // guinada = PI/2 - a.
+    adicionar(mundo, {
+      tipo: 'outdoor', malha: modelos.outdoor(largura, altura, Math.floor(sortear() * 1e6)),
+      x, z, guinada: Math.PI / 2 - a, raio: largura,
+    }, {
+      largura, comprimento: 0.6, guinada: Math.PI / 2 - a,
+      solido: true, altura, parede: true,
+    });
   }
 }
 
@@ -357,11 +393,9 @@ function povoarQuadras(mundo, sortear, cenario, opcoes) {
         const x = entre(sortear, util.x0 + l / 2, util.x1 - l / 2);
         const z = entre(sortear, util.z0 + p / 2, util.z1 - p / 2);
         if (colide(mundo.colisores, x, z, l + 2, p + 2)) continue;
-        const cor = escolher(sortear, cenario.fachadas || FACHADAS);
-        adicionar(mundo, {
-          tipo: 'predio', malha: modelos.predio(l, h, p, cor, Math.floor(sortear() * 1e6)),
-          x, z, guinada: 0, raio: Math.hypot(l, p) / 2 + 1,
-        }, { largura: l, comprimento: p, solido: true, altura: h });
+        // Qual construção nasce ali é escolhido junto: casa baixa, loja de
+        // rua ou prédio. Rua só com prédio não é bairro, é maquete.
+        construir(mundo, sortear, cenario, x, z, l, h, p);
       }
     } else {
       // Praça: gramado com árvores e um banco.
@@ -372,7 +406,22 @@ function povoarQuadras(mundo, sortear, cenario, opcoes) {
         if (colide(mundo.colisores, x, z, 2.4, 2.4)) continue;
         plantarArvore(mundo, sortear, cenario, x, z);
       }
-      if (sortear() < 0.5) {
+      // Terreno vazio com outdoor em cima é a coisa mais comum que existe numa
+      // cidade, e é de graça: enche o buraco na paisagem e dá referência de
+      // onde você está, que num bairro sorteado é o que mais falta.
+      if (larguraUtil > 8 && profundidadeUtil > 6 && sortear() < 0.45 * densidade + 0.18) {
+        const largura = Math.min(9, larguraUtil * 0.7);
+        const x = entre(sortear, util.x0 + largura / 2, util.x1 - largura / 2);
+        const z = entre(sortear, util.z0 + 1, util.z1 - 1);
+        if (!colide(mundo.colisores, x, z, largura + 2, 4)) {
+          const altura = entre(sortear, 6, 8);
+          const guinada = sortear() < 0.5 ? 0 : Math.PI;
+          adicionar(mundo, {
+            tipo: 'outdoor', malha: modelos.outdoor(largura, altura, Math.floor(sortear() * 1e6)),
+            x, z, guinada, raio: largura,
+          }, { largura, comprimento: 0.6, guinada, solido: true, altura, parede: true });
+        }
+      } else if (sortear() < 0.5) {
         const x = entre(sortear, util.x0, util.x1);
         const z = entre(sortear, util.z0, util.z1);
         if (colide(mundo.colisores, x, z, 2.4, 2.4)) return;
@@ -402,6 +451,63 @@ function povoarPatio(mundo, quadra, sortear, cenario) {
       }, { largura: 0.4, comprimento: 0.4, solido: true, altura: 6, luz: { y: 5.7, raio: 6, cor: 0xffe9b0 } });
     }
   }
+}
+
+/**
+ * Põe uma construção no lugar indicado, sorteando entre casa, loja e prédio.
+ *
+ * A mistura depende do cenário: no centro tem prédio e loja, no campo quase
+ * tudo é casa, na zona industrial é galpão — que aqui é prédio baixo e largo.
+ * A altura pedida é só um palpite: casa alta demais vira caixa, então a casa
+ * puxa a altura dela para baixo antes de nascer.
+ */
+function construir(mundo, sortear, cenario, x, z, largura, altura, profundidade) {
+  const semente = Math.floor(sortear() * 1e6);
+  const cor = escolher(sortear, cenario.fachadas || FACHADAS);
+  const perfil = cenario.perfil;
+  const sorte = sortear();
+
+  const querCasa = perfil === 'campo' ? sorte < 0.82
+    : perfil === 'industrial' ? sorte < 0.12
+      : sorte < 0.34;
+  const querLoja = !querCasa && perfil !== 'campo'
+    && altura >= 5 && largura >= 7 && (perfil === 'industrial' ? sorte > 0.86 : sorte > 0.64);
+
+  if (querCasa) {
+    const h = limitar(altura, 2.8, 4.2);
+    adicionar(mundo, {
+      tipo: 'casa', malha: modelos.casa(largura, h, profundidade, cor, semente),
+      x, z, guinada: orientar(sortear, largura, profundidade),
+      raio: Math.hypot(largura, profundidade) / 2 + 1,
+    }, { largura, comprimento: profundidade, solido: true, altura: h + 1.6 });
+    return;
+  }
+  if (querLoja) {
+    adicionar(mundo, {
+      tipo: 'loja', malha: modelos.loja(largura, altura, profundidade, cor, semente),
+      x, z, guinada: orientar(sortear, largura, profundidade),
+      raio: Math.hypot(largura, profundidade) / 2 + 1,
+    }, { largura, comprimento: profundidade, solido: true, altura });
+    return;
+  }
+  adicionar(mundo, {
+    tipo: 'predio', malha: modelos.predio(largura, altura, profundidade, cor, semente),
+    x, z, guinada: 0, raio: Math.hypot(largura, profundidade) / 2 + 1,
+  }, { largura, comprimento: profundidade, solido: true, altura });
+}
+
+/**
+ * Casa e loja têm FRENTE, e a frente precisa dar para alguma rua.
+ *
+ * Mas o giro de um quarto de volta só é seguro em lote quase quadrado: num
+ * lote de 7 por 18, virar 90° joga dezoito metros de casa para dentro da
+ * pista. Em lote comprido, portanto, só meia volta — que mantém a pegada
+ * exatamente igual e ainda assim vira a fachada para o outro lado.
+ */
+function orientar(sortear, largura, profundidade) {
+  const quadrado = Math.abs(largura - profundidade) < 1.6;
+  if (!quadrado) return sortear() < 0.5 ? 0 : Math.PI;
+  return Math.floor(sortear() * 4) * (Math.PI / 2);
 }
 
 function plantarArvore(mundo, sortear, cenario, x, z) {

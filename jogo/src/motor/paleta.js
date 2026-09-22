@@ -63,6 +63,31 @@ export const PREDIO = {
   janelaAcesa: 0xffd98a,
   platibanda: 0.82,   // fator de tom em relação à fachada
   topo: 0.86,
+  esquadria: 0xf4f2ec,  // o caixilho branco em volta da janela
+  porta: 0x7a5434,
+};
+
+/** Casa térrea: telhado, e o que mais se vê dela da rua. */
+export const CASA = {
+  telhados: [0xb5563f, 0xa8492f, 0x8f6b50, 0x6f7a80, 0xc0674a],
+  oitao: 0.88,        // o triângulo da empena, um tom abaixo da parede
+  muro: 0xdcd6c6,
+};
+
+/** Loja de rua: toldo listrado e a placa em cima dele. */
+export const LOJA = {
+  toldos: [0xd8453a, 0x2f7fbf, 0x2f9e63, 0xe0a52c, 0xffffff],
+  vitrine: 0x8fb6cf,
+  placaFundo: 0x2a303a,
+  letreiros: [0xffd24a, 0xff7a4a, 0x7fd1ff, 0x8fe08a, 0xffffff],
+};
+
+/** Outdoor de beira de pista. */
+export const OUTDOOR = {
+  poste: 0x60666e,
+  moldura: 0x3a4048,
+  fundos: [0xe8563a, 0x2f7fbf, 0xf0b429, 0x38a169, 0xe8e6e1, 0x8a4fbf],
+  tintas: [0xffffff, 0x1d2126, 0xffd24a, 0x7fd1ff],
 };
 
 export const VEGETACAO = {

@@ -9,6 +9,7 @@ import { Construtor } from './malha.js';
 import { criarSorteio, entre, inteiro, misturarCor, tonalizar } from '../nucleo/matematica.js';
 import {
   CARRO, PREDIO, VEGETACAO, CENA, FACHADAS, FACHADAS_INDUSTRIAIS,
+  CASA, LOJA, OUTDOOR,
 } from './paleta.js';
 
 const VIDRO = CARRO.vidro;
@@ -484,6 +485,177 @@ export function predio(largura, altura, profundidade, cor, semente) {
 /** Janela numa face voltada para ±X (a lateral do prédio). */
 function janelaLateral(b, x, y, z, comprimento, cor, acesa) {
   b.caixa(x, y, z, 0.03, 1.3, comprimento, cor, { semLuz: acesa });
+}
+
+/**
+ * Casa térrea, com telhado de duas águas.
+ *
+ * O bairro inteiro feito de caixa com janela vira um cemitério de caixas. O
+ * que quebra isso não é detalhe: é SILHUETA. Um telhado inclinado no meio de
+ * dez prédios retos muda o skyline da rua sozinho, e sai por quatro faces.
+ */
+export function casa(largura, altura, profundidade, cor, semente) {
+  return memo(`casa:${largura}:${altura}:${profundidade}:${cor}:${semente}`, () => {
+    const b = new Construtor();
+    const sortear = criarSorteio(semente);
+    const corTelhado = escolherDe(sortear, CASA.telhados);
+    const alturaTelhado = Math.max(1.1, Math.min(altura * 0.55, profundidade * 0.42));
+
+    b.caixa(0, altura / 2, 0, largura, altura, profundidade, cor,
+      { cores: { topo: tonalizar(cor, CASA.oitao) } });
+
+    // Telhado: um tronco cujo topo some na profundidade vira a cumeeira, e a
+    // cumeeira corre no eixo X — duas águas caindo para a frente e para trás.
+    b.tronco(0, altura + alturaTelhado / 2, 0,
+      largura * 1.12, alturaTelhado, profundidade * 1.14,
+      largura * 1.12, 0.14, 0, 0, corTelhado,
+      { cores: { topo: tonalizar(corTelhado, 1.16) } });
+    // Beiral, a lasca escura embaixo do telhado.
+    b.caixa(0, altura + 0.04, 0, largura * 1.14, 0.10, profundidade * 1.16,
+      tonalizar(corTelhado, 0.6));
+
+    if (sortear() < 0.45) {
+      const cx = (sortear() > 0.5 ? 1 : -1) * largura * 0.28;
+      b.caixa(cx, altura + alturaTelhado * 0.72, profundidade * 0.16,
+        0.45, alturaTelhado * 1.1, 0.45, tonalizar(corTelhado, 0.78));
+    }
+
+    // Porta e janelas na frente, com caixilho. O caixilho é o que transforma
+    // o retângulo azul em janela.
+    const yPorta = 1.05;
+    b.painel(-largura * 0.24, yPorta, -profundidade / 2 - 0.02, 0.98, 2.16, PREDIO.esquadria);
+    b.painel(-largura * 0.24, yPorta, -profundidade / 2 - 0.04, 0.82, 2.0, PREDIO.porta);
+    for (const lado of [-1, 1]) {
+      const x = largura * (lado > 0 ? 0.24 : -0.02) + largura * 0.08;
+      if (Math.abs(x) > largura / 2 - 0.7) continue;
+      b.painel(x, 1.45, -profundidade / 2 - 0.02, 1.16, 1.10, PREDIO.esquadria);
+      b.painel(x, 1.45, -profundidade / 2 - 0.04, 0.98, 0.92, PREDIO.janela);
+    }
+    // Uma janela de cada lateral, para a casa não ser cega de perfil.
+    for (const lado of [-1, 1]) {
+      b.caixa(lado * (largura / 2 + 0.02), 1.45, profundidade * 0.16,
+        0.03, 1.10, 1.16, PREDIO.esquadria);
+      b.caixa(lado * (largura / 2 + 0.04), 1.45, profundidade * 0.16,
+        0.03, 0.92, 0.98, PREDIO.janela);
+    }
+    return b.terminar();
+  });
+}
+
+/**
+ * Loja de rua: vitrine, toldo listrado e letreiro.
+ *
+ * É o prédio que diz que a rua é uma RUA e não um conjunto habitacional. O
+ * letreiro não tem letra nenhuma — são blocos de cor do tamanho de palavras,
+ * que à distância de quem está dirigindo é exatamente o que uma letra é.
+ */
+export function loja(largura, altura, profundidade, cor, semente) {
+  return memo(`loja:${largura}:${altura}:${profundidade}:${cor}:${semente}`, () => {
+    const b = new Construtor();
+    const sortear = criarSorteio(semente);
+    const frente = -profundidade / 2;
+    const alturaTerreo = Math.min(3.4, altura * 0.9);
+
+    b.caixa(0, altura / 2, 0, largura, altura, profundidade, cor,
+      { cores: { topo: tonalizar(cor, PREDIO.topo) } });
+
+    // Vitrine: um vidrão do chão ao teto do térreo, recuado na fachada.
+    b.painel(0, alturaTerreo * 0.52, frente - 0.02, largura * 0.86, alturaTerreo * 0.72,
+      tonalizar(cor, 0.5));
+    b.painel(0, alturaTerreo * 0.52, frente - 0.05, largura * 0.78, alturaTerreo * 0.62,
+      LOJA.vitrine);
+    b.painel(largura * 0.30, alturaTerreo * 0.40, frente - 0.07, largura * 0.16,
+      alturaTerreo * 0.78, PREDIO.porta);
+
+    // Toldo: caixa inclinada saindo da fachada, em faixas de duas cores.
+    const corToldo = escolherDe(sortear, LOJA.toldos);
+    const faixas = Math.max(3, Math.round(largura / 0.9));
+    const passo = (largura * 0.94) / faixas;
+    for (let i = 0; i < faixas; i++) {
+      const t = -largura * 0.47 + (i + 0.5) * passo;
+      const tom = i % 2 ? corToldo : tonalizar(corToldo, 1.9);
+      b.tronco(t, alturaTerreo + 0.30, frente - 0.52,
+        passo * 0.98, 0.16, 1.05, passo * 0.98, 1.05, 0, 0.42, tom,
+        { cores: { topo: tonalizar(tom, 1.1) } });
+    }
+    b.caixa(0, alturaTerreo + 0.14, frente - 1.02, largura * 0.94, 0.16, 0.10,
+      tonalizar(corToldo, 0.62));
+
+    // Letreiro: placa escura e três blocos de cor que fazem as vezes de nome.
+    const yPlaca = Math.min(altura - 0.5, alturaTerreo + 1.05);
+    b.caixa(0, yPlaca, frente - 0.12, largura * 0.9, 0.90, 0.16, LOJA.placaFundo);
+    const corLetra = escolherDe(sortear, LOJA.letreiros);
+    let x = -largura * 0.36;
+    for (let i = 0; i < 3 && x < largura * 0.30; i++) {
+      const comprimento = entre(sortear, largura * 0.10, largura * 0.22);
+      b.painel(x + comprimento / 2, yPlaca, frente - 0.21, comprimento, 0.36,
+        corLetra, { semLuz: true });
+      x += comprimento + largura * 0.05;
+    }
+
+    // Andares de cima: janela comum, que é o que tem em cima de loja.
+    const andares = Math.max(0, Math.floor((altura - alturaTerreo - 1.6) / 3.1));
+    const colunas = Math.max(1, Math.floor(largura / 2.2));
+    for (let a = 0; a < andares; a++) {
+      const y = alturaTerreo + 2.4 + a * 3.1;
+      if (y > altura - 1.1) break;
+      for (let j = 0; j < colunas; j++) {
+        const t = -largura / 2 + (j + 0.5) * (largura / colunas);
+        const acesa = sortear() > 0.7;
+        const tom = acesa ? misturarCor(PREDIO.janela, PREDIO.janelaAcesa, 0.85) : PREDIO.janela;
+        b.painel(t, y, frente - 0.02, (largura / colunas) * 0.46, 1.3, tom, { semLuz: acesa });
+        b.painel(t, y, profundidade / 2 + 0.02, (largura / colunas) * 0.46, 1.3, tom, { semLuz: acesa });
+      }
+    }
+    b.caixa(0, altura + 0.18, 0, largura * 1.04, 0.36, profundidade * 1.04,
+      tonalizar(cor, PREDIO.platibanda));
+    return b.terminar();
+  });
+}
+
+/**
+ * Outdoor de beira de pista.
+ *
+ * Um painel colorido em cima de dois postes. O cartaz é feito de retângulos e
+ * um círculo — a 60 km/h e a quarenta metros, é disso que um cartaz é feito.
+ */
+export function outdoor(largura, altura, semente) {
+  return memo(`outdoor:${largura}:${altura}:${semente}`, () => {
+    const b = new Construtor();
+    const sortear = criarSorteio(semente);
+    const pe = altura * 0.42;
+    const painel = altura - pe;
+
+    for (const lado of [-1, 1]) {
+      b.caixa(lado * largura * 0.30, pe / 2, 0, 0.24, pe, 0.24, OUTDOOR.poste);
+    }
+    b.caixa(0, pe + painel / 2, 0, largura * 1.04, painel * 1.06, 0.20, OUTDOOR.moldura);
+
+    const fundo = escolherDe(sortear, OUTDOOR.fundos);
+    b.painel(0, pe + painel / 2, -0.12, largura, painel, fundo, { semLuz: true });
+
+    // O "cartaz": uma mancha grande de um lado e barras de texto do outro.
+    const tinta = escolherDe(sortear, OUTDOOR.tintas);
+    const ladoImagem = sortear() > 0.5 ? -1 : 1;
+    b.painel(ladoImagem * largura * 0.26, pe + painel * 0.5, -0.14,
+      largura * 0.34, painel * 0.62, tonalizar(fundo, 0.55), { semLuz: true });
+    for (let i = 0; i < 3; i++) {
+      const y = pe + painel * (0.70 - i * 0.20);
+      const comprimento = largura * (i === 0 ? 0.36 : 0.28 - i * 0.05);
+      b.painel(-ladoImagem * largura * 0.24, y, -0.14, comprimento,
+        painel * (i === 0 ? 0.16 : 0.09), tinta, { semLuz: true });
+    }
+    // Duas luminárias em cima, apontando para o cartaz.
+    for (const lado of [-1, 1]) {
+      b.caixa(lado * largura * 0.22, pe + painel + 0.16, -0.22, 0.34, 0.12, 0.20,
+        OUTDOOR.poste);
+    }
+    return b.terminar();
+  });
+}
+
+function escolherDe(sortear, lista) {
+  return lista[Math.min(lista.length - 1, Math.floor(sortear() * lista.length))];
 }
 
 export function arvore(altura, semente) {

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0d1219">
+  <meta name="description" content="Volante — jogo de dirigir no navegador: baliza, vaga, entrega e slalom, com física de verdade e um volante diferente em cada carro.">
+  <title>Volante — cada carro, um volante</title>
+  <link rel="stylesheet" href="estilo.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='none' stroke='%23ffd24a' stroke-width='4'/><circle cx='16' cy='16' r='4' fill='%23ffd24a'/><path d='M3 16h9M20 16h9M16 20v9' stroke='%23ffd24a' stroke-width='3'/></svg>">
+</head>
+<body>
+  <canvas id="jogo" aria-label="Tela do jogo"></canvas>
+  <div id="telas" class="telas" role="region" aria-label="Menus"></div>
+  <div class="girar-o-celular" role="status">
+    <svg viewBox="0 0 64 64" width="72" height="72" aria-hidden="true">
+      <rect x="20" y="6" width="24" height="42" rx="4" fill="none" stroke="currentColor" stroke-width="3"/>
+      <path d="M12 52a24 24 0 0 0 40-6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+      <path d="M50 40l4 8-9 1z" fill="currentColor"/>
+    </svg>
+    <p>Vire o celular<br><small>o jogo é de tela deitada</small></p>
+  </div>
+  <noscript>
+    <div class="sem-script">
+      <h1>Volante</h1>
+      <p>Este jogo precisa de JavaScript para rodar.</p>
+    </div>
+  </noscript>
+  <script type="module" src="src/principal.js"></script>
+</body>
+</html>

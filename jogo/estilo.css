@@ -1,0 +1,364 @@
+/* Volante — as telas de fora do jogo.
+   O jogo em si é todo desenhado no canvas; o que está aqui é menu, garagem,
+   briefing e resultado. */
+
+:root {
+  --fundo: #0b0e13;
+  --fundo-cartao: #151b24;
+  --borda: #262f3c;
+  --texto: #eef2f7;
+  --texto-fraco: #97a3b3;
+  --destaque: #ffd24a;
+  --acento: #7fd1ff;
+  --bom: #36c96f;
+  --ruim: #e8563a;
+  --raio: 14px;
+  --fonte: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--fundo);
+  color: var(--texto);
+  font-family: var(--fonte);
+  -webkit-tap-highlight-color: transparent;
+}
+
+#jogo {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+/* --- camada de menus ---------------------------------------------------- */
+
+.telas {
+  position: fixed;
+  inset: 0;
+  display: none;
+  /* `flex-start` + `margin: auto` no filho: centraliza quando cabe e deixa
+     rolar quando não cabe. Com `align-items: center` o topo do cartão alto
+     fica inalcançável, acima da área rolável. */
+  align-items: flex-start;
+  justify-content: center;
+  padding: max(18px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom));
+  background: radial-gradient(120% 90% at 50% 0%, rgba(20, 30, 45, 0.82), rgba(6, 9, 13, 0.94));
+  backdrop-filter: blur(7px);
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.telas.aberto { display: flex; }
+
+.tela {
+  width: min(560px, 100%);
+  background: var(--fundo-cartao);
+  border: 1px solid var(--borda);
+  border-radius: 22px;
+  padding: 28px;
+  margin: auto;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+  animation: subir 0.22s ease-out;
+}
+
+.tela--larga { width: min(1080px, 100%); }
+.tela--estreita { width: min(430px, 100%); }
+
+@keyframes subir {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+.tela h2 {
+  margin: 4px 0 8px;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+}
+
+.olho {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--acento);
+}
+
+/* --- marca -------------------------------------------------------------- */
+
+.marca { text-align: center; margin-bottom: 6px; }
+
+.marca__nome {
+  display: block;
+  font-size: 54px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: var(--destaque);
+  text-shadow: 0 0 40px rgba(255, 210, 74, 0.28);
+}
+
+.marca__linha {
+  display: block;
+  font-size: 13px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--texto-fraco);
+  margin-top: 2px;
+}
+
+.menu__saldo {
+  text-align: center;
+  color: var(--texto-fraco);
+  font-size: 14px;
+  margin: 14px 0 22px;
+}
+
+.menu__botoes { display: grid; gap: 10px; }
+
+/* --- botões ------------------------------------------------------------- */
+
+.botao {
+  font: inherit;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--texto);
+  background: #1e2733;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  padding: 14px 18px;
+  cursor: pointer;
+  transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.botao:hover { background: #26313f; border-color: #3a4757; }
+.botao:active { transform: translateY(1px); }
+.botao:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+
+.botao--principal {
+  background: linear-gradient(180deg, #ffd85c, #f0b429);
+  color: #241a00;
+  border-color: #f0b429;
+}
+.botao--principal:hover { background: linear-gradient(180deg, #ffe07a, #ffc53d); }
+
+.botao--discreto {
+  background: transparent;
+  border-color: transparent;
+  color: var(--texto-fraco);
+  padding: 8px 10px;
+}
+.botao--discreto:hover { color: var(--texto); background: #1e2733; }
+
+.botao--ativo { background: var(--acento); color: #06121c; border-color: var(--acento); }
+
+.botao--perigo { background: transparent; border-color: #5a2b24; color: #e08878; }
+.botao--perigo:hover { background: #2a1512; }
+
+.botao:disabled, .botao--desabilitado {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.acoes { display: grid; gap: 10px; margin-top: 22px; }
+
+/* --- cabeçalho ---------------------------------------------------------- */
+
+.cabecalho {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.cabecalho h2 { margin: 0; flex: 1; font-size: 24px; }
+.cabecalho__saldo { color: var(--destaque); font-weight: 700; }
+
+/* --- garagem ------------------------------------------------------------ */
+
+.grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+  gap: 16px;
+}
+
+.cartao {
+  background: #101720;
+  border: 1px solid var(--borda);
+  border-radius: 18px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.cartao--atual { border-color: var(--destaque); box-shadow: 0 0 0 1px rgba(255, 210, 74, 0.35); }
+.cartao--bloqueado .cartao__palco { filter: saturate(0.5) brightness(0.8); }
+
+.cartao__palco {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #0d1218;
+  margin-bottom: 12px;
+  line-height: 0;
+}
+
+.cartao__volante {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 62px;
+  height: 62px;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.6));
+}
+
+.cartao h3 { margin: 0; font-size: 19px; }
+.cartao__classe { margin: 2px 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--acento); }
+.cartao__texto { margin: 0 0 10px; font-size: 13.5px; line-height: 1.45; color: var(--texto-fraco); }
+.cartao__volante-nome { margin: 0 0 10px; font-size: 12.5px; color: var(--texto-fraco); }
+.cartao__volante-nome strong { color: var(--destaque); font-weight: 600; }
+.cartao__acoes { margin-top: auto; padding-top: 12px; }
+.cartao__acoes .botao { width: 100%; }
+
+.etiqueta {
+  display: inline-block;
+  width: 100%;
+  text-align: center;
+  padding: 13px;
+  border-radius: var(--raio);
+  background: rgba(255, 210, 74, 0.12);
+  color: var(--destaque);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.ficha { display: grid; gap: 5px; margin-bottom: 4px; }
+.ficha__linha { display: grid; grid-template-columns: 84px 1fr; align-items: center; gap: 8px; }
+.ficha__linha span { font-size: 11.5px; color: var(--texto-fraco); }
+.ficha__barra { height: 5px; background: #1c2531; border-radius: 3px; overflow: hidden; }
+.ficha__barra i { display: block; height: 100%; background: linear-gradient(90deg, var(--acento), var(--destaque)); }
+
+/* --- briefing e resultado ----------------------------------------------- */
+
+.briefing__resumo { font-size: 16px; color: var(--texto-fraco); margin: 0 0 18px; line-height: 1.5; }
+
+.briefing__itens, .placar { list-style: none; padding: 0; margin: 0; display: grid; gap: 1px; background: var(--borda); border-radius: 12px; overflow: hidden; }
+.briefing__itens li, .placar li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #101720;
+  font-size: 14.5px;
+}
+.briefing__itens span, .placar span { color: var(--texto-fraco); }
+.placar li.bom strong { color: var(--bom); }
+.placar li.destaque strong { color: var(--destaque); font-size: 17px; }
+
+.briefing__dica {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-left: 3px solid var(--acento);
+  background: rgba(127, 209, 255, 0.07);
+  border-radius: 0 10px 10px 0;
+  font-size: 13.5px;
+  color: var(--texto-fraco);
+  line-height: 1.5;
+}
+
+.estrelas { font-size: 42px; letter-spacing: 8px; margin: 10px 0 18px; color: #2b3542; }
+.estrelas .cheia { color: var(--destaque); text-shadow: 0 0 22px rgba(255, 210, 74, 0.5); }
+
+/* --- ajustes ------------------------------------------------------------ */
+
+.ajustes { display: grid; gap: 16px; }
+.ajuste__rotulo { display: block; font-size: 13px; color: var(--texto-fraco); margin-bottom: 7px; }
+.ajuste__opcoes { display: flex; gap: 7px; flex-wrap: wrap; }
+.ajuste__opcoes .botao { flex: 1; min-width: 78px; padding: 10px 12px; font-size: 14px; }
+
+.ajuda { margin-top: 22px; border-top: 1px solid var(--borda); padding-top: 16px; }
+.ajuda h4 { margin: 12px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--acento); }
+.ajuda p { margin: 0; font-size: 13px; line-height: 1.7; color: var(--texto-fraco); }
+kbd {
+  display: inline-block;
+  padding: 2px 7px;
+  margin-right: 3px;
+  font: inherit;
+  font-size: 11.5px;
+  background: #1e2733;
+  border: 1px solid var(--borda);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  color: var(--texto);
+}
+
+/* --- carregando --------------------------------------------------------- */
+
+.tela--carregando { text-align: center; }
+.tela--carregando p { color: var(--texto-fraco); margin: 18px 0 0; }
+.girando {
+  width: 46px;
+  height: 46px;
+  margin: 0 auto;
+  border: 4px solid #2a3442;
+  border-top-color: var(--destaque);
+  border-radius: 50%;
+  animation: girar 0.85s linear infinite;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
+
+.rodape { margin: 22px 0 0; font-size: 12px; line-height: 1.6; color: #5f6c7d; text-align: center; }
+
+.sem-script { padding: 40px; text-align: center; }
+
+@media (max-width: 560px) {
+  .tela { padding: 20px; border-radius: 18px; }
+  .marca__nome { font-size: 40px; }
+  .tela h2 { font-size: 23px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tela { animation: none; }
+  .girando { animation-duration: 2.4s; }
+}
+
+/* --- celular em pé ------------------------------------------------------ */
+
+/* Jogo de dirigir é de tela deitada: em pé, o volante, os pedais e a rua não
+   cabem juntos de um jeito que dê para jogar. Em vez de encolher tudo até
+   ficar inútil, pedimos para virar — é o que todo jogo do gênero faz. */
+
+.girar-o-celular { display: none; }
+
+@media (orientation: portrait) and (max-height: 900px) {
+  .girar-o-celular {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    background: var(--fundo);
+    color: var(--destaque);
+    text-align: center;
+  }
+  .girar-o-celular p { margin: 0; font-size: 20px; font-weight: 600; line-height: 1.6; }
+  .girar-o-celular small { font-size: 14px; font-weight: 400; color: var(--texto-fraco); }
+  .girar-o-celular svg { animation: balancar 2.4s ease-in-out infinite; }
+}
+
+@keyframes balancar {
+  0%, 55%, 100% { transform: rotate(0deg); }
+  70%, 90% { transform: rotate(-90deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .girar-o-celular svg { animation: none; transform: rotate(-90deg); }
+}

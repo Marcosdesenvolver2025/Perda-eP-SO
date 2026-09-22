@@ -1,0 +1,14 @@
+{
+  "name": "volante-jogo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Volante — jogo de dirigir no navegador, sem dependência nenhuma",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test \"testes/*.test.mjs\"",
+    "servir": "node servidor-local.mjs"
+  }
+}

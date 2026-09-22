@@ -28,6 +28,30 @@ O projeto tem três partes:
 | `app/` | O aplicativo Android | React Native + Expo, TypeScript |
 | `servidor/` | A API: anúncios, pedidos, split, entregas, reembolsos | Node + Express + Prisma + PostgreSQL |
 | `loja/` | Tudo que a Google Play pede: ficha, gráficos, políticas | textos e HTML prontos |
+| `jogo/` | **Volante** — jogo de dirigir no navegador, independente do resto | JavaScript puro, sem dependência |
+
+---
+
+## Volante (o jogo)
+
+Em `jogo/` mora um projeto à parte, que não depende de nada do marketplace:
+um **jogo de dirigir** no navegador, na escola do DR Driving — o bairro visto de
+cima pintado numa imagem, jogado no chão em perspectiva, e o carro de blocos
+andando por cima dela.
+
+Sete tipos de serviço (baliza, vaga, entrega, economia, slalom, escolta e carga
+frágil), quatro cenários, seis condições de tempo e o traçado sorteado a cada
+partida. Oito carros, cada um com física própria — e com **um volante
+diferente**, que é o controle que fica na sua mão.
+
+```bash
+cd jogo
+node servidor-local.mjs    # http://localhost:8080
+npm test                   # 80 testes, sem navegador e sem instalar nada
+```
+
+Como o chão em perspectiva, a física do carro e a geração do bairro funcionam
+está em **[`jogo/README.md`](jogo/README.md)**.
 
 ---
 
@@ -294,6 +318,12 @@ servidor/
 loja/                     tudo da Google Play
 documentos/               publicação, split, arquitetura de pagamento e logística
 tools/gerar_marca.py      gerador da identidade visual
+jogo/                     VOLANTE — jogo de dirigir, independente do marketplace
+  src/nucleo/             matemática, sorteio com semente, entrada
+  src/motor/              câmera, céu, chão em perspectiva, malhas, desenho
+  src/jogo/               física, carros, volantes, colisão, mundo, missões
+  src/interface/          painel no canvas e telas em HTML
+  testes/                 80 testes, rodam em Node puro
 ```
 
 ---

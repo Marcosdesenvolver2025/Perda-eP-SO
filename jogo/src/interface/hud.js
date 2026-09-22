@@ -563,7 +563,12 @@ export class Hud {
     ctx.restore();
     desenharVolante(ctx, partida.modelo.volante, {
       x: v.x, y: v.y, raio: v.raio,
-      angulo: entrada.volanteVisual,
+      // O ARO gira mais do que o dedo. O curso do controle é curto de
+      // propósito (54°), mas um aro que anda 54° no batente parece parado —
+      // e volante que parece parado é volante que a pessoa acha quebrado.
+      // Multiplicar só o desenho dá o giro que o olho espera sem mexer no
+      // controle: 2,2 põe o batente em 120°, quase meia volta.
+      angulo: entrada.volanteVisual * 2.2,
       alfa: 0.96,
       destaque: entrada.arrasto ? 1 : 0,
     });

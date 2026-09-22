@@ -200,11 +200,28 @@ export class Ceu {
       // A fatia vai da esquerda para a direita na tela = ângulo decrescente.
       if (s1 > s0) s1 -= tira.width;
       const larguraFonte = s0 - s1;
-      ctx.drawImage(tira, s1, 0, larguraFonte, tira.height,
-        x0, horizonte - alturaDestino, x1 - x0, alturaDestino);
+      if (larguraFonte <= 0) continue;
+
+      // A EMENDA DA TIRA.
+      //
+      // Quando a fatia cai em cima do ponto onde a tira de 360° fecha, ela
+      // pega um pedaço do fim e um pedaço do começo. Antes, o segundo pedaço
+      // era desenhado por cima da fatia INTEIRA — e o resultado era a cidade
+      // do fundo escorregando sozinha toda vez que o carro apontava para
+      // aquele rumo. Agora o destino é cortado na mesma proporção da fonte:
+      // cada pedaço ocupa exatamente a fração da fatia que lhe cabe.
+      const destinoY = horizonte - alturaDestino;
+      const destinoL = x1 - x0;
       if (s1 < 0) {
-        ctx.drawImage(tira, s1 + tira.width, 0, larguraFonte, tira.height,
-          x0, horizonte - alturaDestino, x1 - x0, alturaDestino);
+        const daPonta = -s1;                       // pedaço do FIM da tira
+        const fracao = daPonta / larguraFonte;
+        ctx.drawImage(tira, tira.width - daPonta, 0, daPonta, tira.height,
+          x0, destinoY, destinoL * fracao, alturaDestino);
+        ctx.drawImage(tira, 0, 0, s0, tira.height,
+          x0 + destinoL * fracao, destinoY, destinoL * (1 - fracao), alturaDestino);
+      } else {
+        ctx.drawImage(tira, s1, 0, larguraFonte, tira.height,
+          x0, destinoY, destinoL, alturaDestino);
       }
     }
     ctx.restore();

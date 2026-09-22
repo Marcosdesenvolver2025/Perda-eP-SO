@@ -32,7 +32,7 @@ function partidaDe(missao, modelo) {
   const inicio = missao.mundo.inicio;
   const carro = criarCarro(modelo.ficha, { x: inicio.x, z: inicio.z }, inicio.angulo);
   return {
-    missao, carro, tempo: 0, piso: 'asfalto',
+    missao, carro, tempo: 0, piso: 'asfalto', cambioPosicao: 'D',
     estatisticas: { batidas: 0, forcaMaxima: 0, tempoNoAr: 0 },
   };
 }
@@ -159,7 +159,13 @@ test('encaixar dá ponto, devolve tempo e aponta a vaga seguinte', () => {
   partida.carro.angulo = primeira.angulo;
   assert.ok(dentroDe(partida.carro, primeira), 'a vaga alvo não comporta o carro');
 
-  const eventos = correr(partida, 1.2);
+  // Encaixado mas ainda em D: não confirma, e avisa o que falta.
+  correr(partida, 0.6);
+  assert.equal(missao.contador, 0, 'confirmou a vaga sem engatar P ou N');
+  assert.ok((missao.aviso || '').includes('P ou N'), `aviso não pede a alavanca: ${missao.aviso}`);
+
+  partida.cambioPosicao = 'P';
+  const eventos = correr(partida, 0.4);
   assert.equal(missao.contador, 1, 'a vaga não foi contada');
   assert.ok(missao.pontuacao > 500, `pontuou só ${missao.pontuacao}`);
   assert.ok(missao.tempoLimite > relogioAntes, 'encaixar não devolveu tempo');
@@ -177,6 +183,7 @@ test('a mesma vaga não conta duas vezes', () => {
   partida.carro.x = primeira.x;
   partida.carro.z = primeira.z;
   partida.carro.angulo = primeira.angulo;
+  partida.cambioPosicao = 'N';
   correr(partida, 6);
   assert.equal(missao.contador, 1, `contou ${missao.contador} vezes a mesma vaga`);
 });
@@ -189,6 +196,7 @@ test('parado em cima da vaga sem estar dentro não conta', () => {
   partida.carro.x = vaga.x;
   partida.carro.z = vaga.z;
   partida.carro.angulo = vaga.angulo + Math.PI / 2;
+  partida.cambioPosicao = 'P';
   correr(partida, 3);
   assert.equal(missao.contador, 0, 'contou vaga com o carro atravessado');
 });
@@ -432,4 +440,35 @@ test('placar zerado não dá estrela nem paga', () => {
     assert.equal(r.estrelas, 0, `${modo}: estrela de graça`);
     assert.equal(r.premio, 0, `${modo}: pagou sem placar`);
   }
+});
+
+
+/**
+ * A regra que o jogador pediu: confirmar a vaga é PÔR EM P OU N, e o jogo só
+ * aceita com o carro encaixado de verdade na marca. Engatar P longe da vaga,
+ * ou dentro dela mas atravessado, não vale nada.
+ */
+test('P ou N longe da vaga não confirma nada', () => {
+  const { missao, modelo } = montar('estacionamento', SEMENTES[5]);
+  const partida = partidaDe(missao, modelo);
+  const vaga = missao.vagaAlvo;
+  // Vinte metros ao lado, parado e em P.
+  partida.carro.x = vaga.x + 20;
+  partida.carro.z = vaga.z + 20;
+  partida.carro.angulo = vaga.angulo;
+  partida.cambioPosicao = 'P';
+  correr(partida, 3);
+  assert.equal(missao.contador, 0, 'confirmou vaga com o carro longe dela');
+});
+
+test('D engatado não confirma, nem depois de muito tempo parado', () => {
+  const { missao, modelo } = montar('estacionamento', SEMENTES[0]);
+  const partida = partidaDe(missao, modelo);
+  const vaga = missao.vagaAlvo;
+  partida.carro.x = vaga.x;
+  partida.carro.z = vaga.z;
+  partida.carro.angulo = vaga.angulo;
+  partida.cambioPosicao = 'D';
+  correr(partida, 8);
+  assert.equal(missao.contador, 0, 'confirmou a vaga com a alavanca em D');
 });

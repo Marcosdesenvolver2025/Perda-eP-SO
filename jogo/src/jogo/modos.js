@@ -317,18 +317,19 @@ function andarEstacionamentoArcade(partida, missao, dt) {
 
   const parado = Math.abs(carro.vx) < 0.22 && Math.abs(carro.giro) < 0.12;
   const dentro = dentroDe(carro, vaga) && medida.alinhamento > 0.55;
+  // Confirmar é PÔR A ALAVANCA EM P OU N, como quem realmente estaciona. O
+  // jogo só aceita depois que o carro está inteiro dentro da marca e alinhado
+  // — senão bastava parar em qualquer lugar e trocar de marcha.
+  const engatou = partida.cambioPosicao === 'P' || partida.cambioPosicao === 'N';
 
   if (!(dentro && parado)) {
-    missao.seguro = 0;
     missao.aviso = dentro ? 'pare o carro' : null;
     return null;
   }
-
-  // Segurar parado é mais curto que na carreira: o modo é de repetição, e
-  // esperar um segundo e meio doze vezes seguidas vira espera, não jogo.
-  missao.seguro = (missao.seguro || 0) + dt;
-  missao.aviso = `segure parado… ${Math.max(0, 0.7 - missao.seguro).toFixed(1)}s`;
-  if (missao.seguro < 0.7) return null;
+  if (!engatou) {
+    missao.aviso = 'encaixou — ponha em P ou N para confirmar';
+    return null;
+  }
 
   // Encaixou. O prêmio é em pontos E em tempo — é o tempo que mantém a partida
   // viva, então encaixar bem é literalmente jogar por mais tempo.

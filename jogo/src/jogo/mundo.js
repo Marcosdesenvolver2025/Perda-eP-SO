@@ -140,9 +140,15 @@ function montarCircuito(mundo, sortear, cenario) {
   const p0 = pista.pontos[0];
   mundo.largada = { x: p0.x, z: p0.z, angulo: p0.angulo, s: 0 };
 
-  // As duas retas que ligam a rotatória do miolo à pista. Ficam como "vias"
-  // comuns, então pintura, piso e trânsito já sabem lidar com elas.
-  const alcance = pista.raioMedio;
+  // As duas ruas do miolo, saindo da rotatória. Elas PARAM antes da pista: se
+  // chegassem até lá, o guarda-corpo cruzaria a boca delas e sobraria um muro
+  // atravessado no meio de uma rua — que é exatamente o tipo de barreira sem
+  // explicação que a gente está tirando daqui.
+  let maisPerto = Infinity;
+  for (const ponto of pista.pontos) {
+    maisPerto = Math.min(maisPerto, Math.hypot(ponto.x, ponto.z));
+  }
+  const alcance = Math.max(raioRotatoria + 14, maisPerto - largura / 2 - 9);
   mundo.vias.length = 0;
   mundo.vias.push(
     { eixo: 'x', centro: 0, de: -alcance, ate: alcance, largura: 11, principal: true },
@@ -174,9 +180,13 @@ function montarCircuito(mundo, sortear, cenario) {
 
   // Trânsito nos dois sentidos, em faixas diferentes do traçado.
   for (const sentido of [1, -1]) {
-    const faixa = deslocar(pista.pontos, sentido * largura * 0.24);
+    // Mesma dobra do guarda-corpo: num grampo, a faixa deslocada cruza a si
+    // mesma. Ponto que caiu fora da pista não vira ponto de rota, senão o
+    // trânsito faz uma curva por cima do gramado.
+    const faixa = deslocar(pista.pontos, sentido * largura * 0.24)
+      .filter((p, i) => i % 3 === 0 && naPista(pista, p.x, p.z).distancia < largura / 2);
     const pontos = sentido > 0 ? faixa : faixa.slice().reverse();
-    mundo.rotas.push({ pontos: pontos.filter((_, i) => i % 3 === 0), pista, sentido });
+    if (pontos.length >= 4) mundo.rotas.push({ pontos, pista, sentido });
   }
 }
 
@@ -330,21 +340,51 @@ function deslocar(pontos, quanto) {
   });
 }
 
-/** Guarda-corpo acompanhando a pista de um dos lados. */
+/**
+ * Guarda-corpo acompanhando a pista de um dos lados.
+ *
+ * O detalhe que parece bobo e não é: deslocar uma linha para o lado FUNCIONA
+ * mal em curva fechada. Do lado de dentro de um grampo, o deslocamento dobra
+ * sobre si mesmo, os pontos se cruzam, e o trecho de barreira ligando dois
+ * deles atravessa a pista inteira — barreira no meio da reta, sem explicação
+ * nenhuma para quem está dirigindo.
+ *
+ * A defesa é medir: se o MEIO do trecho caiu dentro da pista, aquele pedaço
+ * dobrou e não vira barreira. A curva fica com um vão, que é bem melhor que
+ * um muro atravessado.
+ */
 function guardaCorpoDaPista(mundo, pista, lado) {
-  const borda = deslocar(pista.pontos, lado * (pista.largura / 2 + 0.9));
-  const passo = 4;
+  const afastamento = pista.largura / 2 + 0.9;
+  const borda = deslocar(pista.pontos, lado * afastamento);
+  const passo = 3;
   for (let i = 0; i < borda.length; i += passo) {
     const a = borda[i];
     const b = borda[(i + passo) % borda.length];
     const comprimento = distanciaPlana(a.x, a.z, b.x, b.z);
-    if (comprimento < 0.5 || comprimento > 40) continue;
-    const guinada = Math.atan2(-(b.x - a.x), -(b.z - a.z)) + Math.PI / 2;
+    // Trecho curto demais é dobra; longo demais é atalho por cima do traçado.
+    if (comprimento < 0.8 || comprimento > 16) continue;
+    // O teste é nas PONTAS, não no meio da corda: numa curva fechada a corda
+    // afunda para dentro e reprovava barreira boa — foi assim que a primeira
+    // tentativa apagou dois terços do guarda-corpo. Ponta que caiu para dentro
+    // do afastamento é ponta que dobrou.
+    if (naPista(pista, a.x, a.z).distancia < afastamento - 0.6) continue;
+    if (naPista(pista, b.x, b.z).distancia < afastamento - 0.6) continue;
+    const mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2;
+
+    // A GUINADA DA BARREIRA.
+    //
+    // A malha da barreira é comprida no eixo Z (é um trilho deitado), e um
+    // prop girado de `g` manda o seu +Z local para (sen g, cos g). Para o
+    // trilho correr ao longo do trecho, portanto, `g = atan2(dx, dz)` e mais
+    // nada. O quarto de volta que estava aqui punha TODA barreira atravessada
+    // na pista — o muro invisível seguia a pista certinho, então nem travava
+    // o carro: só aparecia, de lado, no meio do asfalto, sem explicação.
+    const guinada = Math.atan2(b.x - a.x, b.z - a.z);
     adicionar(mundo, {
       tipo: 'barreira', malha: modelos.barreira(comprimento + 0.5),
-      x: (a.x + b.x) / 2, z: (a.z + b.z) / 2, guinada, raio: comprimento,
+      x: mx, z: mz, guinada, raio: comprimento,
     }, {
-      largura: comprimento + 0.5, comprimento: 0.6, guinada,
+      largura: 0.6, comprimento: comprimento + 0.5, guinada,
       solido: true, parede: true, altura: 0.8,
     });
   }

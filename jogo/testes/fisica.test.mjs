@@ -5,7 +5,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { criarCarro, passo, bater, cantos, paraKmh, trocarMarcha } from '../src/jogo/fisica.js';
+import {
+  criarCarro, passo, bater, cantos, paraKmh, trocarMarcha, limiteDoEixo,
+} from '../src/jogo/fisica.js';
 import { CARROS, carroPorId } from '../src/jogo/carros.js';
 import { normalizarAngulo } from '../src/nucleo/matematica.js';
 
@@ -359,5 +361,72 @@ test('volante para a direita leva o carro para a direita', () => {
         `largando em ${anguloInicial.toFixed(2)} rad e virando para a ${rotulo}, `
         + `o carro andou ${desvio.toFixed(2)} m para a direita do motorista`);
     }
+  }
+});
+
+test('não existe degrau na passagem de manobra para curva', () => {
+  // O carro acelera reto e vira sempre o mesmo tanto. Se houvesse um degrau
+  // na troca de modelo, a taxa de guinada daria um salto ao cruzar a faixa —
+  // e é esse salto que se sentia como repuxo ao sair da vaga.
+  const carro = criarCarro(carroPorId('diplomata').ficha);
+  const comandos = { ...FUNDO, volante: 0.5 };
+  let anterior = 0;
+  let maiorSalto = 0;
+  for (let i = 0; i < 120 * 6; i++) {
+    passo(carro, comandos, 1 / 120);
+    const kmh = paraKmh(carro.vx);
+    if (kmh > 2 && kmh < 40) {
+      maiorSalto = Math.max(maiorSalto, Math.abs(carro.giro - anterior));
+    }
+    anterior = carro.giro;
+  }
+  assert.ok(maiorSalto < 0.012,
+    `a taxa de guinada saltou ${maiorSalto.toFixed(4)} rad/s num passo só`);
+});
+
+test('o pneu agarra mais no total e menos por quilo quando carregado', () => {
+  const nominal = 5000;
+  const meio = limiteDoEixo(1, nominal, nominal);
+  const dobro = limiteDoEixo(1, nominal * 2, nominal);
+  const metade = limiteDoEixo(1, nominal * 0.5, nominal);
+
+  assert.ok(Math.abs(meio - nominal) < 1e-9,
+    'na carga nominal o limite tem que ser exatamente atrito × carga');
+  assert.ok(dobro > meio, 'carga dobrada tem que segurar MAIS no total');
+  assert.ok(dobro < meio * 2, 'carga dobrada não pode segurar o dobro');
+  assert.ok(metade > meio * 0.5, 'eixo aliviado rende mais por quilo');
+  assert.ok(metade < meio, 'eixo aliviado não pode segurar mais no total');
+});
+
+/**
+ * A consequência que se sente: frear no meio da curva alivia a traseira e ela
+ * sai. Com a aderência crescendo reto com o peso, esse efeito quase não
+ * aparecia — e é ele que separa dirigir de apontar.
+ */
+test('frear no meio da curva solta a traseira', () => {
+  const ficha = carroPorId('diplomata').ficha;
+  const rabo = (freio) => {
+    const carro = criarCarro(ficha);
+    carro.vx = 24;
+    for (let i = 0; i < 100; i++) passo(carro, { ...PARADO, volante: 0.75 }, 1 / 120);
+    const antes = Math.abs(carro.vy);
+    for (let i = 0; i < 60; i++) passo(carro, { ...PARADO, volante: 0.75, freio }, 1 / 120);
+    return Math.abs(carro.vy) - antes;
+  };
+  assert.ok(rabo(1) > rabo(0),
+    'freando ou não, a traseira escorregou igual — a transferência de peso não está pesando');
+});
+
+test('a baliza continua obediente: devagar o carro segue o volante', () => {
+  for (const modelo of CARROS) {
+    const carro = criarCarro(modelo.ficha);
+    carro.vx = 1.2;                       // ~4 km/h, velocidade de manobra
+    const antes = carro.angulo;
+    for (let i = 0; i < 120 * 2; i++) {
+      passo(carro, { ...PARADO, acelerador: 0.15, volante: 1 }, 1 / 120);
+    }
+    const virou = Math.abs(normalizarAngulo(carro.angulo - antes));
+    assert.ok(virou > 0.3,
+      `${modelo.nome}: em dois segundos de manobra o carro só virou ${virou.toFixed(2)} rad`);
   }
 });

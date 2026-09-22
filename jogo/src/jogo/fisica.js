@@ -11,8 +11,10 @@
 // de referência:
 //
 //   1. Em velocidade baixa o modelo de deriva explode (divide por vx≈0), então
-//      abaixo de `LIMITE_RASTEJO` trocamos por esterçamento geométrico puro —
-//      é justamente a faixa da baliza, onde o carro tem que obedecer redondo.
+//      ele convive com esterçamento geométrico puro, e o peso de cada um varia
+//      numa rampa de 1 a 4 m/s. Devagar o carro obedece redondo, que é o que a
+//      baliza precisa; rápido ele escorrega. E não existe degrau no meio —
+//      quando existia, o carro dava um repuxo a cada saída de vaga.
 //   2. O esterço máximo cai com a velocidade. Sem isso, um toque no volante a
 //      80 km/h capota o carro e dirigir vira loteria.
 
@@ -20,7 +22,6 @@ import { limitar, misturar, sinal, TAU } from '../nucleo/matematica.js';
 
 const GRAVIDADE = 9.81;
 const DENSIDADE_AR = 1.225;
-const LIMITE_RASTEJO = 2.2;      // m/s — abaixo disso, esterçamento geométrico
 const VELOCIDADE_PARADO = 0.06;  // m/s — abaixo disso consideramos parado
 
 /** Converte m/s para km/h, que é o que o painel mostra. */
@@ -119,9 +120,15 @@ export function passo(carro, comandos, dt, pista = { atrito: 1 }) {
   const cargaTras = Math.max(peso * 0.12,
     peso * (distanciaFrente / f.entreEixos) + transferencia);
 
+  // O pneu não rende proporcional ao peso: carregado, ele agarra MAIS no
+  // total e MENOS por quilo. É essa curva que faz a transferência de peso
+  // importar de verdade — aliviar a traseira numa freada de curva tira mais
+  // aderência do que a conta reta diz, e é por isso que carro roda quando se
+  // freia no meio da curva. Sem isso a física fica correta no papel e sem graça.
   const atrito = pista.atrito * f.aderencia;
-  let limiteFrente = atrito * cargaFrente;
-  let limiteTras = atrito * cargaTras;
+  const cargaNominal = peso / 2;
+  let limiteFrente = limiteDoEixo(atrito, cargaFrente, cargaNominal);
+  let limiteTras = limiteDoEixo(atrito, cargaTras, cargaNominal);
 
   // Freio de mão: a traseira perde quase tudo. É o botão do drift.
   if (comandos.mao) limiteTras *= 0.32;
@@ -189,31 +196,32 @@ export function passo(carro, comandos, dt, pista = { atrito: 1 }) {
   let forcaLateralTras = 0;
   let momento = 0;
 
-  if (Math.abs(carro.vx) > LIMITE_RASTEJO) {
-    const vxAbs = Math.max(Math.abs(carro.vx), 0.6);
-    const derivaFrente = Math.atan2(carro.vy + carro.giro * distanciaFrente, vxAbs)
-      - carro.esterco * sinal(carro.vx);
-    const derivaTras = Math.atan2(carro.vy - carro.giro * distanciaTras, vxAbs);
+  // O modelo de deriva vale SEMPRE, com o vx protegido de zerar. O que muda
+  // com a velocidade é o peso dele contra a geometria pura.
+  //
+  // Antes havia um degrau: abaixo de 2,2 m/s o carro seguia a geometria, acima
+  // dele a deriva — e na troca, a uns 8 km/h, o carro dava um repuxo que se
+  // sentia em toda saída de vaga. Agora os dois convivem e a passagem é uma
+  // rampa de 1 a 4 m/s: a baliza continua obediente, a curva continua solta, e
+  // no meio não tem degrau nenhum.
+  const vxAbs = Math.max(Math.abs(carro.vx), 1.2);
+  const derivaFrente = Math.atan2(carro.vy + carro.giro * distanciaFrente, vxAbs)
+    - carro.esterco * sinal(carro.vx || 1);
+  const derivaTras = Math.atan2(carro.vy - carro.giro * distanciaTras, vxAbs);
 
-    forcaLateralFrente = pneu(derivaFrente, f.rigidezFrente, limiteFrente);
-    forcaLateralTras = pneu(derivaTras, f.rigidezTras, limiteTras);
+  forcaLateralFrente = pneu(derivaFrente, f.rigidezFrente, limiteFrente);
+  forcaLateralTras = pneu(derivaTras, f.rigidezTras, limiteTras);
 
-    const usoFrente = Math.abs(forcaLateralFrente) / limiteFrente;
-    const usoTras = Math.abs(forcaLateralTras) / limiteTras;
-    carro.derrapando = limitar(Math.max(usoFrente, usoTras) - 0.82, 0, 1) / 0.18;
+  const usoFrente = Math.abs(forcaLateralFrente) / limiteFrente;
+  const usoTras = Math.abs(forcaLateralTras) / limiteTras;
 
-    momento = distanciaFrente * forcaLateralFrente * Math.cos(carro.esterco)
-      - distanciaTras * forcaLateralTras;
-  } else {
-    // Manobra: o carro segue a geometria do esterço, sem escorregar.
-    // É o comportamento que a baliza precisa — previsível e obediente.
-    const raioInverso = Math.tan(carro.esterco) / f.entreEixos;
-    const giroAlvo = carro.vx * raioInverso;
-    carro.giro = misturar(carro.giro, giroAlvo, Math.min(1, dt * 12));
-    carro.vy = misturar(carro.vy, 0, Math.min(1, dt * 10));
-    carro.derrapando = comandos.mao && Math.abs(carro.vx) > 0.5 ? 0.5 : 0;
-    momento = 0;
-  }
+  momento = distanciaFrente * forcaLateralFrente * Math.cos(carro.esterco)
+    - distanciaTras * forcaLateralTras;
+
+  const rastejo = limitar((Math.abs(carro.vx) - 1.0) / 3.0, 0, 1);
+  carro.derrapando = rastejo < 0.5
+    ? (comandos.mao && Math.abs(carro.vx) > 0.5 ? 0.5 : 0)
+    : limitar(Math.max(usoFrente, usoTras) - 0.82, 0, 1) / 0.18;
 
   // Patinar na largada e travar o freio também são pneus escorregando: é o que
   // faz o carro chiar quando você pisa fundo na chuva.
@@ -226,11 +234,20 @@ export function passo(carro, comandos, dt, pista = { atrito: 1 }) {
     - carro.giro * carro.vx;
 
   carro.vx += aceleracaoX * dt;
-  if (Math.abs(carro.vx) > LIMITE_RASTEJO) {
-    carro.vy += aceleracaoY * dt;
-    carro.giro += (momento / f.inerciaGuinada) * dt;
-    // Amortecimento de guinada: sem isso o carro fica rodopiando para sempre.
-    carro.giro -= carro.giro * f.amortecimentoGuinada * dt;
+  carro.vy += aceleracaoY * dt * rastejo;
+  carro.giro += (momento / f.inerciaGuinada) * dt * rastejo;
+  // Amortecimento de guinada: sem isso o carro fica rodopiando para sempre.
+  carro.giro -= carro.giro * f.amortecimentoGuinada * dt;
+
+  // Em manobra o carro segue a GEOMETRIA do esterço, sem escorregar: é o que
+  // a baliza precisa, previsível e obediente. O peso disto cai conforme a
+  // velocidade sobe, até sumir e deixar só a deriva.
+  if (rastejo < 1) {
+    const raioInverso = Math.tan(carro.esterco) / f.entreEixos;
+    const giroAlvo = carro.vx * raioInverso;
+    const peso = (1 - rastejo) * Math.min(1, dt * 12);
+    carro.giro = misturar(carro.giro, giroAlvo, peso);
+    carro.vy = misturar(carro.vy, 0, (1 - rastejo) * Math.min(1, dt * 10));
   }
 
   // Freio e atrito não empurram o carro para trás depois que ele parou.
@@ -268,6 +285,19 @@ export function passo(carro, comandos, dt, pista = { atrito: 1 }) {
  * com uma tangente hiperbólica. Depois do pico o pneu não dá mais nada, que é
  * exatamente quando o carro escorrega.
  */
+/**
+ * Quanto um eixo aguenta de força lateral, dada a carga em cima dele.
+ *
+ * Não é `atrito * carga`. Pneu real perde coeficiente conforme a carga sobe —
+ * dois pneus com o dobro do peso em cima não seguram o dobro. A queda é suave
+ * e limitada: a fórmula é uma hipérbole mansa em volta da carga nominal.
+ */
+export function limiteDoEixo(atrito, carga, cargaNominal) {
+  const relativa = carga / Math.max(1, cargaNominal);
+  const coeficiente = limitar(1 / (1 + 0.22 * (relativa - 1)), 0.78, 1.22);
+  return atrito * carga * coeficiente;
+}
+
 function pneu(deriva, rigidez, limite) {
   return -limite * Math.tanh((rigidez * deriva) / limite);
 }

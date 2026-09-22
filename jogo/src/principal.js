@@ -308,6 +308,7 @@ class Jogo {
       tempo: 0,
       foraDaPista: 0,
       piso: 'asfalto',
+      cambioPosicao: 'D',
       estatisticas: { batidas: 0, forcaMaxima: 0, tempoNoAr: 0 },
     };
   }
@@ -388,6 +389,9 @@ class Jogo {
       const resultado = trocarMarcha(carro, troca);
       if (resultado === 'trocou') this.som.marcha(troca);
     }
+    // A posição da alavanca vai junto com a partida: é ela que confirma a
+    // vaga no modo estacionamento, e a missão não enxerga a entrada.
+    p.cambioPosicao = this.entrada.cambioPosicao;
     p.piso = pisoEm(p.mundo, carro.x, carro.z);
     const foraDoAsfalto = p.piso !== 'asfalto' && p.piso !== 'calcada';
     p.foraDaPista = foraDoAsfalto && Math.abs(carro.vx) > 2

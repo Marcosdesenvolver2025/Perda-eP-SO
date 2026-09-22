@@ -10,7 +10,18 @@
 
 import { limitar, TAU } from './matematica.js';
 
-const GIRO_MAXIMO = 2.30;   // radianos de volante para esterço total
+// Quanto o aro precisa girar na tela para as rodas irem ao batente.
+//
+// Estava em 2,30 rad — 132°, mais de um terço de volta. Num celular, com o
+// volante no canto e o polegar preso, ninguém gira isso: a pessoa rodava o que
+// dava, o carro virava pouco, e a sensação era de volante quebrado. 0,95 rad
+// são 54°, um giro que cabe num arrasto de polegar e leva a roda ao fim.
+const GIRO_MAXIMO = 0.95;
+
+// Quão rápido o aro volta ao centro quando o dedo sai. Em voltas por segundo
+// do próprio curso: 2,6 quer dizer que ele atravessa o curso inteiro em pouco
+// menos de meio segundo, que é o que um volante de verdade faz sozinho.
+const RETORNO_POR_SEGUNDO = 2.6;
 
 export class Entrada {
   constructor(tela) {
@@ -83,9 +94,17 @@ export class Entrada {
           id: e.pointerId,
           anguloInicial: Math.atan2(p.y - this.areaVolante.y, p.x - this.areaVolante.x),
           giroInicial: this.volanteAlvo,
+          // Onde o dedo encostou, para o modo de arrasto lateral.
+          xInicial: p.x,
+          // Encostar bem no meio do aro dá um ângulo instável: um tremor de
+          // dedo vira meia volta. Perto do cubo, portanto, o volante passa a
+          // obedecer ao arrasto HORIZONTAL, que é o gesto que a pessoa faz
+          // sem pensar.
+          pelaLateral: Math.hypot(p.x - this.areaVolante.x, p.y - this.areaVolante.y)
+            < this.areaVolante.raio * 0.42,
         };
       }
-      if (alvo && alvo.startsWith('cambio:')) this.porAlavancaEm(alvo.slice(7));
+      if (alvo && alvo.startsWith('cambio:')) this.porAlavancaEm(alvo.slice(7), this.carroAtual);
       if (alvo === 'sobe-marcha') this.trocaPendente = 1;
       if (alvo === 'desce-marcha') this.trocaPendente = -1;
       if (alvo === 'camera') this.pedeCamera = true;
@@ -99,10 +118,16 @@ export class Entrada {
       const p = posicao(e);
       registro.x = p.x; registro.y = p.y;
       if (this.arrasto && this.arrasto.id === e.pointerId) {
-        const angulo = Math.atan2(p.y - this.areaVolante.y, p.x - this.areaVolante.x);
-        let delta = angulo - this.arrasto.anguloInicial;
-        while (delta > Math.PI) delta -= TAU;
-        while (delta < -Math.PI) delta += TAU;
+        let delta;
+        if (this.arrasto.pelaLateral) {
+          // Um curso de tela igual ao raio do aro leva ao batente.
+          delta = ((p.x - this.arrasto.xInicial) / this.areaVolante.raio) * GIRO_MAXIMO;
+        } else {
+          const angulo = Math.atan2(p.y - this.areaVolante.y, p.x - this.areaVolante.x);
+          delta = angulo - this.arrasto.anguloInicial;
+          while (delta > Math.PI) delta -= TAU;
+          while (delta < -Math.PI) delta += TAU;
+        }
         this.volanteAlvo = limitar(this.arrasto.giroInicial + delta, -GIRO_MAXIMO, GIRO_MAXIMO);
       }
     });
@@ -172,6 +197,9 @@ export class Entrada {
   atualizar(dt, carro) {
     const c = this.comandos;
     const t = this.teclas;
+    // Guardado para o toque na alavanca poder consultar a velocidade: o
+    // `pointerdown` não recebe o carro.
+    this.carroAtual = carro;
 
     const teclaFrente = t.has('arrowup') || t.has('w');
     const teclaTras = t.has('arrowdown') || t.has('s');
@@ -185,9 +213,14 @@ export class Entrada {
       if (alvoTeclado !== 0) {
         this.volanteAlvo = limitar(this.volanteAlvo + alvoTeclado * 5.2 * dt, -GIRO_MAXIMO, GIRO_MAXIMO);
       } else {
-        // Sem comando, o volante volta sozinho — mais rápido com o carro andando.
-        const retorno = (2.6 + Math.abs(carro ? carro.vx : 0) * 0.35) * dt;
+        // Dedo fora do aro: ele volta ao centro sozinho, como um volante de
+        // verdade. A volta é em fração do CURSO, não em radianos soltos —
+        // assim ela continua a mesma se o curso mudar. Andando, volta mais
+        // rápido, que é o auto-alinhamento do carro em movimento.
+        const retorno = GIRO_MAXIMO
+          * (RETORNO_POR_SEGUNDO + Math.abs(carro ? carro.vx : 0) * 0.14) * dt;
         this.volanteAlvo -= limitar(this.volanteAlvo, -retorno, retorno);
+        if (Math.abs(this.volanteAlvo) < 0.004) this.volanteAlvo = 0;
       }
     }
     this.volanteVisual += (this.volanteAlvo - this.volanteVisual) * Math.min(1, dt * 18);

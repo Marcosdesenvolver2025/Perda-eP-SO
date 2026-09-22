@@ -251,9 +251,10 @@ class PreviaDeCarro {
     this.camera.fov = 0.5;
     this.angulo = 0.6;
     this.rodando = false;
+    // Vitrine, não missão: a luz aqui é para o carro ficar bem na foto.
     this.ambiente = {
-      direcaoSol: { x: -0.5, y: 0.75, z: -0.42 },
-      ambienteLuz: 0.5, luz: 1.05,
+      direcaoSol: { x: -0.45, y: 0.72, z: -0.52 },
+      ambienteLuz: 0.62, luz: 1.18,
     };
   }
 

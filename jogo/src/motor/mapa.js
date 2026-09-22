@@ -60,6 +60,10 @@ export function gerarMapa(mundo, ambiente, qualidade = 'alta') {
     ctx.fillRect(q.x0, q.z0, q.largura, q.profundidade);
   }
 
+  // 2b. Ladrilho da calçada. É a superfície que passa mais perto da câmera
+  //     depois do asfalto, e era a única sem nenhuma marca.
+  ladrilhoDaCalcada(ctx, mundo);
+
   // 3. Desgaste do asfalto — remendo, trinca, óleo, bueiro.
   desgaste(ctx, mundo, sortear);
 
@@ -170,6 +174,49 @@ function faixaDaVia(ctx, via, folga, cor, comMeioFio) {
       ctx.fillRect(via.centro + largura / 2 - 0.18, via.de, 0.18, via.ate - via.de);
     }
   }
+}
+
+/**
+ * A junta do ladrilho da calçada.
+ *
+ * Um risco a cada metro e vinte atravessado, e uma junta comprida no meio.
+ * Não é detalhe de enfeite: é a única coisa na calçada que passa depressa
+ * quando o carro anda rente a ela, e por isso é ela que dá escala ao chão.
+ * Tudo num traçado só por calçada, porque mil `stroke()` num mapa de 2048
+ * custam mais do que o desenho inteiro.
+ */
+function ladrilhoDaCalcada(ctx, mundo) {
+  const c = mundo.calcada;
+  if (!c || c < 0.5) return;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(40,38,32,0.085)';
+  ctx.lineWidth = 0.055;
+  const passo = 1.25;
+  ctx.beginPath();
+  for (const via of mundo.vias) {
+    const meia = via.largura / 2;
+    for (const lado of [-1, 1]) {
+      const a = lado > 0 ? meia + 0.18 : -(meia + c);
+      const b = lado > 0 ? meia + c : -(meia + 0.18);
+      if (via.eixo === 'x') {
+        for (let x = Math.ceil(via.de / passo) * passo; x < via.ate; x += passo) {
+          ctx.moveTo(x, via.centro + a);
+          ctx.lineTo(x, via.centro + b);
+        }
+        ctx.moveTo(via.de, via.centro + (a + b) / 2);
+        ctx.lineTo(via.ate, via.centro + (a + b) / 2);
+      } else {
+        for (let z = Math.ceil(via.de / passo) * passo; z < via.ate; z += passo) {
+          ctx.moveTo(via.centro + a, z);
+          ctx.lineTo(via.centro + b, z);
+        }
+        ctx.moveTo(via.centro + (a + b) / 2, via.de);
+        ctx.lineTo(via.centro + (a + b) / 2, via.ate);
+      }
+    }
+  }
+  ctx.stroke();
+  ctx.restore();
 }
 
 /** A faixa de asfalto (ou de calçada) de uma pista circular. */

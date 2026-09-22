@@ -358,8 +358,11 @@ class Jogo {
     r.tempo = 0;
     r.quadros = 0;
 
+    // 30 quadros por segundo, não 38. O jogo ficou mais cheio de propósito, e
+    // um aparelho que segura trinta firme está jogando bem — baixar a qualidade
+    // dele só troca um jogo bonito e fluido por um feio e igualmente fluido.
     const abaixo = { alta: 'media', media: 'baixa' }[this.progresso.ajustes.qualidade];
-    if (porSegundo < 38 && abaixo) {
+    if (porSegundo < 30 && abaixo) {
       this.progresso.ajustes.qualidade = abaixo;
       Progresso.salvar(this.progresso);
       this.ajustarTamanho(true);

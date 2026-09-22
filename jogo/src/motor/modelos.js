@@ -470,8 +470,12 @@ export function predio(largura, altura, profundidade, cor, semente, longe = fals
         b.painelX(-largura / 2 - 0.02, y, 0, profundidade * 0.84, 1.3, corJanela);
         b.painelX(largura / 2 + 0.02, y, 0, profundidade * 0.84, 1.3, corJanela);
       }
+      const base = Math.min(2.4, altura * 0.3);
+      b.caixa(0, base / 2, 0, largura * 1.012, base, profundidade * 1.012,
+        tonalizar(cor, 0.72));
       b.caixa(0, altura + 0.18, 0, largura * 1.04, 0.36, profundidade * 1.04,
         tonalizar(cor, PREDIO.platibanda));
+      coberturaDePredio(b, sortear, largura, altura, profundidade, cor);
       return b.terminar();
     }
 
@@ -497,10 +501,55 @@ export function predio(largura, altura, profundidade, cor, semente, longe = fals
       janelaLateral(b, -largura / 2 - 0.02, y, t, l, tom, acesa);
       janelaLateral(b, largura / 2 + 0.02, y, t, l, tom, acesa);
     });
+
+    // Embasamento: o térreo de prédio quase nunca é da cor do resto. É pedra,
+    // pastilha, vidro escuro — e essa faixa mais escura na base é o que faz o
+    // prédio pousar no chão em vez de flutuar nele.
+    const base = Math.min(2.4, altura * 0.3);
+    b.caixa(0, base / 2, 0, largura * 1.012, base, profundidade * 1.012,
+      tonalizar(cor, 0.72));
+
+    // Marcação de entrada, na face de frente.
+    b.painel(largura * 0.06, base * 0.42, -profundidade / 2 - 0.03,
+      Math.min(2.2, largura * 0.26), base * 0.78, PREDIO.porta);
+
     // Platibanda, para o prédio não terminar num corte seco.
     b.caixa(0, altura + 0.18, 0, largura * 1.04, 0.36, profundidade * 1.04, tonalizar(cor, PREDIO.platibanda));
+
+    coberturaDePredio(b, sortear, largura, altura, profundidade, cor);
     return b.terminar();
   });
+}
+
+/**
+ * O que tem em cima de um prédio.
+ *
+ * Prédio que termina numa tampa lisa é o que faz um skyline parecer uma
+ * estante. Caixa d'água, casa de máquinas e antena não se olham de perto — se
+ * veem de longe, recortadas contra o céu, e é lá que fazem toda a diferença.
+ * Por isso vão nas DUAS versões da malha, a de perto e a de longe.
+ */
+function coberturaDePredio(b, sortear, largura, altura, profundidade, cor) {
+  if (altura <= 8) return;
+  const cobertura = tonalizar(cor, 0.86);
+  const cm = largura * entre(sortear, 0.22, 0.40);
+  const cp = profundidade * entre(sortear, 0.22, 0.40);
+  const ch = entre(sortear, 1.4, 2.6);
+  const cx = entre(sortear, -0.22, 0.22) * largura;
+  const cz = entre(sortear, -0.22, 0.22) * profundidade;
+  b.caixa(cx, altura + 0.36 + ch / 2, cz, cm, ch, cp, cobertura,
+    { cores: { topo: tonalizar(cobertura, 1.1) } });
+  if (sortear() < 0.7) {
+    const r = entre(sortear, 0.5, 0.95);
+    const hx = -cx * 0.8, hz = -cz * 0.8;
+    b.caixa(hx, altura + 0.36 + 0.7, hz, r * 0.30, 1.4, r * 0.30, tonalizar(cor, 0.6));
+    b.caixa(hx, altura + 0.36 + 1.4 + r * 0.6, hz, r * 2, r * 1.2, r * 2, 0xc9cdd2,
+      { cores: { topo: 0xe2e5e9 } });
+  }
+  if (sortear() < 0.5) {
+    const ha = entre(sortear, 2.5, 5.5);
+    b.caixa(cx + cm * 0.3, altura + 0.36 + ch + ha / 2, cz, 0.12, ha, 0.12, 0x6d7278);
+  }
 }
 
 /** Janela numa face voltada para ±X (a lateral do prédio). */

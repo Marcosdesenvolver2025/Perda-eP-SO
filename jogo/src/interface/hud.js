@@ -54,7 +54,7 @@ export class Hud {
     this.cartaoDaMissao(ctx, partida, escala, margem);
     this.relogio(ctx, partida, escala, L, margem);
     this.placar(ctx, partida, escala, L, margem);
-    this.bussola(ctx, partida, escala, L, margem);
+    this.bussola(ctx, partida, escala, L, A, margem);
     this.minimapa(ctx, partida, escala, L, margem);
     this.painelDoCarro(ctx, partida, escala, arranjo);
     this.controles(ctx, partida, entrada, escala, L, A, margem, arranjo);
@@ -69,23 +69,55 @@ export class Hud {
    * um conjunto de instrumentos, e o carro no meio da tela precisa ficar livre.
    */
   arranjo(partida, escala, L, A, margem) {
+    // A mão DIREITA no volante, a ESQUERDA nos pedais — que é a arrumação dos
+    // jogos de dirigir de celular e a que o dedão alcança sem soltar o
+    // aparelho. Na cabine o volante cresce e desce, como quem está sentado
+    // atrás dele.
     const naCabine = partida.camera.modo === 'cabine';
     const raioVolante = naCabine
-      ? Math.min(190 * escala, Math.min(L * 0.3, A * 0.30))
-      : Math.min(118 * escala, Math.min(L, A) * 0.19);
+      ? Math.min(178 * escala, Math.min(L * 0.28, A * 0.40))
+      : Math.min(132 * escala, Math.min(L * 0.22, A * 0.34));
+    // O volante fica no canto e sai um pouco da tela, como num carro de
+    // verdade visto de cima — mas só um pouco: cortado demais ele deixa de
+    // parecer um aro e vira um risco no canto.
     const volante = {
       raio: raioVolante,
-      x: naCabine ? L * 0.33 : margem + raioVolante + 12 * escala,
-      y: naCabine ? A - raioVolante * 0.38 : A - margem - raioVolante - 8 * escala,
+      x: L - margem - raioVolante * 0.55,
+      y: A - raioVolante * 0.40,
     };
-    const raioMostrador = Math.min(56 * escala, raioVolante * 0.5);
+
+    const larguraPedal = Math.min(96 * escala, L * 0.10);
+    const alturaPedal = Math.min(150 * escala, A * 0.40);
+    const pedais = {
+      largura: larguraPedal,
+      altura: alturaPedal,
+      y: A - margem * 0.5 - alturaPedal,
+      xFreio: margem * 0.7,
+      xAcelerador: margem * 0.7 + larguraPedal + 10 * escala,
+    };
+
+    // A alavanca sobe a partir do TOPO do volante, encostada na borda direita.
+    // Encavalada no aro ela roubava o toque do volante e ficava ilegível.
+    const alturaLetra = Math.min(38 * escala, A * 0.10);
+    const larguraCambio = Math.min(46 * escala, L * 0.05);
+    const cambio = {
+      largura: larguraCambio,
+      alturaLetra,
+      x: L - margem * 0.6 - larguraCambio,
+      y: Math.max(margem + 150 * escala,
+        volante.y - raioVolante - alturaLetra * 4 - 10 * escala),
+    };
+
+    const raioMostrador = Math.min(62 * escala, A * 0.155);
     return {
       naCabine,
       volante,
+      pedais,
+      cambio,
       mostrador: {
         raio: raioMostrador,
-        x: volante.x + raioVolante + raioMostrador + 26 * escala,
-        y: A - margem - raioMostrador - 14 * escala,
+        x: pedais.xAcelerador + larguraPedal + raioMostrador + 16 * escala,
+        y: A - margem * 0.5 - raioMostrador - 6 * escala,
       },
     };
   }
@@ -225,11 +257,18 @@ export class Hud {
     }
   }
 
-  /** A seta que aponta o próximo objetivo, presa acima do relógio. */
-  bussola(ctx, partida, escala, L, margem) {
+  /**
+   * A seta grande de curva, no meio de cima da tela, com a distância embaixo.
+   *
+   * Nos jogos de dirigir de celular ela é a peça mais importante do painel: é
+   * ela que diz para onde ir. Por isso é GRANDE, laranja e fica no meio — não
+   * é uma bussolinha discreta de canto. Quando o alvo está mais para o lado do
+   * que para a frente, ela vira uma seta CURVA, que é o que se lê como
+   * "converta aqui" sem precisar pensar.
+   */
+  bussola(ctx, partida, escala, L, A, margem) {
     const alvo = alvoAtual(partida.missao);
     if (!alvo) return;
-    // Com placar na tela a bússola desce: os dois moram no mesmo eixo central.
     if (partida.missao.pontuacao !== undefined) margem += 56 * escala;
     const carro = partida.carro;
     const distancia = distanciaPlana(carro.x, carro.z, alvo.x, alvo.z);
@@ -244,26 +283,71 @@ export class Hud {
     const angulo = Math.atan2(lado, adiante);
 
     const cx = L / 2;
-    const cy = margem + 78 * escala;
-    const raio = 20 * escala;
+    const cy = margem + Math.min(96 * escala, A * 0.20);
+    const tamanho = Math.min(58 * escala, A * 0.14);
+    const perto = distancia < 14;
+    const cor = perto ? '#4ee07a' : '#f26a1b';
 
     ctx.save();
     ctx.translate(cx, cy);
-    ctx.rotate(angulo);
-    ctx.fillStyle = distancia < 12 ? '#36c96f' : '#7fd1ff';
-    ctx.beginPath();
-    ctx.moveTo(0, -raio);
-    ctx.lineTo(raio * 0.62, raio * 0.55);
-    ctx.lineTo(0, raio * 0.22);
-    ctx.lineTo(-raio * 0.62, raio * 0.55);
-    ctx.closePath();
-    ctx.fill();
+    ctx.shadowColor = 'rgba(0,0,0,0.55)';
+    ctx.shadowBlur = 10 * escala;
+    ctx.shadowOffsetY = 3 * escala;
+    ctx.fillStyle = cor;
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.lineWidth = 2.2 * escala;
+    ctx.lineJoin = 'round';
+
+    if (Math.abs(angulo) > 0.55) {
+      // Curva: cotovelo subindo e virando para o lado do alvo.
+      const s = Math.sign(angulo);
+      const t = tamanho;
+      ctx.scale(s, 1);
+      ctx.beginPath();
+      ctx.moveTo(-t * 0.30, t * 0.95);
+      ctx.lineTo(-t * 0.30, t * 0.10);
+      ctx.quadraticCurveTo(-t * 0.30, -t * 0.52, t * 0.32, -t * 0.52);
+      ctx.lineTo(t * 0.32, -t * 0.92);
+      ctx.lineTo(t * 1.05, -t * 0.18);
+      ctx.lineTo(t * 0.32, t * 0.56);
+      ctx.lineTo(t * 0.32, t * 0.16);
+      ctx.quadraticCurveTo(t * 0.20, t * 0.16, t * 0.20, t * 0.42);
+      ctx.lineTo(t * 0.20, t * 0.95);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    } else {
+      // Reto: segue em frente. Inclina de leve para o lado do alvo.
+      ctx.rotate(angulo * 0.7);
+      const t = tamanho;
+      ctx.beginPath();
+      ctx.moveTo(0, -t);
+      ctx.lineTo(t * 0.72, -t * 0.02);
+      ctx.lineTo(t * 0.30, -t * 0.02);
+      ctx.lineTo(t * 0.30, t * 0.92);
+      ctx.lineTo(-t * 0.30, t * 0.92);
+      ctx.lineTo(-t * 0.30, -t * 0.02);
+      ctx.lineTo(-t * 0.72, -t * 0.02);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
     ctx.restore();
 
+    // A distância, grande e com contorno preto — como no jogo de referência,
+    // ela fica sobre a pista e precisa ser legível contra qualquer asfalto.
+    ctx.save();
     ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgba(255,255,255,0.82)';
-    ctx.font = `600 ${Math.round(13 * escala)}px ${FONTE}`;
-    ctx.fillText(`${Math.round(distancia)} m`, cx, cy + raio + 12 * escala);
+    ctx.font = `800 ${Math.round(30 * escala)}px ${FONTE}`;
+    ctx.lineWidth = 5 * escala;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+    const texto = `${Math.round(distancia)}m`;
+    const y = cy + tamanho + 26 * escala;
+    ctx.strokeText(texto, cx, y);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(texto, cx, y);
+    ctx.restore();
   }
 
   minimapa(ctx, partida, escala, L, margem) {
@@ -405,20 +489,10 @@ export class Hud {
     ctx.textAlign = 'center';
     ctx.fillStyle = '#ffffff';
     ctx.font = `700 ${Math.round(25 * escala)}px ${FONTE}`;
-    ctx.fillText(String(Math.round(kmh)), cx, cy - 2 * escala);
+    ctx.fillText(String(Math.round(kmh)), cx, cy - 6 * escala);
     ctx.fillStyle = 'rgba(255,255,255,0.45)';
     ctx.font = `600 ${Math.round(9 * escala)}px ${FONTE}`;
-    ctx.fillText('km/h', cx, cy + 14 * escala);
-
-    // Marcha, no alto do mostrador. Fica vermelha quando o motor está afogando
-    // e branca piscando quando bateu no corte — os dois erros de manual.
-    const marcha = carro.sentido < 0 ? 'R' : f.eletrico ? 'D' : String(carro.marcha);
-    let corDaMarcha = carro.sentido < 0 ? '#ff8b5b' : '#7fd1ff';
-    if (carro.cortando) corDaMarcha = Math.sin(this.piscaAlerta * 14) > 0 ? '#ffffff' : '#ff5b4a';
-    else if (carro.afogando > 0.35) corDaMarcha = '#e0a02a';
-    ctx.fillStyle = corDaMarcha;
-    ctx.font = `700 ${Math.round(17 * escala)}px ${FONTE}`;
-    ctx.fillText(marcha, cx, cy - 24 * escala);
+    ctx.fillText('km/h', cx, cy + 12 * escala);
 
     // Combustível e lataria: duas tirinhas DENTRO do mostrador, para não
     // brigarem com o carro no meio da tela.
@@ -426,17 +500,17 @@ export class Hud {
     const tanque = missao.combustivel !== undefined
       ? carro.combustivel / missao.combustivel
       : carro.combustivel / carro.ficha.tanque;
-    const largura = raio * 0.52;
-    const altura = 4.5 * escala;
-    const y = cy + raio * 0.47;
-    this.tirinha(ctx, cx - raio * 0.58, y, largura, altura,
+    // As duas tirinhas ficam rente à borda de baixo do mostrador, SEM rótulo:
+    // escrito, "COMB" e "LATA" caíam em cima do "km/h" e o miolo do relógio
+    // virava uma sopa de letra. A cor já diz qual é qual — verde é tanque,
+    // cinza é lataria — e as duas ficam vermelhas quando é hora de olhar.
+    const largura = raio * 0.54;
+    const altura = 5 * escala;
+    const y = cy + raio * 0.60;
+    this.tirinha(ctx, cx - raio * 0.60, y, largura, altura,
       limitar(tanque, 0, 1), tanque < 0.2 ? '#e8563a' : '#5ad07a');
     this.tirinha(ctx, cx + raio * 0.06, y, largura, altura,
       1 - carro.dano, carro.dano > 0.66 ? '#e8563a' : '#c9ced6');
-    ctx.fillStyle = 'rgba(255,255,255,0.38)';
-    ctx.font = `600 ${Math.round(7.5 * escala)}px ${FONTE}`;
-    ctx.fillText('COMB', cx - raio * 0.32, y - 6 * escala);
-    ctx.fillText('LATA', cx + raio * 0.32, y - 6 * escala);
   }
 
   tirinha(ctx, x, y, largura, altura, valor, cor) {
@@ -446,78 +520,74 @@ export class Hud {
     ctx.fillRect(x, y, largura * limitar(valor, 0, 1), altura);
   }
 
-  /** Volante, pedais, marcha e os botõezinhos. Tudo registrado na entrada. */
+  /** Volante, pedais, alavanca e os botõezinhos. Tudo registrado na entrada. */
   controles(ctx, partida, entrada, escala, L, A, margem, arranjo) {
-    // Na cabine o volante é O volante: fica maior e mais ao centro, como quem
-    // está sentado atrás dele. Nas outras câmeras ele vira controle de canto.
-    const raioVolante = arranjo.volante.raio;
-    const vx = arranjo.volante.x;
-    const vy = arranjo.volante.y;
+    const carro = partida.carro;
+    const { volante: v, pedais, cambio } = arranjo;
 
-    entrada.areaVolante = { x: vx, y: vy, raio: raioVolante };
+    // --- pedais, à esquerda -------------------------------------------------
+    entrada.areaFreio = {
+      x: pedais.xFreio, y: pedais.y, largura: pedais.largura, altura: pedais.altura,
+    };
+    entrada.areaAcelerador = {
+      x: pedais.xAcelerador, y: pedais.y, largura: pedais.largura, altura: pedais.altura,
+    };
+    pedal(ctx, entrada.areaFreio, 'freio', entrada.tocando('freio'), escala);
+    pedal(ctx, entrada.areaAcelerador, 'acelerador', entrada.tocando('acelerador'), escala);
 
-    // Sombra no chão do volante, para ele não parecer colado na tela.
+    // Freio de mão: um puxador curto acima do pedal do freio.
+    const alturaMao = Math.min(42 * escala, A * 0.11);
+    entrada.areaMao = {
+      x: pedais.xFreio, y: pedais.y - alturaMao - 10 * escala,
+      largura: pedais.largura * 2 + 10 * escala, altura: alturaMao,
+    };
+    botao(ctx, entrada.areaMao, 'FREIO DE MÃO',
+      entrada.tocando('mao') || entrada.cambioPosicao === 'P', escala,
+      entrada.tocando('mao') ? 0xd0a32e : 0x55606e, 10);
+
+    // --- alavanca P R N D, à direita ---------------------------------------
+    this.alavanca(ctx, entrada, carro, escala, cambio);
+
+    // --- volante, à direita -------------------------------------------------
+    entrada.areaVolante = { x: v.x, y: v.y, raio: v.raio };
     ctx.save();
     ctx.globalAlpha = 0.25;
     ctx.fillStyle = '#000';
     ctx.beginPath();
-    ctx.ellipse(vx, vy + raioVolante * 0.92, raioVolante * 0.85, raioVolante * 0.18, 0, 0, TAU);
+    ctx.ellipse(v.x, v.y + v.raio * 0.92, v.raio * 0.85, v.raio * 0.18, 0, 0, TAU);
     ctx.fill();
     ctx.restore();
-
     desenharVolante(ctx, partida.modelo.volante, {
-      x: vx, y: vy, raio: raioVolante,
+      x: v.x, y: v.y, raio: v.raio,
       angulo: entrada.volanteVisual,
       alfa: 0.96,
       destaque: entrada.arrasto ? 1 : 0,
     });
 
-    // Pedais.
-    const largura = 112 * escala;
-    const altura = 88 * escala;
-    const folga = 12 * escala;
-    const px = L - margem - largura;
-    const pyAcelerador = A - margem - altura;
-    const pyFreio = pyAcelerador - altura * 0.66 - folga;
-
-    entrada.areaAcelerador = { x: px, y: pyAcelerador, largura, altura };
-    entrada.areaFreio = { x: px - largura - folga, y: pyAcelerador, largura, altura };
-    entrada.areaMarcha = { x: px, y: pyFreio, largura, altura: altura * 0.66 };
-    entrada.areaMao = { x: px - largura - folga, y: pyFreio, largura, altura: altura * 0.66 };
-
-    botao(ctx, entrada.areaAcelerador, 'ACELERA', entrada.tocando('acelerador'), escala, 0x35c46a, 14);
-    botao(ctx, entrada.areaFreio, 'FREIO', entrada.tocando('freio'), escala, 0xe04a3c, 14);
-    botao(ctx, entrada.areaMarcha, partida.carro.sentido < 0 ? 'RÉ' : 'DRIVE',
-      partida.carro.sentido < 0, escala, partida.carro.sentido < 0 ? 0xf08c2a : 0x3a86d6, 13);
-    botao(ctx, entrada.areaMao, 'MÃO', entrada.tocando('mao'), escala, 0xd0a32e, 13);
-
-    // Câmbio manual: uma terceira fileira, acima das outras. Só aparece quando
-    // é você quem troca — no automático esses botões não teriam o que fazer.
-    const carro = partida.carro;
+    // --- câmbio manual: duas abas encostadas no volante ---------------------
     const manual = entrada.comandos.cambio === 'manual' && carro.ficha.relacoes.length > 1;
     if (manual) {
-      const alturaMarcha = altura * 0.66;
-      const pyMarcha = pyFreio - alturaMarcha - folga;
-      entrada.areaSobeMarcha = { x: px, y: pyMarcha, largura, altura: alturaMarcha };
-      entrada.areaDesceMarcha = { x: px - largura - folga, y: pyMarcha, largura, altura: alturaMarcha };
-
-      // O botão de subir acende quando está na hora de trocar. É a luz de
-      // troca do painel de corrida, só que onde o dedo já está olhando.
+      const l = Math.min(84 * escala, L * 0.09);
+      const h = Math.min(40 * escala, A * 0.105);
+      const x = v.x - v.raio - l - 10 * escala;
+      entrada.areaSobeMarcha = { x, y: A - margem * 0.5 - h * 2 - 8 * escala, largura: l, altura: h };
+      entrada.areaDesceMarcha = { x, y: A - margem * 0.5 - h, largura: l, altura: h };
       const naHora = carro.rotacao > carro.ficha.rotacaoTroca && carro.sentido > 0;
       const naUltima = carro.marcha >= carro.ficha.relacoes.length;
-      botao(ctx, entrada.areaSobeMarcha, 'MARCHA ▲',
-        naHora && !naUltima, escala, naHora && !naUltima ? 0x35c46a : 0x4a5a70, 13);
-      botao(ctx, entrada.areaDesceMarcha, 'MARCHA ▼',
-        carro.afogando > 0.35, escala, carro.afogando > 0.35 ? 0xe0a02a : 0x4a5a70, 13);
+      botao(ctx, entrada.areaSobeMarcha, '▲',
+        naHora && !naUltima, escala, naHora && !naUltima ? 0x35c46a : 0x4a5a70, 17);
+      botao(ctx, entrada.areaDesceMarcha, '▼',
+        carro.afogando > 0.35, escala, carro.afogando > 0.35 ? 0xe0a02a : 0x4a5a70, 17);
     } else {
       entrada.areaSobeMarcha = null;
       entrada.areaDesceMarcha = null;
     }
 
-    // Cantinho de cima: câmera e pausa.
+    // --- cantinho de cima: câmera e pausa ----------------------------------
     const pequeno = 44 * escala;
-    entrada.areaCamera = { x: L - margem - pequeno, y: margem + 148 * escala, largura: pequeno, altura: pequeno };
-    entrada.areaPausa = { x: L - margem - pequeno * 2 - 8 * escala, y: margem + 148 * escala, largura: pequeno, altura: pequeno };
+    const topo = margem + 150 * escala;
+    entrada.areaCamera = { x: L - margem - pequeno, y: topo, largura: pequeno, altura: pequeno };
+    entrada.areaPausa = { x: L - margem - pequeno * 2 - 8 * escala, y: topo, largura: pequeno, altura: pequeno };
     botao(ctx, entrada.areaCamera, '◉', false, escala, 0x4a5a70, 16);
     botao(ctx, entrada.areaPausa, '❚❚', false, escala, 0x4a5a70, 13);
 
@@ -525,7 +595,62 @@ export class Hud {
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
     ctx.font = `600 ${Math.round(9 * escala)}px ${FONTE}`;
     ctx.fillText(NOMES_DE_MODO[partida.camera.modo] || '',
-      L - margem - pequeno / 2, margem + 148 * escala + pequeno + 10 * escala);
+      L - margem - pequeno / 2, topo + pequeno + 10 * escala);
+  }
+
+  /**
+   * A coluna P R N D.
+   *
+   * Uma letra acesa e três apagadas, com o puxador ao lado marcando em qual
+   * delas a alavanca está. É informação que se lê de canto de olho, sem tirar
+   * o polegar do volante — que é o ponto inteiro de ser uma coluna e não um
+   * botão que alterna.
+   */
+  alavanca(ctx, entrada, carro, escala, cambio) {
+    const letras = ['P', 'R', 'N', 'D'];
+    const { x, largura, alturaLetra: h } = cambio;
+    const alturaTotal = h * letras.length;
+
+    caixa(ctx, x - 4 * escala, cambio.y - 6 * escala,
+      largura + 8 * escala, alturaTotal + 12 * escala, 12 * escala, 'rgba(10,14,20,0.72)');
+
+    letras.forEach((letra, i) => {
+      const y = cambio.y + i * h;
+      entrada.areasCambio[letra] = { x, y, largura, altura: h };
+      const ativa = entrada.cambioPosicao === letra;
+      if (ativa) {
+        ctx.fillStyle = letra === 'R' ? 'rgba(232,90,58,0.30)' : 'rgba(64,208,122,0.26)';
+        ctx.beginPath();
+        arredondado(ctx, x + 2 * escala, y + 2 * escala, largura - 4 * escala, h - 4 * escala, 8 * escala);
+        ctx.fill();
+      }
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = `800 ${Math.round(20 * escala)}px ${FONTE}`;
+      ctx.fillStyle = ativa
+        ? (letra === 'R' ? '#ff8b6b' : '#6ef0a0')
+        : 'rgba(255,255,255,0.32)';
+      ctx.fillText(letra, x + largura / 2, y + h / 2);
+    });
+
+    // O puxador, na altura da letra em que a alavanca está.
+    const indice = Math.max(0, letras.indexOf(entrada.cambioPosicao));
+    const yPuxador = cambio.y + indice * h + h / 2;
+    ctx.fillStyle = 'rgba(255,255,255,0.80)';
+    ctx.beginPath();
+    ctx.moveTo(x - 5 * escala, yPuxador);
+    ctx.lineTo(x - 13 * escala, yPuxador - 7 * escala);
+    ctx.lineTo(x - 13 * escala, yPuxador + 7 * escala);
+    ctx.closePath();
+    ctx.fill();
+
+    // Com câmbio manual a marcha engatada aparece embaixo da coluna.
+    if (entrada.comandos.cambio === 'manual' && carro.ficha.relacoes.length > 1
+      && entrada.cambioPosicao === 'D') {
+      ctx.fillStyle = carro.cortando ? '#ff5b4a' : carro.afogando > 0.35 ? '#e0a02a' : '#7fd1ff';
+      ctx.font = `800 ${Math.round(17 * escala)}px ${FONTE}`;
+      ctx.fillText(String(carro.marcha), x + largura / 2, cambio.y + alturaTotal + 14 * escala);
+    }
   }
 
   avisos(ctx, partida, escala, L, A) {
@@ -556,7 +681,7 @@ export class Hud {
       ctx.globalAlpha = limitar(t * 3, 0, 1);
       ctx.fillStyle = r.cor;
       ctx.font = `700 ${Math.round(24 * escala)}px ${FONTE}`;
-      ctx.fillText(r.texto, L / 2, A * 0.34 - i * 30 * escala + (1 - t) * 14 * escala);
+      ctx.fillText(r.texto, L / 2, A * 0.50 - i * 30 * escala + (1 - t) * 14 * escala);
     });
     ctx.globalAlpha = 1;
   }
@@ -597,6 +722,84 @@ export function arredondado(ctx, x, y, largura, altura, raio) {
  * ficam os pedais no meio da corrida. Cor sempre visível resolve isso — o
  * toque muda o brilho, não a identidade do botão.
  */
+/**
+ * Pedal de carro: a placa de borracha preta, comprida, com relevo.
+ *
+ * Não é um botão colorido de propósito. O acelerador e o freio de um jogo de
+ * dirigir têm que parecer o que são — a pessoa acha eles com o dedão sem
+ * olhar, porque a forma já diz. O freio é largo e tem furos; o acelerador é
+ * estreito e tem estrias. Quando afundado, o pedal desce e escurece.
+ */
+export function pedal(ctx, area, tipo, ativo, escala) {
+  const freio = tipo === 'freio';
+  const recuo = ativo ? 4 * escala : 0;
+  const x = area.x;
+  const y = area.y + recuo;
+  const l = area.largura;
+  const a = area.altura - recuo;
+  const r = Math.min(l, a) * 0.22;
+
+  ctx.save();
+  // Sombra: é ela que dá a impressão de que o pedal afunda.
+  if (!ativo) {
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.beginPath();
+    arredondado(ctx, x, y + 5 * escala, l, a, r);
+    ctx.fill();
+  }
+
+  const g = ctx.createLinearGradient(x, y, x + l, y + a);
+  g.addColorStop(0, ativo ? '#2c3037' : '#3d434c');
+  g.addColorStop(0.5, ativo ? '#1d2126' : '#2a2e35');
+  g.addColorStop(1, ativo ? '#14171b' : '#1b1f24');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  arredondado(ctx, x, y, l, a, r);
+  ctx.fill();
+  ctx.strokeStyle = ativo ? 'rgba(255,255,255,0.42)' : 'rgba(255,255,255,0.20)';
+  ctx.lineWidth = 2.4 * escala;
+  ctx.stroke();
+
+  ctx.save();
+  ctx.beginPath();
+  arredondado(ctx, x, y, l, a, r);
+  ctx.clip();
+  if (freio) {
+    // Furos em duas colunas, como a borracha de pedal de freio.
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    const raio = l * 0.11;
+    for (let i = 0; i < 4; i++) {
+      for (const lado of [-1, 1]) {
+        ctx.beginPath();
+        ctx.arc(x + l / 2 + lado * l * 0.22, y + a * (0.22 + i * 0.19), raio, 0, TAU);
+        ctx.fill();
+      }
+    }
+  } else {
+    // Estrias atravessadas, como a borracha do acelerador.
+    ctx.fillStyle = 'rgba(0,0,0,0.42)';
+    for (let i = 0; i < 7; i++) {
+      ctx.fillRect(x + l * 0.16, y + a * (0.14 + i * 0.11), l * 0.68, a * 0.035);
+    }
+  }
+  // Brilho por cima, para a borracha não ficar chapada.
+  const brilho = ctx.createLinearGradient(0, y, 0, y + a * 0.45);
+  brilho.addColorStop(0, `rgba(255,255,255,${ativo ? 0.06 : 0.14})`);
+  brilho.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = brilho;
+  ctx.fillRect(x, y, l, a * 0.45);
+  ctx.restore();
+
+  // Uma tarja de cor só na beirada de baixo: diz qual é qual sem virar botão.
+  ctx.fillStyle = freio
+    ? (ativo ? '#ff6a58' : '#b8402f')
+    : (ativo ? '#5fe08a' : '#2f8f52');
+  ctx.beginPath();
+  arredondado(ctx, x + l * 0.18, y + a - 7 * escala, l * 0.64, 4.5 * escala, 2 * escala);
+  ctx.fill();
+  ctx.restore();
+}
+
 export function botao(ctx, area, texto, ativo, escala, cor, tamanhoFonte = 13) {
   ctx.save();
   const r = Math.min(area.largura, area.altura) * 0.32;

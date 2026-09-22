@@ -129,8 +129,10 @@ export function passo(carro, comandos, dt, pista = { atrito: 1 }) {
   // --- forças no eixo longitudinal ------------------------------------
   let forcaMotor = 0;
 
+  // No N e no P a transmissão está aberta: o motor gira e as rodas não sabem.
   const combustivelAcabou = carro.combustivel <= 0;
-  const acelerador = combustivelAcabou ? 0 : limitar(comandos.acelerador, 0, 1);
+  const acelerador = (combustivelAcabou || comandos.neutro)
+    ? 0 : limitar(comandos.acelerador, 0, 1);
 
   if (acelerador > 0) {
     // No manual, a marcha errada CUSTA. Três penalidades, todas do mundo real:
@@ -157,8 +159,11 @@ export function passo(carro, comandos, dt, pista = { atrito: 1 }) {
   const patinando = Math.abs(forcaMotor) > limiteTracao;
   if (patinando) forcaMotor = sinal(forcaMotor) * limiteTracao;
 
-  // Freio motor: solta o acelerador e o carro desacelera sozinho.
-  const freioMotor = acelerador > 0.02 ? 0 : f.freioMotor * Math.min(1, Math.abs(carro.vx) / 3);
+  // Freio motor: solta o acelerador e o carro desacelera sozinho. No N não
+  // existe — a roda está solta do motor, e é por isso que em ponto morto o
+  // carro desce a ladeira sem segurar nada.
+  const freioMotor = (acelerador > 0.02 || comandos.neutro)
+    ? 0 : f.freioMotor * Math.min(1, Math.abs(carro.vx) / 3);
 
   const arrasto = 0.5 * DENSIDADE_AR * f.coeficienteAr * f.areaFrontal * carro.vx * Math.abs(carro.vx);
   const rolamento = f.rolamento * peso * Math.tanh(carro.vx * 4);

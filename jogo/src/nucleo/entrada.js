@@ -18,8 +18,12 @@ export class Entrada {
     this.teclas = new Set();
     this.comandos = {
       acelerador: 0, freio: 0, volante: 0, mao: false, sentido: 1,
-      cambio: 'automatico',
+      neutro: false, cambio: 'automatico',
     };
+    // A alavanca P R N D, como a dos jogos de dirigir de celular: uma coluna
+    // de letras em que só uma está acesa. É ela que manda o sentido; o botão
+    // único de D/R virou uma alavanca de verdade.
+    this.cambioPosicao = 'D';
     // Trocar de marcha é um ATO, não um estado: vale uma vez, não a cada
     // passo de física. Fica guardado aqui até alguém consumir.
     this.trocaPendente = 0;
@@ -28,12 +32,12 @@ export class Entrada {
     this.areaVolante = { x: 0, y: 0, raio: 80 };
     this.areaAcelerador = null;
     this.areaFreio = null;
-    this.areaMarcha = null;
     this.areaMao = null;
     this.areaSobeMarcha = null;
     this.areaDesceMarcha = null;
     this.areaCamera = null;
     this.areaPausa = null;
+    this.areasCambio = { P: null, R: null, N: null, D: null };
 
     this.ponteiros = new Map();
     this.arrasto = null;
@@ -81,7 +85,7 @@ export class Entrada {
           giroInicial: this.volanteAlvo,
         };
       }
-      if (alvo === 'marcha') this.trocarSentido();
+      if (alvo && alvo.startsWith('cambio:')) this.porAlavancaEm(alvo.slice(7));
       if (alvo === 'sobe-marcha') this.trocaPendente = 1;
       if (alvo === 'desce-marcha') this.trocaPendente = -1;
       if (alvo === 'camera') this.pedeCamera = true;
@@ -117,11 +121,15 @@ export class Entrada {
       && p.x >= area.x && p.x <= area.x + area.largura
       && p.y >= area.y && p.y <= area.y + area.altura;
 
+    // A alavanca vem ANTES do volante: a coluna P R N D fica encostada nele, e
+    // o raio generoso do volante engolia o toque no D se viesse depois.
+    for (const letra of ['P', 'R', 'N', 'D']) {
+      if (dentro(this.areasCambio[letra])) return `cambio:${letra}`;
+    }
     const dv = Math.hypot(p.x - this.areaVolante.x, p.y - this.areaVolante.y);
     if (dv <= this.areaVolante.raio * 1.35) return 'volante';
     if (dentro(this.areaAcelerador)) return 'acelerador';
     if (dentro(this.areaFreio)) return 'freio';
-    if (dentro(this.areaMarcha)) return 'marcha';
     if (dentro(this.areaSobeMarcha)) return 'sobe-marcha';
     if (dentro(this.areaDesceMarcha)) return 'desce-marcha';
     if (dentro(this.areaMao)) return 'mao';
@@ -137,9 +145,20 @@ export class Entrada {
     return false;
   }
 
-  /** O botão D/R: troca o SENTIDO, não a marcha. */
-  trocarSentido() {
-    this.comandos.sentido = this.comandos.sentido > 0 ? -1 : 1;
+  /**
+   * Põe a alavanca numa posição.
+   *
+   * P e N não mandam força nenhuma para as rodas; P ainda trava o carro. R e D
+   * são o sentido. Trocar para R ou D andando para o outro lado é coisa que
+   * quebra câmbio na vida real e aqui só é ignorado — do contrário a pessoa
+   * encosta sem querer no D a 80 por hora e o carro dá um tranco.
+   */
+  porAlavancaEm(posicao, carro) {
+    if (!['P', 'R', 'N', 'D'].includes(posicao)) return false;
+    const andando = carro ? Math.abs(carro.vx) > 2.2 : false;
+    if (andando && (posicao === 'R' || posicao === 'P')) return false;
+    this.cambioPosicao = posicao;
+    return true;
   }
 
   /** Devolve -1, 0 ou +1 e esquece — quem chama é quem aplica. */
@@ -181,23 +200,32 @@ export class Entrada {
     const freando = teclaTras || this.tocando('freio');
     c.acelerador = acelerando ? 1 : 0;
     c.freio = freando ? 1 : 0;
-    c.mao = t.has(' ') || this.tocando('mao');
 
     // Troca automática de sentido: parado com o freio afundado, engata a ré;
-    // parado na ré com o pé no acelerador, volta para frente.
+    // parado na ré com o pé no acelerador, volta para frente. A alavanca anda
+    // junto, senão a coluna P R N D mostra D com o carro indo para trás.
     const parado = !carro || Math.abs(carro.vx) < 0.4;
     if (parado && freando && !acelerando) {
       this.tempoFreioParado += dt;
-      if (this.tempoFreioParado > 0.45 && c.sentido > 0) {
-        c.sentido = -1;
+      if (this.tempoFreioParado > 0.45 && this.cambioPosicao === 'D') {
+        this.cambioPosicao = 'R';
         this.tempoFreioParado = -1.2;
       }
     } else {
       this.tempoFreioParado = 0;
     }
-    if (parado && acelerando && c.sentido < 0 && !freando) {
-      c.sentido = 1;
+    if (parado && acelerando && this.cambioPosicao === 'R' && !freando) {
+      this.cambioPosicao = 'D';
     }
+    // Sair do P ou do N basta pisar no acelerador: ninguém quer descobrir
+    // sozinho que o carro não anda porque a alavanca ficou no N.
+    if (acelerando && (this.cambioPosicao === 'P' || this.cambioPosicao === 'N')) {
+      this.cambioPosicao = 'D';
+    }
+
+    c.sentido = this.cambioPosicao === 'R' ? -1 : 1;
+    c.neutro = this.cambioPosicao === 'N' || this.cambioPosicao === 'P';
+    c.mao = t.has(' ') || this.tocando('mao') || this.cambioPosicao === 'P';
 
     // Na ré quem empurra continua sendo o acelerador — quem inverte o sentido
     // da força é a física, olhando `sentido`. Aqui nada muda.
@@ -223,6 +251,8 @@ export class Entrada {
     this.comandos.freio = 0;
     this.comandos.volante = 0;
     this.comandos.sentido = 1;
+    this.comandos.neutro = false;
+    this.cambioPosicao = 'D';
     this.trocaPendente = 0;
     this.ponteiros.clear();
     this.arrasto = null;

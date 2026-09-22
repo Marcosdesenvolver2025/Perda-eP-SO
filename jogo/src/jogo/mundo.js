@@ -90,7 +90,8 @@ export function gerarMundo(semente, opcoes = {}) {
     colisores: [],
     marcasNoChao: [],
     rotas: [],
-    aneis: [],        // pista circular fechada — o traçado do modo rápido
+    aneis: [],        // legado: pista redonda, hoje só a rotatória usa
+    pista: null,      // traçado fechado com retas e curvas — o circuito
     rotatorias: [],   // rotatória com ilha no meio
     limite: meio + 2,
   };
@@ -126,29 +127,30 @@ export function gerarMundo(semente, opcoes = {}) {
  * lado — que é exatamente o que os modos rápido e drift precisam.
  */
 function montarCircuito(mundo, sortear, cenario) {
-  const raio = mundo.meio * 0.66;
   const largura = 14;
-  mundo.aneis.push({ x: 0, z: 0, raio, largura });
+  const pista = tracarPista(mundo, sortear, largura);
+  mundo.pista = pista;
 
   const raioRotatoria = 13;
   const larguraRotatoria = 9;
   mundo.rotatorias.push({ x: 0, z: 0, raio: raioRotatoria, largura: larguraRotatoria });
 
-  // A linha de largada fica num ângulo fixo do anel. Quem conta volta é o modo;
+  // A largada é o começo do traçado, no metro zero. Quem conta volta é o modo;
   // aqui só existe o lugar, pintado no chão e guardado no mundo.
-  mundo.largada = { angulo: 0, x: raio, z: 0 };
+  const p0 = pista.pontos[0];
+  mundo.largada = { x: p0.x, z: p0.z, angulo: p0.angulo, s: 0 };
 
-  // As duas retas que ligam a rotatória ao anel. Ficam como "vias" comuns,
-  // então tudo que já sabe lidar com via (pintura, piso, trânsito) funciona.
-  const alcance = raio + largura / 2;
+  // As duas retas que ligam a rotatória do miolo à pista. Ficam como "vias"
+  // comuns, então pintura, piso e trânsito já sabem lidar com elas.
+  const alcance = pista.raioMedio;
   mundo.vias.length = 0;
   mundo.vias.push(
     { eixo: 'x', centro: 0, de: -alcance, ate: alcance, largura: 11, principal: true },
     { eixo: 'z', centro: 0, de: -alcance, ate: alcance, largura: 11, principal: true },
   );
 
-  guardaCorpoDoAnel(mundo, raio - largura / 2 - 0.9, 'dentro');
-  guardaCorpoDoAnel(mundo, raio + largura / 2 + 0.9, 'fora');
+  guardaCorpoDaPista(mundo, pista, -1);
+  guardaCorpoDaPista(mundo, pista, 1);
   meioFioDaIlha(mundo, raioRotatoria - larguraRotatoria / 2);
 
   // Dentro da ilha da rotatória: um pedaço de jardim que se vê de longe.
@@ -164,24 +166,229 @@ function montarCircuito(mundo, sortear, cenario) {
     }
   }
 
-  // Cenário: fora do anel, o bairro; dentro, entre a rotatória e a pista,
-  // um parque. Nada encosta na pista — ela tem que ficar livre.
-  // Os outdoors escolhem lugar ANTES do resto do cenário: eles têm posição
-  // certa (rente à pista, de frente para ela) e a árvore não tem.
-  outdoorsNaPista(mundo, sortear, raio + largura / 2 + 4.6, 7);
-  povoarEmVolta(mundo, sortear, cenario, raio + largura / 2 + 10, mundo.meio - 4, 26);
-  povoarEmVolta(mundo, sortear, cenario, raioRotatoria + larguraRotatoria, raio - largura / 2 - 6, 14);
+  // Cenário: fora da pista, o bairro; dentro, um parque. Os outdoors escolhem
+  // lugar ANTES do resto: eles têm posição certa (de frente para a pista) e a
+  // árvore não tem.
+  outdoorsAoLongoDaPista(mundo, sortear, pista, 9);
+  povoarForaDaPista(mundo, sortear, cenario, pista, 34);
 
-  // Trânsito dando voltas, nos dois sentidos, em faixas diferentes.
+  // Trânsito nos dois sentidos, em faixas diferentes do traçado.
   for (const sentido of [1, -1]) {
-    const faixa = raio + sentido * largura * 0.22;
-    const pontos = [];
-    const passos = 28;
-    for (let i = 0; i < passos; i++) {
-      const a = (sentido > 0 ? i : passos - i) / passos * TAU;
-      pontos.push({ x: Math.cos(a) * faixa, z: Math.sin(a) * faixa });
+    const faixa = deslocar(pista.pontos, sentido * largura * 0.24);
+    const pontos = sentido > 0 ? faixa : faixa.slice().reverse();
+    mundo.rotas.push({ pontos: pontos.filter((_, i) => i % 3 === 0), pista, sentido });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// O TRAÇADO
+// ---------------------------------------------------------------------------
+
+/**
+ * Um traçado fechado com RETA e VIRADA de verdade.
+ *
+ * A receita é um polígono de cantos arredondados: sorteia-se um punhado de
+ * vértices em volta do centro, com raios diferentes, e cada canto é substituído
+ * por um arco tangente aos dois lados. O que sobra entre dois arcos é reta.
+ *
+ * É esta construção que dá tudo de uma vez e de graça:
+ *   - vértice aberto vira curva rápida, vértice fechado vira grampo;
+ *   - lado longo vira reta onde dá para abrir o carro;
+ *   - dois vértices perto viram uma esse.
+ * E fecha sozinho, porque o polígono fecha — não há conta de fechamento para
+ * errar, que é onde traçado sorteado costuma dar errado.
+ */
+function tracarPista(mundo, sortear, largura) {
+  const raioBase = mundo.meio * 0.78;
+  const quantos = inteiro(sortear, 5, 8);
+  const vertices = [];
+  for (let i = 0; i < quantos; i++) {
+    // O ângulo anda em passos quase iguais: passo muito desigual gera lado
+    // curto demais para caber arco, e o traçado vira um amassado.
+    const a = ((i + entre(sortear, -0.18, 0.18)) / quantos) * TAU;
+    const r = raioBase * entre(sortear, 0.56, 1);
+    vertices.push({ x: Math.cos(a) * r, z: Math.sin(a) * r });
+  }
+
+  const cantos = vertices.map((b, i) => {
+    const a = vertices[(i - 1 + quantos) % quantos];
+    const c = vertices[(i + 1) % quantos];
+    const d1 = direcao(a, b);
+    const d2 = direcao(b, c);
+    const l1 = distanciaPlana(a.x, a.z, b.x, b.z);
+    const l2 = distanciaPlana(b.x, b.z, c.x, c.z);
+    // Quanto o carro tem que virar neste canto, com sinal.
+    const viragem = Math.atan2(d1.x * d2.z - d1.z * d2.x, d1.x * d2.x + d1.z * d2.z);
+    const meia = Math.abs(viragem) / 2;
+    if (meia < 0.05) return { b, t: 0, viragem: 0 };
+
+    // `t` é quanto o arco come de cada lado. Limitado a 45% do lado para dois
+    // cantos vizinhos nunca comerem a mesma reta e se atropelarem.
+    let t = entre(sortear, 13, 38) * Math.tan(meia);
+    t = Math.min(t, l1 * 0.45, l2 * 0.45);
+    const raio = t / Math.tan(meia);
+    return {
+      b, d1, d2, t, raio, viragem,
+      inicio: { x: b.x - d1.x * t, z: b.z - d1.z * t },
+      fim: { x: b.x + d2.x * t, z: b.z + d2.z * t },
+    };
+  });
+
+  const pontos = [];
+  for (let i = 0; i < quantos; i++) {
+    const k = cantos[i];
+    if (k.t > 0) {
+      // O centro do arco está na perpendicular de d1, do lado para onde se
+      // vira. Girar d1 em +90° no plano (x,z) dá (-dz, dx).
+      const s = Math.sign(k.viragem);
+      const cx = k.inicio.x - k.d1.z * s * k.raio;
+      const cz = k.inicio.z + k.d1.x * s * k.raio;
+      const a0 = Math.atan2(k.inicio.z - cz, k.inicio.x - cx);
+      const passos = Math.max(4, Math.round((Math.abs(k.viragem) * k.raio) / 2.5));
+      for (let p = 0; p <= passos; p++) {
+        const a = a0 + k.viragem * (p / passos);
+        pontos.push({ x: cx + Math.cos(a) * k.raio, z: cz + Math.sin(a) * k.raio });
+      }
+    } else {
+      pontos.push({ x: k.b.x, z: k.b.z });
     }
-    mundo.rotas.push({ pontos, anel: mundo.aneis[0], sentido });
+    const prox = cantos[(i + 1) % quantos];
+    const de = k.t > 0 ? k.fim : k.b;
+    const ate = prox.t > 0 ? prox.inicio : prox.b;
+    const comprimento = distanciaPlana(de.x, de.z, ate.x, ate.z);
+    const passos = Math.max(1, Math.round(comprimento / 4));
+    for (let p = 1; p < passos; p++) {
+      pontos.push({
+        x: de.x + ((ate.x - de.x) * p) / passos,
+        z: de.z + ((ate.z - de.z) * p) / passos,
+      });
+    }
+  }
+
+  return fecharPista(pontos, largura);
+}
+
+/** Preenche distância acumulada, ângulo e raio médio — o resto do jogo lê isso. */
+function fecharPista(pontos, largura) {
+  let comprimento = 0;
+  let raioMedio = 0;
+  for (let i = 0; i < pontos.length; i++) {
+    const p = pontos[i];
+    const q = pontos[(i + 1) % pontos.length];
+    p.s = comprimento;
+    // O ângulo do carro que passa por aqui: `frente(a) = (-sen a, -cos a)`.
+    p.angulo = Math.atan2(-(q.x - p.x), -(q.z - p.z));
+    comprimento += distanciaPlana(p.x, p.z, q.x, q.z);
+    raioMedio += Math.hypot(p.x, p.z);
+  }
+  return {
+    pontos, largura, comprimento,
+    raioMedio: raioMedio / pontos.length,
+  };
+}
+
+function direcao(a, b) {
+  const dx = b.x - a.x, dz = b.z - a.z;
+  const l = Math.hypot(dx, dz) || 1;
+  return { x: dx / l, z: dz / l };
+}
+
+/**
+ * Onde está o carro em relação ao traçado: a que distância do meio da pista e
+ * em que metro da volta. É com o metro da volta que o modo rápido conta voltas
+ * — ângulo em volta do centro só funciona em pista redonda.
+ */
+export function naPista(pista, x, z) {
+  const pontos = pista.pontos;
+  let melhor = Infinity;
+  let s = 0;
+  for (let i = 0; i < pontos.length; i++) {
+    const p = pontos[i];
+    const q = pontos[(i + 1) % pontos.length];
+    const dx = q.x - p.x, dz = q.z - p.z;
+    const comprimento = dx * dx + dz * dz;
+    let t = comprimento > 0 ? ((x - p.x) * dx + (z - p.z) * dz) / comprimento : 0;
+    t = limitar(t, 0, 1);
+    const px = p.x + dx * t, pz = p.z + dz * t;
+    const d = (x - px) * (x - px) + (z - pz) * (z - pz);
+    if (d < melhor) {
+      melhor = d;
+      s = p.s + Math.sqrt(comprimento) * t;
+    }
+  }
+  return { distancia: Math.sqrt(melhor), s };
+}
+
+/** Uma cópia do traçado deslocada para o lado — serve de faixa e de guarda-corpo. */
+function deslocar(pontos, quanto) {
+  const n = pontos.length;
+  return pontos.map((p, i) => {
+    const a = pontos[(i - 1 + n) % n];
+    const b = pontos[(i + 1) % n];
+    const d = direcao(a, b);
+    return { x: p.x - d.z * quanto, z: p.z + d.x * quanto, s: p.s };
+  });
+}
+
+/** Guarda-corpo acompanhando a pista de um dos lados. */
+function guardaCorpoDaPista(mundo, pista, lado) {
+  const borda = deslocar(pista.pontos, lado * (pista.largura / 2 + 0.9));
+  const passo = 4;
+  for (let i = 0; i < borda.length; i += passo) {
+    const a = borda[i];
+    const b = borda[(i + passo) % borda.length];
+    const comprimento = distanciaPlana(a.x, a.z, b.x, b.z);
+    if (comprimento < 0.5 || comprimento > 40) continue;
+    const guinada = Math.atan2(-(b.x - a.x), -(b.z - a.z)) + Math.PI / 2;
+    adicionar(mundo, {
+      tipo: 'barreira', malha: modelos.barreira(comprimento + 0.5),
+      x: (a.x + b.x) / 2, z: (a.z + b.z) / 2, guinada, raio: comprimento,
+    }, {
+      largura: comprimento + 0.5, comprimento: 0.6, guinada,
+      solido: true, parede: true, altura: 0.8,
+    });
+  }
+}
+
+/** Outdoors espalhados ao longo da pista, sempre de frente para ela. */
+function outdoorsAoLongoDaPista(mundo, sortear, pista, quantos) {
+  const cenario = mundo.colisores.filter((c) => !c.parede);
+  const borda = deslocar(pista.pontos, pista.largura / 2 + 5.5);
+  for (let i = 0; i < quantos; i++) {
+    const p = borda[Math.floor((i / quantos) * borda.length)];
+    if (colide(cenario, p.x, p.z, 12, 12)) continue;
+    const largura = entre(sortear, 7, 10);
+    const altura = entre(sortear, 6.5, 8.5);
+    // De frente para o meio da pista: a face do cartaz é -Z, e
+    // `frente(g) = (-sen g, -cos g)` tem que apontar para o centro.
+    const guinada = Math.atan2(-(0 - p.x), -(0 - p.z));
+    adicionar(mundo, {
+      tipo: 'outdoor', malha: modelos.outdoor(largura, altura, Math.floor(sortear() * 1e6)),
+      x: p.x, z: p.z, guinada, raio: largura,
+    }, {
+      largura, comprimento: 0.6, guinada, solido: true, altura, parede: true,
+    });
+  }
+}
+
+/** Enche o que sobra do mapa sem encostar na pista. */
+function povoarForaDaPista(mundo, sortear, cenario, pista, quantos) {
+  for (let i = 0; i < quantos; i++) {
+    const x = entre(sortear, -mundo.meio + 6, mundo.meio - 6);
+    const z = entre(sortear, -mundo.meio + 6, mundo.meio - 6);
+    // Longe da pista o bastante para nada invadir a corrida.
+    if (naPista(pista, x, z).distancia < pista.largura / 2 + 9) continue;
+    if (colide(mundo.colisores, x, z, 12, 12)) continue;
+
+    if (sortear() < 0.45) {
+      const l = Math.round(entre(sortear, 7, 14));
+      const p = Math.round(entre(sortear, 7, 13));
+      const h = Math.round(entre(sortear, 5, 20));
+      if (colide(mundo.colisores, x, z, l + 4, p + 4)) continue;
+      construir(mundo, sortear, cenario, x, z, l, h, p);
+    } else {
+      plantarArvore(mundo, sortear, cenario, x, z);
+    }
   }
 }
 
@@ -677,20 +884,21 @@ function montarRotas(mundo, sortear) {
 function escolherInicio(mundo, sortear, opcoes) {
   if (opcoes.inicio) return opcoes.inicio;
 
-  // Num circuito a largada é na pista, apontando para onde ela segue.
-  if (mundo.aneis.length) {
-    const anel = mundo.aneis[0];
-    // Logo ANTES da linha: assim a primeira passagem pela linha já é a largada
-    // de verdade, e não uma volta contada de graça.
-    const a = mundo.largada ? mundo.largada.angulo - 0.07 : entre(sortear, 0, TAU);
-    const faixa = anel.raio + anel.largura * 0.22;
-    // Seguindo o anel no sentido de `a` crescente, a tangente é
-    // (-sen a, cos a). Com frente(ang) = (-sen ang, -cos ang), isso dá
-    // ang = PI - a.
+  // Num circuito a largada é na pista, alguns metros ANTES da linha: assim a
+  // primeira passagem pela linha é a largada de verdade, e não uma volta
+  // contada de graça.
+  if (mundo.pista) {
+    const pontos = mundo.pista.pontos;
+    const recuo = 12;
+    let i = pontos.length - 1;
+    while (i > 0 && mundo.pista.comprimento - pontos[i].s < recuo) i--;
+    const p = pontos[i];
+    const d = direcao(p, pontos[(i + 1) % pontos.length]);
+    const faixa = mundo.pista.largura * 0.2;
     return {
-      x: anel.x + Math.cos(a) * faixa,
-      z: anel.z + Math.sin(a) * faixa,
-      angulo: Math.PI - a,
+      x: p.x - d.z * faixa,
+      z: p.z + d.x * faixa,
+      angulo: p.angulo,
     };
   }
   const via = escolher(sortear, mundo.vias.filter((v) => v.principal)) || mundo.vias[0];
@@ -746,7 +954,10 @@ function colide(colisores, x, z, largura, comprimento) {
 
 /** Que piso tem embaixo do carro — decide aderência e barulho de pneu. */
 export function pisoEm(mundo, x, z) {
-  // Anel e rotatória vêm antes da grade: onde eles passam, mandam eles.
+  // A pista manda em primeiro lugar: onde ela passa, é ela o chão.
+  if (mundo.pista && naPista(mundo.pista, x, z).distancia <= mundo.pista.largura / 2) {
+    return 'asfalto';
+  }
   for (const anel of mundo.aneis) {
     const d = Math.hypot(x - anel.x, z - anel.z);
     if (Math.abs(d - anel.raio) <= anel.largura / 2) return 'asfalto';

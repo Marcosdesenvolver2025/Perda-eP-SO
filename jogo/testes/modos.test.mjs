@@ -17,7 +17,7 @@ import { pisoEm } from '../src/jogo/mundo.js';
 import { criarCarro } from '../src/jogo/fisica.js';
 import { caixaDoCarro, caixaDoColisor, sobreposicao, dentroDe } from '../src/jogo/colisao.js';
 import { carroPorId, CARROS } from '../src/jogo/carros.js';
-import { distanciaPlana, TAU } from '../src/nucleo/matematica.js';
+import { distanciaPlana, normalizarAngulo } from '../src/nucleo/matematica.js';
 
 const SEMENTES = [4211, 9007, 15733, 28801, 51199, 77003];
 const PASSO = 1 / 60;
@@ -197,30 +197,43 @@ test('parado em cima da vaga sem estar dentro não conta', () => {
 // RÁPIDO
 // ---------------------------------------------------------------------------
 
-/** Põe o carro no ponto do anel correspondente ao ângulo `a`. */
-function porNoAnel(partida, a, raioExtra = 0) {
-  const anel = partida.missao.anel;
-  const raio = anel.raio + raioExtra;
-  partida.carro.x = anel.x + Math.cos(a) * raio;
-  partida.carro.z = anel.z + Math.sin(a) * raio;
-  partida.carro.angulo = Math.PI - a;
+/**
+ * Põe o carro no metro `s` da volta, opcionalmente deslocado para fora da
+ * pista. Anda pelo traçado de verdade, que tem reta e curva — a conta de
+ * ângulo em volta do centro não serviria.
+ */
+function porNaPista(partida, s, foraDaPista = 0) {
+  const pista = partida.missao.pista;
+  const pontos = pista.pontos;
+  const alvo = ((s % pista.comprimento) + pista.comprimento) % pista.comprimento;
+  let i = 0;
+  while (i < pontos.length - 1 && pontos[i + 1].s <= alvo) i++;
+  const p = pontos[i];
+  const q = pontos[(i + 1) % pontos.length];
+  const trecho = (q.s || pista.comprimento) - p.s;
+  const t = trecho > 0 ? (alvo - p.s) / trecho : 0;
+  const dx = q.x - p.x, dz = q.z - p.z;
+  const l = Math.hypot(dx, dz) || 1;
+  partida.carro.x = p.x + dx * t - (dz / l) * foraDaPista;
+  partida.carro.z = p.z + dz * t + (dx / l) * foraDaPista;
+  partida.carro.angulo = p.angulo;
   partida.carro.vx = 22;
 }
 
-test('dar a volta no anel conta uma volta, e só uma', () => {
+test('dar a volta na pista conta uma volta, e só uma', () => {
   const { missao, modelo } = montar('rapido', SEMENTES[0]);
   const partida = partidaDe(missao, modelo);
-  const largada = missao.mundo.largada.angulo;
+  const volta = missao.pista.comprimento;
   const relogioAntes = missao.tempoLimite;
 
   // O carro larga ATRÁS da linha, como no jogo. A primeira passagem pela
   // linha é a largada, não uma volta — quem conta volta ali dá uma de graça.
   // Então são três passagens para duas voltas.
-  const porVolta = 360;
+  const passosPorVolta = 400;
   const eventos = [];
   let contadorNaPrimeira = null;
-  for (let i = 1; i <= porVolta * 2 + 40; i++) {
-    porNoAnel(partida, largada - 0.2 + (i / porVolta) * TAU);
+  for (let i = 1; i <= passosPorVolta * 2 + 40; i++) {
+    porNaPista(partida, volta - 20 + (i / passosPorVolta) * volta);
     partida.tempo += PASSO;
     const e = andarModo(partida, PASSO);
     if (e) eventos.push(e);
@@ -234,12 +247,44 @@ test('dar a volta no anel conta uma volta, e só uma', () => {
   assert.equal(eventos.filter((e) => e.tipo === 'marco').length, 2, 'avisos de volta demais');
 });
 
+test('a pista fecha, tem reta e tem curva', () => {
+  for (const semente of SEMENTES) {
+    const { missao } = montar('rapido', semente);
+    const pista = missao.pista;
+    const onde = `rapido/${semente}`;
+    assert.ok(pista.comprimento > 300 && pista.comprimento < 2000,
+      `${onde}: volta de ${Math.round(pista.comprimento)} m`);
+
+    // Fecha: o último ponto encosta no primeiro.
+    const a = pista.pontos[0];
+    const b = pista.pontos[pista.pontos.length - 1];
+    assert.ok(distanciaPlana(a.x, a.z, b.x, b.z) < 8, `${onde}: o traçado não fecha`);
+
+    // Tem reta e tem curva: a viragem por metro varia muito ao longo da volta.
+    const viragens = [];
+    for (let i = 0; i < pista.pontos.length; i++) {
+      const p = pista.pontos[i];
+      const q = pista.pontos[(i + 1) % pista.pontos.length];
+      viragens.push(Math.abs(normalizarAngulo(q.angulo - p.angulo)));
+    }
+    const retas = viragens.filter((v) => v < 0.02).length;
+    const curvas = viragens.filter((v) => v > 0.06).length;
+    assert.ok(retas > pista.pontos.length * 0.2, `${onde}: só ${retas} trechos retos`);
+    assert.ok(curvas > pista.pontos.length * 0.1, `${onde}: só ${curvas} trechos de curva`);
+
+    // A pista cabe no mapa.
+    for (const p of pista.pontos) {
+      assert.ok(Math.abs(p.x) < missao.mundo.limite && Math.abs(p.z) < missao.mundo.limite,
+        `${onde}: a pista sai do mapa em (${p.x.toFixed(0)}, ${p.z.toFixed(0)})`);
+    }
+  }
+});
+
 test('balançar em cima da linha de largada não conta volta', () => {
   const { missao, modelo } = montar('rapido', SEMENTES[1]);
   const partida = partidaDe(missao, modelo);
-  const largada = missao.mundo.largada.angulo;
   for (let i = 0; i < 400; i++) {
-    porNoAnel(partida, largada + Math.sin(i * 0.6) * 0.09);
+    porNaPista(partida, Math.sin(i * 0.6) * 5);
     partida.tempo += PASSO;
     andarModo(partida, PASSO);
   }
@@ -249,11 +294,11 @@ test('balançar em cima da linha de largada não conta volta', () => {
 test('cruzar a linha cortando por fora da pista não conta volta', () => {
   const { missao, modelo } = montar('rapido', SEMENTES[2]);
   const partida = partidaDe(missao, modelo);
-  const largada = missao.mundo.largada.angulo;
-  const passos = 360;
+  const volta = missao.pista.comprimento;
+  const passos = 400;
   for (let i = 1; i <= passos; i++) {
-    // 40 m fora do anel: está no gramado, do lado de fora do guarda-corpo.
-    porNoAnel(partida, largada - 0.2 + (i / passos) * TAU, 40);
+    // 30 m fora da pista: está no gramado, do lado de fora do guarda-corpo.
+    porNaPista(partida, volta - 20 + (i / passos) * volta, 30);
     partida.tempo += PASSO;
     andarModo(partida, PASSO);
   }

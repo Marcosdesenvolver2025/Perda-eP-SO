@@ -23,7 +23,7 @@ import {
   criarSorteio, entre, escolher, limitar, distanciaPlana, normalizarAngulo,
   formatarTempo, TAU,
 } from '../nucleo/matematica.js';
-import { gerarMundo } from './mundo.js';
+import { gerarMundo, naPista } from './mundo.js';
 import { LISTA_CLIMAS } from './clima.js';
 import { dentroDe, encaixe } from './colisao.js';
 import { CARROS } from './carros.js';
@@ -237,8 +237,8 @@ function apontarProximaVaga(missao) {
 
 function montarRapido(missao) {
   const mundo = missao.mundo;
-  missao.anel = mundo.aneis[0];
-  missao.volta = { fase: 0, meiaVolta: false, tempo: 0, melhor: null };
+  missao.pista = mundo.pista;
+  missao.volta = { s: 0, meiaVolta: false, tempo: 0, melhor: null };
   missao.medidor = { rotulo: 'tempo da volta', valor: 1 };
   missao.instrucao = 'Volta 1 · ande o máximo que der';
 }
@@ -246,7 +246,7 @@ function montarRapido(missao) {
 // --- drift -----------------------------------------------------------------
 
 function montarDrift(missao) {
-  missao.anel = missao.mundo.aneis[0];
+  missao.pista = missao.mundo.pista;
   missao.drift = {
     pendente: 0,       // pontos do drift em curso, ainda não bancados
     multiplicador: 1,
@@ -358,7 +358,7 @@ function andarEstacionamentoArcade(partida, missao, dt) {
 
 function andarRapido(partida, missao, dt) {
   const carro = partida.carro;
-  const anel = missao.anel;
+  const pista = missao.pista;
   const v = missao.volta;
   v.tempo += dt;
 
@@ -369,20 +369,23 @@ function andarRapido(partida, missao, dt) {
   missao.pontuacao += avanco;
   missao.distancia = (missao.distancia || 0) + avanco;
 
-  if (anel) {
-    // Fase: onde o carro está na volta, medida a partir da linha de largada.
-    const a = Math.atan2(carro.z - anel.z, carro.x - anel.x);
-    const fase = normalizarAngulo(a - missao.mundo.largada.angulo);
-    const naPista = Math.abs(Math.hypot(carro.x - anel.x, carro.z - anel.z) - anel.raio)
-      <= anel.largura / 2 + 3;
+  if (pista) {
+    // Em que METRO da volta o carro está. Ângulo em volta do centro só serve
+    // em pista redonda; num traçado com reta e grampo, o carro passa duas
+    // vezes pelo mesmo ângulo e a volta contava errado.
+    const onde = naPista(pista, carro.x, carro.z);
+    const s = onde.s;
+    const dentro = onde.distancia <= pista.largura / 2 + 3;
+    const anterior = v.s;
+    v.s = s;
 
-    // Cruzou a linha no sentido certo, e só depois de ter dado meia volta —
-    // sem isso, ficar balançando em cima da linha contaria volta atrás de volta.
-    if (Math.abs(fase) > 2.2) v.meiaVolta = true;
-    const cruzou = v.fase < 0 && fase >= 0 && Math.abs(fase - v.fase) < 1.2;
-    v.fase = fase;
+    // Cruzar a linha é o metro voltar do fim da volta para o começo, e só
+    // depois de ter passado do meio — senão balançar em cima da linha contaria
+    // volta atrás de volta.
+    if (s > pista.comprimento * 0.45 && s < pista.comprimento * 0.92) v.meiaVolta = true;
+    const cruzou = anterior > pista.comprimento * 0.80 && s < pista.comprimento * 0.20;
 
-    if (cruzou && v.meiaVolta && naPista) {
+    if (cruzou && v.meiaVolta && dentro) {
       v.meiaVolta = false;
       missao.contador++;
       const tempoDaVolta = v.tempo;
@@ -403,7 +406,7 @@ function andarRapido(partida, missao, dt) {
     }
 
     missao.medidor.valor = v.melhor ? limitar(v.melhor / Math.max(v.tempo, 0.1), 0, 1) : 0.5;
-    missao.progresso = limitar((fase + Math.PI) / TAU, 0, 1);
+    missao.progresso = limitar(s / pista.comprimento, 0, 1);
   }
 
   const kmh = Math.abs(carro.vx) * 3.6;

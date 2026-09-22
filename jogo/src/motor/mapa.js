@@ -36,6 +36,7 @@ export function gerarMapa(mundo, ambiente, qualidade = 'alta') {
 
   // 2. Calçada por baixo, asfalto por cima: a calçada vira a moldura da rua.
   for (const via of mundo.vias) faixaDaVia(ctx, via, mundo.calcada, f.corCalcada, true);
+  if (mundo.pista) tracoDaPista(ctx, mundo.pista, mundo.pista.largura + mundo.calcada * 2, f.corCalcada);
   for (const anel of mundo.aneis) faixaCircular(ctx, anel, mundo.calcada, f.corCalcada, true);
   for (const r of mundo.rotatorias) faixaCircular(ctx, r, mundo.calcada, f.corCalcada, true);
   for (const via of mundo.vias) faixaDaVia(ctx, via, 0, f.corAsfalto, false);
@@ -59,6 +60,7 @@ export function gerarMapa(mundo, ambiente, qualidade = 'alta') {
   //     resolve a emenda: a faixa da rua morre na borda da pista circular em
   //     vez de atravessá-la, e a rotatória não fica com risco de rua no meio.
   //     A ordem aqui é a mesma da hierarquia viária de verdade.
+  if (mundo.pista) pintarPista(ctx, mundo.pista, f, sortear);
   for (const anel of mundo.aneis) faixaCircular(ctx, anel, 0, f.corAsfalto, false);
   for (const r of mundo.rotatorias) faixaCircular(ctx, r, 0, f.corAsfalto, false);
   desgastarCirculos(ctx, mundo, sortear);
@@ -67,6 +69,7 @@ export function gerarMapa(mundo, ambiente, qualidade = 'alta') {
     for (const r of mundo.rotatorias) pintarRotatoria(ctx, r, mundo);
   }
   for (const r of mundo.rotatorias) ilhaDaRotatoria(ctx, r, f, sortear);
+  if (mundo.pista) pintarLargadaNaPista(ctx, mundo.pista);
   if (mundo.largada && mundo.aneis.length) pintarLargada(ctx, mundo.aneis[0], mundo.largada.angulo);
 
   // 5. Vagas. A vaga da missão é pintada de verde e com o miolo tingido: é
@@ -324,6 +327,92 @@ function dente(ctx, x, z, dx, dz) {
   ctx.lineTo(x - px * 0.28, z - pz * 0.28);
   ctx.closePath();
   ctx.fill();
+}
+
+/** Um traço grosso seguindo o traçado — serve de asfalto e de calçada. */
+function tracoDaPista(ctx, pista, espessura, cor) {
+  ctx.save();
+  ctx.lineWidth = espessura;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = corTexto(cor);
+  ctx.beginPath();
+  pista.pontos.forEach((p, i) => (i ? ctx.lineTo(p.x, p.z) : ctx.moveTo(p.x, p.z)));
+  ctx.closePath();
+  ctx.stroke();
+  ctx.restore();
+}
+
+/**
+ * A pista pintada.
+ *
+ * O truque das bordas brancas é desenhar o mesmo traçado três vezes: branco na
+ * largura cheia, asfalto um pouco mais fino por cima (o que sobra do branco
+ * vira as duas faixas de borda), e o eixo tracejado no meio. Sai mais barato e
+ * mais certo do que calcular duas linhas paralelas a uma curva.
+ */
+function pintarPista(ctx, pista, f, sortear) {
+  tracoDaPista(ctx, pista, pista.largura, VIA.faixa);
+  tracoDaPista(ctx, pista, pista.largura - 1.3, f.corAsfalto);
+
+  // Desgaste, seguindo a pista.
+  ctx.save();
+  for (let i = 0; i < pista.pontos.length; i += 3) {
+    const p = pista.pontos[i];
+    if (sortear() > 0.5) continue;
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = corTexto(tonalizar(f.corAsfalto, entre(sortear, 0.8, 1.18)));
+    ctx.beginPath();
+    ctx.ellipse(p.x + entre(sortear, -4, 4), p.z + entre(sortear, -4, 4),
+      entre(sortear, 0.7, 2.6), entre(sortear, 0.5, 1.8), entre(sortear, 0, TAU), 0, TAU);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  if (f.terra) return;
+  ctx.save();
+  ctx.strokeStyle = corTexto(VIA.faixaAmarela);
+  ctx.lineWidth = 0.22;
+  ctx.setLineDash([3.4, 3.2]);
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  pista.pontos.forEach((p, i) => (i ? ctx.lineTo(p.x, p.z) : ctx.moveTo(p.x, p.z)));
+  ctx.closePath();
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+/** O quadriculado da largada, atravessado no começo do traçado. */
+function pintarLargadaNaPista(ctx, pista) {
+  const p = pista.pontos[0];
+  const q = pista.pontos[1] || p;
+  const dx = q.x - p.x, dz = q.z - p.z;
+  const l = Math.hypot(dx, dz) || 1;
+  // Ao longo da pista e atravessado nela.
+  const ax = dx / l, az = dz / l;
+  const nx = -az, nz = ax;
+  const colunas = 10, linhas = 3;
+  const passoN = pista.largura / colunas;
+  const passoA = 1.0;
+  ctx.save();
+  for (let i = 0; i < colunas; i++) {
+    for (let j = 0; j < linhas; j++) {
+      ctx.fillStyle = (i + j) % 2 ? '#f4f2ea' : '#1c1d20';
+      const n0 = -pista.largura / 2 + i * passoN;
+      const a0 = (j - linhas / 2) * passoA;
+      const cantos = [[n0, a0], [n0 + passoN, a0], [n0 + passoN, a0 + passoA], [n0, a0 + passoA]];
+      ctx.beginPath();
+      cantos.forEach(([n, a], k) => {
+        const x = p.x + nx * n + ax * a;
+        const z = p.z + nz * n + az * a;
+        if (k) ctx.lineTo(x, z); else ctx.moveTo(x, z);
+      });
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+  ctx.restore();
 }
 
 /** O quadriculado da largada, atravessado na pista. */

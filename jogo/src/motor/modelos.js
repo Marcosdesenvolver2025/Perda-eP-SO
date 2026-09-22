@@ -720,6 +720,60 @@ export function cone() {
   });
 }
 
+/**
+ * Semáforo de coluna, com braço sobre a pista.
+ *
+ * As três lentes acendem sozinhas (`semLuz`), como o farol: um semáforo com a
+ * luz apagada pela iluminação da cena não é um semáforo, é um poste com três
+ * bolinhas cinzas. Qual delas está acesa é escolhido na hora de plantar, e não
+ * muda — semáforo que troca de cor pediria um estado de cruzamento inteiro, e
+ * o que o cenário precisa é da SILHUETA.
+ */
+export function semaforo(altura, aceso) {
+  return memo(`semaforo:${altura.toFixed(1)}:${aceso}`, () => {
+    const b = new Construtor();
+    const cor = 0x3c4249;
+    b.cilindro(0, 0.1, 0, 0.34, 0.5, 10, tonalizar(cor, 0.7));
+    b.caixa(0, altura / 2, 0, 0.2, altura, 0.2, cor);
+    // Braço atravessando a rua e a caixa das lentes pendurada nele.
+    b.caixa(1.5, altura - 0.15, 0, 3.0, 0.16, 0.16, cor);
+    const cx = 2.7;
+    b.caixa(cx, altura - 0.95, 0, 0.42, 1.30, 0.34, tonalizar(cor, 0.82));
+    const lentes = [
+      [0xe8433a, altura - 0.55],
+      [0xf0b429, altura - 0.95],
+      [0x3ecf72, altura - 1.35],
+    ];
+    lentes.forEach(([tom, y], i) => {
+      const ligada = i === aceso;
+      // Pala em cima de cada lente: é ela que dá volume à caixa.
+      b.caixa(cx, y + 0.17, -0.20, 0.40, 0.06, 0.16, tonalizar(cor, 0.6));
+      b.painel(cx, y, -0.19, 0.26, 0.26,
+        ligada ? tom : tonalizar(tom, 0.28), { semLuz: ligada });
+      b.painel(cx, y, 0.19, 0.26, 0.26,
+        ligada ? tom : tonalizar(tom, 0.28), { semLuz: ligada });
+    });
+    return b.terminar();
+  });
+}
+
+/** Gradil de calçada: a grade baixa que separa o passeio da pista. */
+export function gradil(comprimento) {
+  return memo(`gradil:${comprimento.toFixed(1)}`, () => {
+    const b = new Construtor();
+    const cor = CENA.grade;
+    const altura = 1.05;
+    b.caixa(0, altura, 0, comprimento, 0.09, 0.07, cor);
+    b.caixa(0, altura * 0.55, 0, comprimento, 0.06, 0.05, tonalizar(cor, 0.85));
+    const quantos = Math.max(2, Math.round(comprimento / 0.55));
+    for (let i = 0; i <= quantos; i++) {
+      const x = -comprimento / 2 + (i / quantos) * comprimento;
+      b.caixa(x, altura / 2, 0, 0.05, altura, 0.05, i % quantos === 0 ? cor : tonalizar(cor, 0.92));
+    }
+    return b.terminar();
+  });
+}
+
 export function poste(altura) {
   return memo(`poste:${altura}`, () => {
     const b = new Construtor();

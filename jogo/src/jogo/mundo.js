@@ -633,7 +633,9 @@ function povoarQuadras(mundo, sortear, cenario, opcoes) {
     }
 
     enfeitarCalcada(mundo, quadra, sortear, cenario, densidade);
+    if (!quadra.patio) gradilDaCalcada(mundo, quadra, sortear);
   }
+  semaforosNosCruzamentos(mundo, sortear);
 }
 
 function povoarPatio(mundo, quadra, sortear, cenario) {
@@ -834,6 +836,71 @@ function enfeitarCalcada(mundo, quadra, sortear, cenario, densidade) {
     } else {
       adicionar(mundo, { tipo: 'placa', malha: modelos.placaDeRua(''), x: canto.x, z: canto.z, guinada: entre(sortear, 0, TAU), raio: 1 },
         { largura: 0.3, comprimento: 0.3, solido: true, leve: true, altura: 2.5 });
+    }
+  }
+}
+
+/**
+ * Gradil ao longo da calçada, como nas ruas do jogo de referência.
+ *
+ * Fica na calçada, rente ao asfalto, e é sólido: subir na calçada deixa de ser
+ * atalho. As pontas ficam abertas de propósito — é por ali que se entra na
+ * vaga e é ali que fica a faixa de pedestre. Gradil fechando o quarteirão
+ * inteiro transformaria a rua num túnel.
+ */
+function gradilDaCalcada(mundo, quadra, sortear) {
+  const recuo = mundo.calcada * 0.30;
+  const folga = 7;            // quanto fica aberto em cada ponta
+  const lados = [
+    { fixo: quadra.x0 + recuo, de: quadra.z0, ate: quadra.z1, eixo: 'z' },
+    { fixo: quadra.x1 - recuo, de: quadra.z0, ate: quadra.z1, eixo: 'z' },
+    { fixo: quadra.z0 + recuo, de: quadra.x0, ate: quadra.x1, eixo: 'x' },
+    { fixo: quadra.z1 - recuo, de: quadra.x0, ate: quadra.x1, eixo: 'x' },
+  ];
+  for (const lado of lados) {
+    const inicio = lado.de + folga;
+    const fim = lado.ate - folga;
+    if (fim - inicio < 4) continue;
+    if (sortear() > 0.72) continue;
+    const passo = 4.4;
+    const quantos = Math.max(1, Math.floor((fim - inicio) / passo));
+    const comprimento = (fim - inicio) / quantos;
+    for (let i = 0; i < quantos; i++) {
+      const t = inicio + (i + 0.5) * comprimento;
+      const x = lado.eixo === 'z' ? lado.fixo : t;
+      const z = lado.eixo === 'z' ? t : lado.fixo;
+      if (colide(mundo.colisores, x, z, 1.4, 1.4)) continue;
+      const guinada = lado.eixo === 'z' ? Math.PI / 2 : 0;
+      adicionar(mundo, {
+        tipo: 'gradil', malha: modelos.gradil(comprimento), x, z, guinada, raio: comprimento,
+      }, {
+        largura: comprimento, comprimento: 0.3, guinada,
+        solido: true, parede: true, altura: 1.05,
+      });
+    }
+  }
+}
+
+/** Um semáforo na esquina de cada cruzamento, virado para quem chega. */
+function semaforosNosCruzamentos(mundo, sortear) {
+  const horizontais = mundo.vias.filter((v) => v.eixo === 'x');
+  const verticais = mundo.vias.filter((v) => v.eixo === 'z');
+  for (const h of horizontais) {
+    for (const v of verticais) {
+      if (sortear() > 0.62) continue;
+      // Na quina de fora do cruzamento, do lado de quem chega pela direita.
+      const lx = sortear() > 0.5 ? 1 : -1;
+      const lz = sortear() > 0.5 ? 1 : -1;
+      const x = v.centro + lx * (v.largura / 2 + mundo.calcada * 0.55);
+      const z = h.centro + lz * (h.largura / 2 + mundo.calcada * 0.55);
+      if (colide(mundo.colisores, x, z, 2.4, 2.4)) continue;
+      // O braço nasce em +X local; girar põe ele sobre a pista.
+      const guinada = lx > 0 ? Math.PI : 0;
+      const aceso = Math.floor(sortear() * 3);
+      adicionar(mundo, {
+        tipo: 'semaforo', malha: modelos.semaforo(5.2, aceso),
+        x, z, guinada, raio: 4,
+      }, { largura: 0.5, comprimento: 0.5, solido: true, altura: 5.2 });
     }
   }
 }

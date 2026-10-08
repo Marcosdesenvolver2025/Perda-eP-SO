@@ -12,7 +12,20 @@
           "package_name": "br.com.musibox"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "583326262496-jjlmppq06o0bjdcdhj3090435uf01qat.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "br.com.musibox",
+            "certificate_hash": "0bc501f9e22e20f5a0263f62576dad8aaf0545f6"
+          }
+        },
+        {
+          "client_id": "583326262496-agn1vp8eoik06jjg2gkueuas58orc971.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyADK3e9JcQ2MuWZGE4rFYGY5rntsq-scc4"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "583326262496-agn1vp8eoik06jjg2gkueuas58orc971.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

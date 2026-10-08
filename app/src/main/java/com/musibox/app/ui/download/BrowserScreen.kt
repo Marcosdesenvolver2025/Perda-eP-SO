@@ -274,7 +274,7 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
             )
 
             // Dica quando não há vídeo aberto
-            AnimatedVisibility(
+            androidx.compose.animation.AnimatedVisibility(
                 !isMedia && progress >= 100,
                 modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 18.dp),
                 enter = fadeIn(),
@@ -294,7 +294,7 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
             }
 
             // Botão flutuante "Baixar"
-            AnimatedVisibility(
+            androidx.compose.animation.AnimatedVisibility(
                 isMedia,
                 modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
                 enter = scaleIn() + fadeIn(),

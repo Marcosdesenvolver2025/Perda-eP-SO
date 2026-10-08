@@ -1,0 +1,124 @@
+APK=apk/teste.apk PKG=br.com.musibox
+Serving...
+All files should be loaded. Notifying the device.
+Performing Incremental Install
+Success
+Install command complete in 11037 ms
+== Arquivos de teste
+/tmp/teste1.mp3: 1 file pushed, 0 skipped. 10.2 MB/s (641269 bytes in 0.060s)
+/tmp/teste2.mp3: 1 file pushed, 0 skipped. 156.0 MB/s (641269 bytes in 0.004s)
+/tmp/teste3.mp3: 1 file pushed, 0 skipped. 202.8 MB/s (641269 bytes in 0.003s)
+/tmp/teste4.m4a: 1 file pushed, 0 skipped. 269.8 MB/s (648646 bytes in 0.002s)
+/tmp/media/clipe_demo.mp4: 1 file pushed, 0 skipped. 124.2 MB/s (123704 bytes in 0.001s)
+== Primeira abertura
+print 01_apresentacao
+tap 'Próximo' em (540, 2200)
+tap 'Próximo' em (540, 2200)
+tap 'Começar' em (540, 2200)
+print 02_conta
+tap 'Continuar sem conta' em (540, 1668)
+visível: 'músicas encontradas'
+print 03_indexacao
+tap 'Ir para o início' em (540, 1495)
+print 04_inicio
+== Biblioteca e player
+tap 'Músicas' em (157, 1100)
+print 05_musicas
+tap 'Faixa de Teste 1' em (387, 697)
+print 06_tocando
+print 07_player
+print 08_notificacao
+== Download completo (servidor local)
+NÃO ENCONTRADO: 'Início'
+NÃO ENCONTRADO: 'Baixar'
+print 09_baixar
+visível: 'Salvar em'
+print 10_opcoes
+tap 'Música' em (336, 1270)
+tap 'Galeria' em (232, 1838)
+print 11_escolhas
+NÃO ENCONTRADO: 'Baixar •'
+tap 'Baixar' em (582, 2221)
+tap 'Meus downloads' em (990, 223)
+print 12_downloads
+== Navegador interno
+tap 'YouTube' em (167, 777)
+print 12b_navegador
+NÃO ENCONTRADO: 'Fechar navegador'
+== Download para o cofre pelo Compartilhar
+visível: 'Salvar em'
+print 13_compartilhar
+tap 'Vídeo' em (817, 1270)
+tap 'Cofre' em (719, 1838)
+print 14_compartilhar_cofre
+NÃO ENCONTRADO: 'Baixar •'
+tap 'Baixar' em (582, 2221)
+== Cofre: PIN, código de recuperação e recuperação
+tap 'Cofre' em (776, 2224)
+tap 'Criar código de recuperação' em (582, 1329)
+codigo de recuperacao: (lido)
+tap 'Anotei o código' em (603, 1530)
+tap 'Concluir' em (796, 1719)
+tap 'Configurações do cofre' em (990, 233)
+tap 'Bloquear capturas de tela' em (475, 1352)
+print 15_cofre_config
+tap 'Recuperação do PIN' em (423, 620)
+print 15b_recuperacao
+print 16_cofre_fotos
+tap 'Vídeos' em (405, 400)
+print 17_cofre_videos
+tap 'clipe_demo' em (528, 545)
+print 18_cofre_player
+tap 'Início' em (116, 2224)
+tap 'Cofre' em (667, 1158)
+tap 'Esqueci o PIN' em (540, 1806)
+print 18b_esqueci_pin
+tap 'Usar código de recuperação' em (481, 1283)
+print 18b2_codigo_digitado
+tap 'Confirmar' em (540, 1011)
+print 18c_cofre_recuperado
+== Histórico, configurações e armazenamento
+tap 'Mais' em (970, 2224)
+print 19_mais
+tap 'Histórico' em (312, 1210)
+print 20_historico
+tap 'Configurações' em (366, 1690)
+print 21_configuracoes
+tap 'Armazenamento' em (385, 1867)
+print 22_armazenamento
+tap 'Músicas' em (336, 2224)
+print 23_musicas_depois
+== Rotação
+print 24_paisagem
+Nenhum crash.
+--- avisos do app
+10-08 22:08:27.374  6935  6935 W libffmpeg.so: type=1400 audit(0.0:825): avc:  denied  { search } for  name="tests" dev="dm-40" ino=65540 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:shell_test_data_file:s0 tclass=dir permissive=0 app=br.com.musibox
+10-08 22:08:27.374  6935  6935 W libffmpeg.so: type=1400 audit(0.0:826): avc:  denied  { search } for  name="tests" dev="dm-40" ino=65540 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:shell_test_data_file:s0 tclass=dir permissive=0 app=br.com.musibox
+10-08 22:08:27.402  6935  6935 W libffmpeg.so: type=1400 audit(0.0:827): avc:  granted  { execute } for  path="/data/data/br.com.musibox/no_backup/youtubedl-android/packages/ffmpeg/usr/lib/libavcodec.so.61.19.101" dev="dm-40" ino=329507 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=br.com.musibox
+10-08 22:08:58.338  7124  7124 W libpython.so: type=1400 audit(0.0:929): avc:  denied  { search } for  name="tests" dev="dm-40" ino=65540 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:shell_test_data_file:s0 tclass=dir permissive=0 app=br.com.musibox
+10-08 22:08:58.346  7124  7124 W libpython.so: type=1400 audit(0.0:930): avc:  denied  { search } for  name="tests" dev="dm-40" ino=65540 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:shell_test_data_file:s0 tclass=dir permissive=0 app=br.com.musibox
+10-08 22:08:58.346  7124  7124 W libpython.so: type=1400 audit(0.0:931): avc:  denied  { search } for  name="tests" dev="dm-40" ino=65540 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:shell_test_data_file:s0 tclass=dir permissive=0 app=br.com.musibox
+10-08 22:08:58.346  7124  7124 W libpython.so: type=1400 audit(0.0:932): avc:  denied  { search } for  name="tests" dev="dm-40" ino=65540 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:shell_test_data_file:s0 tclass=dir permissive=0 app=br.com.musibox
+10-08 22:08:58.462   521  2353 W InputManager-JNI: Input channel object '57cb113 br.com.musibox/com.musibox.app.share.DownloadShareAlias (client)' was disposed without first being removed with the input manager!
+10-08 22:08:58.358  7124  7124 W libpython.so: type=1400 audit(0.0:933): avc:  granted  { execute } for  path="/data/data/br.com.musibox/no_backup/youtubedl-android/packages/python/usr/lib/libandroid-support.so" dev="dm-40" ino=328413 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=br.com.musibox
+10-08 22:08:58.358  7124  7124 W libpython.so: type=1400 audit(0.0:934): avc:  granted  { execute } for  path="/data/data/br.com.musibox/no_backup/youtubedl-android/packages/python/usr/lib/libpython3.12.so.1.0" dev="dm-40" ino=329205 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=br.com.musibox
+10-08 22:08:58.480   521  2377 W InputManager-JNI: Input channel object '42b93d9 br.com.musibox/com.musibox.app.share.DownloadShareAlias (client)' was disposed without first being removed with the input manager!
+10-08 22:08:58.490  7124  7124 W libpython.so: type=1400 audit(0.0:935): avc:  granted  { execute } for  path="/data/data/br.com.musibox/no_backup/youtubedl-android/packages/python/usr/lib/libz.so.1.3.1" dev="dm-40" ino=328418 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=br.com.musibox
+10-08 22:08:58.490  7124  7124 W libpython.so: type=1400 audit(0.0:936): avc:  granted  { execute } for  path="/data/data/br.com.musibox/no_backup/youtubedl-android/packages/python/usr/lib/python3.12/lib-dynload/zlib.cpython-312.so" dev="dm-40" ino=328910 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=br.com.musibox
+10-08 22:08:58.614  7124  7124 W libpython.so: type=1400 audit(0.0:937): avc:  granted  { execute } for  path="/data/data/br.com.musibox/no_backup/youtubedl-android/packages/python/usr/lib/python3.12/lib-dynload/termios.cpython-312.so" dev="dm-40" ino=328876 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=br.com.musibox
+10-08 22:08:59.570  7124  7124 W libpython.so: type=1400 audit(0.0:984): avc:  denied  { ioctl } for  path="pipe:[85562]" dev="pipefs" ino=85562 ioctlcmd=0x5413 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tclass=fifo_file permissive=0 app=br.com.musibox
+10-08 22:08:59.806   521  2249 W NotificationService: Toast already killed. pkg=br.com.musibox token=android.os.BinderProxy@2b5982c
+10-08 22:08:59.934  7130  7130 W file    : type=1400 audit(0.0:985): avc:  granted  { execute } for  path="/data/data/br.com.musibox/no_backup/youtubedl-android/packages/python/usr/lib/libz.so.1.3.1" dev="dm-40" ino=328418 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=br.com.musibox
+10-08 22:08:59.934  7130  7130 W file    : type=1400 audit(0.0:986): avc:  granted  { execute } for  path="/data/data/br.com.musibox/no_backup/youtubedl-android/packages/python/usr/lib/libcrypto.so.3" dev="dm-40" ino=329214 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=br.com.musibox
+10-08 22:08:59.938  7131  7131 W uname   : type=1400 audit(0.0:987): avc:  granted  { execute } for  path="/data/data/br.com.musibox/no_backup/youtubedl-android/packages/python/usr/lib/libz.so.1.3.1" dev="dm-40" ino=328418 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file
+10-08 22:08:59.938  7131  7131 W uname   : type=1400 audit(0.0:988): avc:  granted  { execute } for  path="/data/data/br.com.musibox/no_backup/youtubedl-android/packages/python/usr/lib/libcrypto.so.3" dev="dm-40" ino=329214 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file
+10-08 22:09:01.975  4020  4033 W br.com.musibox: Cleared Reference was only reachable from finalizer (only reported once)
+10-08 22:09:02.096   521  2353 W JobScheduler: Job didn't exist in JobStore: ae234 {androidx.work.systemjobscheduler} #u0a192/4 @androidx.work.systemjobscheduler@br.com.musibox/androidx.work.impl.background.systemjob.SystemJobService
+10-08 22:10:47.709   521   917 W InputManager-JNI: Input channel object '291b4e5 br.com.musibox/com.musibox.app.MainActivity (client)' was disposed without first being removed with the input manager!
+10-08 22:11:23.888  1024  1024 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+10-08 22:11:23.888  1024  1024 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+10-08 22:11:23.900  1024  1024 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+10-08 22:11:23.900  1024  1024 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+10-08 22:11:26.918  4020  7788 E ExoPlayerImplInternal:       at com.musibox.app.vault.VaultDataSource.open(Unknown Source:62)
+10-08 22:12:06.196  4020  4020 E FrameTracker: force finish cuj, time out: J<IME_INSETS_ANIMATION::0@1@br.com.musibox>
+10-08 22:12:15.850  4020  4020 E FrameTracker: force finish cuj, time out: J<IME_INSETS_ANIMATION::1@1@br.com.musibox>

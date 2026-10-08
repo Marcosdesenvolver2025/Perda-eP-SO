@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.musibox.app.LinkUtilsTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-08T22:01:02.988Z" hostname="runnervmmprz5" time="0.01">
+  <properties/>
+  <testcase name="reconhecePlataformas" classname="com.musibox.app.LinkUtilsTest" time="0.001"/>
+  <testcase name="extraiLinkDeTextoCompartilhado" classname="com.musibox.app.LinkUtilsTest" time="0.002"/>
+  <testcase name="addresses" classname="com.musibox.app.LinkUtilsTest" time="0.004"/>
+  <testcase name="mediaPages" classname="com.musibox.app.LinkUtilsTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

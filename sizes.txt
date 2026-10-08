@@ -1,0 +1,8 @@
+total 195544
+drwxr-xr-x 3 runner runner     4096 Oct  8 22:00 .
+drwxr-xr-x 3 runner runner     4096 Oct  8 22:00 ..
+-rw-r--r-- 1 runner runner 67955706 Oct  8 22:00 app-arm64-v8a-release-unsigned.apk
+-rw-r--r-- 1 runner runner 61301982 Oct  8 22:00 app-armeabi-v7a-release-unsigned.apk
+-rw-r--r-- 1 runner runner 70947390 Oct  8 22:00 app-x86_64-release-unsigned.apk
+drwxr-xr-x 4 runner runner     4096 Oct  8 22:00 baselineProfiles
+-rw-r--r-- 1 runner runner     1681 Oct  8 22:00 output-metadata.json

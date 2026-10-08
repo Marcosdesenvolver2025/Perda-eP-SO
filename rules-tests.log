@@ -1,0 +1,56 @@
+[33m[1m⚠  emulators:[22m[39m You are not currently authenticated so some features may not work correctly. Please run [1mfirebase login[22m to authenticate the CLI.
+[36m[1mi  emulators:[22m[39m Starting emulators: firestore
+[36m[1mi  emulators:[22m[39m Detected demo project ID "demo-musibox", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail.
+[33m[1m⚠ [22m[39m It appears you are running in a CI environment. You can avoid downloading the Firestore Emulator repeatedly by caching the /home/runner/.cache/firebase/emulators directory.
+[36m[1mi  firestore:[22m[39m downloading cloud-firestore-emulator-v1.19.8.jar...
+
+[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+[32m[1m✔  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+[36m[1mi [22m[39m Running script: [1mnode --test[22m
+TAP version 13
+# Subtest: usuário autenticado lê e grava os próprios dados
+ok 1 - usuário autenticado lê e grava os próprios dados
+  ---
+  duration_ms: 1322.540528
+  ...
+# [2026-10-08T22:01:38.758Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5d6d2b24 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L15, false for 'create' @ L22, false for 'update' @ L15, false for 'update' @ L22
+# [2026-10-08T22:01:38.777Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5d6d2b25 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L12, false for 'create' @ L22, false for 'update' @ L12, false for 'update' @ L22
+# [2026-10-08T22:01:38.792Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5d6d2b26 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'delete' @ L15, false for 'delete' @ L22
+# Subtest: outro usuário NÃO lê, grava nem apaga dados de outro UID
+ok 2 - outro usuário NÃO lê, grava nem apaga dados de outro UID
+  ---
+  duration_ms: 175.443355
+  ...
+# [2026-10-08T22:01:38.882Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5d6d2b29 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L15, false for 'create' @ L22, false for 'update' @ L15, false for 'update' @ L22
+# Subtest: usuário sem login é bloqueado
+ok 3 - usuário sem login é bloqueado
+  ---
+  duration_ms: 89.42358
+  ...
+# [2026-10-08T22:01:38.961Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5d6d2b2b error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L15, false for 'create' @ L22, false for 'update' @ L15, false for 'update' @ L22
+# [2026-10-08T22:01:38.972Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5d6d2b2c error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L22, false for 'update' @ L22
+# Subtest: coleções fora da lista e caminhos fora de users são bloqueados
+ok 4 - coleções fora da lista e caminhos fora de users são bloqueados
+  ---
+  duration_ms: 125.625885
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1949.229143
+[32m[1m✔ [22m[39m Script exited successfully (code 0)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator

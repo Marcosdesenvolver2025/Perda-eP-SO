@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.musibox.app.SongKeysTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-08T22:01:03.001Z" hostname="runnervmmprz5" time="0.087">
+  <properties/>
+  <testcase name="mesmaMusicaEmAparelhosDiferentesTemMesmaChave" classname="com.musibox.app.SongKeysTest" time="0.036"/>
+  <testcase name="formataTempoETamanho" classname="com.musibox.app.SongKeysTest" time="0.05"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

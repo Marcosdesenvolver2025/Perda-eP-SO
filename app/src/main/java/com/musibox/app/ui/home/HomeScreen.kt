@@ -147,7 +147,7 @@ fun HomeScreen(nav: NavController) {
                 Shortcut(
                     Modifier.weight(1f), Icons.Rounded.Download,
                     Brush.linearGradient(listOf(Color(0xFFFF5A4E), Color(0xFFE0201C))),
-                    "Baixar\nMúsicas", "YouTube, TikTok, Instagram e mais",
+                    "Baixar\nMúsicas", "YouTube, TikTok e mais",
                 ) { nav.navigateTopLevel(Routes.download()) }
                 Shortcut(
                     Modifier.weight(1f), Icons.Rounded.Lock,

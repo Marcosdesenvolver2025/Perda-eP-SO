@@ -135,7 +135,8 @@ class DownloadWorker(appContext: Context, params: WorkerParameters) : CoroutineW
                 DownloadNotifications.cancel(ctx, id)
                 Result.retry()
             } else {
-                dao.setStatus(id, DownloadStatus.FAILED, error.message, System.currentTimeMillis())
+                val full = error.message + (error.detail?.let { "\nDetalhe: $it" } ?: "")
+                dao.setStatus(id, DownloadStatus.FAILED, full, System.currentTimeMillis())
                 DownloadNotifications.finished(ctx, id, d.title, false, error.message ?: "Erro")
                 Result.success()
             }

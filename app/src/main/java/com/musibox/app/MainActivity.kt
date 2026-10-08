@@ -72,7 +72,7 @@ class MainActivity : FragmentActivity() {
         intent ?: return
         val target = when {
             intent.getBooleanExtra(EXTRA_OPEN_PLAYER, false) -> Routes.PLAYER
-            intent.getBooleanExtra(EXTRA_OPEN_DOWNLOADS, false) -> Routes.download(tab = 2)
+            intent.getBooleanExtra(EXTRA_OPEN_DOWNLOADS, false) -> Routes.DOWNLOADS
             intent.getBooleanExtra(EXTRA_OPEN_VAULT, false) -> Routes.VAULT
             intent.getStringExtra(EXTRA_DOWNLOAD_URL) != null -> Routes.download(0, intent.getStringExtra(EXTRA_DOWNLOAD_URL))
             else -> null

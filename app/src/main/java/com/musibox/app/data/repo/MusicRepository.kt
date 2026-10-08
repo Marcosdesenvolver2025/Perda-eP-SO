@@ -162,9 +162,18 @@ class MusicRepository(
             MediaStore.Audio.Media.DISPLAY_NAME,
             MediaStore.Audio.Media.VOLUME_NAME,
         )
-        val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
+        // Lê TODOS os áudios do aparelho (não só os marcados como "música" pelo Android),
+        // menos toques, notificações e alarmes. Áudios de pastas como Download, Telegram,
+        // SnapTube etc. também entram.
+        val selection = "${MediaStore.Audio.Media.IS_RINGTONE} = 0 AND " +
+            "${MediaStore.Audio.Media.IS_NOTIFICATION} = 0 AND " +
+            "${MediaStore.Audio.Media.IS_ALARM} = 0"
         val result = ArrayList<Song>()
-        context.contentResolver.query(collection, projection, selection, null, null)?.use { c ->
+        val seen = HashSet<Long>()
+        val cursor = runCatching { context.contentResolver.query(collection, projection, selection, null, null) }
+            .getOrNull()
+            ?: context.contentResolver.query(collection, projection, null, null, null)
+        cursor?.use { c ->
             val idCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
             val titleCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
             val artistCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
@@ -179,14 +188,17 @@ class MusicRepository(
             val volCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.VOLUME_NAME)
             while (c.moveToNext()) {
                 val id = c.getLong(idCol)
+                if (!seen.add(id)) continue
                 val duration = c.getLong(durCol)
-                if (duration in 1..9_999) continue // ignora sons curtos (toques, avisos)
+                if (duration in 1..4_999) continue // ignora sons muito curtos (avisos)
                 val displayName = c.getString(nameCol) ?: ""
+                val relPathRaw = c.getString(pathCol) ?: ""
+                if (isVoiceNote(relPathRaw)) continue
                 val title = c.getString(titleCol)?.takeIf { it.isNotBlank() }
                     ?: displayName.substringBeforeLast('.')
                 val artist = c.getString(artistCol) ?: ""
                 val album = c.getString(albumCol) ?: ""
-                val relPath = (c.getString(pathCol) ?: "").trimEnd('/')
+                val relPath = relPathRaw.trimEnd('/')
                 val volume = c.getString(volCol) ?: MediaStore.VOLUME_EXTERNAL_PRIMARY
                 val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.getContentUri(volume), id)
                 result += Song(
@@ -208,6 +220,12 @@ class MusicRepository(
             }
         }
         return result
+    }
+
+    /** Mensagens de voz de apps de conversa não são músicas. */
+    private fun isVoiceNote(relPath: String): Boolean {
+        val p = relPath.lowercase()
+        return "voice notes" in p || "whatsapp voice" in p || "voice messages" in p || "/ptt" in p
     }
 
     fun artists(songs: List<Song>): List<ArtistInfo> =

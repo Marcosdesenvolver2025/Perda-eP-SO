@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.InsertDriveFile
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Movie
@@ -112,6 +113,7 @@ fun DownloadRow(d: DownloadEntity, actions: DownloadActions, modifier: Modifier 
                     corner = 12.dp,
                     fallbackIcon = when {
                         d.isAudio -> Icons.Rounded.MusicNote
+                        d.mimeType?.startsWith("image/") == true -> Icons.Rounded.Image
                         d.mimeType?.startsWith("video/") == true -> Icons.Rounded.Movie
                         d.kind == DownloadKind.IMPORT -> Icons.AutoMirrored.Rounded.InsertDriveFile
                         else -> Icons.Rounded.Movie
@@ -147,7 +149,11 @@ fun DownloadRow(d: DownloadEntity, actions: DownloadActions, modifier: Modifier 
                 Spacer(Modifier.height(2.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        if (d.isAudio) Icons.Rounded.MusicNote else Icons.Rounded.Movie,
+                        when {
+                            d.isAudio -> Icons.Rounded.MusicNote
+                            d.mimeType?.startsWith("image/") == true -> Icons.Rounded.Image
+                            else -> Icons.Rounded.Movie
+                        },
                         null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(14.dp),

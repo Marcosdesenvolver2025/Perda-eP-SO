@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Fingerprint
+import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material3.Icon
@@ -111,7 +112,7 @@ fun VaultGate(content: @Composable () -> Unit) {
 
 /** Criação de PIN (6 dígitos) + oferta de biometria. */
 @Composable
-fun PinSetupFlow(title: String, onDone: () -> Unit, offerBiometric: Boolean = true) {
+fun PinSetupFlow(title: String, onDone: () -> Unit, offerBiometric: Boolean = true, offerRecovery: Boolean = true) {
     val container = LocalAppContainer.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -119,21 +120,43 @@ fun PinSetupFlow(title: String, onDone: () -> Unit, offerBiometric: Boolean = tr
     var entry by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var askBiometric by remember { mutableStateOf(false) }
+    var askRecovery by remember { mutableStateOf(false) }
+    var recoveryCode by remember { mutableStateOf<String?>(null) }
+
+    val afterPin: () -> Unit = {
+        if (offerRecovery) askRecovery = true else onDone()
+    }
+
+    recoveryCode?.let { code ->
+        RecoveryCodeDialog(code) {
+            recoveryCode = null
+            onDone()
+        }
+        return
+    }
+
+    if (askRecovery) {
+        RecoveryOffer(
+            onCreate = { scope.launch { recoveryCode = container.pin.createRecoveryCode() } },
+            onSkip = onDone,
+        )
+        return
+    }
 
     if (askBiometric) {
         BiometricOffer(
             onEnable = {
                 val act = context.findActivity() as? FragmentActivity
                 if (act == null) {
-                    onDone()
+                    afterPin()
                 } else {
                     Biometrics.authenticate(act, "Ativar biometria", "Confirme para usar no cofre", onSuccess = {
                         scope.launch { container.settings.setVaultBiometric(true) }
-                        onDone()
-                    }, onError = { onDone() })
+                        afterPin()
+                    }, onError = { afterPin() })
                 }
             },
-            onSkip = onDone,
+            onSkip = afterPin,
         )
         return
     }
@@ -157,7 +180,7 @@ fun PinSetupFlow(title: String, onDone: () -> Unit, offerBiometric: Boolean = tr
                     } else if (f == typed) {
                         scope.launch {
                             container.pin.setPin(typed)
-                            if (offerBiometric && Biometrics.isAvailable(context)) askBiometric = true else onDone()
+                            if (offerBiometric && Biometrics.isAvailable(context)) askBiometric = true else afterPin()
                         }
                     } else {
                         error = "Os PINs não conferem. Tente novamente."
@@ -169,6 +192,32 @@ fun PinSetupFlow(title: String, onDone: () -> Unit, offerBiometric: Boolean = tr
         },
         onBackspace = { entry = entry.dropLast(1) },
     )
+}
+
+@Composable
+private fun RecoveryOffer(onCreate: () -> Unit, onSkip: () -> Unit) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        IconCircle(Icons.Rounded.Key)
+        Spacer(Modifier.height(20.dp))
+        Text("E se esquecer o PIN?", style = MaterialTheme.typography.headlineSmall)
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Crie um código de recuperação para poder trocar o PIN sem perder seus arquivos. " +
+                "Depois você também pode vincular sua conta Google em Configurações do cofre.",
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(28.dp))
+        GradientButton("Criar código de recuperação", onCreate, brush = Mb.colors.vaultGradient, icon = Icons.Rounded.Key)
+        TextButton(onClick = onSkip) { Text("Agora não") }
+    }
 }
 
 @Composable
@@ -207,6 +256,7 @@ fun PinUnlock(biometricEnabled: Boolean, onUnlocked: () -> Unit, onVaultReset: (
     var error by remember { mutableStateOf<String?>(null) }
     var lockout by remember { mutableLongStateOf(container.pin.lockoutRemainingMs()) }
     var forgot by remember { mutableStateOf(false) }
+    var wipeDialog by remember { mutableStateOf(false) }
     var resettingPin by remember { mutableStateOf(false) }
     val biometricHardware = remember { Biometrics.isAvailable(context) }
     val biometricAvailable = biometricEnabled && biometricHardware
@@ -227,10 +277,39 @@ fun PinUnlock(biometricEnabled: Boolean, onUnlocked: () -> Unit, onVaultReset: (
     }
 
     if (resettingPin) {
-        PinSetupFlow(title = "Crie um novo PIN", offerBiometric = false, onDone = {
-            snack("PIN alterado.")
+        PinSetupFlow(title = "Crie um novo PIN", offerBiometric = false, offerRecovery = false, onDone = {
+            snack("PIN alterado. Seus arquivos continuam no cofre.")
             onUnlocked()
         })
+        return
+    }
+
+    if (forgot) {
+        ForgotPinPanel(
+            biometricAvailable = biometricAvailable,
+            onVerified = {
+                forgot = false
+                resettingPin = true
+            },
+            onWipeRequested = { wipeDialog = true },
+            onBack = { forgot = false },
+        )
+        if (wipeDialog) {
+            WipeVaultDialog(
+                onConfirm = {
+                    wipeDialog = false
+                    forgot = false
+                    scope.launch {
+                        container.vault.wipeAll()
+                        container.pin.clear()
+                        container.settings.setVaultBiometric(false)
+                        snack("Cofre apagado. Crie um novo PIN.")
+                        onVaultReset()
+                    }
+                },
+                onDismiss = { wipeDialog = false },
+            )
+        }
         return
     }
 
@@ -267,81 +346,9 @@ fun PinUnlock(biometricEnabled: Boolean, onUnlocked: () -> Unit, onVaultReset: (
             }
         },
         onBackspace = { entry = entry.dropLast(1) },
-        footer = { TextButton(onClick = { forgot = true }) { Text("Esqueci o PIN", color = MaterialTheme.colorScheme.onSurfaceVariant) } },
+        footer = { TextButton(onClick = { forgot = true }) { Text("Esqueci o PIN", color = Mb.colors.vault) } },
     )
 
-    if (forgot) {
-        ForgotPinDialog(
-            biometricAvailable = biometricAvailable,
-            onUseBiometric = {
-                forgot = false
-                val act = context.findActivity() as? FragmentActivity ?: return@ForgotPinDialog
-                Biometrics.authenticate(act, "Confirme sua identidade", "Para criar um novo PIN", onSuccess = { resettingPin = true }, onError = { })
-            },
-            onWipe = {
-                forgot = false
-                scope.launch {
-                    container.vault.wipeAll()
-                    container.pin.clear()
-                    container.settings.setVaultBiometric(false)
-                    snack("Cofre apagado. Crie um novo PIN.")
-                    onVaultReset()
-                }
-            },
-            onDismiss = { forgot = false },
-        )
-    }
-}
-
-@Composable
-private fun ForgotPinDialog(
-    biometricAvailable: Boolean,
-    onUseBiometric: () -> Unit,
-    onWipe: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    var confirmText by remember { mutableStateOf("") }
-    var wiping by remember { mutableStateOf(!biometricAvailable) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Esqueci o PIN") },
-        text = {
-            Column {
-                if (!wiping) {
-                    Text("Use sua biometria para criar um novo PIN sem perder os arquivos.")
-                } else {
-                    Text(
-                        "Sem o PIN não é possível abrir o cofre. Você pode apagar o cofre e todo o conteúdo dele para começar de novo. " +
-                            "Esta ação não pode ser desfeita.",
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    OutlinedTextField(
-                        value = confirmText,
-                        onValueChange = { confirmText = it },
-                        label = { Text("Digite APAGAR para confirmar") },
-                        singleLine = true,
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            if (!wiping) {
-                TextButton(onClick = onUseBiometric) { Text("Usar biometria") }
-            } else {
-                TextButton(onClick = onWipe, enabled = confirmText.trim().equals("APAGAR", ignoreCase = true)) {
-                    Text("Apagar cofre", color = Mb.colors.danger)
-                }
-            }
-        },
-        dismissButton = {
-            if (!wiping) {
-                TextButton(onClick = { wiping = true }) { Text("Apagar o cofre") }
-            } else {
-                TextButton(onClick = onDismiss) { Text("Cancelar") }
-            }
-        },
-        containerColor = Mb.colors.cardHigh,
-    )
 }
 
 @Composable

@@ -64,7 +64,19 @@ def wait(text, timeout=30):
 if __name__ == "__main__":
     cmd, arg = sys.argv[1], sys.argv[2]
     timeout = int(sys.argv[3]) if len(sys.argv) > 3 else 20
-    if cmd == "tap":
+    if cmd == "text":
+        # Imprime o primeiro texto da tela que casa com a expressão regular.
+        root = dump()
+        ok = False
+        if root is not None:
+            for node in root.iter("node"):
+                value = node.get("text") or ""
+                m = re.search(arg, value)
+                if m:
+                    print(m.group(0))
+                    ok = True
+                    break
+    elif cmd == "tap":
         ok = tap(arg, timeout)
     elif cmd == "tapx":
         ok = tap(arg, timeout, exact=True)

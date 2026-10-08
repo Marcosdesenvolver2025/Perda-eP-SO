@@ -79,7 +79,11 @@ class AppContainer(val app: Application) {
         appScope.launch {
             // Prepara o motor de download em segundo plano (na 1ª vez extrai os componentes).
             delay(4_000)
-            runCatching { ytdlp.ensureReady() }
+            runCatching {
+                ytdlp.ensureReady()
+                // Atualiza o yt-dlp logo cedo para o primeiro link não demorar.
+                if (connectivity.isOnlineNow()) ytdlp.updateIfStale()
+            }
         }
     }
 }

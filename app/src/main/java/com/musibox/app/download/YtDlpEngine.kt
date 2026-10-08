@@ -5,15 +5,28 @@ import com.yausername.ffmpeg.FFmpeg
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 import java.io.File
 import java.io.IOException
 import java.util.Locale
 
-class DownloadError(message: String, val retryable: Boolean = false) : IOException(message)
+/**
+ * Erro de download com mensagem em português. [detail] guarda a linha técnica do yt-dlp
+ * (mostrada em "Detalhes" para diagnóstico). [platformChanged] indica que vale atualizar o motor.
+ */
+class DownloadError(
+    message: String,
+    val retryable: Boolean = false,
+    val detail: String? = null,
+    val platformChanged: Boolean = false,
+) : IOException(message)
 
 data class SearchResult(
     val url: String,
@@ -29,9 +42,55 @@ data class SearchResult(
  */
 class YtDlpEngine(private val context: Context) {
     private val initMutex = Mutex()
+    private val updateMutex = Mutex()
     @Volatile private var ready = false
+    @Volatile private var nightlyTried = false
+    private val prefs = context.getSharedPreferences("ytdlp_engine", Context.MODE_PRIVATE)
+
+    /** Cache do yt-dlp (guarda a solução dos desafios do YouTube; acelera os próximos links). */
+    private val cacheDir: File get() = File(context.noBackupFilesDir, "ytdlp-cache").apply { mkdirs() }
 
     val isReady: Boolean get() = ready
+
+    private val _stage = MutableStateFlow<String?>(null)
+    /** Etapa atual para mostrar na tela ("Atualizando o motor…", "Lendo o link…"). */
+    val stage: StateFlow<String?> = _stage.asStateFlow()
+
+    private fun YoutubeDLRequest.common(): YoutubeDLRequest = apply {
+        addOption("--cache-dir", cacheDir.absolutePath)
+        addOption("--no-warnings")
+        addOption("--socket-timeout", "30")
+    }
+
+    /**
+     * Atualiza o yt-dlp quando a última verificação tem mais de [maxAgeMs]. As plataformas mudam
+     * com frequência e uma versão antiga deixa de conseguir ler os vídeos.
+     */
+    suspend fun updateIfStale(maxAgeMs: Long = 12L * 60 * 60 * 1000) {
+        val last = prefs.getLong(KEY_LAST_CHECK, 0L)
+        if (System.currentTimeMillis() - last < maxAgeMs) return
+        runCatching { updateNow(nightly = false) }
+    }
+
+    /** Força a atualização (usada quando um link falha por mudança na plataforma). */
+    suspend fun updateNow(nightly: Boolean): Boolean = withContext(Dispatchers.IO) {
+        ensureReady()
+        updateMutex.withLock {
+            _stage.value = "Atualizando o motor de download…"
+            try {
+                val channel = if (nightly) YoutubeDL.UpdateChannel.NIGHTLY else YoutubeDL.UpdateChannel.STABLE
+                val status = withTimeoutOrNull(120_000) { YoutubeDL.getInstance().updateYoutubeDL(context, channel) }
+                if (status != null) prefs.edit().putLong(KEY_LAST_CHECK, System.currentTimeMillis()).apply()
+                status == YoutubeDL.UpdateStatus.DONE
+            } catch (e: Exception) {
+                // Sem acesso ao servidor de atualização: tenta de novo em 1 hora.
+                prefs.edit().putLong(KEY_LAST_CHECK, System.currentTimeMillis() - 11L * 60 * 60 * 1000).apply()
+                false
+            } finally {
+                _stage.value = null
+            }
+        }
+    }
 
     suspend fun ensureReady() {
         if (ready) return
@@ -51,11 +110,25 @@ class YtDlpEngine(private val context: Context) {
 
     suspend fun fetchInfo(url: String, mp3Kbps: Int): MediaInfo = withContext(Dispatchers.IO) {
         ensureReady()
-        val request = YoutubeDLRequest(url).apply {
+        updateIfStale()
+        try {
+            fetchInfoOnce(url, mp3Kbps)
+        } catch (e: DownloadError) {
+            // A plataforma mudou: atualiza o motor (versão de desenvolvimento, mais recente) e tenta de novo.
+            if (!e.platformChanged || nightlyTried) throw e
+            nightlyTried = true
+            updateNow(nightly = true)
+            fetchInfoOnce(url, mp3Kbps)
+        } finally {
+            _stage.value = null
+        }
+    }
+
+    private fun fetchInfoOnce(url: String, mp3Kbps: Int): MediaInfo {
+        _stage.value = "Lendo o link…"
+        val request = YoutubeDLRequest(url).common().apply {
             addOption("-J")
             addOption("--no-playlist")
-            addOption("--no-warnings")
-            addOption("--socket-timeout", "20")
         }
         val response = try {
             YoutubeDL.getInstance().execute(
@@ -69,20 +142,18 @@ class YtDlpEngine(private val context: Context) {
         } catch (e: Exception) {
             throw classify(e.message)
         }
-        try {
+        return try {
             FormatParser.parse(url, response.out, mp3Kbps)
         } catch (e: ParseException) {
-            throw DownloadError(e.message ?: "Não foi possível ler este link.")
+            throw DownloadError(e.message ?: "Não foi possível ler este link.", detail = errorLine(response.err))
         }
     }
 
     suspend fun search(query: String, limit: Int = 20): List<SearchResult> = withContext(Dispatchers.IO) {
         ensureReady()
-        val request = YoutubeDLRequest("ytsearch$limit:$query").apply {
+        val request = YoutubeDLRequest("ytsearch$limit:$query").common().apply {
             addOption("--flat-playlist")
             addOption("-J")
-            addOption("--no-warnings")
-            addOption("--socket-timeout", "20")
         }
         val response = try {
             YoutubeDL.getInstance().execute(
@@ -134,16 +205,36 @@ class YtDlpEngine(private val context: Context) {
     ): File = withContext(Dispatchers.IO) {
         ensureReady()
         dir.mkdirs()
-        val request = YoutubeDLRequest(url).apply {
+        updateIfStale()
+        try {
+            downloadOnce(processId, url, selector, convertTo, mergeMp4, isAudio, mp3Kbps, dir, onProgress)
+        } catch (e: DownloadError) {
+            if (!e.platformChanged || nightlyTried) throw e
+            nightlyTried = true
+            updateNow(nightly = true)
+            downloadOnce(processId, url, selector, convertTo, mergeMp4, isAudio, mp3Kbps, dir, onProgress)
+        }
+    }
+
+    private fun downloadOnce(
+        processId: String,
+        url: String,
+        selector: String,
+        convertTo: String?,
+        mergeMp4: Boolean,
+        isAudio: Boolean,
+        mp3Kbps: Int,
+        dir: File,
+        onProgress: (percent: Float, etaSec: Long, line: String) -> Unit,
+    ): File {
+        val request = YoutubeDLRequest(url).common().apply {
             addOption("-o", File(dir, "media.%(ext)s").absolutePath)
             addOption("--no-playlist")
             addOption("--no-mtime")
-            addOption("--no-warnings")
             addOption("--continue")
             addOption("-f", selector)
             addOption("--retries", "10")
             addOption("--fragment-retries", "10")
-            addOption("--socket-timeout", "20")
             addOption("-N", "4")
             if (mergeMp4) addOption("--merge-output-format", "mp4")
             if (convertTo != null) {
@@ -174,17 +265,20 @@ class YtDlpEngine(private val context: Context) {
             // Se apenas a capa não pôde ser embutida, o MP3 está pronto e pode ser usado.
             val msg = e.message.orEmpty().lowercase(Locale.ROOT)
             val mp3 = File(dir, "media.mp3")
-            if (convertTo == "mp3" && mp3.exists() && mp3.length() > 0 && "thumbnail" in msg) return@withContext mp3
+            if (convertTo == "mp3" && mp3.exists() && mp3.length() > 0 && "thumbnail" in msg) return mp3
             throw classify(e.message)
         }
-        findOutput(dir) ?: throw DownloadError("O arquivo baixado não foi encontrado.")
+        return findOutput(dir) ?: throw DownloadError("O arquivo baixado não foi encontrado.")
     }
 
     fun stop(processId: String): Boolean = runCatching { YoutubeDL.getInstance().destroyProcessById(processId) }.getOrDefault(false)
 
     suspend fun update(): String = withContext(Dispatchers.IO) {
         ensureReady()
-        val status = YoutubeDL.getInstance().updateYoutubeDL(context, YoutubeDL.UpdateChannel.STABLE)
+        val status = updateMutex.withLock {
+            YoutubeDL.getInstance().updateYoutubeDL(context, YoutubeDL.UpdateChannel.STABLE)
+        }
+        prefs.edit().putLong(KEY_LAST_CHECK, System.currentTimeMillis()).apply()
         when (status) {
             YoutubeDL.UpdateStatus.DONE -> "Motor de download atualizado."
             YoutubeDL.UpdateStatus.ALREADY_UP_TO_DATE -> "O motor de download já está atualizado."
@@ -202,29 +296,45 @@ class YtDlpEngine(private val context: Context) {
                 ?.filter { it.isFile && it.length() > 0 && it.extension.lowercase(Locale.ROOT) !in ignoredExt && !it.name.contains(".part") }
                 ?.maxByOrNull { it.length() }
 
+        private const val KEY_LAST_CHECK = "last_update_check"
+
+        /** Última linha "ERROR:" do yt-dlp (ou a última linha com texto). */
+        fun errorLine(raw: String?): String? {
+            val lines = raw.orEmpty().lines().map { it.trim() }.filter { it.isNotEmpty() }
+            val line = lines.lastOrNull { it.startsWith("ERROR:") }?.removePrefix("ERROR:")?.trim() ?: lines.lastOrNull()
+            return line?.take(400)
+        }
+
         fun classify(raw: String?): DownloadError {
             val t = raw.orEmpty().lowercase(Locale.ROOT)
+            val detail = errorLine(raw)
+            fun err(msg: String, retryable: Boolean = false, changed: Boolean = false) =
+                DownloadError(msg, retryable, detail, changed)
             return when {
-                "drm" in t -> DownloadError("Este conteúdo é protegido (DRM) e não pode ser baixado.")
-                "unsupported url" in t -> DownloadError("Link não suportado.")
-                "private video" in t || "video is private" in t -> DownloadError("Este vídeo é privado.")
+                "drm" in t -> err("Este conteúdo é protegido (DRM) e não pode ser baixado.")
+                "unsupported url" in t -> err("Link não suportado. Abra o vídeo e copie o link dele.")
+                "private video" in t || "video is private" in t -> err("Este vídeo é privado.")
                 "not a bot" in t || "sign in to confirm" in t ->
-                    DownloadError("A plataforma pediu verificação para este acesso. Tente mais tarde ou atualize o motor em Configurações.")
-                "login required" in t || "requires authentication" in t || "log in" in t || "cookies" in t ->
-                    DownloadError("Este conteúdo exige login na plataforma e não pode ser baixado.")
+                    err("O YouTube pediu verificação para esta conexão. Tente de novo em alguns minutos ou use outra rede (Wi-Fi/dados).", changed = true)
                 "confirm your age" in t || ("age" in t && "restrict" in t) ->
-                    DownloadError("Conteúdo com restrição de idade não pode ser baixado.")
+                    err("Conteúdo com restrição de idade não pode ser baixado.")
+                "login required" in t || "requires authentication" in t || "log in" in t || "cookies" in t ->
+                    err("Este conteúdo exige login na plataforma e não pode ser baixado.")
                 "not available in your country" in t || ("geo" in t && "restrict" in t) ->
-                    DownloadError("Conteúdo indisponível no seu país.")
-                "no space left" in t || "enospc" in t -> DownloadError("Espaço insuficiente no aparelho.")
-                "requested format is not available" in t -> DownloadError("Formato não suportado para este conteúdo.")
+                    err("Conteúdo indisponível no seu país.")
+                "no space left" in t || "enospc" in t -> err("Espaço insuficiente no aparelho.")
                 "unable to download webpage" in t || "timed out" in t || "name resolution" in t ||
-                    "network is unreachable" in t || "failed to resolve" in t || "connection" in t ||
-                    "errno 7" in t || "errno 101" in t || "errno 110" in t || "http error 5" in t ->
-                    DownloadError("Sem conexão com a internet.", retryable = true)
-                "video unavailable" in t || "http error 404" in t || "not found" in t ->
-                    DownloadError("Conteúdo não encontrado ou indisponível.")
-                else -> DownloadError("Não foi possível baixar este arquivo.")
+                    "network is unreachable" in t || "failed to resolve" in t || "connection reset" in t ||
+                    "connection refused" in t || "errno 7" in t || "errno 101" in t || "errno 110" in t ||
+                    "http error 5" in t -> err("Falha na conexão. Verifique a internet e tente de novo.", retryable = true)
+                "video unavailable" in t || "http error 404" in t || "this video has been removed" in t ->
+                    err("Conteúdo não encontrado ou removido.")
+                // Mudanças na plataforma: atualizar o motor costuma resolver.
+                "requested format is not available" in t || "only images are available" in t ||
+                    "challenge" in t || "nsig" in t || "signature" in t || "unable to extract" in t ||
+                    "http error 403" in t || "javascript" in t || "player" in t || "precondition" in t ->
+                    err("A plataforma mudou e o motor precisou ser atualizado. Toque em Tentar de novo.", changed = true)
+                else -> err("Não foi possível baixar este arquivo.", changed = true)
             }
         }
     }

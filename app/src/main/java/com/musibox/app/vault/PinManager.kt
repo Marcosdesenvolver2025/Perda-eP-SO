@@ -76,6 +76,74 @@ class PinManager(context: Context) {
         }
     }
 
+    // ---------------- Recuperação do PIN ----------------
+    // O cofre é criptografado com uma chave do Keystore (não derivada do PIN), então trocar
+    // o PIN depois de provar a identidade não exige recriptografar nada.
+
+    fun hasRecoveryCode(): Boolean = prefs.contains(KEY_RC_VERIFIER)
+
+    fun recoveryCodeCreatedAt(): Long = prefs.getLong(KEY_RC_CREATED, 0L)
+
+    /** Cria um novo código de recuperação (o anterior deixa de valer) e o devolve formatado. */
+    suspend fun createRecoveryCode(): String = withContext(Dispatchers.Default) {
+        val rnd = SecureRandom()
+        val raw = (1..16).map { CODE_ALPHABET[rnd.nextInt(CODE_ALPHABET.length)] }.joinToString("")
+        val salt = ByteArray(16).also { rnd.nextBytes(it) }
+        prefs.edit()
+            .putString(KEY_RC_SALT, Base64.encodeToString(salt, Base64.NO_WRAP))
+            .putString(KEY_RC_VERIFIER, Base64.encodeToString(verifierFor(raw, salt), Base64.NO_WRAP))
+            .putLong(KEY_RC_CREATED, System.currentTimeMillis())
+            .putInt(KEY_RC_FAILS, 0)
+            .putLong(KEY_RC_LOCK_UNTIL, 0)
+            .apply()
+        raw.chunked(4).joinToString("-")
+    }
+
+    fun recoveryLockoutRemainingMs(): Long =
+        (prefs.getLong(KEY_RC_LOCK_UNTIL, 0) - System.currentTimeMillis()).coerceAtLeast(0)
+
+    suspend fun verifyRecoveryCode(input: String): VerifyResult = withContext(Dispatchers.Default) {
+        val remaining = recoveryLockoutRemainingMs()
+        if (remaining > 0) return@withContext VerifyResult.LockedOut(remaining)
+        val salt = prefs.getString(KEY_RC_SALT, null)?.let { Base64.decode(it, Base64.NO_WRAP) }
+        val stored = prefs.getString(KEY_RC_VERIFIER, null)?.let { Base64.decode(it, Base64.NO_WRAP) }
+        if (salt == null || stored == null) return@withContext VerifyResult.Wrong(0)
+        val normalized = input.uppercase().filter { it.isLetterOrDigit() }
+        if (normalized.length == 16 && MessageDigest.isEqual(verifierFor(normalized, salt), stored)) {
+            prefs.edit().putInt(KEY_RC_FAILS, 0).putLong(KEY_RC_LOCK_UNTIL, 0).apply()
+            VerifyResult.Ok
+        } else {
+            val fails = prefs.getInt(KEY_RC_FAILS, 0) + 1
+            val editor = prefs.edit().putInt(KEY_RC_FAILS, fails)
+            val result = if (fails >= MAX_ATTEMPTS) {
+                val step = (fails - MAX_ATTEMPTS).coerceAtMost(6)
+                val lockMs = (60_000L shl step).coerceAtMost(60 * 60_000L)
+                editor.putLong(KEY_RC_LOCK_UNTIL, System.currentTimeMillis() + lockMs)
+                VerifyResult.LockedOut(lockMs)
+            } else {
+                VerifyResult.Wrong(MAX_ATTEMPTS - fails)
+            }
+            editor.apply()
+            result
+        }
+    }
+
+    fun clearRecoveryCode() {
+        prefs.edit().remove(KEY_RC_SALT).remove(KEY_RC_VERIFIER).remove(KEY_RC_CREATED).apply()
+    }
+
+    /** Conta Google vinculada ao cofre (identificada pelo UID do Firebase). */
+    fun linkGoogle(uid: String, email: String?) {
+        prefs.edit().putString(KEY_G_UID, uid).putString(KEY_G_EMAIL, email).apply()
+    }
+
+    fun linkedGoogleUid(): String? = prefs.getString(KEY_G_UID, null)
+    fun linkedGoogleEmail(): String? = prefs.getString(KEY_G_EMAIL, null)
+
+    fun unlinkGoogle() {
+        prefs.edit().remove(KEY_G_UID).remove(KEY_G_EMAIL).apply()
+    }
+
     /** Remove o PIN (usado somente ao redefinir o cofre). */
     fun clear() {
         prefs.edit().clear().apply()
@@ -107,6 +175,14 @@ class PinManager(context: Context) {
         private const val KEY_FAILS = "pin_fails"
         private const val KEY_LOCK_UNTIL = "pin_lock_until"
         private const val HMAC_ALIAS = "musibox_pin_hmac"
+        private const val KEY_RC_SALT = "rc_salt"
+        private const val KEY_RC_VERIFIER = "rc_verifier"
+        private const val KEY_RC_CREATED = "rc_created"
+        private const val KEY_RC_FAILS = "rc_fails"
+        private const val KEY_RC_LOCK_UNTIL = "rc_lock_until"
+        private const val KEY_G_UID = "google_uid"
+        private const val KEY_G_EMAIL = "google_email"
+        private const val CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
         private const val ITERATIONS = 60_000
         const val MAX_ATTEMPTS = 5
     }

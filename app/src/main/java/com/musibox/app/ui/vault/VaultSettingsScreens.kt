@@ -22,6 +22,7 @@ import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material.icons.rounded.Key
+import androidx.compose.material.icons.rounded.LockReset
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.Screenshot
 import androidx.compose.material.icons.rounded.Timer
@@ -95,6 +96,14 @@ private fun VaultSettingsContent(nav: NavController) {
             item {
                 SettingsSection("Segurança") {
                     SettingItem(Icons.Rounded.Key, "Alterar PIN", "PIN de 6 dígitos", onClick = { nav.navigate(Routes.VAULT_CHANGE_PIN) }, tint = vault)
+                    SettingDivider()
+                    SettingItem(
+                        Icons.Rounded.LockReset,
+                        "Recuperação do PIN",
+                        "Impressão digital, conta Google ou código de recuperação",
+                        onClick = { nav.navigate(Routes.VAULT_RECOVER) },
+                        tint = vault,
+                    )
                     SettingDivider()
                     SettingSwitch(
                         Icons.Rounded.Fingerprint,
@@ -257,7 +266,7 @@ fun VaultChangePinScreen(nav: NavController) {
                     onBackspace = { entry = entry.dropLast(1) },
                 )
             } else {
-                PinSetupFlow(title = "Novo PIN", offerBiometric = false, onDone = {
+                PinSetupFlow(title = "Novo PIN", offerBiometric = false, offerRecovery = false, onDone = {
                     snack("PIN alterado.")
                     nav.popBackStack()
                 })

@@ -104,7 +104,7 @@ fun MoreScreen(nav: NavController) {
                     SettingDivider()
                     SettingItem(Icons.Rounded.History, "Histórico", "Reproduções, downloads e importações", onClick = { nav.navigate(Routes.history()) })
                     SettingDivider()
-                    SettingItem(Icons.Rounded.DownloadDone, "Gerenciador de downloads", onClick = { nav.navigateTopLevel(Routes.download(2), restore = false) })
+                    SettingItem(Icons.Rounded.DownloadDone, "Gerenciador de downloads", onClick = { nav.navigate(Routes.DOWNLOADS) })
                 }
             }
             item {

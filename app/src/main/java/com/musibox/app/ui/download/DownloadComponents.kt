@@ -389,7 +389,7 @@ private fun GroupLabel(text: String) {
 }
 
 @Composable
-private fun FormatRow(option: DownloadOption, selected: Boolean, icon: ImageVector, onClick: () -> Unit) {
+internal fun FormatRow(option: DownloadOption, selected: Boolean, icon: ImageVector, onClick: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()

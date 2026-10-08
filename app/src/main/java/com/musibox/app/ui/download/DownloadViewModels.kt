@@ -31,7 +31,12 @@ sealed interface AnalyzeState {
     data object Idle : AnalyzeState
     data class Loading(val url: String, val firstRun: Boolean) : AnalyzeState
     data class Ready(val info: MediaInfo) : AnalyzeState
-    data class Error(val url: String?, val message: String, val offline: Boolean = false) : AnalyzeState
+    data class Error(
+        val url: String?,
+        val message: String,
+        val offline: Boolean = false,
+        val detail: String? = null,
+    ) : AnalyzeState
 }
 
 /** Lê um link e prepara o download (usado na tela Baixar e no menu Compartilhar). */
@@ -40,6 +45,9 @@ class LinkDownloadViewModel(private val c: AppContainer) : ViewModel() {
     val state: StateFlow<AnalyzeState> = _state.asStateFlow()
 
     val settings: StateFlow<AppSettings> = c.settings.settings.stateIn(viewModelScope, SharingStarted.Eagerly, AppSettings())
+
+    /** Etapa do motor ("Atualizando o motor…", "Lendo o link…"). */
+    val stage: StateFlow<String?> = c.ytdlp.stage
 
     var link by mutableStateOf("")
     var selected by mutableStateOf<DownloadOption?>(null)
@@ -76,7 +84,11 @@ class LinkDownloadViewModel(private val c: AppContainer) : ViewModel() {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _state.value = AnalyzeState.Error(url, e.message ?: "Não foi possível ler este link.")
+                _state.value = AnalyzeState.Error(
+                    url,
+                    e.message ?: "Não foi possível ler este link.",
+                    detail = (e as? com.musibox.app.download.DownloadError)?.detail,
+                )
             }
         }
     }
@@ -137,6 +149,15 @@ class DownloadCenterViewModel(private val c: AppContainer) : ViewModel() {
     val search: StateFlow<SearchState> = _search.asStateFlow()
     var query by mutableStateOf("")
     private var searchJob: Job? = null
+
+    /** Último link da área de transferência que o usuário já viu/dispensou. */
+    var handledClip by mutableStateOf<String?>(null)
+
+    fun clearSearch() {
+        searchJob?.cancel()
+        query = ""
+        _search.value = SearchState.Idle
+    }
 
     fun runSearch() {
         val q = query.trim()

@@ -63,6 +63,7 @@ import com.musibox.app.ui.download.AnalyzeState
 import com.musibox.app.ui.download.DestinationPicker
 import com.musibox.app.ui.download.FormatList
 import com.musibox.app.ui.download.LinkDownloadViewModel
+import com.musibox.app.ui.download.DownloadSheetContent
 import com.musibox.app.ui.download.PreviewCard
 import com.musibox.app.ui.theme.Mb
 import com.musibox.app.ui.theme.MusiBoxTheme
@@ -145,82 +146,26 @@ class ShareActivity : ComponentActivity() {
                     .navigationBarsPadding()
                     .padding(bottom = 16.dp),
             ) {
-                val ready = state as? AnalyzeState.Ready
-                SheetHeader(if (ready?.info?.options?.any { it.kind == com.musibox.app.download.OptionKind.VIDEO } == true) "Baixar vídeo como" else "Baixar como")
-                when (val s = state) {
-                    AnalyzeState.Idle, is AnalyzeState.Loading -> {
-                        Column(Modifier.fillMaxWidth().padding(vertical = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                            Spacer(Modifier.height(12.dp))
-                            Text("Carregando", style = MaterialTheme.typography.bodyLarge)
-                            if ((s as? AnalyzeState.Loading)?.firstRun == true) {
-                                Text(
-                                    "Preparando o motor de download (somente na primeira vez)…",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                    }
-                    is AnalyzeState.Error -> {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Rounded.ErrorOutline, null, tint = Mb.colors.danger)
-                            Spacer(Modifier.width(10.dp))
-                            Text(s.message, style = MaterialTheme.typography.bodyLarge)
-                        }
-                        Spacer(Modifier.height(12.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            TextButton(onClick = { vm.retry() }) { Text("Tentar de novo") }
-                            TextButton(onClick = {
-                                startActivity(
-                                    Intent(this@ShareActivity, MainActivity::class.java)
-                                        .putExtra(MainActivity.EXTRA_DOWNLOAD_URL, url)
-                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                                )
-                                onClose()
-                            }) { Text("Abrir no MusiBox") }
-                            TextButton(onClick = onClose) { Text("Fechar") }
-                        }
-                    }
-                    is AnalyzeState.Ready -> {
-                        PreviewCard(s.info)
-                        Spacer(Modifier.height(8.dp))
-                        FormatList(s.info, vm.selected) { vm.selected = it }
-                        Spacer(Modifier.height(14.dp))
-                        Text("Salvar em", style = MaterialTheme.typography.titleMedium)
-                        Spacer(Modifier.height(8.dp))
-                        DestinationPicker(vm.destination) { vm.destination = it }
-                        Spacer(Modifier.height(12.dp))
-                        OutlinedTextField(
-                            value = vm.fileName,
-                            onValueChange = { vm.fileName = it.take(150) },
-                            label = { Text("Nome do arquivo") },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Mb.colors.border),
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        Spacer(Modifier.height(16.dp))
-                        GradientButton(
-                            text = if (vm.destination == null) "Escolha onde salvar" else "Baixar",
-                            icon = Icons.Rounded.Download,
-                            onClick = {
-                                vm.enqueue(
-                                    onDone = { msg ->
-                                        Toast.makeText(this@ShareActivity, msg, Toast.LENGTH_SHORT).show()
-                                        onClose()
-                                    },
-                                    onError = { Toast.makeText(this@ShareActivity, it, Toast.LENGTH_SHORT).show() },
-                                )
-                            },
-                            enabled = vm.selected != null && vm.destination != null,
-                            loading = vm.enqueueing,
-                            brush = if (vm.destination == SaveDestination.VAULT) Mb.colors.vaultGradient else Mb.colors.accentGradient,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                }
+                SheetHeader("Baixar com MusiBox")
+                DownloadSheetContent(
+                    vm,
+                    onEnqueued = { msg ->
+                        Toast.makeText(this@ShareActivity, msg, Toast.LENGTH_SHORT).show()
+                        onClose()
+                    },
+                    onError = { Toast.makeText(this@ShareActivity, it, Toast.LENGTH_SHORT).show() },
+                    errorActions = {
+                        TextButton(onClick = {
+                            startActivity(
+                                Intent(this@ShareActivity, MainActivity::class.java)
+                                    .putExtra(MainActivity.EXTRA_DOWNLOAD_URL, url)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                            )
+                            onClose()
+                        }) { Text("Abrir no MusiBox") }
+                        TextButton(onClick = onClose) { Text("Fechar") }
+                    },
+                )
             }
         }
     }

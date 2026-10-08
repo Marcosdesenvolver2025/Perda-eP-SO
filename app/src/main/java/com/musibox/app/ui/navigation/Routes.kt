@@ -24,11 +24,15 @@ object Routes {
     const val VAULT_PLAYER = "vault_play/{id}"
     const val VAULT_BACKUP = "vault_backup"
     const val VAULT_CHANGE_PIN = "vault_change_pin"
+    const val VAULT_RECOVER = "vault_recover"
+    const val DOWNLOADS = "downloads"
+    const val BROWSER = "browser?url={url}"
 
     fun library(tab: Int = 0) = "library?tab=$tab"
     fun download(tab: Int = 0, url: String? = null) =
         "download?tab=$tab" + (url?.let { "&url=${Uri.encode(it)}" } ?: "")
     fun history(tab: Int = 0) = "history?tab=$tab"
+    fun browser(url: String) = "browser?url=${Uri.encode(url)}"
     fun songs(type: String, value: String) = "songs/$type/${Uri.encode(value)}"
     fun playlist(id: String) = "playlist/$id"
     fun vaultViewer(id: String) = "vault_view/$id"

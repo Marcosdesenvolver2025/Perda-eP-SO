@@ -16,11 +16,16 @@ adb logcat -c
 adb install -r -g "$APK" || { echo "FALHA AO INSTALAR"; exit 1; }
 
 step "Arquivos de teste"
-for i in 1 2 3; do
+# Músicas em pastas diferentes (Music, Download e pasta de outro app), como num celular real
+adb shell mkdir -p "/sdcard/snaptube/download/SnapTube\ Audio"
+i=0
+for dest in "/sdcard/Music/teste1.mp3" "/sdcard/Music/teste2.mp3" "/sdcard/Download/teste3.mp3" "/sdcard/snaptube/download/SnapTube Audio/teste4.m4a"; do
+  i=$((i+1))
+  ext="${dest##*.}"
   ffmpeg -loglevel error -y -f lavfi -i "sine=frequency=$((300*i)):duration=40" -metadata title="Faixa de Teste $i" \
-    -metadata artist="Artista Demo" -metadata album="Album Demo" -b:a 128k "/tmp/teste$i.mp3"
-  adb push "/tmp/teste$i.mp3" "/sdcard/Music/teste$i.mp3" >/dev/null
-  adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d "file:///sdcard/Music/teste$i.mp3" >/dev/null
+    -metadata artist="Artista Demo $i" -metadata album="Album Demo" -b:a 128k "/tmp/teste$i.$ext"
+  adb push "/tmp/teste$i.$ext" "$dest" >/dev/null
+  adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d "file://${dest// /%20}" >/dev/null
 done
 mkdir -p /tmp/media
 ffmpeg -loglevel error -y -f lavfi -i testsrc=duration=8:size=640x360:rate=24 -f lavfi -i "sine=frequency=500:duration=8" \
@@ -40,7 +45,7 @@ shot 02_conta
 $UI tap "Continuar sem conta"
 $UI wait "músicas encontradas" 40; shot 03_indexacao
 $UI tap "Ir para o início"
-shot 04_inicio
+sleep 3; shot 04_inicio
 
 step "Biblioteca e player"
 $UI tapx "Músicas" 10; sleep 2; shot 05_musicas
@@ -52,43 +57,68 @@ adb shell cmd statusbar collapse; sleep 1
 launch
 
 step "Download completo (servidor local)"
-$UI tapx "Baixar" 10; shot 09_baixar
-$UI tap "Cole o link aqui"
+$UI tapx "Baixar" 10; sleep 2; shot 09_baixar
+$UI tap "Pesquise ou cole um link" 10
 adb shell input text "http://10.0.2.2:8000/clipe_demo.mp4"
 adb shell input keyevent KEYCODE_ENTER
-$UI wait "Opções de download" 90; shot 10_opcoes
-$UI tap "Apenas áudio" 5
-$UI tap "Galeria do dispositivo" 5
+$UI wait "Salvar em" 8 || $UI tapx "Ir" 5
+$UI wait "Salvar em" 120; shot 10_opcoes
+$UI tapx "Música" 5
+$UI tapx "Galeria" 5
 shot 11_escolhas
-$UI tap "Baixar agora" 5
+$UI tap "Baixar •" 5 || $UI tapx "Baixar" 5
 sleep 45
-$UI tapx "Downloads" 5; sleep 3; shot 12_downloads
+$UI tap "Meus downloads" 10; sleep 3; shot 12_downloads
+adb shell input keyevent KEYCODE_BACK; sleep 1
+
+step "Navegador interno"
+$UI tapx "YouTube" 10; sleep 15; shot 12b_navegador
+adb shell input keyevent KEYCODE_BACK; sleep 1
+$UI tap "Fechar navegador" 5; sleep 1
 
 step "Download para o cofre pelo Compartilhar"
 adb shell am start -n "$PKG/com.musibox.app.share.DownloadShareAlias" -a android.intent.action.SEND -t text/plain \
   --es android.intent.extra.TEXT "Veja http://10.0.2.2:8000/clipe_demo.mp4" >/dev/null 2>&1
-$UI wait "Baixar" 60; sleep 3; shot 13_compartilhar
-$UI tap "Salvar no cofre" 10
-$UI tap "Alta qualidade" 3 || $UI tap "Rápido (" 3 || true
+$UI wait "Salvar em" 90; sleep 2; shot 13_compartilhar
+$UI tapx "Vídeo" 5
+$UI tapx "Cofre" 5
 shot 14_compartilhar_cofre
-$UI tapx "Baixar" 10
+$UI tap "Baixar •" 10 || $UI tapx "Baixar" 5
 sleep 40
 
-step "Cofre"
+step "Cofre: PIN, código de recuperação e recuperação"
 launch
 $UI tapx "Cofre" 10; sleep 2
 for d in 1 2 3 4 5 6; do $UI tapx "$d" 3 >/dev/null; done
 sleep 1
 for d in 1 2 3 4 5 6; do $UI tapx "$d" 3 >/dev/null; done
 sleep 3
+$UI tap "Criar código de recuperação" 10; sleep 2
+CODE=$($UI text '[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}' | tail -1)
+echo "codigo de recuperacao: ${CODE:+(lido)}"
+$UI tap "Anotei o código" 5
+$UI tap "Concluir" 5; sleep 2
 $UI tap "Configurações do cofre" 10
 $UI tap "Bloquear capturas de tela" 10
 shot 15_cofre_config
+$UI tap "Recuperação do PIN" 10; sleep 2; shot 15b_recuperacao
+adb shell input keyevent KEYCODE_BACK; sleep 1
 adb shell input keyevent KEYCODE_BACK; sleep 2
 shot 16_cofre_fotos
 $UI tap "Vídeos" 5; sleep 2; shot 17_cofre_videos
 $UI tap "clipe_demo" 5; sleep 5; shot 18_cofre_player
 adb shell input keyevent KEYCODE_BACK; sleep 2
+# Sai do cofre (bloqueia) e recupera o acesso com o código
+$UI tapx "Início" 10; sleep 2
+$UI tapx "Cofre" 10; sleep 2
+$UI tap "Esqueci o PIN" 10; sleep 1; shot 18b_esqueci_pin
+$UI tap "Usar código de recuperação" 10; sleep 1
+adb shell input text "$CODE"
+$UI tapx "Confirmar" 10; sleep 3
+for d in 6 5 4 3 2 1; do $UI tapx "$d" 3 >/dev/null; done
+sleep 1
+for d in 6 5 4 3 2 1; do $UI tapx "$d" 3 >/dev/null; done
+sleep 3; shot 18c_cofre_recuperado
 
 step "Histórico, configurações e armazenamento"
 launch

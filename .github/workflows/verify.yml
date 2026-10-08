@@ -1,0 +1,30 @@
+name: Verificar assinatura
+
+on:
+  push:
+    branches: [ musibox-signed ]
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: apksigner verify
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cat MusiBox-arm64.apk.part* > MusiBox-arm64.apk
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          {
+            echo "### Verificação ($BT)"
+            echo '```'
+            "$BT/apksigner" verify --verbose --print-certs MusiBox-arm64.apk; echo "apksigner exit=$?"
+            "$BT/zipalign" -c -P 16 4 MusiBox-arm64.apk; echo "zipalign exit=$?"
+            "$BT/aapt2" dump badging MusiBox-arm64.apk | grep -E "^package|sdkVersion|targetSdk|native-code"
+            echo '```'
+          } > verify.log 2>&1
+          cat verify.log
+          gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/comments" -f body="$(cat verify.log)" > /dev/null

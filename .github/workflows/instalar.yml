@@ -1,0 +1,53 @@
+name: Testar instalação do APK
+
+on:
+  push:
+    branches: [ musibox-apk ]
+
+permissions:
+  contents: write
+
+jobs:
+  instalar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verificar assinatura
+        run: |
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          {
+            for f in MusiBox.apk MusiBox-celular-antigo.apk; do
+              echo "== $f"
+              "$BT/apksigner" verify --print-certs "$f" | grep -E "SHA-1|SHA-256" ; echo "apksigner exit=${PIPESTATUS[0]}"
+              "$BT/zipalign" -c -P 16 4 "$f" > /dev/null; echo "zipalign exit=$?"
+              "$BT/aapt2" dump badging "$f" | grep -E "^package|sdkVersion|targetSdk|native-code"
+            done
+          } > verify.log 2>&1
+          cat verify.log
+
+      - name: Habilitar KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Instalar no emulador (Android 14)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash instalar.sh
+
+      - name: Relatório no commit
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          { echo "### instalação"; echo '```'; cat verify.log; echo; cat install.log 2>/dev/null; echo '```'; } > r.md
+          gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/comments" -f body="$(head -c 60000 r.md)" > /dev/null

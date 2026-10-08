@@ -57,11 +57,9 @@ adb shell cmd statusbar collapse; sleep 1
 launch
 
 step "Download completo (servidor local)"
+launch; $UI tapx "Início" 5; sleep 1
 $UI tapx "Baixar" 10; sleep 2; shot 09_baixar
-$UI tap "Pesquise ou cole um link" 10
-adb shell input text "http://10.0.2.2:8000/clipe_demo.mp4"
-adb shell input keyevent KEYCODE_ENTER
-$UI wait "Salvar em" 8 || $UI tapx "Ir" 5
+launch --es download_url "http://10.0.2.2:8000/clipe_demo.mp4"
 $UI wait "Salvar em" 120; shot 10_opcoes
 $UI tapx "Música" 5
 $UI tapx "Galeria" 5
@@ -78,7 +76,7 @@ $UI tap "Fechar navegador" 5; sleep 1
 
 step "Download para o cofre pelo Compartilhar"
 adb shell am start -n "$PKG/com.musibox.app.share.DownloadShareAlias" -a android.intent.action.SEND -t text/plain \
-  --es android.intent.extra.TEXT "Veja http://10.0.2.2:8000/clipe_demo.mp4" >/dev/null 2>&1
+  --es android.intent.extra.TEXT "'Veja http://10.0.2.2:8000/clipe_demo.mp4'" >/dev/null 2>&1
 $UI wait "Salvar em" 90; sleep 2; shot 13_compartilhar
 $UI tapx "Vídeo" 5
 $UI tapx "Cofre" 5
@@ -112,8 +110,8 @@ adb shell input keyevent KEYCODE_BACK; sleep 2
 $UI tapx "Início" 10; sleep 2
 $UI tapx "Cofre" 10; sleep 2
 $UI tap "Esqueci o PIN" 10; sleep 1; shot 18b_esqueci_pin
-$UI tap "Usar código de recuperação" 10; sleep 1
-adb shell input text "$CODE"
+$UI tap "Usar código de recuperação" 10; sleep 2
+adb shell input text "$CODE"; sleep 1; shot 18b2_codigo_digitado
 $UI tapx "Confirmar" 10; sleep 3
 for d in 6 5 4 3 2 1; do $UI tapx "$d" 3 >/dev/null; done
 sleep 1

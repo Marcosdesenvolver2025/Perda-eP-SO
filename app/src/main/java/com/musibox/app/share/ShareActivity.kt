@@ -110,8 +110,17 @@ class ShareActivity : ComponentActivity() {
         intent ?: return SharePayload.Nothing
         val type = intent.type.orEmpty()
         if (type.startsWith("text/")) {
-            val text = intent.getStringExtra(Intent.EXTRA_TEXT) ?: intent.getStringExtra(Intent.EXTRA_SUBJECT)
-            return LinkUtils.extractUrl(text)?.let { SharePayload.Link(it) } ?: SharePayload.Nothing
+            // Alguns apps mandam o texto como CharSequence formatado, no assunto ou no ClipData.
+            val candidates = buildList {
+                add(intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString())
+                add(intent.getCharSequenceExtra(Intent.EXTRA_SUBJECT)?.toString())
+                intent.clipData?.let { clip ->
+                    for (i in 0 until clip.itemCount) add(clip.getItemAt(i).text?.toString() ?: clip.getItemAt(i).uri?.toString())
+                }
+                add(intent.dataString)
+            }
+            val url = candidates.firstNotNullOfOrNull { LinkUtils.extractUrl(it) }
+            return url?.let { SharePayload.Link(it) } ?: SharePayload.Nothing
         }
         val uris = when (intent.action) {
             Intent.ACTION_SEND_MULTIPLE ->

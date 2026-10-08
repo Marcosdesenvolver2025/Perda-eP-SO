@@ -42,6 +42,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +52,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -470,6 +473,8 @@ private fun RecoveryCodeEntry(onVerified: () -> Unit) {
     var code by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var checking by remember { mutableStateOf(false) }
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Text("Digite o código de recuperação", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(6.dp))
@@ -488,7 +493,9 @@ private fun RecoveryCodeEntry(onVerified: () -> Unit) {
             shape = RoundedCornerShape(16.dp),
             colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Mb.colors.vault, unfocusedBorderColor = Mb.colors.border),
             isError = error != null,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(focus),
         )
         error?.let {
             Spacer(Modifier.height(8.dp))

@@ -123,15 +123,6 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
         }
     }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            webView?.let {
-                it.stopLoading()
-                it.onPause()
-            }
-        }
-    }
-
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         // Barra de endereço
         Row(
@@ -298,7 +289,7 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
             // Dica quando não há vídeo aberto
             androidx.compose.animation.AnimatedVisibility(
                 !isMedia && progress >= 100,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 18.dp),
+                modifier = Modifier.align(Alignment.TopCenter).padding(top = 10.dp),
                 enter = fadeIn(),
                 exit = fadeOut(),
             ) {
@@ -318,7 +309,7 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
             // Botão flutuante "Baixar"
             androidx.compose.animation.AnimatedVisibility(
                 isMedia,
-                modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 18.dp, bottom = 84.dp),
                 enter = scaleIn() + fadeIn(),
                 exit = scaleOut() + fadeOut(),
             ) {

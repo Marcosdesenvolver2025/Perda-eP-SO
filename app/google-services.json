@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1050661965788",
+    "project_id": "habitoou",
+    "storage_bucket": "habitoou.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1050661965788:android:809144b2db6edc9ccb4919",
+        "android_client_info": {
+          "package_name": "br.com.habitoou"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1050661965788-klq9dj16me6aonkc5otp9q7j3j780ao1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "br.com.habitoou",
+            "certificate_hash": "4a99aa2cc84af6973a6d843cd89e621469a793a2"
+          }
+        },
+        {
+          "client_id": "1050661965788-2vclg9q10pasni4f4lro589brbh2mk7j.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAn1wfuEVTVEwr4Qnvix2CpdEos7CuPL6w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1050661965788-2vclg9q10pasni4f4lro589brbh2mk7j.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

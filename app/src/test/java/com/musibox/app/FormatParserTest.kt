@@ -70,4 +70,21 @@ class FormatParserTest {
         assertNotNull(info)
         assertEquals("Primeiro", info.title)
     }
+
+    @Test
+    fun postSoComImagemViraOpcaoFoto() {
+        val json = """
+            {"id": "p1", "title": "Pin", "extractor_key": "Pinterest", "webpage_url": "https://www.pinterest.com/pin/1/",
+             "formats": [
+               {"format_id": "small", "ext": "jpg", "url": "https://i.pinimg.com/236x/a.jpg", "width": 236, "height": 300},
+               {"format_id": "orig", "ext": "jpg", "url": "https://i.pinimg.com/originals/a.jpg", "width": 1000, "height": 1300}
+             ]}
+        """.trimIndent()
+        val info = FormatParser.parse("https://pin.it/x", json)
+        assertEquals(1, info.options.size)
+        val photo = info.options.first()
+        assertEquals(OptionKind.PHOTO, photo.kind)
+        assertEquals("direct:https://i.pinimg.com/originals/a.jpg", photo.selector)
+        assertEquals(photo, FormatParser.defaultOption(info, preferAudio = true, videoQuality = 720, mp3 = true))
+    }
 }

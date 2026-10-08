@@ -40,6 +40,7 @@ import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Movie
 import androidx.compose.material.icons.rounded.MusicNote
@@ -232,8 +233,8 @@ private fun ReadyBlock(vm: LinkDownloadViewModel, info: MediaInfo, onEnqueued: (
     val notifLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     var showMore by remember { mutableStateOf(false) }
     var rename by remember { mutableStateOf(false) }
-    val hasVideo = info.options.any { it.kind == OptionKind.VIDEO }
-    val kind = vm.selected?.kind ?: OptionKind.AUDIO
+    val kinds = listOf(OptionKind.AUDIO, OptionKind.VIDEO, OptionKind.PHOTO).filter { k -> info.options.any { it.kind == k } }
+    val kind = vm.selected?.kind ?: kinds.firstOrNull() ?: OptionKind.AUDIO
 
     Column(Modifier.fillMaxWidth()) {
         MediaHeader(info)
@@ -248,15 +249,14 @@ private fun ReadyBlock(vm: LinkDownloadViewModel, info: MediaInfo, onEnqueued: (
                 .padding(4.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            KindTab(Modifier.weight(1f), Icons.Rounded.MusicNote, "Música", kind == OptionKind.AUDIO) { vm.chooseKind(OptionKind.AUDIO) }
-            if (hasVideo) {
-                KindTab(Modifier.weight(1f), Icons.Rounded.Movie, "Vídeo", kind == OptionKind.VIDEO) { vm.chooseKind(OptionKind.VIDEO) }
+            kinds.forEach { k ->
+                KindTab(Modifier.weight(1f), kindIcon(k), kindLabel(k), kind == k) { vm.chooseKind(k) }
             }
         }
         Spacer(Modifier.height(6.dp))
         val options = info.options.filter { it.kind == kind }
         options.forEach { opt ->
-            FormatRow(opt, opt.id == vm.selected?.id, if (opt.kind == OptionKind.AUDIO) Icons.Rounded.MusicNote else Icons.Rounded.Movie) {
+            FormatRow(opt, opt.id == vm.selected?.id, kindIcon(opt.kind)) {
                 vm.selected = opt
             }
         }
@@ -356,6 +356,18 @@ private fun ReadyBlock(vm: LinkDownloadViewModel, info: MediaInfo, onEnqueued: (
             modifier = Modifier.fillMaxWidth(),
         )
     }
+}
+
+private fun kindIcon(k: OptionKind) = when (k) {
+    OptionKind.AUDIO -> Icons.Rounded.MusicNote
+    OptionKind.VIDEO -> Icons.Rounded.Movie
+    OptionKind.PHOTO -> Icons.Rounded.Image
+}
+
+private fun kindLabel(k: OptionKind) = when (k) {
+    OptionKind.AUDIO -> "Música"
+    OptionKind.VIDEO -> "Vídeo"
+    OptionKind.PHOTO -> "Foto"
 }
 
 @Composable

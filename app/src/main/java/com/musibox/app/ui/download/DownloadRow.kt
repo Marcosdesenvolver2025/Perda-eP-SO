@@ -64,6 +64,8 @@ class DownloadActions(
     val onForget: (DownloadEntity) -> Unit,
 )
 
+private val IMAGE_EXTS_ROW = setOf("jpg", "jpeg", "png", "webp", "gif", "heic")
+
 fun DownloadEntity.statusText(): String {
     val inVault = destination == SaveDestination.VAULT.name
     val formatShort = (mimeType?.substringAfter('/')?.uppercase()?.let { if (it == "MPEG") "MP3" else it } ?: targetExt.uppercase())
@@ -113,7 +115,7 @@ fun DownloadRow(d: DownloadEntity, actions: DownloadActions, modifier: Modifier 
                     corner = 12.dp,
                     fallbackIcon = when {
                         d.isAudio -> Icons.Rounded.MusicNote
-                        d.mimeType?.startsWith("image/") == true -> Icons.Rounded.Image
+                        d.mimeType?.startsWith("image/") == true || d.formatSelector.startsWith("direct:") && d.targetExt in IMAGE_EXTS_ROW -> Icons.Rounded.Image
                         d.mimeType?.startsWith("video/") == true -> Icons.Rounded.Movie
                         d.kind == DownloadKind.IMPORT -> Icons.AutoMirrored.Rounded.InsertDriveFile
                         else -> Icons.Rounded.Movie
@@ -151,7 +153,7 @@ fun DownloadRow(d: DownloadEntity, actions: DownloadActions, modifier: Modifier 
                     Icon(
                         when {
                             d.isAudio -> Icons.Rounded.MusicNote
-                            d.mimeType?.startsWith("image/") == true -> Icons.Rounded.Image
+                            d.mimeType?.startsWith("image/") == true || d.formatSelector.startsWith("direct:") && d.targetExt in IMAGE_EXTS_ROW -> Icons.Rounded.Image
                             else -> Icons.Rounded.Movie
                         },
                         null,

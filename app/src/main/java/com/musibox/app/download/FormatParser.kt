@@ -3,7 +3,7 @@ package com.musibox.app.download
 import org.json.JSONArray
 import org.json.JSONObject
 
-enum class OptionKind { AUDIO, VIDEO }
+enum class OptionKind { AUDIO, VIDEO, PHOTO }
 
 /** Uma opção da lista "Baixar como". */
 data class DownloadOption(
@@ -76,6 +76,23 @@ object FormatParser {
 
         val formats = parseFormats(root.optJSONArray("formats"))
         val options = ArrayList<DownloadOption>()
+
+        // Post só com imagem (ex.: Pinterest): baixa a imagem original.
+        val rootExt = root.optString("ext").lowercase()
+        val imageFormats = root.optJSONArray("formats")?.let { arr ->
+            (0 until arr.length()).mapNotNull { arr.optJSONObject(it) }
+                .filter { it.optString("ext").lowercase() in IMAGE_EXTS && it.optString("url").startsWith("http") }
+        }.orEmpty()
+        if ((formats.isNotEmpty() && imageFormats.size == formats.size) || (formats.isEmpty() && rootExt in IMAGE_EXTS)) {
+            val urls = if (imageFormats.isNotEmpty()) {
+                listOf(imageFormats.maxByOrNull { it.optInt("width", 0) * it.optInt("height", 0) }!!.optString("url"))
+            } else {
+                listOfNotNull(root.optString("url").takeIf { it.startsWith("http") })
+            }
+            if (urls.isNotEmpty()) {
+                return MediaInfo(requestedUrl, webpage, title, thumbnail ?: urls.first(), 0, uploader, platform, photoOptions(urls), emptyList())
+            }
+        }
 
         if (formats.isEmpty()) {
             // Link direto ou serviço com formato único.
@@ -238,10 +255,29 @@ object FormatParser {
     private fun estimateBytes(durationSec: Long, kbps: Double): Long =
         if (kbps <= 0) 0 else (durationSec * kbps * 1000 / 8).toLong()
 
+    val IMAGE_EXTS = setOf("jpg", "jpeg", "png", "webp", "gif", "heic")
+
+    /** Opções "Foto" para imagens baixadas diretamente (selector "direct:<url>"). */
+    fun photoOptions(urls: List<String>): List<DownloadOption> = urls.mapIndexed { i, url ->
+        val ext = url.substringBefore('?').substringAfterLast('.', "jpg").lowercase().let { if (it in IMAGE_EXTS) it else "jpg" }
+        DownloadOption(
+            id = "photo_$i",
+            label = if (urls.size == 1) "Foto" else "Foto ${i + 1} de ${urls.size}",
+            detail = "Imagem original • ${if (ext == "jpeg") "JPG" else ext.uppercase()}",
+            kind = OptionKind.PHOTO,
+            selector = "direct:$url",
+            ext = if (ext == "jpeg") "jpg" else ext,
+            convertTo = null,
+            mergeMp4 = false,
+            estimatedBytes = 0,
+        )
+    }
+
     /** Escolhe a opção inicial conforme a preferência do usuário. */
     fun defaultOption(info: MediaInfo, preferAudio: Boolean, videoQuality: Int, mp3: Boolean): DownloadOption? {
         val audio = info.options.filter { it.kind == OptionKind.AUDIO }
         val video = info.options.filter { it.kind == OptionKind.VIDEO }
+        if (audio.isEmpty() && video.isEmpty()) return info.options.firstOrNull()
         if (preferAudio || video.isEmpty()) {
             return (if (mp3) audio.firstOrNull { it.convertTo == "mp3" } else audio.firstOrNull()) ?: audio.firstOrNull()
                 ?: video.firstOrNull()

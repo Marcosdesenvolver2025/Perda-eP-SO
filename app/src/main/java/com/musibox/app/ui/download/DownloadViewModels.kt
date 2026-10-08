@@ -109,7 +109,35 @@ class LinkDownloadViewModel(private val c: AppContainer) : ViewModel() {
     fun chooseKind(kind: OptionKind) {
         val info = (state.value as? AnalyzeState.Ready)?.info ?: return
         val s = settings.value
-        selected = FormatParser.defaultOption(info, kind == OptionKind.AUDIO, s.videoQuality, s.audioFormat == AudioFormat.MP3)
+        selected = if (kind == OptionKind.PHOTO) {
+            info.options.firstOrNull { it.kind == OptionKind.PHOTO }
+        } else {
+            FormatParser.defaultOption(info, kind == OptionKind.AUDIO, s.videoQuality, s.audioFormat == AudioFormat.MP3)
+        }
+    }
+
+    /** Salva uma imagem vista no navegador interno (toque longo). */
+    fun enqueueImage(imageUrl: String, pageUrl: String, pageTitle: String, destination: SaveDestination, onResult: (String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val option = FormatParser.photoOptions(listOf(imageUrl)).first()
+                val info = MediaInfo(
+                    url = imageUrl,
+                    webpageUrl = pageUrl,
+                    title = pageTitle.ifBlank { "Imagem" },
+                    thumbnail = imageUrl,
+                    durationSec = 0,
+                    uploader = null,
+                    platform = LinkUtils.platformOf(pageUrl),
+                    options = listOf(option),
+                    moreOptions = emptyList(),
+                )
+                c.downloads.enqueue(info, option, info.title, destination)
+                onResult(if (destination == SaveDestination.VAULT) "Salvando imagem no cofre…" else "Salvando imagem na galeria…")
+            } catch (e: Exception) {
+                onResult(e.message ?: "Não foi possível salvar a imagem.")
+            }
+        }
     }
 
     fun enqueue(onDone: (String) -> Unit, onError: (String) -> Unit) {

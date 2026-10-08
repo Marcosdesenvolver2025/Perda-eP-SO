@@ -49,7 +49,21 @@ class DownloadWorker(appContext: Context, params: WorkerParameters) : CoroutineW
 
             var lastDb = 0L
             var lastNotif = 0L
-            val file = container.ytdlp.download(
+            val file = if (d.formatSelector.startsWith("direct:")) {
+                DirectMedia.download(
+                    d.formatSelector.removePrefix("direct:"),
+                    workDir,
+                    d.targetExt,
+                    isCanceled = { isStopped },
+                ) { percent, total ->
+                    val now = System.currentTimeMillis()
+                    if (now - lastDb > 400) {
+                        lastDb = now
+                        val p = (percent / 100f).coerceIn(0f, 1f)
+                        kotlinx.coroutines.runBlocking { dao.setProgress(id, p, (total * p).toLong(), total, 0, 0, now) }
+                    }
+                }
+            } else container.ytdlp.download(
                 processId = id,
                 url = d.sourceUrl,
                 selector = d.formatSelector,

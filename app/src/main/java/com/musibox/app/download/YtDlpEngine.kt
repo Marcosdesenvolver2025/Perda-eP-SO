@@ -114,6 +114,10 @@ class YtDlpEngine(private val context: Context) {
         try {
             fetchInfoOnce(url, mp3Kbps)
         } catch (e: DownloadError) {
+            if (e.retryable) throw e
+            // Post só com foto (Instagram, Pinterest, TikTok…): usa a imagem pública da página.
+            _stage.value = "Procurando fotos…"
+            DirectMedia.photosFromPage(url)?.let { return@withContext it }
             // A plataforma mudou: atualiza o motor (versão de desenvolvimento, mais recente) e tenta de novo.
             if (!e.platformChanged || nightlyTried) throw e
             nightlyTried = true

@@ -23,6 +23,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -45,11 +46,15 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Image
+import androidx.compose.material.icons.rounded.PhoneAndroid
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.TouchApp
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -67,6 +72,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -74,7 +80,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
+import com.musibox.app.data.prefs.SaveDestination
 import com.musibox.app.download.LinkUtils
+import com.musibox.app.ui.components.Artwork
 import com.musibox.app.ui.components.appViewModel
 import com.musibox.app.ui.components.rememberSnack
 import com.musibox.app.ui.theme.Mb
@@ -98,6 +106,7 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
     var address by remember { mutableStateOf("") }
     var webView by remember { mutableStateOf<WebView?>(null) }
     var showSheet by remember { mutableStateOf(false) }
+    var imageToSave by remember { mutableStateOf<String?>(null) }
     val isMedia = LinkUtils.isMediaPage(currentUrl)
 
     fun startDownload(url: String) {
@@ -262,6 +271,19 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
                                 title = t.orEmpty()
                             }
                         }
+                        // Toque longo numa imagem: salvar na galeria ou no cofre (como no Snaptube).
+                        setOnLongClickListener {
+                            val hit = hitTestResult
+                            val img = hit.extra
+                            if ((hit.type == WebView.HitTestResult.IMAGE_TYPE || hit.type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE) &&
+                                img != null && img.startsWith("http")
+                            ) {
+                                imageToSave = img
+                                true
+                            } else {
+                                false
+                            }
+                        }
                         setDownloadListener { url, _, _, _, _ ->
                             // Link direto para arquivo (mp3, mp4…): baixa pelo MusiBox.
                             startDownload(url)
@@ -336,6 +358,72 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
 
     if (showSheet) {
         DownloadSheet(vm, onDismiss = { showSheet = false }, onMessage = snack)
+    }
+    imageToSave?.let { img ->
+        SaveImageDialog(
+            imageUrl = img,
+            onSave = { dest ->
+                imageToSave = null
+                vm.enqueueImage(img, currentUrl, title, dest, snack)
+            },
+            onDismiss = { imageToSave = null },
+        )
+    }
+}
+
+@Composable
+private fun SaveImageDialog(imageUrl: String, onSave: (SaveDestination) -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Salvar imagem") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Artwork(
+                    imageUrl,
+                    Modifier
+                        .fillMaxWidth()
+                        .height(180.dp),
+                    corner = 14.dp,
+                    fallbackIcon = Icons.Rounded.Image,
+                    contentScale = ContentScale.Fit,
+                )
+                SaveChoice(Icons.Rounded.PhoneAndroid, "Salvar na galeria", "Fica visível no aparelho", MaterialTheme.colorScheme.primary) {
+                    onSave(SaveDestination.GALLERY)
+                }
+                SaveChoice(Icons.Rounded.Lock, "Salvar no cofre", "Privado e criptografado", Mb.colors.vault) {
+                    onSave(SaveDestination.VAULT)
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },
+        containerColor = Mb.colors.cardHigh,
+    )
+}
+
+@Composable
+private fun SaveChoice(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    accent: Color,
+    onClick: () -> Unit,
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .border(1.dp, Mb.colors.border, RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, null, tint = accent, modifier = Modifier.size(26.dp))
+        Spacer(Modifier.width(12.dp))
+        Column {
+            Text(title, style = MaterialTheme.typography.titleSmall)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
 

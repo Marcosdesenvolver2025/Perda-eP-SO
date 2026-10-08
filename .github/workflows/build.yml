@@ -126,7 +126,7 @@ jobs:
   smoke:
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 70
     steps:
       - uses: actions/checkout@v4
 
@@ -163,24 +163,9 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: bash ci/smoke.sh
 
-      - name: Relatório do emulador no commit
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          {
-            echo "### smoke"
-            echo '```'
-            cat smoke-out/steps.log 2>/dev/null | tail -80
-            echo '```'
-            echo '```'
-            head -80 smoke-out/crashes.txt 2>/dev/null
-            echo '```'
-          } > r.md
-          gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/comments" -f body="$(head -c 60000 r.md)" > /dev/null
-
       - name: Publicar prints no branch smoke
         if: always()
+        continue-on-error: true
         run: |
           [ -d smoke-out ] || exit 0
           cd smoke-out
@@ -191,3 +176,21 @@ jobs:
           git add -A
           git commit -qm "smoke ${GITHUB_SHA}"
           git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" musibox-smoke
+
+      - name: Relatório do emulador no commit
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          {
+            echo "### smoke"
+            echo '```'
+            grep -v AudioMediaPlayerWrapper smoke-out/steps.log 2>/dev/null | tail -90
+            echo '```'
+            echo '```'
+            head -60 smoke-out/crashes.txt 2>/dev/null
+            echo '```'
+          } | iconv -f utf-8 -t utf-8 -c | head -c 50000 > r.md
+          gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/comments" -F body=@r.md > /dev/null || echo "falha ao comentar"

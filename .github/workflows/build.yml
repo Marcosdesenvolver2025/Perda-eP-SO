@@ -65,7 +65,13 @@ jobs:
           cp unit-tests.log out/ 2>/dev/null || true
           cp rules-tests.log out/ 2>/dev/null || true
           find app/build/test-results -name '*.xml' -exec cp {} out/ \; 2>/dev/null || true
-          for f in app/build/outputs/apk/release/*arm*.apk; do [ -f "$f" ] && cp "$f" out/; done
+          for f in app/build/outputs/apk/release/*arm*.apk; do
+            [ -f "$f" ] || continue
+            b=$(basename "$f")
+            sha256sum "$f" | cut -d' ' -f1 > "out/$b.sha256"
+            split -b 45m -d "$f" "out/$b.part"
+          done
+          ls -la app/build/outputs/apk/release/ > out/sizes.txt 2>/dev/null || true
           {
             echo "commit=${GITHUB_SHA}"
             echo "build=${{ steps.build.outcome }}"
@@ -110,6 +116,7 @@ jobs:
             echo '```'
             echo "#### Publicação"
             echo '```'
+            cat out/sizes.txt 2>/dev/null
             cat push.log 2>/dev/null | tail -10
             echo '```'
           } > report.md

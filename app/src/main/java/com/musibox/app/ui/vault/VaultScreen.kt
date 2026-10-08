@@ -46,7 +46,7 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Checklist
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DeleteForever
-import androidx.compose.material.icons.rounded.DriveFileMove
+import androidx.compose.material.icons.automirrored.rounded.DriveFileMove
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Lock
@@ -216,7 +216,7 @@ private fun VaultContent(nav: NavController) {
     fun itemMenu(item: VaultItemEntity) = listOf(
         MenuAction("Abrir", Icons.AutoMirrored.Rounded.OpenInNew) { openItem(item) },
         MenuAction("Renomear", Icons.Rounded.Edit) { dialog = VaultDialog.Rename(item) },
-        MenuAction("Mover para pasta", Icons.Rounded.DriveFileMove) { dialog = VaultDialog.Move(listOf(item.id)) },
+        MenuAction("Mover para pasta", Icons.AutoMirrored.Rounded.DriveFileMove) { dialog = VaultDialog.Move(listOf(item.id)) },
         MenuAction("Exportar", Icons.Rounded.Upload) { dialog = VaultDialog.Export(listOf(item.id), remove = false) },
         MenuAction("Compartilhar", Icons.Rounded.Share) { dialog = VaultDialog.Share(item.id, share = true) },
         MenuAction("Remover do cofre", Icons.Rounded.LockOpen) { dialog = VaultDialog.Export(listOf(item.id), remove = true) },
@@ -385,7 +385,7 @@ private fun VaultContent(nav: NavController) {
             ) {
                 val ids = selection.toList()
                 SelectionAction(Icons.Rounded.Upload, "Exportar") { dialog = VaultDialog.Export(ids, false) }
-                SelectionAction(Icons.Rounded.DriveFileMove, "Mover") { dialog = VaultDialog.Move(ids) }
+                SelectionAction(Icons.AutoMirrored.Rounded.DriveFileMove, "Mover") { dialog = VaultDialog.Move(ids) }
                 SelectionAction(Icons.Rounded.LockOpen, "Remover") { dialog = VaultDialog.Export(ids, true) }
                 SelectionAction(Icons.Rounded.DeleteForever, "Excluir", Mb.colors.danger) { dialog = VaultDialog.Delete(ids) }
             }
@@ -666,7 +666,7 @@ private fun MoveDialog(folders: List<String>, onChoose: (String) -> Unit, onDism
             Column {
                 MoveOption("Nova pasta…", Icons.Rounded.Add) { creating = true }
                 MoveOption("Sem pasta", Icons.AutoMirrored.Rounded.InsertDriveFile) { onChoose("") }
-                folders.forEach { f -> MoveOption(f, Icons.Rounded.DriveFileMove) { onChoose(f) } }
+                folders.forEach { f -> MoveOption(f, Icons.AutoMirrored.Rounded.DriveFileMove) { onChoose(f) } }
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },

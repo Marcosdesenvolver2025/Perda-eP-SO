@@ -15,7 +15,7 @@ import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.Headset
 import androidx.compose.material.icons.rounded.HighQuality
 import androidx.compose.material.icons.rounded.History
-import androidx.compose.material.icons.rounded.HelpOutline
+import androidx.compose.material.icons.automirrored.rounded.HelpOutline
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.MusicNote
@@ -144,7 +144,7 @@ fun SettingsScreen(nav: NavController) {
             }
             item {
                 SettingsSection("Downloads") {
-                    SettingSwitch(Icons.Rounded.HelpOutline, "Sempre perguntar onde salvar", "Galeria ou cofre a cada download",
+                    SettingSwitch(Icons.AutoMirrored.Rounded.HelpOutline, "Sempre perguntar onde salvar", "Galeria ou cofre a cada download",
                         settings.askDestination, { v -> scope.launch { container.settings.setAskDestination(v) } })
                     SettingDivider()
                     SettingItem(Icons.Rounded.SaveAlt, "Destino padrão", settings.defaultDestination.label, onClick = { dialog = SettingDialog.DESTINATION })

@@ -47,8 +47,10 @@ object FormatParser {
         val tbr: Double,
         val note: String,
     ) {
-        val hasVideo get() = vcodec != "none" && (vcodec.isNotEmpty() || height > 0)
-        val hasAudio get() = acodec != "none" && (acodec.isNotEmpty() || !hasVideo)
+        /** Link direto sem informação de codec (ex.: arquivo .mp4): considera vídeo com áudio. */
+        private val unknownMuxed get() = vcodec.isEmpty() && acodec.isEmpty() && ext.lowercase() in VIDEO_EXTS
+        val hasVideo get() = vcodec != "none" && (vcodec.isNotEmpty() || height > 0 || unknownMuxed)
+        val hasAudio get() = acodec != "none" && (acodec.isNotEmpty() || !hasVideo || unknownMuxed)
         val audioOnly get() = hasAudio && !hasVideo
         val videoOnly get() = hasVideo && acodec == "none"
         val isAvc get() = vcodec.startsWith("avc")
@@ -256,6 +258,7 @@ object FormatParser {
         if (kbps <= 0) 0 else (durationSec * kbps * 1000 / 8).toLong()
 
     val IMAGE_EXTS = setOf("jpg", "jpeg", "png", "webp", "gif", "heic")
+    val VIDEO_EXTS = setOf("mp4", "webm", "mov", "mkv", "3gp", "flv", "m4v", "avi", "ts")
 
     /** Opções "Foto" para imagens baixadas diretamente (selector "direct:<url>"). */
     fun photoOptions(urls: List<String>): List<DownloadOption> = urls.mapIndexed { i, url ->

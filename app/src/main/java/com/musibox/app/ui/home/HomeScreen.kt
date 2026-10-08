@@ -49,6 +49,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -263,8 +264,10 @@ fun HomeScreen(nav: NavController) {
 /** Fundo "aurora": manchas de luz que se movem devagar atrás do cabeçalho. */
 @Composable
 private fun AuroraBackground(modifier: Modifier) {
-    val t = rememberInfiniteTransition(label = "aurora")
-    val phase by t.animateFloat(0f, (2 * PI).toFloat(), infiniteRepeatable(tween(14_000, easing = LinearEasing)), label = "phase")
+    // Animação curta ao abrir (depois fica parada para não gastar bateria).
+    val anim = remember { androidx.compose.animation.core.Animatable(0f) }
+    LaunchedEffect(Unit) { anim.animateTo((PI / 2).toFloat(), tween(2_400)) }
+    val phase = anim.value
     val bg = MaterialTheme.colorScheme.background
     Canvas(modifier) {
         val w = size.width
@@ -408,8 +411,9 @@ private fun NowPlayingHero(state: PlayerState, onOpen: () -> Unit, onToggle: () 
 
 @Composable
 private fun ShuffleHero(count: Int, onShuffle: () -> Unit) {
-    val t = rememberInfiniteTransition(label = "wave")
-    val phase by t.animateFloat(0f, (2 * PI).toFloat(), infiniteRepeatable(tween(2600, easing = LinearEasing)), label = "w")
+    val anim = remember { androidx.compose.animation.core.Animatable(0f) }
+    LaunchedEffect(Unit) { anim.animateTo((2 * PI).toFloat(), tween(2_000)) }
+    val phase = anim.value
     Box(
         Modifier
             .fillMaxWidth()
@@ -473,12 +477,22 @@ private fun ShuffleHero(count: Int, onShuffle: () -> Unit) {
 
 @Composable
 private fun Equalizer(playing: Boolean, modifier: Modifier) {
+    // Só anima enquanto toca (animação infinita gasta bateria).
+    if (playing) AnimatedEqualizer(modifier) else EqualizerBars(listOf(0.3f, 0.3f, 0.3f), modifier)
+}
+
+@Composable
+private fun AnimatedEqualizer(modifier: Modifier) {
     val t = rememberInfiniteTransition(label = "eq")
     val a by t.animateFloat(0.2f, 1f, infiniteRepeatable(tween(420), RepeatMode.Reverse), label = "a")
     val b by t.animateFloat(1f, 0.3f, infiniteRepeatable(tween(560), RepeatMode.Reverse), label = "b")
     val c by t.animateFloat(0.4f, 0.9f, infiniteRepeatable(tween(340), RepeatMode.Reverse), label = "c")
+    EqualizerBars(listOf(a, b, c), modifier)
+}
+
+@Composable
+private fun EqualizerBars(levels: List<Float>, modifier: Modifier) {
     Canvas(modifier) {
-        val levels = if (playing) listOf(a, b, c) else listOf(0.3f, 0.3f, 0.3f)
         val bw = size.width / 5
         levels.forEachIndexed { i, l ->
             val h = size.height * l

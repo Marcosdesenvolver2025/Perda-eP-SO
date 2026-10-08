@@ -87,4 +87,15 @@ class FormatParserTest {
         assertEquals("direct:https://i.pinimg.com/originals/a.jpg", photo.selector)
         assertEquals(photo, FormatParser.defaultOption(info, preferAudio = true, videoQuality = 720, mp3 = true))
     }
+
+    @Test
+    fun linkDiretoDeVideoTemOpcaoDeVideo() {
+        val json = """
+            {"id": "clipe", "title": "clipe_demo", "extractor_key": "Generic", "webpage_url": "http://10.0.2.2:8000/clipe_demo.mp4",
+             "formats": [{"format_id": "mp4", "ext": "mp4", "url": "http://10.0.2.2:8000/clipe_demo.mp4", "vcodec": null, "acodec": null}]}
+        """.trimIndent()
+        val info = FormatParser.parse("http://10.0.2.2:8000/clipe_demo.mp4", json)
+        assertTrue(info.options.any { it.kind == OptionKind.VIDEO })
+        assertTrue(info.options.any { it.kind == OptionKind.AUDIO })
+    }
 }

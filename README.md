@@ -22,14 +22,16 @@ app/src/main/java/com/musibox/app/
 1. **Authentication → Método de login → Google**: ativar.
 2. **Firestore Database**: criar o banco.
 3. **Regras do Firestore**: copiar o conteúdo de `firestore.rules` e publicar.
-4. **Configurações do projeto → app Android → Impressões digitais**: adicionar o SHA-1 e o SHA-256 da chave que assina o APK
-   (`keystore/musibox.jks`):
+4. **Configurações do projeto → Adicionar app → Android**: package `br.com.musibox`, e em **Impressões digitais**
+   adicionar o SHA-1 e o SHA-256 da chave que assina o APK (`keystore/musibox.jks`):
    - SHA-1: `0B:C5:01:F9:E2:2E:20:F5:A0:26:3F:62:57:6D:AD:8A:AF:05:45:F6`
    - SHA-256: `57:E0:4A:79:08:1D:EE:C1:B4:3A:38:CD:1E:5A:71:0A:2B:F1:F1:4D:88:6F:8E:92:5B:F7:89:D1:DC:E3:37:4F`
 
-O `applicationId` é lido de `gradle.properties` (`musibox.applicationId`) e precisa ser igual ao `package_name`
-do `app/google-services.json`. O Client ID usado no login é o do tipo **Web** (client_type 3) do mesmo arquivo,
-lido automaticamente na compilação.
+O `applicationId` é lido de `gradle.properties` (`musibox.applicationId`, hoje `br.com.musibox`). Se o
+`app/google-services.json` tiver uma entrada para esse package, o plugin oficial do Google Services é usado. Se o
+arquivo foi gerado para outro app do mesmo projeto, o Firebase é iniciado em código com os dados públicos do
+próprio arquivo (o arquivo nunca é alterado); basta cadastrar o package no projeto (passo 4). O Client ID usado no
+login é o do tipo **Web** (client_type 3) do mesmo arquivo, lido automaticamente na compilação.
 
 ## Compilar
 
@@ -39,7 +41,7 @@ lido automaticamente na compilação.
 
 Os APKs ficam em `app/build/outputs/apk/release/` (um por arquitetura; celulares atuais usam `arm64-v8a`).
 O GitHub Actions (`.github/workflows/build.yml`) compila, roda os testes unitários e testa as regras do Firestore
-no emulador a cada envio para `main`.
+no emulador a cada envio para o branch `musibox`.
 
 ## Chave de assinatura
 

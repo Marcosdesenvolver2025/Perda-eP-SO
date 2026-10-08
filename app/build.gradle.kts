@@ -8,31 +8,58 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
-// Firebase só é configurado quando o google-services.json real existe.
+val appId = (project.findProperty("musibox.applicationId") as String?) ?: "br.com.musibox"
+
+// Lê o google-services.json REAL (nunca é alterado nem substituído).
 val googleServicesFile = file("google-services.json")
-if (googleServicesFile.exists()) {
+
+@Suppress("UNCHECKED_CAST")
+val googleServices: Map<String, Any?> =
+    if (googleServicesFile.exists()) {
+        runCatching { groovy.json.JsonSlurper().parse(googleServicesFile) as Map<String, Any?> }.getOrDefault(emptyMap())
+    } else {
+        emptyMap()
+    }
+
+@Suppress("UNCHECKED_CAST")
+val firebaseClients: List<Map<String, Any?>> = googleServices["client"] as? List<Map<String, Any?>> ?: emptyList()
+
+@Suppress("UNCHECKED_CAST")
+fun packageOf(client: Map<String, Any?>): String? =
+    ((client["client_info"] as? Map<String, Any?>)?.get("android_client_info") as? Map<String, Any?>)
+        ?.get("package_name") as? String
+
+// Se o arquivo já tem um app com este package, usa o plugin oficial.
+// Se não tem (o arquivo foi criado para outro app do mesmo projeto), o Firebase é iniciado
+// em código com os dados do próprio arquivo; basta cadastrar este package no projeto.
+val firebaseClient: Map<String, Any?>? =
+    firebaseClients.firstOrNull { packageOf(it) == appId } ?: firebaseClients.firstOrNull()
+val usePluginConfig = firebaseClients.any { packageOf(it) == appId }
+if (usePluginConfig) {
     apply(plugin = "com.google.gms.google-services")
 }
 
-/** Lê o Client ID do tipo Web (client_type 3) do google-services.json. */
-fun readWebClientId(): String {
-    if (!googleServicesFile.exists()) return ""
-    return try {
-        @Suppress("UNCHECKED_CAST")
-        val root = groovy.json.JsonSlurper().parse(googleServicesFile) as Map<String, Any?>
-        @Suppress("UNCHECKED_CAST")
-        val clients = root["client"] as? List<Map<String, Any?>> ?: emptyList()
-        clients.asSequence()
-            .flatMap { client ->
-                @Suppress("UNCHECKED_CAST")
-                (client["oauth_client"] as? List<Map<String, Any?>> ?: emptyList()).asSequence()
-            }
-            .firstOrNull { (it["client_type"] as? Number)?.toInt() == 3 }
-            ?.get("client_id") as? String ?: ""
-    } catch (e: Exception) {
-        ""
-    }
+@Suppress("UNCHECKED_CAST")
+fun firebaseValue(key: String): String {
+    val project = googleServices["project_info"] as? Map<String, Any?> ?: emptyMap()
+    val client = firebaseClient ?: emptyMap()
+    return when (key) {
+        "apiKey" -> ((client["api_key"] as? List<Map<String, Any?>>)?.firstOrNull()?.get("current_key") as? String)
+        "appId" -> (client["client_info"] as? Map<String, Any?>)?.get("mobilesdk_app_id") as? String
+        "projectId" -> project["project_id"] as? String
+        "senderId" -> project["project_number"] as? String
+        "storageBucket" -> project["storage_bucket"] as? String
+        else -> null
+    } ?: ""
 }
+
+/** Lê o Client ID do tipo Web (client_type 3) do google-services.json. */
+@Suppress("UNCHECKED_CAST")
+fun readWebClientId(): String =
+    firebaseClients.asSequence()
+        .flatMap { (it["oauth_client"] as? List<Map<String, Any?>> ?: emptyList()).asSequence() }
+        .firstOrNull { (it["client_type"] as? Number)?.toInt() == 3 }
+        ?.get("client_id") as? String ?: ""
 
 val keystoreProps = Properties().apply {
     val f = rootProject.file("keystore/keystore.properties")
@@ -44,13 +71,19 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = (project.findProperty("musibox.applicationId") as String?) ?: "br.com.musibox"
+        applicationId = appId
         minSdk = 29
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.0.1"
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${readWebClientId()}\"")
-        buildConfigField("boolean", "FIREBASE_CONFIGURED", googleServicesFile.exists().toString())
+        buildConfigField("boolean", "FIREBASE_CONFIGURED", (firebaseClient != null).toString())
+        buildConfigField("boolean", "FIREBASE_MANUAL_INIT", (firebaseClient != null && !usePluginConfig).toString())
+        buildConfigField("String", "FB_API_KEY", "\"${firebaseValue("apiKey")}\"")
+        buildConfigField("String", "FB_APP_ID", "\"${firebaseValue("appId")}\"")
+        buildConfigField("String", "FB_PROJECT_ID", "\"${firebaseValue("projectId")}\"")
+        buildConfigField("String", "FB_SENDER_ID", "\"${firebaseValue("senderId")}\"")
+        buildConfigField("String", "FB_STORAGE_BUCKET", "\"${firebaseValue("storageBucket")}\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

@@ -124,8 +124,8 @@ class AuthManager(private val context: Context) {
         is GetCredentialCancellationException -> SignInResult.Canceled
         is NoCredentialException -> SignInResult.Error("Nenhuma Conta Google disponível neste aparelho.")
         is GetCredentialException -> SignInResult.Error(
-            "Não foi possível entrar com o Google. Verifique a internet e se a impressão digital SHA-1 do app " +
-                "está cadastrada no Firebase. (${e.type})",
+            "Não foi possível entrar com o Google. Verifique a internet e se o app ${BuildConfig.APPLICATION_ID} " +
+                "está cadastrado no Firebase com a impressão digital SHA-1. (${e.type})",
         )
         is GoogleIdTokenParsingException -> SignInResult.Error("Resposta inválida do Google. Tente novamente.")
         is FirebaseNetworkException -> SignInResult.Error("Sem conexão com a internet.")

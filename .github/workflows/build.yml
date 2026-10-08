@@ -80,7 +80,7 @@ jobs:
           git checkout -q -b musibox-builds
           git add -A
           git commit -qm "build ${GITHUB_SHA}"
-          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" musibox-builds
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" musibox-builds > ../push.log 2>&1 || cat ../push.log
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -88,6 +88,33 @@ jobs:
           name: MusiBox-APK
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: ignore
+
+      - name: Relatório no commit
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          {
+            echo "### build=${{ steps.build.outcome }} unit=${{ steps.unit.outcome }} rules=${{ steps.rules.outcome }}"
+            echo '```'
+            grep -E "^e: |^w: .*(deprecated in favor|unresolved)|error:|FAILED|What went wrong|Could not (resolve|find|get)|Execution failed" build.log 2>/dev/null | grep -v "^w:" | head -200
+            echo '```'
+            echo "#### Final do log"
+            echo '```'
+            tail -40 build.log 2>/dev/null
+            echo '```'
+            echo "#### Testes"
+            echo '```'
+            grep -E "FAILED|tests completed|BUILD" unit-tests.log 2>/dev/null | head -40
+            grep -E "^# (pass|fail)|^not ok|^ok" rules-tests.log 2>/dev/null | head -40
+            echo '```'
+            echo "#### Publicação"
+            echo '```'
+            cat push.log 2>/dev/null | tail -10
+            echo '```'
+          } > report.md
+          head -c 60000 report.md > r.md
+          gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/comments" -f body="$(cat r.md)" > /dev/null
 
   smoke:
     needs: build
@@ -128,6 +155,22 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: bash ci/smoke.sh
+
+      - name: Relatório do emulador no commit
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          {
+            echo "### smoke"
+            echo '```'
+            cat smoke-out/steps.log 2>/dev/null | tail -80
+            echo '```'
+            echo '```'
+            head -80 smoke-out/crashes.txt 2>/dev/null
+            echo '```'
+          } > r.md
+          gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/comments" -f body="$(head -c 60000 r.md)" > /dev/null
 
       - name: Publicar prints no branch smoke
         if: always()

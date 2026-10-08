@@ -3,6 +3,7 @@
 set -u
 OUT=${OUT:-smoke-out}
 mkdir -p "$OUT"
+exec > >(tee -a "$OUT/steps.log") 2>&1
 APK=apk/teste.apk
 PKG=$(aapt2 dump packagename "$APK" 2>/dev/null || true)
 [ -z "$PKG" ] && PKG=$(grep -m1 'musibox.applicationId' gradle.properties | cut -d= -f2)

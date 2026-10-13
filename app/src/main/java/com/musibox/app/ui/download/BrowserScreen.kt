@@ -42,6 +42,9 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.material.icons.rounded.StarBorder
+import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Close
@@ -112,8 +115,12 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
     // Tela cheia de vídeos dentro do navegador (ex.: botão de tela cheia do YouTube)
     var fullView by remember { mutableStateOf<android.view.View?>(null) }
     var fullCallback by remember { mutableStateOf<WebChromeClient.CustomViewCallback?>(null) }
-    val activity = androidx.compose.ui.platform.LocalContext.current.findActivity()
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val activity = ctx.findActivity()
     val isMedia = LinkUtils.isMediaPage(currentUrl)
+    val store = remember { com.musibox.app.download.BrowserStore.get(ctx) }
+    val bookmarks by store.bookmarks.collectAsStateWithLifecycle()
+    val bookmarked = bookmarks.any { it.url.trimEnd('/') == currentUrl.trimEnd('/') }
 
     fun startDownload(url: String, videoHint: String? = null) {
         vm.analyze(url, videoHint = videoHint)
@@ -239,6 +246,11 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
                 }
             }
             Spacer(Modifier.width(6.dp))
+            BarButton(if (bookmarked) Icons.Rounded.Star else Icons.Rounded.StarBorder, if (bookmarked) "Remover dos favoritos" else "Salvar nos favoritos") {
+                val saved = store.toggleBookmark(currentUrl, title)
+                snack(if (saved) "Página salva nos favoritos." else "Removida dos favoritos.")
+            }
+            Spacer(Modifier.width(6.dp))
             BarButton(Icons.Rounded.Refresh, "Recarregar") { webView?.reload() }
         }
         // Abas rápidas dos sites
@@ -319,7 +331,10 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
                             }
 
                             override fun onPageFinished(view: WebView, url: String?) {
-                                url?.let { currentUrl = it }
+                                url?.let {
+                                    currentUrl = it
+                                    store.recordVisit(it, view.title)
+                                }
                                 canGoBack = view.canGoBack()
                                 canGoForward = view.canGoForward()
                             }

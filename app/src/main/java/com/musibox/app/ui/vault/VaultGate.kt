@@ -110,7 +110,7 @@ fun VaultGate(content: @Composable () -> Unit) {
     }
 }
 
-/** Criação de PIN (6 dígitos) + oferta de biometria. */
+/** Criação de PIN (4 dígitos) + oferta de biometria. */
 @Composable
 fun PinSetupFlow(title: String, onDone: () -> Unit, offerBiometric: Boolean = true, offerRecovery: Boolean = true) {
     val container = LocalAppContainer.current
@@ -164,14 +164,14 @@ fun PinSetupFlow(title: String, onDone: () -> Unit, offerBiometric: Boolean = tr
     PinScreenLayout(
         icon = Icons.Rounded.Shield,
         title = if (first == null) title else "Confirme o PIN",
-        subtitle = if (first == null) "Crie um PIN de 6 dígitos para abrir o cofre." else "Digite o mesmo PIN novamente.",
+        subtitle = if (first == null) "Crie um PIN de 4 dígitos para abrir o cofre." else "Digite o mesmo PIN novamente.",
         entry = entry,
         error = error,
         onDigit = { d ->
-            if (entry.length < 6) {
+            if (entry.length < PinManager.NEW_PIN_LENGTH) {
                 entry += d
                 error = null
-                if (entry.length == 6) {
+                if (entry.length == PinManager.NEW_PIN_LENGTH) {
                     val typed = entry
                     val f = first
                     if (f == null) {
@@ -260,6 +260,7 @@ fun PinUnlock(biometricEnabled: Boolean, onUnlocked: () -> Unit, onVaultReset: (
     var resettingPin by remember { mutableStateOf(false) }
     val biometricHardware = remember { Biometrics.isAvailable(context) }
     val biometricAvailable = biometricEnabled && biometricHardware
+    val pinLen = remember(resettingPin) { container.pin.pinLength() }
 
     val promptBiometric: () -> Unit = {
         val act = context.findActivity() as? FragmentActivity
@@ -268,7 +269,9 @@ fun PinUnlock(biometricEnabled: Boolean, onUnlocked: () -> Unit, onVaultReset: (
         }
     }
 
-    LaunchedEffect(Unit) { if (biometricAvailable && lockout == 0L) promptBiometric() }
+    // Só pede a digital quando o cofre está de fato na tela (não ao passar por ele no deslize).
+    val pageActive = com.musibox.app.ui.main.LocalPageActive.current
+    LaunchedEffect(pageActive) { if (pageActive && biometricAvailable && lockout == 0L) promptBiometric() }
     LaunchedEffect(lockout) {
         while (lockout > 0) {
             delay(1000)
@@ -324,10 +327,10 @@ fun PinUnlock(biometricEnabled: Boolean, onUnlocked: () -> Unit, onVaultReset: (
             { IconButton(onClick = promptBiometric) { Icon(Icons.Rounded.Fingerprint, "Usar biometria", tint = Mb.colors.vault, modifier = Modifier.size(34.dp)) } }
         } else null,
         onDigit = { d ->
-            if (lockout == 0L && entry.length < 6) {
+            if (lockout == 0L && entry.length < pinLen) {
                 entry += d
                 error = null
-                if (entry.length == 6) {
+                if (entry.length == pinLen) {
                     val typed = entry
                     scope.launch {
                         when (val r = container.pin.verify(typed)) {
@@ -347,6 +350,7 @@ fun PinUnlock(biometricEnabled: Boolean, onUnlocked: () -> Unit, onVaultReset: (
         },
         onBackspace = { entry = entry.dropLast(1) },
         footer = { TextButton(onClick = { forgot = true }) { Text("Esqueci o PIN", color = Mb.colors.vault) } },
+        length = pinLen,
     )
 
 }
@@ -363,6 +367,7 @@ fun PinScreenLayout(
     enabled: Boolean = true,
     extraKey: (@Composable () -> Unit)? = null,
     footer: (@Composable () -> Unit)? = null,
+    length: Int = PinManager.NEW_PIN_LENGTH,
 ) {
     Column(
         Modifier
@@ -379,7 +384,7 @@ fun PinScreenLayout(
         Spacer(Modifier.height(6.dp))
         Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
         Spacer(Modifier.height(26.dp))
-        PinDots(6, entry.length, error != null)
+        PinDots(length, entry.length, error != null)
         Spacer(Modifier.height(12.dp))
         Box(Modifier.height(40.dp), contentAlignment = Alignment.Center) {
             if (error != null) Text(error, color = Mb.colors.danger, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.CloudSync
@@ -61,7 +62,7 @@ fun MoreScreen(nav: NavController) {
     var about by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize()) {
-        MbTopBar("Mais")
+        com.musibox.app.ui.components.PageTitle("Mais", "Conta, biblioteca e ajustes")
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
             item {
                 MbCard(
@@ -84,8 +85,11 @@ fun MoreScreen(nav: NavController) {
                         Spacer(Modifier.width(14.dp))
                         Column(Modifier.weight(1f)) {
                             Text(user?.name ?: "Entrar com Google", style = MaterialTheme.typography.titleMedium)
+                            if (user?.email != null) {
+                                Text(user?.email.orEmpty(), style = MaterialTheme.typography.bodySmall, color = com.musibox.app.ui.components.Neo.Artist, maxLines = 1)
+                            }
                             Text(
-                                if (user == null) "Sincronize playlists, favoritos e configurações" else sync.status.label,
+                                if (user == null) "Seus dados voltam mesmo se reinstalar o app" else sync.status.label,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -96,6 +100,8 @@ fun MoreScreen(nav: NavController) {
             }
             item {
                 SettingsSection("Biblioteca") {
+                    SettingItem(Icons.Rounded.LibraryMusic, "Biblioteca completa", "Músicas, artistas, álbuns e pastas", onClick = { nav.navigateTopLevel(Routes.library(0)) })
+                    SettingDivider()
                     SettingItem(Icons.AutoMirrored.Rounded.QueueMusic, "Playlists", onClick = { nav.navigateTopLevel(Routes.library(4), restore = false) })
                     SettingDivider()
                     SettingItem(Icons.Rounded.Favorite, "Favoritos", onClick = { nav.navigateTopLevel(Routes.library(5), restore = false) }, tint = androidx.compose.ui.graphics.Color(0xFFFF4D8D))

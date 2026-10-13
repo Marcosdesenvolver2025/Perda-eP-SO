@@ -102,6 +102,8 @@ import com.musibox.app.ui.components.StateMessage
 import com.musibox.app.ui.components.appViewModel
 import com.musibox.app.ui.components.rememberSnack
 import com.musibox.app.ui.navigation.Routes
+import com.musibox.app.ui.main.MainTabs
+import com.musibox.app.ui.navigation.navigateTopLevel
 import com.musibox.app.ui.theme.Mb
 
 /**
@@ -109,7 +111,7 @@ import com.musibox.app.ui.theme.Mb
  * navegador interno, link copiado detectado, downloads em andamento e pesquisa no YouTube.
  */
 @Composable
-fun DownloadScreen(nav: NavController, initialTab: Int, initialUrl: String?) {
+fun DownloadScreen(nav: NavController, request: MainTabs.DownloadRequest?, onRequestHandled: () -> Unit) {
     val linkVm = appViewModel { LinkDownloadViewModel(it) }
     val centerVm = appViewModel { DownloadCenterViewModel(it) }
     val context = LocalContext.current
@@ -117,7 +119,6 @@ fun DownloadScreen(nav: NavController, initialTab: Int, initialUrl: String?) {
     val focus = LocalFocusManager.current
     val windowInfo = LocalWindowInfo.current
     val snack = rememberSnack()
-    var handledInitial by rememberSaveable { mutableStateOf(false) }
     val online by centerVm.online.collectAsStateWithLifecycle()
     val settings by linkVm.settings.collectAsStateWithLifecycle()
     val downloads by centerVm.downloads.collectAsStateWithLifecycle()
@@ -144,12 +145,14 @@ fun DownloadScreen(nav: NavController, initialTab: Int, initialUrl: String?) {
         }
     }
 
-    LaunchedEffect(initialUrl, initialTab) {
-        if (handledInitial) return@LaunchedEffect
-        handledInitial = true
+    // Pedidos vindos de outras telas (link compartilhado, busca, "abrir downloads").
+    LaunchedEffect(request?.id) {
+        val r = request ?: return@LaunchedEffect
+        onRequestHandled()
+        val initialUrl = r.url
         when {
-            initialTab == 2 -> nav.navigate(Routes.DOWNLOADS)
-            initialTab == 1 && !initialUrl.isNullOrBlank() -> {
+            r.tab == 2 -> nav.navigate(Routes.DOWNLOADS)
+            r.tab == 1 && !initialUrl.isNullOrBlank() -> {
                 centerVm.query = initialUrl
                 centerVm.runSearch()
             }
@@ -188,8 +191,7 @@ fun DownloadScreen(nav: NavController, initialTab: Int, initialUrl: String?) {
         Row(
             Modifier
                 .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(start = 20.dp, end = 12.dp, top = 10.dp, bottom = 4.dp),
+                .padding(start = 18.dp, end = 12.dp, top = 4.dp, bottom = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (showingSearch) {
@@ -197,7 +199,7 @@ fun DownloadScreen(nav: NavController, initialTab: Int, initialUrl: String?) {
                 Spacer(Modifier.width(10.dp))
             }
             Column(Modifier.weight(1f)) {
-                Text("Baixar", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                Text("Baixar", fontSize = 30.sp, fontWeight = FontWeight.ExtraBold)
                 Text(
                     "Vídeos e músicas de qualquer site",
                     style = MaterialTheme.typography.bodySmall,
@@ -365,14 +367,6 @@ private fun HubHome(
             item(key = "clip") { ClipboardCard(clipUrl, { onClipDownload(clipUrl) }, { onClipDismiss(clipUrl) }) }
         }
         item(key = "browserHero") { BrowserHero { site -> nav.navigate(Routes.browser(site.url)) } }
-        item(key = "sites") {
-            Column(Modifier.padding(horizontal = 16.dp)) {
-                Spacer(Modifier.height(18.dp))
-                SectionTitle("Mais sites")
-                Spacer(Modifier.height(10.dp))
-                SitesGrid(DownloadSites.filter { it.name !in HERO_SITES }) { site -> nav.navigate(Routes.browser(site.url)) }
-            }
-        }
         if (active.isNotEmpty()) {
             item(key = "activeTitle") {
                 SectionTitle(
@@ -754,7 +748,7 @@ fun rememberDownloadActions(vm: DownloadCenterViewModel, nav: NavController): Do
                     vaultId != null -> when {
                         mime.startsWith("image/") -> nav.navigate(Routes.vaultViewer(vaultId))
                         mime.startsWith("video/") || mime.startsWith("audio/") -> nav.navigate(Routes.vaultPlayer(vaultId))
-                        else -> nav.navigate(Routes.VAULT)
+                        else -> nav.navigateTopLevel(Routes.VAULT)
                     }
                     d.outputUri != null -> {
                         val uri = Uri.parse(d.outputUri)

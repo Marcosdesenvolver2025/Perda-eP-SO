@@ -95,7 +95,7 @@ private fun VaultSettingsContent(nav: NavController) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
             item {
                 SettingsSection("Segurança") {
-                    SettingItem(Icons.Rounded.Key, "Alterar PIN", "PIN de 6 dígitos", onClick = { nav.navigate(Routes.VAULT_CHANGE_PIN) }, tint = vault)
+                    SettingItem(Icons.Rounded.Key, "Alterar PIN", "PIN de 4 dígitos", onClick = { nav.navigate(Routes.VAULT_CHANGE_PIN) }, tint = vault)
                     SettingDivider()
                     SettingItem(
                         Icons.Rounded.LockReset,
@@ -236,6 +236,7 @@ fun VaultChangePinScreen(nav: NavController) {
         var verified by remember { mutableStateOf(false) }
         var entry by remember { mutableStateOf("") }
         var error by remember { mutableStateOf<String?>(null) }
+        val pinLen = remember { container.pin.pinLength() }
 
         Column(Modifier.fillMaxSize()) {
             MbTopBar("Alterar PIN", onBack = { nav.popBackStack() })
@@ -247,10 +248,10 @@ fun VaultChangePinScreen(nav: NavController) {
                     entry = entry,
                     error = error,
                     onDigit = { d ->
-                        if (entry.length < 6) {
+                        if (entry.length < pinLen) {
                             entry += d
                             error = null
-                            if (entry.length == 6) {
+                            if (entry.length == pinLen) {
                                 val typed = entry
                                 scope.launch {
                                     when (val r = container.pin.verify(typed)) {
@@ -264,6 +265,7 @@ fun VaultChangePinScreen(nav: NavController) {
                         }
                     },
                     onBackspace = { entry = entry.dropLast(1) },
+                    length = pinLen,
                 )
             } else {
                 PinSetupFlow(title = "Novo PIN", offerBiometric = false, offerRecovery = false, onDone = {

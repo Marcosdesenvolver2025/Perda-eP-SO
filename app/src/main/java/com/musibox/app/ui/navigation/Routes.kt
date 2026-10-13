@@ -2,10 +2,14 @@ package com.musibox.app.ui.navigation
 
 import android.net.Uri
 import androidx.navigation.NavController
+import com.musibox.app.ui.main.MainTabs
 
 object Routes {
     const val ONBOARDING = "onboarding"
+    /** Tela com as abas principais lado a lado (Início, Navegador, Baixar, Cofre, Mais). */
+    const val MAIN = "main"
     const val HOME = "home"
+    const val BROWSER_HOME = "browser_home"
     const val LIBRARY = "library?tab={tab}"
     const val DOWNLOAD = "download?tab={tab}&url={url}"
     const val VAULT = "vault"
@@ -39,15 +43,27 @@ object Routes {
     fun vaultViewer(id: String) = "vault_view/$id"
     fun vaultPlayer(id: String) = "vault_play/$id"
 
-    val topLevel = setOf(HOME, LIBRARY, DOWNLOAD, VAULT, MORE)
+    val topLevel = setOf(MAIN)
     val vaultRoutes = setOf(VAULT, VAULT_SETTINGS, VAULT_VIEWER, VAULT_PLAYER, VAULT_BACKUP, VAULT_CHANGE_PIN)
 }
 
-/** Navega para uma aba principal mantendo o estado de cada aba. */
-fun NavController.navigateTopLevel(route: String, restore: Boolean = true) {
-    navigate(route) {
-        popUpTo(Routes.HOME) { saveState = restore }
-        launchSingleTop = true
-        restoreState = restore
+/**
+ * Abre uma das telas principais (que ficam lado a lado no deslize). A biblioteca completa
+ * ("library?tab=…") virou uma tela própria, aberta por cima.
+ */
+fun NavController.navigateTopLevel(route: String, @Suppress("UNUSED_PARAMETER") restore: Boolean = true) {
+    if (route.startsWith("library")) {
+        navigate(route) { launchSingleTop = true }
+        return
+    }
+    MainTabs.open(route)
+    if (currentDestination?.route != Routes.MAIN) {
+        val popped = runCatching { popBackStack(Routes.MAIN, inclusive = false) }.getOrDefault(false)
+        if (!popped) {
+            navigate(Routes.MAIN) {
+                popUpTo(graph.id) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
     }
 }

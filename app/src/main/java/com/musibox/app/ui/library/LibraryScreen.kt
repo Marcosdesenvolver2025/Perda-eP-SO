@@ -58,6 +58,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.pager.HorizontalPager
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.musibox.app.core.Fmt
@@ -82,6 +86,7 @@ import com.musibox.app.ui.components.appViewModel
 import com.musibox.app.ui.components.rememberAudioPermission
 import com.musibox.app.ui.components.rememberSnack
 import com.musibox.app.ui.navigation.Routes
+import com.musibox.app.ui.navigation.navigateTopLevel
 import com.musibox.app.ui.theme.Mb
 
 private val tabs = listOf("Músicas", "Artistas", "Álbuns", "Pastas", "Playlists", "Favoritos", "Recentes", "Mais tocadas")
@@ -94,14 +99,17 @@ fun LibraryScreen(nav: NavController, initialTab: Int) {
     val scan by vm.scanState.collectAsStateWithLifecycle()
     val sort by vm.sort.collectAsStateWithLifecycle()
     val player by container.player.state.collectAsStateWithLifecycle()
-    var tab by rememberSaveable { mutableIntStateOf(initialTab.coerceIn(tabs.indices)) }
+    val pager = rememberPagerState(initialPage = initialTab.coerceIn(tabs.indices)) { tabs.size }
+    val tab = pager.currentPage
+    val scope = rememberCoroutineScope()
     var sortMenu by remember { mutableStateOf(false) }
     var playlistSongs by remember { mutableStateOf<List<Song>?>(null) }
     val permission = rememberAudioPermission(onGranted = { vm.rescan() })
 
     Column(Modifier.fillMaxSize()) {
         MbTopBar(
-            title = "Músicas",
+            title = "Biblioteca",
+            onBack = { nav.popBackStack() },
             subtitle = songs?.let { Fmt.plural(it.size, "música", "músicas") },
         ) {
             MbIconButton(Icons.Rounded.Search, "Pesquisar", { nav.navigate(Routes.SEARCH) })
@@ -134,42 +142,47 @@ fun LibraryScreen(nav: NavController, initialTab: Int) {
             tabs.forEachIndexed { i, label ->
                 Tab(
                     selected = tab == i,
-                    onClick = { tab = i },
+                    onClick = { scope.launch { pager.animateScrollToPage(i) } },
                     text = { Text(label, fontWeight = if (tab == i) FontWeight.Bold else FontWeight.Normal) },
                     unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
 
-        val needsSongs = tab !in setOf(4, 5)
-        when {
-            needsSongs && !permission.granted -> PermissionNeeded(permission.permanentlyDenied, permission.request, permission.openSettings)
-            needsSongs && songs == null -> LoadingState("Carregando biblioteca…")
-            needsSongs && songs!!.isEmpty() -> when (scan) {
-                is ScanState.Scanning -> LoadingState("Procurando músicas no aparelho…")
-                is ScanState.Error -> StateMessage(
-                    Icons.Rounded.MusicOff, "Não foi possível ler suas músicas.", (scan as ScanState.Error).message,
-                    actionText = "Tentar novamente", onAction = { vm.rescan() },
-                )
-                else -> StateMessage(
-                    Icons.Rounded.MusicOff,
-                    "Nenhuma música encontrada.",
-                    "Baixe músicas pelo MusiBox ou copie arquivos de áudio para o aparelho.",
-                    actionText = "Procurar novamente",
-                    onAction = { vm.rescan() },
-                    secondaryText = "Ir para Baixar",
-                    onSecondary = { nav.navigate(Routes.download()) },
-                )
+        // Deslize para o lado para trocar de aba
+        HorizontalPager(state = pager, modifier = Modifier.fillMaxSize(), key = { it }) { page ->
+            Box(Modifier.fillMaxSize()) {
+            val needsSongs = page !in setOf(4, 5)
+            when {
+                needsSongs && !permission.granted -> PermissionNeeded(permission.permanentlyDenied, permission.request, permission.openSettings)
+                needsSongs && songs == null -> LoadingState("Carregando biblioteca…")
+                needsSongs && songs!!.isEmpty() -> when (scan) {
+                    is ScanState.Scanning -> LoadingState("Procurando músicas no aparelho…")
+                    is ScanState.Error -> StateMessage(
+                        Icons.Rounded.MusicOff, "Não foi possível ler suas músicas.", (scan as ScanState.Error).message,
+                        actionText = "Tentar novamente", onAction = { vm.rescan() },
+                    )
+                    else -> StateMessage(
+                        Icons.Rounded.MusicOff,
+                        "Nenhuma música encontrada.",
+                        "Baixe músicas pelo MusiBox ou copie arquivos de áudio para o aparelho.",
+                        actionText = "Procurar novamente",
+                        onAction = { vm.rescan() },
+                        secondaryText = "Ir para Baixar",
+                        onSecondary = { nav.navigateTopLevel(Routes.download()) },
+                    )
+                }
+                else -> when (page) {
+                    0 -> SongsTab(songs.orEmpty(), vm, player, nav) { playlistSongs = it }
+                    1 -> ArtistsTab(songs.orEmpty(), nav)
+                    2 -> AlbumsTab(songs.orEmpty(), nav)
+                    3 -> FoldersTab(songs.orEmpty(), nav)
+                    4 -> PlaylistsTab(vm, nav)
+                    5 -> FavoritesTab(vm, player, nav) { playlistSongs = it }
+                    6 -> SongsTab(songs.orEmpty().sortedByDescending { it.dateAddedMs }.take(100), vm, player, nav, showHeader = false) { playlistSongs = it }
+                    7 -> MostPlayedTab(vm, player, nav) { playlistSongs = it }
+                }
             }
-            else -> when (tab) {
-                0 -> SongsTab(songs.orEmpty(), vm, player, nav) { playlistSongs = it }
-                1 -> ArtistsTab(songs.orEmpty(), nav)
-                2 -> AlbumsTab(songs.orEmpty(), nav)
-                3 -> FoldersTab(songs.orEmpty(), nav)
-                4 -> PlaylistsTab(vm, nav)
-                5 -> FavoritesTab(vm, player, nav) { playlistSongs = it }
-                6 -> SongsTab(songs.orEmpty().sortedByDescending { it.dateAddedMs }.take(100), vm, player, nav, showHeader = false) { playlistSongs = it }
-                7 -> MostPlayedTab(vm, player, nav) { playlistSongs = it }
             }
         }
     }

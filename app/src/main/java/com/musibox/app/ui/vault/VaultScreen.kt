@@ -90,6 +90,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.pager.HorizontalPager
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.musibox.app.core.Fmt
@@ -149,6 +156,8 @@ private fun VaultContent(nav: NavController) {
     var selectMode by remember { mutableStateOf(false) }
     var fabOpen by remember { mutableStateOf(false) }
     var dialog by remember { mutableStateOf<VaultDialog?>(null) }
+    val scope = rememberCoroutineScope()
+    val tabPager = rememberPagerState(initialPage = tab) { vaultTabs.size }
 
     val all = items
     val current = vaultTabs[tab]
@@ -161,6 +170,17 @@ private fun VaultContent(nav: NavController) {
     fun clearSelection() {
         selection = emptySet()
         selectMode = false
+    }
+
+    // Deslizar entre Fotos, Vídeos, Áudios e Arquivos troca a aba (e limpa pasta/seleção).
+    LaunchedEffect(tabPager) {
+        snapshotFlow { tabPager.currentPage }.collect { p ->
+            if (p != tab) {
+                tab = p
+                folder = null
+                clearSelection()
+            }
+        }
     }
 
     BackHandler(enabled = selectMode || fabOpen || searching) {
@@ -243,7 +263,6 @@ private fun VaultContent(nav: NavController) {
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .statusBarsPadding()
                         .padding(horizontal = 8.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -255,12 +274,11 @@ private fun VaultContent(nav: NavController) {
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .statusBarsPadding()
-                        .padding(start = 20.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+                        .padding(start = 18.dp, end = 12.dp, top = 4.dp, bottom = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
-                        Text("Cofre", style = MaterialTheme.typography.headlineSmall)
+                        Text("Cofre", fontSize = 30.sp, fontWeight = FontWeight.ExtraBold)
                         Text(
                             "${Fmt.plural(all.orEmpty().size, "item", "itens")} • ${Fmt.size(all.orEmpty().sumOf { it.size })} • Criptografado",
                             style = MaterialTheme.typography.bodySmall,
@@ -313,7 +331,7 @@ private fun VaultContent(nav: NavController) {
                     val count = all.orEmpty().count { it.category == t.category }
                     Tab(
                         selected = tab == i,
-                        onClick = { tab = i; folder = null; clearSelection() },
+                        onClick = { scope.launch { tabPager.animateScrollToPage(i) } },
                         text = {
                             Text(
                                 if (count > 0) "${t.label} $count" else t.label,
@@ -335,36 +353,50 @@ private fun VaultContent(nav: NavController) {
                 }
             }
 
-            // ---------- Conteúdo ----------
-            when {
-                all == null -> LoadingState("Abrindo o cofre…")
-                visible.isEmpty() -> StateMessage(
-                    current.icon,
-                    if (query.isNotBlank()) "Nada encontrado" else "Nenhum item em ${current.label.lowercase()}",
-                    if (query.isNotBlank()) null else "Os arquivos do cofre ficam criptografados e não aparecem na galeria.",
-                    actionText = if (query.isBlank()) "Adicionar ${current.label.lowercase()}" else null,
-                    onAction = { startPick(current) },
-                    tint = Mb.colors.vault,
-                )
-                current.category == VaultCategory.PHOTO -> LazyVerticalGrid(
-                    columns = GridCells.Adaptive(108.dp),
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 4.dp, end = 4.dp, top = 4.dp, bottom = 96.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    items(visible, key = { it.id }) { item ->
-                        PhotoCell(item, settings.vaultHideThumbnails, item.id in selection, selectMode, { onItemClick(item) }, { onItemLongClick(item) })
-                    }
-                }
-                else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 96.dp)) {
-                    items(visible, key = { it.id }) { item ->
-                        VaultRow(
-                            item, settings.vaultHideThumbnails, item.id in selection, selectMode,
-                            onClick = { onItemClick(item) },
-                            onLongClick = { onItemLongClick(item) },
-                            menu = if (selectMode) emptyList() else itemMenu(item),
+            // ---------- Conteúdo (deslize para trocar de aba) ----------
+            if (all == null) {
+                LoadingState("Abrindo o cofre…")
+            } else {
+                HorizontalPager(
+                    state = tabPager,
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    key = { vaultTabs[it].category },
+                ) { page ->
+                    val t = vaultTabs[page]
+                    val pageItems = all
+                        .filter { it.category == t.category }
+                        .filter { page != tab || folder == null || it.folder == folder }
+                        .filter { query.isBlank() || it.name.contains(query.trim(), ignoreCase = true) }
+                    when {
+                        pageItems.isEmpty() -> StateMessage(
+                            t.icon,
+                            if (query.isNotBlank()) "Nada encontrado" else "Nenhum item em ${t.label.lowercase()}",
+                            if (query.isNotBlank()) null else "Os arquivos do cofre ficam criptografados e não aparecem na galeria.",
+                            actionText = if (query.isBlank()) "Adicionar ${t.label.lowercase()}" else null,
+                            onAction = { startPick(t) },
+                            tint = Mb.colors.vault,
                         )
+                        t.category == VaultCategory.PHOTO -> LazyVerticalGrid(
+                            columns = GridCells.Adaptive(108.dp),
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(start = 4.dp, end = 4.dp, top = 4.dp, bottom = 96.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            items(pageItems, key = { it.id }) { item ->
+                                PhotoCell(item, settings.vaultHideThumbnails, item.id in selection, selectMode, { onItemClick(item) }, { onItemLongClick(item) })
+                            }
+                        }
+                        else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 96.dp)) {
+                            items(pageItems, key = { it.id }) { item ->
+                                VaultRow(
+                                    item, settings.vaultHideThumbnails, item.id in selection, selectMode,
+                                    onClick = { onItemClick(item) },
+                                    onLongClick = { onItemLongClick(item) },
+                                    menu = if (selectMode) emptyList() else itemMenu(item),
+                                )
+                            }
+                        }
                     }
                 }
             }

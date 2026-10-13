@@ -47,8 +47,10 @@ $UI tap "Ir para o início"
 sleep 3; shot 04_inicio
 
 step "Biblioteca e player"
-$UI tapx "Músicas" 10; sleep 2; shot 05_musicas
-$UI tap "Faixa de Teste 1"; sleep 4; shot 06_tocando
+$UI tap "Faixa de Teste 1" 20; sleep 4; shot 06_tocando
+# Deslizar para o lado troca de tela (Início -> Navegador -> Início)
+adb shell input swipe 950 1300 120 1300 250; sleep 2; shot 05_deslize_navegador
+adb shell input swipe 120 1300 950 1300 250; sleep 2; shot 05b_deslize_inicio
 launch --ez open_player true; sleep 3; shot 07_player
 adb shell input keyevent KEYCODE_HOME; sleep 2
 adb shell cmd statusbar expand-notifications; sleep 3; shot 08_notificacao
@@ -86,9 +88,9 @@ sleep 40
 step "Cofre: PIN, código de recuperação e recuperação"
 launch
 $UI tapx "Cofre" 10; sleep 2
-for d in 1 2 3 4 5 6; do $UI tapx "$d" 3 >/dev/null; done
+for d in 1 2 3 4; do $UI tapx "$d" 3 >/dev/null; done
 sleep 1
-for d in 1 2 3 4 5 6; do $UI tapx "$d" 3 >/dev/null; done
+for d in 1 2 3 4; do $UI tapx "$d" 3 >/dev/null; done
 sleep 3
 $UI tap "Criar código de recuperação" 10; sleep 2
 CODE=$($UI text '[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}' | tail -1)
@@ -112,9 +114,9 @@ $UI tap "Esqueci o PIN" 10; sleep 1; shot 18b_esqueci_pin
 $UI tap "Usar código de recuperação" 10; sleep 2
 adb shell input text "$CODE"; sleep 1; shot 18b2_codigo_digitado
 $UI tapx "Confirmar" 10; sleep 3
-for d in 6 5 4 3 2 1; do $UI tapx "$d" 3 >/dev/null; done
+for d in 4 3 2 1; do $UI tapx "$d" 3 >/dev/null; done
 sleep 1
-for d in 6 5 4 3 2 1; do $UI tapx "$d" 3 >/dev/null; done
+for d in 4 3 2 1; do $UI tapx "$d" 3 >/dev/null; done
 sleep 3; shot 18c_cofre_recuperado
 
 step "Histórico, configurações e armazenamento"
@@ -126,7 +128,7 @@ $UI tapx "Configurações" 10; shot 21_configuracoes
 adb shell input keyevent KEYCODE_BACK; sleep 1
 $UI tapx "Armazenamento" 10; sleep 4; shot 22_armazenamento
 adb shell input keyevent KEYCODE_BACK; sleep 1
-$UI tapx "Músicas" 10; sleep 3; shot 23_musicas_depois
+$UI tap "Biblioteca completa" 10; sleep 3; shot 23_biblioteca
 
 step "Rotação"
 adb shell settings put system accelerometer_rotation 0

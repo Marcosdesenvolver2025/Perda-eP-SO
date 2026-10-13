@@ -76,6 +76,7 @@ import com.musibox.app.ui.components.TrackRow
 import com.musibox.app.ui.components.appViewModel
 import com.musibox.app.ui.components.rememberSnack
 import com.musibox.app.ui.navigation.Routes
+import com.musibox.app.ui.navigation.navigateTopLevel
 import com.musibox.app.ui.theme.Mb
 import kotlinx.coroutines.launch
 
@@ -329,7 +330,7 @@ fun SearchScreen(nav: NavController) {
                         Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 6.dp),
-                        onClick = { nav.navigate(Routes.download(tab = 1, url = query.trim())) },
+                        onClick = { nav.navigateTopLevel(Routes.download(tab = 1, url = query.trim())) },
                     ) {
                         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Rounded.Download, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))

@@ -1,10 +1,8 @@
 package com.musibox.app.ui.navigation
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,135 +19,204 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Download
-import androidx.compose.material.icons.rounded.GridView
-import androidx.compose.material.icons.rounded.Home
-import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material.icons.rounded.MusicNote
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.musibox.app.ui.theme.Mb
+import androidx.compose.ui.unit.sp
+import com.musibox.app.R
+import com.musibox.app.ui.components.Neo
+import com.musibox.app.ui.main.MainTabs
 
 /**
- * Menu de baixo em "doca" flutuante de vidro, com brilho neon na borda e o botão Baixar
- * como uma esfera 3D iluminada no centro.
+ * Barra de baixo em vidro com ícones 3D (Início, Navegador, Cofre, Mais) e o botão Baixar
+ * como uma esfera iluminada no centro. Acompanha a página do deslize.
  */
 @Composable
-fun BottomBar(currentRoute: String?, onNavigate: (String) -> Unit) {
+fun BottomBar(selectedPage: Int, onSelect: (Int) -> Unit) {
     Box(
         Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(start = 12.dp, end = 12.dp, bottom = 8.dp, top = 14.dp),
+            .padding(start = 10.dp, end = 10.dp, bottom = 6.dp, top = 16.dp),
         contentAlignment = Alignment.BottomCenter,
     ) {
+        val shape = RoundedCornerShape(36.dp)
         Row(
             Modifier
                 .fillMaxWidth()
-                .height(68.dp)
-                .shadow(18.dp, RoundedCornerShape(28.dp), ambientColor = Color(0xFF1E8BFF), spotColor = Color(0xFF1E8BFF))
-                .clip(RoundedCornerShape(28.dp))
-                .background(Brush.verticalGradient(listOf(Color(0xFF18213A), Color(0xFF0B0F1C))))
+                .height(78.dp)
+                .shadow(20.dp, shape, ambientColor = Color(0xFF0F6BFF), spotColor = Color(0xFF0F6BFF))
+                .clip(shape)
+                .background(Brush.verticalGradient(listOf(Color(0xFF0C1A30), Color(0xFF050B17))))
                 .border(
-                    1.dp,
-                    Brush.horizontalGradient(listOf(Color(0x551EC8FF), Color.White.copy(alpha = 0.18f), Color(0x559B6BFF))),
-                    RoundedCornerShape(28.dp),
+                    1.2.dp,
+                    Brush.horizontalGradient(listOf(Color(0xFF1EC8FF), Color(0xFF1B3D78), Color(0xFF233A70), Color(0xFF8B5CFF))),
+                    shape,
                 )
                 .padding(horizontal = 4.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            NavItem(Icons.Rounded.Home, "Início", currentRoute == Routes.HOME) { onNavigate(Routes.HOME) }
-            NavItem(Icons.Rounded.MusicNote, "Músicas", currentRoute == Routes.LIBRARY) { onNavigate(Routes.library()) }
-            Spacer(Modifier.size(70.dp))
-            NavItem(Icons.Rounded.Lock, "Cofre", currentRoute == Routes.VAULT) { onNavigate(Routes.VAULT) }
-            NavItem(Icons.Rounded.GridView, "Mais", currentRoute == Routes.MORE) { onNavigate(Routes.MORE) }
+            NavItem3D(R.drawable.ic3d_home, "Início", selectedPage == MainTabs.HOME, big = true) { onSelect(MainTabs.HOME) }
+            NavItem3D(R.drawable.ic3d_browser, "Navegador", selectedPage == MainTabs.BROWSER) { onSelect(MainTabs.BROWSER) }
+            Spacer(Modifier.width(84.dp))
+            NavItem3D(R.drawable.ic3d_vault, "Cofre", selectedPage == MainTabs.VAULT) { onSelect(MainTabs.VAULT) }
+            NavItem3D(R.drawable.ic3d_more, "Mais", selectedPage == MainTabs.MORE) { onSelect(MainTabs.MORE) }
         }
-        CenterDownloadButton(currentRoute == Routes.DOWNLOAD, Modifier.align(Alignment.BottomCenter).offset(y = (-18).dp)) {
-            onNavigate(Routes.download())
+        DownloadOrb(selectedPage == MainTabs.DOWNLOAD, Modifier.align(Alignment.BottomCenter).offset(y = (-6).dp)) {
+            onSelect(MainTabs.DOWNLOAD)
         }
     }
 }
 
 @Composable
-private fun NavItem(icon: ImageVector, label: String, selected: Boolean, onClick: () -> Unit) {
-    val color = if (selected) Color(0xFF1EC8FF) else MaterialTheme.colorScheme.onSurfaceVariant
+private fun NavItem3D(icon: Int, label: String, selected: Boolean, big: Boolean = false, onClick: () -> Unit) {
+    val scale by animateFloatAsState(if (selected) 1.12f else 1f, label = "navScale")
     Column(
         Modifier
-            .clip(MaterialTheme.shapes.medium)
+            .clip(RoundedCornerShape(18.dp))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = onClick,
             )
-            .padding(horizontal = 10.dp, vertical = 4.dp),
+            .semantics {
+                contentDescription = label
+                role = Role.Tab
+                this.selected = selected
+            }
+            .padding(horizontal = 6.dp, vertical = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(contentAlignment = Alignment.Center) {
+        Box(Modifier.size(42.dp), contentAlignment = Alignment.Center) {
             if (selected) {
-                // halo neon atrás do ícone selecionado
                 Box(
                     Modifier
-                        .size(38.dp)
+                        .size(46.dp)
                         .clip(CircleShape)
-                        .background(Brush.radialGradient(listOf(Color(0x661EC8FF), Color.Transparent))),
+                        .background(Brush.radialGradient(listOf(Color(0x5519E6F5), Color.Transparent))),
                 )
             }
-            Icon(icon, label, tint = color, modifier = Modifier.size(25.dp))
+            Image(
+                painterResource(icon),
+                null,
+                Modifier
+                    .size(if (big) 42.dp else 36.dp)
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                    },
+            )
         }
-        Text(label, color = color, style = MaterialTheme.typography.labelSmall)
+        Text(
+            label,
+            color = if (selected) Neo.Cyan else Color(0xFFDDE6F3),
+            fontSize = 12.5.sp,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            maxLines = 1,
+        )
         Box(
             Modifier
-                .padding(top = 2.dp)
-                .size(width = if (selected) 18.dp else 0.dp, height = 3.dp)
+                .padding(top = 3.dp)
+                .size(width = if (selected) 22.dp else 0.dp, height = 3.dp)
                 .clip(RoundedCornerShape(2.dp))
-                .background(Brush.horizontalGradient(listOf(Color(0xFF1EC8FF), Color(0xFF9B6BFF)))),
+                .background(Neo.Cyan),
         )
     }
 }
 
+/** Esfera 3D do botão Baixar: anel de energia, aro escuro, esfera azul com reflexo e o ícone. */
 @Composable
-private fun CenterDownloadButton(selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Box(modifier.size(78.dp), contentAlignment = Alignment.Center) {
-        // anel de energia
+private fun DownloadOrb(selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Box(
+        modifier
+            .size(88.dp)
+            .semantics {
+                contentDescription = "Baixar"
+                role = Role.Tab
+                this.selected = selected
+            },
+        contentAlignment = Alignment.Center,
+    ) {
         Canvas(Modifier.fillMaxSize()) {
+            val r = size.minDimension / 2
+            // brilho externo
+            drawCircle(Brush.radialGradient(listOf(Color(0x552F7BFF), Color.Transparent), radius = r), radius = r)
+            // anel de energia
             drawCircle(
-                Brush.sweepGradient(listOf(Color(0xFF1EC8FF), Color(0xFF9B6BFF), Color(0xFFFF4D8D), Color(0xFF1EC8FF))),
-                style = Stroke(width = if (selected) 4.dp.toPx() else 2.5.dp.toPx()),
+                Brush.sweepGradient(listOf(Color(0xFF1EC8FF), Color(0xFF2F5BFF), Color(0xFF9B5CFF), Color(0xFF2F7BFF), Color(0xFF1EC8FF))),
+                radius = r * 0.9f,
+                style = Stroke(width = (if (selected) 5.dp else 4.dp).toPx()),
             )
+            // aro escuro
+            drawCircle(Color(0xFF040812), radius = r * 0.84f)
         }
         Box(
             Modifier
-                .size(64.dp)
-                .shadow(18.dp, CircleShape, ambientColor = Color(0xFF1E8BFF), spotColor = Color(0xFF1E8BFF))
+                .size(66.dp)
+                .shadow(16.dp, CircleShape, ambientColor = Color(0xFF1E6BFF), spotColor = Color(0xFF1E6BFF))
                 .clip(CircleShape)
-                .background(Mb.colors.accentGradient)
                 .clickable(onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
-            // esfera: luz no alto à esquerda e sombra embaixo
             Canvas(Modifier.fillMaxSize()) {
+                val w = size.width
+                val h = size.height
+                // esfera
                 drawCircle(
-                    Brush.radialGradient(listOf(Color.White.copy(alpha = 0.55f), Color.Transparent), center = Offset(size.width * 0.32f, size.height * 0.26f), radius = size.minDimension * 0.5f),
+                    Brush.radialGradient(
+                        listOf(Color(0xFF4A98FF), Color(0xFF1C45F0), Color(0xFF0A1C9E)),
+                        center = Offset(w * 0.42f, h * 0.36f),
+                        radius = w * 0.78f,
+                    ),
                 )
+                // reflexo de vidro no alto
                 drawCircle(
-                    Brush.radialGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.35f)), center = Offset(size.width * 0.42f, size.height * 0.36f), radius = size.minDimension * 0.72f),
+                    Brush.radialGradient(listOf(Color.White.copy(alpha = 0.45f), Color.Transparent), center = Offset(w * 0.36f, h * 0.24f), radius = w * 0.42f),
                 )
+                // ícone: seta + bandeja
+                val c = Color(0xFFD7F6FF)
+                val stroke = Stroke(width = w * 0.085f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                val arrow = Path().apply {
+                    moveTo(w * 0.5f, h * 0.24f)
+                    lineTo(w * 0.5f, h * 0.58f)
+                    moveTo(w * 0.36f, h * 0.45f)
+                    lineTo(w * 0.5f, h * 0.59f)
+                    lineTo(w * 0.64f, h * 0.45f)
+                }
+                drawPath(arrow, c, style = stroke)
+                val tray = Path().apply {
+                    moveTo(w * 0.28f, h * 0.58f)
+                    lineTo(w * 0.28f, h * 0.73f)
+                    lineTo(w * 0.72f, h * 0.73f)
+                    lineTo(w * 0.72f, h * 0.58f)
+                }
+                drawPath(tray, c, style = stroke)
             }
-            Icon(Icons.Rounded.Download, "Baixar", tint = Color.White, modifier = Modifier.size(32.dp))
         }
     }
 }

@@ -46,16 +46,19 @@ fun SongItem(
     val snack = rememberSnack()
     val scope = rememberCoroutineScope()
     val isCurrent = player.current?.songId == song.id
+    val play = {
+        if (isCurrent) container.player.togglePlayPause() else container.player.playSong(song, queue)
+    }
     TrackRow(
         title = song.title,
-        subtitle = subtitle ?: "${song.displayArtist()} • ${Fmt.duration(song.durationMs)}",
+        subtitle = subtitle ?: song.displayArtist(),
+        trailingText = if (subtitle == null) Fmt.duration(song.durationMs) else null,
         artModel = AudioCover(song.contentUri()),
         isCurrent = isCurrent,
         isPlaying = player.isPlaying,
         modifier = Modifier.padding(horizontal = 6.dp),
-        onClick = {
-            if (isCurrent) container.player.togglePlayPause() else container.player.playSong(song, queue)
-        },
+        onClick = play,
+        onPlayPause = play,
         menu = buildList {
             add(MenuAction("Tocar a seguir", Icons.Rounded.SkipNext) {
                 container.player.playNext(listOf(song)); snack("Vai tocar a seguir.")

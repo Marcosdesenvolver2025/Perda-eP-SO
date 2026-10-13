@@ -16,7 +16,7 @@ import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 
 /**
- * PIN de 6 dígitos do cofre.
+ * PIN do cofre (4 dígitos; quem criou o PIN em versões antigas continua com 6).
  *
  * O PIN nunca é salvo. Guardamos apenas um verificador:
  * HMAC(chave do Android Keystore, PBKDF2(PIN, sal)). Sem a chave do Keystore (que não sai
@@ -34,13 +34,17 @@ class PinManager(context: Context) {
 
     fun isPinSet(): Boolean = prefs.contains(KEY_VERIFIER)
 
+    /** Quantos dígitos tem o PIN atual (PINs criados antes da versão 1.4 têm 6). */
+    fun pinLength(): Int = prefs.getInt(KEY_PIN_LEN, if (isPinSet()) 6 else NEW_PIN_LENGTH)
+
     suspend fun setPin(pin: String) = withContext(Dispatchers.Default) {
-        require(pin.length == 6 && pin.all { it.isDigit() }) { "O PIN deve ter 6 dígitos." }
+        require(pin.length in 4..6 && pin.all { it.isDigit() }) { "O PIN deve ter 4 dígitos." }
         val salt = ByteArray(16).also { SecureRandom().nextBytes(it) }
         val verifier = verifierFor(pin, salt)
         prefs.edit()
             .putString(KEY_SALT, Base64.encodeToString(salt, Base64.NO_WRAP))
             .putString(KEY_VERIFIER, Base64.encodeToString(verifier, Base64.NO_WRAP))
+            .putInt(KEY_PIN_LEN, pin.length)
             .putInt(KEY_FAILS, 0)
             .putLong(KEY_LOCK_UNTIL, 0)
             .apply()
@@ -185,5 +189,7 @@ class PinManager(context: Context) {
         private const val CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
         private const val ITERATIONS = 60_000
         const val MAX_ATTEMPTS = 5
+        const val NEW_PIN_LENGTH = 4
+        private const val KEY_PIN_LEN = "pin_length"
     }
 }

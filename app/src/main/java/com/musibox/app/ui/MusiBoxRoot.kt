@@ -43,16 +43,16 @@ import com.musibox.app.ui.account.LoginContent
 import com.musibox.app.ui.components.DownloadIndicator
 import com.musibox.app.ui.components.SpaceBackdrop
 import com.musibox.app.ui.download.BrowserScreen
-import com.musibox.app.ui.download.DownloadScreen
 import com.musibox.app.ui.download.DownloadsManagerScreen
 import com.musibox.app.ui.history.HistoryScreen
-import com.musibox.app.ui.home.HomeScreen
 import com.musibox.app.ui.library.LibraryScreen
 import com.musibox.app.ui.library.PlaylistScreen
 import com.musibox.app.ui.library.SearchScreen
 import com.musibox.app.ui.library.SongListScreen
-import com.musibox.app.ui.more.MoreScreen
 import com.musibox.app.ui.navigation.BottomBar
+import com.musibox.app.ui.main.MainScreen
+import com.musibox.app.ui.main.MainTabs
+import androidx.compose.foundation.pager.rememberPagerState
 import com.musibox.app.ui.navigation.Routes
 import com.musibox.app.ui.navigation.navigateTopLevel
 import com.musibox.app.ui.onboarding.OnboardingScreen
@@ -66,7 +66,6 @@ import com.musibox.app.ui.settings.SyncResolutionHost
 import com.musibox.app.ui.vault.VaultBackupScreen
 import com.musibox.app.ui.vault.VaultChangePinScreen
 import com.musibox.app.ui.vault.VaultPlayerScreen
-import com.musibox.app.ui.vault.VaultScreen
 import com.musibox.app.ui.vault.VaultSettingsScreen
 import com.musibox.app.ui.vault.VaultRecoverScreen
 import com.musibox.app.ui.vault.VaultViewerScreen
@@ -81,7 +80,9 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
     val backStack by navController.currentBackStackEntryAsState()
     val route = backStack?.destination?.route
 
-    val showBottom = route in Routes.topLevel
+    val showBottom = route == Routes.MAIN
+    val pagerState = rememberPagerState { MainTabs.COUNT }
+    val rootScope = rememberCoroutineScope()
     val hideMiniOn = setOf(Routes.PLAYER, Routes.QUEUE, Routes.ONBOARDING, Routes.VAULT_PLAYER, Routes.VAULT_VIEWER, Routes.BROWSER, Routes.LOGIN)
     val showMini = playerState.current != null && route != null && route !in hideMiniOn
 
@@ -97,7 +98,7 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
         navRequests.collect { target ->
             if (navController.currentDestination?.route == Routes.ONBOARDING) return@collect
             if (target.startsWith("download?") || target == Routes.VAULT || target == Routes.HOME) {
-                navController.navigateTopLevel(target, restore = false)
+                navController.navigateTopLevel(target)
             } else {
                 navController.navigate(target) { launchSingleTop = true }
             }
@@ -127,7 +128,7 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
                         )
                     }
                     if (showBottom) {
-                        BottomBar(route) { navController.navigateTopLevel(it) }
+                        BottomBar(pagerState.targetPage) { page -> rootScope.launch { pagerState.animateScrollToPage(page) } }
                     } else if (route != Routes.PLAYER && route != Routes.VAULT_PLAYER && route != Routes.ONBOARDING) {
                         Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
                     }
@@ -136,7 +137,7 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
         ) { padding ->
             NavHost(
                 navController = navController,
-                startDestination = if (startOnboarding) Routes.ONBOARDING else Routes.HOME,
+                startDestination = if (startOnboarding) Routes.ONBOARDING else Routes.MAIN,
                 modifier = Modifier.padding(padding),
                 enterTransition = { fadeIn(tween(220)) },
                 exitTransition = { fadeOut(tween(160)) },
@@ -145,23 +146,14 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
             ) {
                 composable(Routes.ONBOARDING) {
                     OnboardingScreen(onFinished = {
-                        navController.navigate(Routes.HOME) { popUpTo(Routes.ONBOARDING) { inclusive = true } }
+                        navController.navigate(Routes.MAIN) { popUpTo(Routes.ONBOARDING) { inclusive = true } }
                     })
                 }
-                composable(Routes.HOME) { HomeScreen(navController) }
+                composable(Routes.MAIN) { MainScreen(navController, pagerState) }
                 composable(
                     Routes.LIBRARY,
                     arguments = listOf(navArgument("tab") { type = NavType.IntType; defaultValue = 0 }),
                 ) { entry -> LibraryScreen(navController, entry.arguments?.getInt("tab") ?: 0) }
-                composable(
-                    Routes.DOWNLOAD,
-                    arguments = listOf(
-                        navArgument("tab") { type = NavType.IntType; defaultValue = 0 },
-                        navArgument("url") { type = NavType.StringType; nullable = true; defaultValue = null },
-                    ),
-                ) { entry ->
-                    DownloadScreen(navController, entry.arguments?.getInt("tab") ?: 0, entry.arguments?.getString("url"))
-                }
                 composable(Routes.DOWNLOADS) { DownloadsManagerScreen(navController) }
                 composable(Routes.LOGIN) {
                     val scope = rememberCoroutineScope()
@@ -179,8 +171,6 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
                     Routes.BROWSER,
                     arguments = listOf(navArgument("url") { type = NavType.StringType; defaultValue = "https://m.youtube.com" }),
                 ) { entry -> BrowserScreen(navController, entry.arguments?.getString("url") ?: "https://m.youtube.com") }
-                composable(Routes.VAULT) { VaultScreen(navController) }
-                composable(Routes.MORE) { MoreScreen(navController) }
                 composable(
                     Routes.PLAYER,
                     enterTransition = { slideInVertically(tween(300)) { it } },

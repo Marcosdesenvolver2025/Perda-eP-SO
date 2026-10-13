@@ -105,6 +105,7 @@ fun TrackRow(
     artSize: Dp = 52.dp,
     badge: (@Composable () -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
+    trailingText: String? = null,
 ) {
     Row(
         modifier = modifier
@@ -116,7 +117,7 @@ fun TrackRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box {
-            Artwork(artModel, Modifier.size(artSize), corner = 12.dp)
+            Artwork(artModel, Modifier.size(artSize + 4.dp), corner = 12.dp)
             if (badge != null) Box(Modifier.align(Alignment.BottomEnd)) { badge() }
         }
         Spacer(Modifier.width(14.dp))
@@ -125,7 +126,7 @@ fun TrackRow(
                 title,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
-                color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                color = if (isCurrent) Neo.Cyan else Color.White,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -133,21 +134,33 @@ fun TrackRow(
             Text(
                 subtitle,
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (available) MaterialTheme.colorScheme.onSurfaceVariant else Mb.colors.warning,
+                color = if (available) Neo.Artist else Mb.colors.warning,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        if (onPlayPause != null) {
+        if (trailingText != null) {
             Spacer(Modifier.width(8.dp))
-            MbIconButton(
-                if (isCurrent && isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                if (isCurrent && isPlaying) "Pausar" else "Tocar",
-                onPlayPause,
-                size = 42.dp,
-                background = MaterialTheme.colorScheme.surfaceContainerHighest,
-                enabled = available,
-            )
+            Text(trailingText, style = MaterialTheme.typography.bodySmall, color = Color(0xFFB7D8F5), maxLines = 1)
+        }
+        if (onPlayPause != null) {
+            Spacer(Modifier.width(10.dp))
+            Box(
+                Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(if (isCurrent) Neo.Accent else Neo.Glass)
+                    .border(1.dp, Color.White.copy(alpha = if (isCurrent) 0.5f else 0.22f), CircleShape)
+                    .clickable(enabled = available, onClick = onPlayPause),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    if (isCurrent && isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                    if (isCurrent && isPlaying) "Pausar" else "Tocar",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
         }
         OverflowMenu(menu)
     }

@@ -330,26 +330,6 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
                 onRelease = { it.destroy() },
             )
 
-            // Dica quando não há vídeo aberto
-            androidx.compose.animation.AnimatedVisibility(
-                !isMedia && progress >= 100,
-                modifier = Modifier.align(Alignment.TopCenter).padding(top = 10.dp),
-                enter = fadeIn(),
-                exit = fadeOut(),
-            ) {
-                Row(
-                    Modifier
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(Color.Black.copy(alpha = 0.72f))
-                        .padding(horizontal = 14.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(Icons.Rounded.TouchApp, null, tint = Color.White, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Abra um vídeo ou música para baixar", color = Color.White, style = MaterialTheme.typography.labelMedium)
-                }
-            }
-
             // Botão flutuante "Baixar" (fica ativo e pulsando quando a página tem um vídeo)
             Box(
                 Modifier

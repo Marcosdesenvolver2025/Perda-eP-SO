@@ -459,17 +459,17 @@ private fun Vinyl(state: PlayerState, modifier: Modifier) {
                 .fillMaxSize()
                 .graphicsLayer {
                     rotationZ = armAngle
-                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.92f, 0.06f)
+                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.80f, 0.16f)
                 },
         ) {
             val w = size.width
-            val pivot = Offset(w * 0.92f, w * 0.06f)
-            drawCircle(Color(0xFFB8C2D6), radius = w * 0.04f, center = pivot)
-            drawLine(Color(0xFFB8C2D6), pivot, Offset(w * 0.80f, w * 0.48f), strokeWidth = w * 0.018f)
+            val pivot = Offset(w * 0.80f, w * 0.16f)
+            drawCircle(Color(0xFFB8C2D6), radius = w * 0.035f, center = pivot)
+            drawLine(Color(0xFFB8C2D6), pivot, Offset(w * 0.70f, w * 0.46f), strokeWidth = w * 0.016f)
             drawRoundRect(
                 Color(0xFFDDE3EE),
-                topLeft = Offset(w * 0.76f, w * 0.46f),
-                size = androidx.compose.ui.geometry.Size(w * 0.07f, w * 0.10f),
+                topLeft = Offset(w * 0.665f, w * 0.44f),
+                size = androidx.compose.ui.geometry.Size(w * 0.065f, w * 0.09f),
                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.015f),
             )
         }

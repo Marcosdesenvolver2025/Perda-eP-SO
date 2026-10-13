@@ -1,6 +1,16 @@
 package com.musibox.app.ui.player
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.runtime.State
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -83,6 +93,7 @@ import com.musibox.app.ui.components.MenuAction
 import com.musibox.app.ui.components.OverflowMenu
 import com.musibox.app.ui.components.StateMessage
 import com.musibox.app.ui.components.TrackRow
+import com.musibox.app.ui.components.rememberDeviceTilt
 import com.musibox.app.ui.components.rememberSnack
 import com.musibox.app.ui.navigation.Routes
 import com.musibox.app.ui.theme.Mb
@@ -103,6 +114,7 @@ fun PlayerScreen(nav: NavController) {
     var playlistSong by remember { mutableStateOf<Song?>(null) }
 
     val current = state.current
+    val tilt = rememberDeviceTilt()
     Box(
         Modifier
             .fillMaxSize()
@@ -150,17 +162,8 @@ fun PlayerScreen(nav: NavController) {
             }
 
             Spacer(Modifier.height(24.dp))
-            Artwork(
-                AudioCover(current.uri ?: android.net.Uri.EMPTY),
-                Modifier
-                    .widthIn(max = 420.dp)
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .shadow(28.dp, RoundedCornerShape(28.dp), ambientColor = MaterialTheme.colorScheme.primary, spotColor = MaterialTheme.colorScheme.primary),
-                corner = 28.dp,
-                fallbackIcon = Icons.Rounded.Headphones,
-            )
-            Spacer(Modifier.height(28.dp))
+            HoloArtwork(AudioCover(current.uri ?: android.net.Uri.EMPTY), tilt)
+            Spacer(Modifier.height(12.dp))
 
             val isFav = current.songKey in favorites
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -360,6 +363,78 @@ fun QueueScreen(nav: NavController) {
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * Capa em 3D: inclina com o aparelho (giroscópio), tem um brilho holográfico que corre
+ * pela superfície e um reflexo espelhado no "chão" logo abaixo.
+ */
+@Composable
+private fun HoloArtwork(model: Any, tilt: State<Offset>) {
+    val shape = RoundedCornerShape(28.dp)
+    val glow = MaterialTheme.colorScheme.primary
+    Column(Modifier.widthIn(max = 420.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .graphicsLayer {
+                    val t = tilt.value
+                    rotationY = t.x * 14f
+                    rotationX = -t.y * 9f
+                    cameraDistance = 14f * density
+                }
+                .shadow(30.dp, shape, ambientColor = glow, spotColor = glow)
+                .clip(shape)
+                .border(1.dp, Brush.linearGradient(listOf(Color(0x881EC8FF), Color.White.copy(alpha = 0.25f), Color(0x889B6BFF))), shape),
+        ) {
+            Artwork(model, Modifier.fillMaxSize(), corner = 28.dp, fallbackIcon = Icons.Rounded.Headphones)
+            // brilho que acompanha a inclinação (lido só no desenho)
+            Canvas(Modifier.fillMaxSize()) {
+                val t = tilt.value
+                val cx = size.width * (0.5f + t.x * 0.6f)
+                drawRect(
+                    Brush.linearGradient(
+                        listOf(Color.Transparent, Color.White.copy(alpha = 0.16f), Color.Transparent),
+                        start = Offset(cx - size.width * 0.45f, 0f),
+                        end = Offset(cx + size.width * 0.15f, size.height),
+                    ),
+                )
+                drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.22f))))
+            }
+        }
+        // reflexo
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(54.dp)
+                .padding(top = 4.dp)
+                .clipToBounds()
+                .graphicsLayer {
+                    compositingStrategy = CompositingStrategy.Offscreen
+                    rotationY = tilt.value.x * 14f
+                    cameraDistance = 14f * density
+                }
+                .drawWithContent {
+                    drawContent()
+                    drawRect(
+                        Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.32f), Color.Transparent)),
+                        blendMode = BlendMode.DstIn,
+                    )
+                },
+        ) {
+            Artwork(
+                model,
+                Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight(Alignment.Top, unbounded = true)
+                    .aspectRatio(1f)
+                    .graphicsLayer { scaleY = -1f },
+                corner = 28.dp,
+                fallbackIcon = Icons.Rounded.Headphones,
+            )
         }
     }
 }

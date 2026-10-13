@@ -1,5 +1,8 @@
 package com.musibox.app.ui.components
 
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -142,11 +145,25 @@ fun MbCard(
     contentPadding: Dp = 0.dp,
     content: @Composable BoxScope.() -> Unit,
 ) {
+    // Vidro: leve degradê de cima para baixo e borda com brilho "holográfico".
+    val glass = Mb.colors.isDark && !selected && background == Mb.colors.card
+    val fill: Brush = when {
+        selected -> SolidColor(selectedColor.copy(alpha = 0.14f))
+        glass -> Brush.verticalGradient(listOf(Mb.colors.cardHigh, Mb.colors.card))
+        else -> SolidColor(background)
+    }
+    val edge: Brush = when {
+        selected -> SolidColor(selectedColor)
+        Mb.colors.isDark -> Brush.linearGradient(
+            listOf(Color.White.copy(alpha = 0.16f), Mb.colors.border, MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)),
+        )
+        else -> SolidColor(Mb.colors.border)
+    }
     Box(
         modifier = modifier
             .clip(shape)
-            .background(if (selected) selectedColor.copy(alpha = 0.14f) else background)
-            .border(if (selected) 1.5.dp else 1.dp, if (selected) selectedColor else Mb.colors.border, shape)
+            .background(fill)
+            .border(if (selected) 1.5.dp else 1.dp, edge, shape)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(contentPadding),
         content = content,
@@ -167,8 +184,20 @@ fun GradientButton(
     Box(
         modifier = modifier
             .height(height)
+            .then(
+                if (enabled) {
+                    Modifier.shadow(14.dp, RoundedCornerShape(height / 2), ambientColor = MaterialTheme.colorScheme.primary, spotColor = MaterialTheme.colorScheme.primary)
+                } else {
+                    Modifier
+                },
+            )
             .clip(RoundedCornerShape(height / 2))
             .background(brush)
+            // brilho de vidro na metade de cima (efeito 3D)
+            .drawWithContent {
+                drawContent()
+                drawRect(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.20f), Color.Transparent), endY = size.height * 0.55f))
+            }
             .alpha(if (enabled) 1f else 0.45f)
             .clickable(enabled = enabled && !loading, onClick = onClick)
             .padding(horizontal = 20.dp),

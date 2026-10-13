@@ -63,6 +63,10 @@ class DownloadWorker(appContext: Context, params: WorkerParameters) : CoroutineW
                         val p = (percent / 100f).coerceIn(0f, 1f)
                         kotlinx.coroutines.runBlocking { dao.setProgress(id, p, (total * p).toLong(), total, 0, 0, now) }
                     }
+                    if (now - lastNotif > 1000) {
+                        lastNotif = now
+                        DownloadNotifications.updateProgress(ctx, id, d.title, percent.toInt(), "${percent.toInt().coerceIn(0, 100)}% • ${Fmt.size((total * percent / 100).toLong())} de ${Fmt.size(total)}")
+                    }
                 }
             } else container.ytdlp.download(
                 processId = id,

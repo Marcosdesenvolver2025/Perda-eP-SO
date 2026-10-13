@@ -1,5 +1,20 @@
 package com.musibox.app.ui.home
 
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import androidx.compose.material.icons.automirrored.rounded.QueueMusic
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
@@ -86,6 +101,7 @@ import com.musibox.app.media.PlayerState
 import com.musibox.app.core.Fmt
 import com.musibox.app.ui.components.Artwork
 import com.musibox.app.ui.components.LocalAppContainer
+import com.musibox.app.ui.components.rememberDeviceTilt
 import com.musibox.app.ui.components.LogoMark
 import com.musibox.app.ui.components.appViewModel
 import com.musibox.app.ui.components.rememberSnack
@@ -125,8 +141,9 @@ class HomeViewModel(c: AppContainer) : ViewModel() {
 }
 
 /**
- * Tela inicial "Palco": um disco de vinil no centro (gira só enquanto toca) com os atalhos
- * em órbita, mesa de som com os números da biblioteca, carrossel em 3D e discos em miniatura.
+ * Tela inicial "Holo Deck": palco holográfico em 3D (grade em perspectiva, disco flutuante e capa
+ * que acompanham a inclinação do aparelho), portais 3D para algumas funções, painel de telemetria
+ * e as seções de músicas. Só anima o que precisa (disco gira apenas tocando).
  */
 @Composable
 fun HomeScreen(nav: NavController) {
@@ -140,6 +157,7 @@ fun HomeScreen(nav: NavController) {
     val player by container.player.state.collectAsStateWithLifecycle()
     val user by container.auth.user.collectAsStateWithLifecycle()
     val snack = rememberSnack()
+    val tilt = rememberDeviceTilt()
     val allSongs = songs.orEmpty()
     val newest = remember(allSongs) { allSongs.sortedByDescending { it.dateAddedMs }.take(12) }
     val artistCount = remember(allSongs) { allSongs.map { it.displayArtist() }.distinct().size }
@@ -154,7 +172,6 @@ fun HomeScreen(nav: NavController) {
     }
 
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-        StageBackground(Modifier.fillMaxWidth().height(560.dp))
         LazyColumn(
             Modifier
                 .widthIn(max = 760.dp)
@@ -169,15 +186,8 @@ fun HomeScreen(nav: NavController) {
                     onAccount = { nav.navigate(if (user == null) Routes.LOGIN else Routes.ACCOUNT) },
                 )
             }
-            item(key = "stage") {
-                Stage(
-                    state = player,
-                    onMusic = { nav.navigateTopLevel(Routes.library()) },
-                    onDownload = { nav.navigateTopLevel(Routes.download()) },
-                    onVault = { nav.navigateTopLevel(Routes.VAULT) },
-                    onHistory = { nav.navigate(Routes.history()) },
-                    onOpenPlayer = { nav.navigate(Routes.PLAYER) },
-                )
+            item(key = "holo") {
+                HoloStage(player, tilt, onOpenPlayer = { if (player.current != null) nav.navigate(Routes.PLAYER) else shuffleAll() })
             }
             item(key = "controls") {
                 StageControls(
@@ -189,14 +199,27 @@ fun HomeScreen(nav: NavController) {
                     onShuffle = shuffleAll,
                 )
             }
-            item(key = "mixer") {
-                Section("Mesa de som", null) {}
-                Mixer(
-                    channels = listOf(
-                        MixChannel("Músicas", allSongs.size, MbPalette.BlueBright) { nav.navigateTopLevel(Routes.library()) },
-                        MixChannel("Artistas", artistCount, MbPalette.Pink) { nav.navigateTopLevel(Routes.library(1)) },
-                        MixChannel("Downloads", downloadCount, MbPalette.Orange) { nav.navigate(Routes.DOWNLOADS) },
-                        MixChannel("Cofre", vaultCount, Mb.colors.vault) { nav.navigateTopLevel(Routes.VAULT) },
+            item(key = "portalsTitle") { Section("Portais", null) {} }
+            item(key = "portals") {
+                Portals(
+                    listOf(
+                        Portal("Músicas", Icons.Rounded.MusicNote, listOf(MbPalette.Pink, MbPalette.Red)) { nav.navigateTopLevel(Routes.library()) },
+                        Portal("Baixar", Icons.Rounded.Download, listOf(MbPalette.BlueBright, MbPalette.BlueDeep)) { nav.navigateTopLevel(Routes.download()) },
+                        Portal("Cofre", Icons.Rounded.Lock, listOf(MbPalette.PurpleBright, Color(0xFF4F5BFF))) { nav.navigateTopLevel(Routes.VAULT) },
+                        Portal("Playlists", Icons.AutoMirrored.Rounded.QueueMusic, listOf(Color(0xFF2ECC71), Color(0xFF1E8BFF))) { nav.navigateTopLevel(Routes.library(4)) },
+                        Portal("Favoritas", Icons.Rounded.Favorite, listOf(MbPalette.Pink, MbPalette.Purple)) { nav.navigateTopLevel(Routes.library(5)) },
+                        Portal("Histórico", Icons.Rounded.History, listOf(MbPalette.Orange, Color(0xFFFF6A3D))) { nav.navigate(Routes.history()) },
+                    ),
+                )
+            }
+            item(key = "hudTitle") { Section("Telemetria", null) {} }
+            item(key = "hud") {
+                Telemetry(
+                    listOf(
+                        Gauge("Músicas", allSongs.size, MbPalette.BlueBright) { nav.navigateTopLevel(Routes.library()) },
+                        Gauge("Artistas", artistCount, MbPalette.Pink) { nav.navigateTopLevel(Routes.library(1)) },
+                        Gauge("Downloads", downloadCount, MbPalette.Orange) { nav.navigate(Routes.DOWNLOADS) },
+                        Gauge("Cofre", vaultCount, Mb.colors.vault) { nav.navigateTopLevel(Routes.VAULT) },
                     ),
                 )
             }
@@ -264,27 +287,314 @@ fun HomeScreen(nav: NavController) {
 }
 
 // ---------------------------------------------------------------------------
-// Fundo e cabeçalho
+// Palco holográfico
 
 @Composable
-private fun StageBackground(modifier: Modifier) {
-    val bg = MaterialTheme.colorScheme.background
-    Canvas(modifier) {
-        val w = size.width
-        val h = size.height
-        // Luzes de palco: dois "holofotes" (azul e roxo) cruzando sobre o disco.
-        fun beam(cx: Float, color: Color) {
-            drawCircle(
-                Brush.radialGradient(listOf(color, Color.Transparent), center = Offset(cx, h * 0.42f), radius = w * 0.75f),
-                radius = w * 0.75f,
-                center = Offset(cx, h * 0.42f),
+private fun HoloStage(state: PlayerState, tilt: State<Offset>, onOpenPlayer: () -> Unit) {
+    val playing = state.isPlaying
+    val spin = if (playing) {
+        val t = rememberInfiniteTransition(label = "holo")
+        t.animateFloat(0f, 360f, infiniteRepeatable(tween(9_000, easing = LinearEasing)), label = "spin").value
+    } else {
+        0f
+    }
+    val lift by animateFloatAsState(if (playing) 1f else 0f, tween(700), label = "lift")
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(370.dp)
+            .clickable(
+                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                indication = null,
+                onClick = onOpenPlayer,
+            ),
+        contentAlignment = Alignment.TopCenter,
+    ) {
+        // Grade em perspectiva (chão "tron") e horizonte
+        Canvas(Modifier.fillMaxSize()) {
+            val t = tilt.value
+            val w = size.width
+            val h = size.height
+            val horizon = h * 0.52f
+            val vx = w / 2 + t.x * w * 0.08f
+            // brilho do horizonte
+            drawRect(
+                Brush.verticalGradient(listOf(Color.Transparent, MbPalette.BlueDeep.copy(alpha = 0.28f), Color.Transparent), startY = horizon - 90f, endY = horizon + 90f),
             )
+            drawCircle(
+                Brush.radialGradient(listOf(MbPalette.Purple.copy(alpha = 0.35f), Color.Transparent), center = Offset(vx, horizon), radius = w * 0.6f),
+                radius = w * 0.6f,
+                center = Offset(vx, horizon),
+            )
+            val line = MbPalette.BlueBright
+            // linhas que fogem para o ponto de fuga
+            for (i in -10..10) {
+                val bottomX = w / 2 + i * w * 0.16f
+                drawLine(
+                    Brush.verticalGradient(listOf(line.copy(alpha = 0f), line.copy(alpha = 0.35f)), startY = horizon, endY = h),
+                    Offset(vx + (bottomX - w / 2) * 0.05f, horizon),
+                    Offset(bottomX, h),
+                    strokeWidth = 1.5f,
+                )
+            }
+            // linhas horizontais com perspectiva
+            var k = 1f
+            while (k < 14f) {
+                val y = horizon + (h - horizon) * (k * k) / 196f
+                drawLine(line.copy(alpha = (0.05f + 0.30f * (y - horizon) / (h - horizon))), Offset(0f, y), Offset(w, y), strokeWidth = 1.2f)
+                k += 1f
+            }
+            drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.35f)), startY = h * 0.85f, endY = h))
         }
-        beam(w * 0.15f, MbPalette.BlueDeep.copy(alpha = 0.38f))
-        beam(w * 0.88f, MbPalette.Purple.copy(alpha = 0.34f))
-        drawRect(Brush.verticalGradient(listOf(Color.Transparent, bg), startY = h * 0.55f, endY = h))
+
+        // Disco holográfico deitado sobre a grade
+        Canvas(
+            Modifier
+                .padding(top = 150.dp)
+                .size(270.dp)
+                .graphicsLayer {
+                    val t = tilt.value
+                    rotationX = 64f - t.y * 6f
+                    rotationY = t.x * 8f
+                    rotationZ = spin
+                    cameraDistance = 16f * density
+                },
+        ) {
+            val r = size.minDimension / 2
+            drawCircle(Brush.radialGradient(listOf(Color(0xFF16204A), Color(0xFF05070D)), radius = r), radius = r)
+            var gr = r * 0.96f
+            while (gr > r * 0.35f) {
+                drawCircle(MbPalette.BlueBright.copy(alpha = 0.10f), radius = gr, style = Stroke(width = 1.2f))
+                gr -= r * 0.06f
+            }
+            drawCircle(
+                Brush.sweepGradient(listOf(MbPalette.BlueBright, MbPalette.Purple, Color.Transparent, MbPalette.Pink, MbPalette.BlueBright)),
+                radius = r,
+                style = Stroke(width = 5f),
+            )
+            drawCircle(MbPalette.BlueBright.copy(alpha = 0.6f), radius = r * 0.12f)
+        }
+
+        // Feixe de luz saindo do disco
+        Canvas(
+            Modifier
+                .padding(top = 40.dp)
+                .size(width = 220.dp, height = 260.dp),
+        ) {
+            val path = Path().apply {
+                moveTo(size.width * 0.5f - 40f, size.height * 0.95f)
+                lineTo(size.width * 0.5f + 40f, size.height * 0.95f)
+                lineTo(size.width, 0f)
+                lineTo(0f, 0f)
+                close()
+            }
+            drawPath(path, Brush.verticalGradient(listOf(MbPalette.BlueBright.copy(alpha = 0.0f), MbPalette.BlueBright.copy(alpha = 0.16f + 0.10f * lift)), startY = 0f, endY = size.height))
+        }
+
+        // Capa flutuante (holograma) que acompanha a inclinação
+        val current = state.current
+        Box(
+            Modifier
+                .padding(top = 36.dp)
+                .size(176.dp)
+                .graphicsLayer {
+                    val t = tilt.value
+                    rotationY = t.x * 16f
+                    rotationX = -t.y * 10f + 6f
+                    translationY = -14f * lift
+                    cameraDistance = 14f * density
+                    shadowElevation = 28f
+                    shape = RoundedCornerShape(30.dp)
+                    clip = true
+                }
+                .border(
+                    2.dp,
+                    Brush.linearGradient(listOf(Color.White.copy(alpha = 0.55f), MbPalette.BlueBright.copy(alpha = 0.5f), MbPalette.Purple.copy(alpha = 0.6f))),
+                    RoundedCornerShape(30.dp),
+                ),
+        ) {
+            if (current?.uri != null) {
+                Artwork(AudioCover(current.uri), Modifier.fillMaxSize(), corner = 30.dp, fallbackBrush = Mb.colors.accentGradient)
+            } else {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(Brush.linearGradient(listOf(Color(0xFF0E2A6E), Color(0xFF2B1A6B), Color(0xFF0B1530)))),
+                    contentAlignment = Alignment.Center,
+                ) { LogoMark(64.dp) }
+            }
+            // reflexo de vidro
+            Canvas(Modifier.fillMaxSize()) {
+                val shine = Path().apply {
+                    moveTo(0f, 0f)
+                    lineTo(size.width * 0.62f, 0f)
+                    lineTo(size.width * 0.18f, size.height)
+                    lineTo(0f, size.height)
+                    close()
+                }
+                drawPath(shine, Brush.linearGradient(listOf(Color.White.copy(alpha = 0.22f), Color.Transparent)))
+            }
+            if (playing) {
+                Box(
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .padding(10.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color.Black.copy(alpha = 0.55f))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                ) { Text("AO VIVO", color = MbPalette.BlueBright, style = MaterialTheme.typography.labelSmall, letterSpacing = 2.sp) }
+            }
+        }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Portais 3D (algumas funções; as demais seguem nas abas)
+
+private data class Portal(val label: String, val icon: ImageVector, val colors: List<Color>, val onClick: () -> Unit)
+
+@Composable
+private fun Portals(portals: List<Portal>) {
+    val state = rememberLazyListState()
+    LazyRow(
+        state = state,
+        contentPadding = PaddingValues(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.height(176.dp),
+    ) {
+        itemsIndexed(portals, key = { _, p -> p.label }) { index, p ->
+            val turn by remember(index) {
+                derivedStateOf {
+                    val info = state.layoutInfo
+                    val it = info.visibleItemsInfo.firstOrNull { v -> v.index == index } ?: return@derivedStateOf 0f
+                    val center = (info.viewportStartOffset + info.viewportEndOffset) / 2f
+                    ((it.offset + it.size / 2f - center) / info.viewportSize.width.coerceAtLeast(1)).coerceIn(-1f, 1f)
+                }
+            }
+            Column(
+                Modifier
+                    .size(width = 118.dp, height = 160.dp)
+                    .graphicsLayer {
+                        rotationY = -turn * 28f
+                        cameraDistance = 12f * density
+                        val s = 1f - 0.08f * abs(turn)
+                        scaleX = s
+                        scaleY = s
+                    }
+                    .clip(RoundedCornerShape(26.dp))
+                    .background(Brush.verticalGradient(listOf(p.colors.first().copy(alpha = 0.32f), Color(0xFF0B0F1C))))
+                    .border(1.dp, Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.35f), p.colors.last().copy(alpha = 0.25f))), RoundedCornerShape(26.dp))
+                    .clickable(onClick = p.onClick)
+                    .padding(14.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceBetween,
+            ) {
+                HoloIcon(p.icon, p.colors)
+                Text(p.label, color = Color.White, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            }
+        }
+    }
+}
+
+/** Ícone em esfera 3D (luz no alto, sombra embaixo e anel inclinado). */
+@Composable
+private fun HoloIcon(icon: ImageVector, colors: List<Color>, size: Dp = 76.dp) {
+    Box(Modifier.size(size), contentAlignment = Alignment.Center) {
+        Canvas(
+            Modifier
+                .fillMaxSize()
+                .graphicsLayer { rotationX = 70f; cameraDistance = 10f * density },
+        ) {
+            drawCircle(Brush.sweepGradient(listOf(colors.first(), Color.Transparent, colors.last(), colors.first())), style = Stroke(width = 4f))
+        }
+        Box(
+            Modifier
+                .size(size * 0.70f)
+                .clip(CircleShape)
+                .background(Brush.linearGradient(colors)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Canvas(Modifier.fillMaxSize()) {
+                drawCircle(
+                    Brush.radialGradient(listOf(Color.White.copy(alpha = 0.55f), Color.Transparent), center = Offset(this.size.width * 0.3f, this.size.height * 0.25f), radius = this.size.minDimension * 0.55f),
+                )
+                drawCircle(
+                    Brush.radialGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.40f)), center = Offset(this.size.width * 0.42f, this.size.height * 0.35f), radius = this.size.minDimension * 0.75f),
+                )
+            }
+            Icon(icon, null, tint = Color.White, modifier = Modifier.size(size * 0.34f))
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Telemetria (medidores circulares estilo painel)
+
+private data class Gauge(val label: String, val value: Int, val color: Color, val onClick: () -> Unit)
+
+@Composable
+private fun Telemetry(gauges: List<Gauge>) {
+    val max = (gauges.maxOfOrNull { it.value } ?: 0).coerceAtLeast(1)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .clip(RoundedCornerShape(26.dp))
+            .background(Brush.verticalGradient(listOf(Color(0xFF111A33), Color(0xFF0A0E1A))))
+            .border(1.dp, Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), MbPalette.BlueBright.copy(alpha = 0.25f), Color.Transparent)), RoundedCornerShape(26.dp))
+            .padding(vertical = 16.dp, horizontal = 6.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+    ) {
+        gauges.forEach { g ->
+            val level = if (g.value <= 0) 0.04f else (0.15f + 0.85f * (ln(1f + g.value) / ln(1f + max))).coerceIn(0f, 1f)
+            val anim by animateFloatAsState(level, tween(1_100), label = "gauge")
+            Column(
+                Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable(onClick = g.onClick)
+                    .padding(vertical = 4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Box(Modifier.size(70.dp), contentAlignment = Alignment.Center) {
+                    Canvas(Modifier.fillMaxSize()) {
+                        val stroke = 7.dp.toPx()
+                        val inset = stroke / 2 + 2f
+                        val arcSize = androidx.compose.ui.geometry.Size(size.width - inset * 2, size.height - inset * 2)
+                        drawArc(Color.White.copy(alpha = 0.08f), 135f, 270f, false, topLeft = Offset(inset, inset), size = arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
+                        drawArc(
+                            Brush.sweepGradient(listOf(g.color.copy(alpha = 0.4f), g.color, g.color.copy(alpha = 0.4f))),
+                            135f,
+                            270f * anim,
+                            false,
+                            topLeft = Offset(inset, inset),
+                            size = arcSize,
+                            style = Stroke(stroke, cap = StrokeCap.Round),
+                        )
+                        // marcações
+                        for (i in 0..12) {
+                            val a = Math.toRadians((135 + i * 22.5)).toFloat()
+                            val r1 = size.minDimension / 2 - stroke * 1.9f
+                            val r2 = r1 - 4f
+                            drawLine(
+                                Color.White.copy(alpha = 0.18f),
+                                Offset(center.x + r1 * cos(a), center.y + r1 * sin(a)),
+                                Offset(center.x + r2 * cos(a), center.y + r2 * sin(a)),
+                                strokeWidth = 1.5f,
+                            )
+                        }
+                    }
+                    Text("${g.value}", fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, color = Color.White)
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(g.label.uppercase(), style = MaterialTheme.typography.labelSmall, color = g.color, letterSpacing = 1.sp, maxLines = 1)
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Cabeçalho
 
 @Composable
 private fun Header(name: String?, photo: String?, onSearch: () -> Unit, onAccount: () -> Unit) {
@@ -336,145 +646,6 @@ private fun RoundGlass(onClick: () -> Unit, content: @Composable () -> Unit) {
     ) { content() }
 }
 
-// ---------------------------------------------------------------------------
-// Palco: disco de vinil + atalhos em órbita
-
-private data class Orbit(val icon: ImageVector, val label: String, val brush: Brush, val angle: Float, val onClick: () -> Unit)
-
-@Composable
-private fun Stage(
-    state: PlayerState,
-    onMusic: () -> Unit,
-    onDownload: () -> Unit,
-    onVault: () -> Unit,
-    onHistory: () -> Unit,
-    onOpenPlayer: () -> Unit,
-) {
-    BoxWithConstraints(
-        Modifier
-            .fillMaxWidth()
-            .height(360.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        val stageW = maxWidth
-        val disc = minOf(stageW * 0.62f, 250.dp)
-        val orbitR = disc / 2 + 52.dp
-        val orbits = listOf(
-            Orbit(Icons.Rounded.MusicNote, "Músicas", Brush.linearGradient(listOf(MbPalette.Pink, MbPalette.Red)), 215f, onMusic),
-            Orbit(Icons.Rounded.Download, "Baixar", Mb.colors.accentGradient, 325f, onDownload),
-            Orbit(Icons.Rounded.Lock, "Cofre", Mb.colors.vaultGradient, 35f, onVault),
-            Orbit(Icons.Rounded.History, "Histórico", Brush.linearGradient(listOf(MbPalette.Orange, Color(0xFFFF6A3D))), 145f, onHistory),
-        )
-        // Anel da órbita
-        Canvas(Modifier.size(orbitR * 2)) {
-            drawCircle(Color.White.copy(alpha = 0.07f), style = Stroke(width = 1.5.dp.toPx()))
-            drawCircle(Color.White.copy(alpha = 0.04f), radius = size.minDimension / 2 - 18.dp.toPx(), style = Stroke(width = 1.dp.toPx()))
-        }
-        Vinyl(state, Modifier.size(disc).clickable(enabled = state.current != null, onClick = onOpenPlayer))
-        orbits.forEach { o ->
-            val rad = Math.toRadians(o.angle.toDouble())
-            val dx = orbitR * cos(rad).toFloat()
-            val dy = orbitR * sin(rad).toFloat()
-            Column(
-                Modifier
-                    .offset(x = dx, y = dy)
-                    .clip(RoundedCornerShape(18.dp))
-                    .clickable(onClick = o.onClick)
-                    .padding(4.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Box(
-                    Modifier
-                        .size(54.dp)
-                        .clip(CircleShape)
-                        .background(o.brush)
-                        .border(2.dp, MaterialTheme.colorScheme.background.copy(alpha = 0.6f), CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) { Icon(o.icon, null, tint = Color.White, modifier = Modifier.size(26.dp)) }
-                Spacer(Modifier.height(4.dp))
-                Text(o.label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onBackground)
-            }
-        }
-    }
-}
-
-@Composable
-private fun Vinyl(state: PlayerState, modifier: Modifier) {
-    val playing = state.isPlaying
-    val rotation = if (playing) {
-        val t = rememberInfiniteTransition(label = "vinyl")
-        t.animateFloat(0f, 360f, infiniteRepeatable(tween(6_000, easing = LinearEasing)), label = "spin").value
-    } else {
-        0f
-    }
-    val armAngle by animateFloatAsState(if (playing) 22f else 0f, tween(600), label = "arm")
-    Box(modifier, contentAlignment = Alignment.Center) {
-        Box(
-            Modifier
-                .fillMaxSize()
-                .graphicsLayer { rotationZ = rotation },
-            contentAlignment = Alignment.Center,
-        ) {
-            Canvas(Modifier.fillMaxSize()) {
-                val r = size.minDimension / 2
-                drawCircle(Brush.radialGradient(listOf(Color(0xFF1B1F2A), Color(0xFF07080C)), radius = r), radius = r)
-                // Sulcos
-                var gr = r * 0.95f
-                while (gr > r * 0.40f) {
-                    drawCircle(Color.White.copy(alpha = 0.045f), radius = gr, style = Stroke(width = 1f))
-                    gr -= r * 0.035f
-                }
-                // Brilho (reflexo da luz)
-                drawCircle(
-                    Brush.sweepGradient(
-                        listOf(
-                            Color.Transparent, MbPalette.BlueBright.copy(alpha = 0.18f), Color.Transparent,
-                            Color.Transparent, MbPalette.Purple.copy(alpha = 0.16f), Color.Transparent,
-                        ),
-                    ),
-                    radius = r,
-                )
-                drawCircle(Color.White.copy(alpha = 0.10f), radius = r, style = Stroke(width = 2f))
-            }
-            // Selo central: capa da música atual (ou o logotipo)
-            val label = Modifier
-                .fillMaxSize(0.40f)
-                .clip(CircleShape)
-            val current = state.current
-            if (current?.uri != null) {
-                Artwork(AudioCover(current.uri), label, corner = 200.dp, fallbackBrush = Mb.colors.accentGradient)
-            } else {
-                Box(label.background(Mb.colors.accentGradient), contentAlignment = Alignment.Center) { LogoMark(34.dp) }
-            }
-            Box(
-                Modifier
-                    .size(10.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.background),
-            )
-        }
-        // Braço do toca-discos
-        Canvas(
-            Modifier
-                .fillMaxSize()
-                .graphicsLayer {
-                    rotationZ = armAngle
-                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.80f, 0.16f)
-                },
-        ) {
-            val w = size.width
-            val pivot = Offset(w * 0.80f, w * 0.16f)
-            drawCircle(Color(0xFFB8C2D6), radius = w * 0.035f, center = pivot)
-            drawLine(Color(0xFFB8C2D6), pivot, Offset(w * 0.70f, w * 0.46f), strokeWidth = w * 0.016f)
-            drawRoundRect(
-                Color(0xFFDDE3EE),
-                topLeft = Offset(w * 0.665f, w * 0.44f),
-                size = androidx.compose.ui.geometry.Size(w * 0.065f, w * 0.09f),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.015f),
-            )
-        }
-    }
-}
 
 @Composable
 private fun StageControls(
@@ -566,73 +737,6 @@ private fun CtrlButton(icon: ImageVector, description: String, onClick: () -> Un
     ) { Icon(icon, description, tint = MaterialTheme.colorScheme.onBackground) }
 }
 
-// ---------------------------------------------------------------------------
-// Mesa de som (números da biblioteca como faders)
-
-private data class MixChannel(val label: String, val value: Int, val color: Color, val onClick: () -> Unit)
-
-@Composable
-private fun Mixer(channels: List<MixChannel>) {
-    val max = (channels.maxOfOrNull { it.value } ?: 0).coerceAtLeast(1)
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .clip(RoundedCornerShape(24.dp))
-            .background(Brush.verticalGradient(listOf(Mb.colors.cardHigh, Mb.colors.card)))
-            .border(1.dp, Mb.colors.border, RoundedCornerShape(24.dp))
-            .padding(horizontal = 8.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-    ) {
-        channels.forEach { ch ->
-            // Escala logarítmica: valores pequenos também aparecem.
-            val level = if (ch.value <= 0) 0.06f else (0.15f + 0.85f * (ln(1f + ch.value) / ln(1f + max))).coerceIn(0f, 1f)
-            val anim by animateFloatAsState(level, tween(900), label = "fader")
-            Column(
-                Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(16.dp))
-                    .clickable(onClick = ch.onClick)
-                    .padding(vertical = 4.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text("${ch.value}", fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = ch.color)
-                Spacer(Modifier.height(8.dp))
-                Box(Modifier.height(96.dp).width(36.dp), contentAlignment = Alignment.BottomCenter) {
-                    // Trilho
-                    Box(
-                        Modifier
-                            .fillMaxHeight()
-                            .width(6.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.08f)),
-                    )
-                    // Nível
-                    Box(
-                        Modifier
-                            .fillMaxHeight(anim)
-                            .width(6.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(Brush.verticalGradient(listOf(ch.color, ch.color.copy(alpha = 0.35f)))),
-                    )
-                    // Botão do fader
-                    Box(Modifier.fillMaxHeight(anim), contentAlignment = Alignment.TopCenter) {
-                        Box(
-                            Modifier
-                                .offset(y = (-7).dp)
-                                .size(width = 30.dp, height = 14.dp)
-                                .clip(RoundedCornerShape(5.dp))
-                                .background(Color(0xFFDDE3EE))
-                                .border(1.dp, ch.color, RoundedCornerShape(5.dp)),
-                        )
-                    }
-                }
-                Spacer(Modifier.height(8.dp))
-                Text(ch.label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
-            }
-        }
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Carrossel 3D ("coverflow") e discos em miniatura

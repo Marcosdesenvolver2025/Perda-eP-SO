@@ -153,6 +153,17 @@ fun AccountScreen(nav: NavController) {
                     }
                 }
                 SyncStatusCard(sync.status, sync.lastSyncAt, sync.error, sync.pending)
+                container.sync.lastSetupError?.takeIf { sync.status == SyncStatus.NEEDS_SETUP }?.let { problem ->
+                    MbCard(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), background = Mb.colors.warning.copy(alpha = 0.10f)) {
+                        Column(Modifier.padding(16.dp)) {
+                            Text("Sincronização ainda não ativada", style = MaterialTheme.typography.titleSmall, color = Mb.colors.warning)
+                            Spacer(Modifier.height(6.dp))
+                            Text(problem, style = MaterialTheme.typography.bodyMedium)
+                            Spacer(Modifier.height(8.dp))
+                            TextButton(onClick = { scope.launch { container.sync.checkPendingSetup() } }) { Text("Tentar de novo agora") }
+                        }
+                    }
+                }
                 SettingsSection("Dados") {
                     SettingItem(Icons.Rounded.Schedule, "Último backup/sincronização", if (sync.lastSyncAt > 0) Fmt.dateTime(sync.lastSyncAt) else "Ainda não sincronizado")
                     SettingDivider()

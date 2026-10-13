@@ -82,6 +82,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
 import com.musibox.app.data.prefs.SaveDestination
+import com.musibox.app.core.findActivity
 import com.musibox.app.download.LinkUtils
 import com.musibox.app.ui.components.Artwork
 import com.musibox.app.ui.components.appViewModel
@@ -108,6 +109,10 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
     var webView by remember { mutableStateOf<WebView?>(null) }
     var showSheet by remember { mutableStateOf(false) }
     var imageToSave by remember { mutableStateOf<String?>(null) }
+    // Tela cheia de vídeos dentro do navegador (ex.: botão de tela cheia do YouTube)
+    var fullView by remember { mutableStateOf<android.view.View?>(null) }
+    var fullCallback by remember { mutableStateOf<WebChromeClient.CustomViewCallback?>(null) }
+    val activity = androidx.compose.ui.platform.LocalContext.current.findActivity()
     val isMedia = LinkUtils.isMediaPage(currentUrl)
 
     fun startDownload(url: String, videoHint: String? = null) {
@@ -133,7 +138,29 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
         webView?.loadUrl(url)
     }
 
-    BackHandler(enabled = editing || canGoBack) {
+    fun exitFullscreen() {
+        runCatching { fullCallback?.onCustomViewHidden() }
+        fullView = null
+        fullCallback = null
+    }
+
+    // Entra/sai da tela cheia: paisagem + barras do sistema escondidas; ao sair, volta tudo ao normal.
+    androidx.compose.runtime.DisposableEffect(fullView != null) {
+        val window = activity?.window
+        val controller = window?.let { androidx.core.view.WindowCompat.getInsetsController(it, it.decorView) }
+        if (fullView != null) {
+            activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            controller?.systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            controller?.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+        }
+        onDispose {
+            activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            controller?.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+        }
+    }
+    BackHandler(enabled = fullView != null) { exitFullscreen() }
+
+    BackHandler(enabled = fullView == null && (editing || canGoBack)) {
         if (editing) {
             editing = false
             focus.clearFocus()
@@ -305,6 +332,20 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
                             override fun onReceivedTitle(view: WebView, t: String?) {
                                 title = t.orEmpty()
                             }
+
+                            override fun onShowCustomView(view: android.view.View, callback: CustomViewCallback) {
+                                if (fullView != null) {
+                                    callback.onCustomViewHidden()
+                                    return
+                                }
+                                fullView = view
+                                fullCallback = callback
+                            }
+
+                            override fun onHideCustomView() {
+                                fullView = null
+                                fullCallback = null
+                            }
                         }
                         // Toque longo numa imagem: salvar na galeria ou no cofre (como no Snaptube).
                         setOnLongClickListener {
@@ -359,6 +400,20 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
             BarButton(Icons.Rounded.Home, "Início do site") { webView?.loadUrl(startUrl) }
             Spacer(Modifier.weight(1f))
             BarButton(Icons.AutoMirrored.Rounded.ArrowForward, "Avançar", enabled = canGoForward) { webView?.goForward() }
+        }
+    }
+
+    // Vídeo em tela cheia por cima de tudo
+    fullView?.let { v ->
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Color.Black),
+        ) {
+            AndroidView(
+                factory = { (v.parent as? android.view.ViewGroup)?.removeView(v); v },
+                modifier = Modifier.fillMaxSize(),
+            )
         }
     }
 

@@ -40,6 +40,8 @@ import androidx.navigation.navArgument
 import com.musibox.app.ui.components.LocalAppContainer
 import com.musibox.app.ui.components.LocalSnackbar
 import com.musibox.app.ui.account.LoginContent
+import com.musibox.app.ui.components.DownloadIndicator
+import com.musibox.app.ui.components.SpaceBackdrop
 import com.musibox.app.ui.download.BrowserScreen
 import com.musibox.app.ui.download.DownloadScreen
 import com.musibox.app.ui.download.DownloadsManagerScreen
@@ -103,12 +105,19 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
     }
 
     CompositionLocalProvider(LocalSnackbar provides snackbar) {
+        Box(Modifier.fillMaxSize()) {
+        SpaceBackdrop()
         Scaffold(
-            containerColor = MaterialTheme.colorScheme.background,
+            containerColor = androidx.compose.ui.graphics.Color.Transparent,
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             snackbarHost = { SnackbarHost(snackbar) },
             bottomBar = {
                 Column {
+                    DownloadIndicator(
+                        visible = route != null && route != Routes.DOWNLOADS && route != Routes.ONBOARDING &&
+                            route != Routes.PLAYER && route != Routes.VAULT_PLAYER && route != Routes.LOGIN,
+                        onOpen = { navController.navigate(Routes.DOWNLOADS) { launchSingleTop = true } },
+                    )
                     AnimatedVisibility(showMini, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut()) {
                         MiniPlayer(
                             state = playerState,
@@ -203,6 +212,7 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
                 composable(Routes.VAULT_CHANGE_PIN) { VaultChangePinScreen(navController) }
                 composable(Routes.VAULT_RECOVER) { VaultRecoverScreen(navController) }
             }
+        }
         }
         SyncResolutionHost()
     }

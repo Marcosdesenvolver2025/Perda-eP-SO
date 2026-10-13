@@ -387,10 +387,9 @@ private fun VaultPlayer(nav: NavController, initialId: String) {
             controller?.hide(WindowInsetsCompat.Type.systemBars())
         }
         onDispose {
-            if (fullscreen) {
-                activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-                controller?.show(WindowInsetsCompat.Type.systemBars())
-            }
+            // Sempre volta ao normal (orientação livre e barras do sistema visíveis).
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            controller?.show(WindowInsetsCompat.Type.systemBars())
         }
     }
     BackHandler(enabled = fullscreen) { fullscreen = false }

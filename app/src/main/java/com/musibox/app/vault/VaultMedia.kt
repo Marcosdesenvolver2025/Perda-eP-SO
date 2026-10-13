@@ -42,6 +42,9 @@ class VaultDataSource(private val vault: VaultRepository) : BaseDataSource(false
         transferInitializing(dataSpec)
         val id = dataSpec.uri.lastPathSegment ?: throw IOException("Item inválido")
         val ch = vault.openSeekable(id)
+        // O Tink só sabe o tamanho depois da primeira leitura (lê o cabeçalho do arquivo).
+        ch.position(0)
+        ch.read(ByteBuffer.allocate(1))
         val size = ch.size()
         if (dataSpec.position > size) throw IOException("Posição inválida")
         ch.position(dataSpec.position)

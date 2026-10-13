@@ -35,6 +35,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -169,9 +171,15 @@ class SyncManager(
                 val cloud = try {
                     cloudHasData(user.uid)
                 } catch (e: Exception) {
-                    _resolution.value = SignInResolution.CheckFailed(user.uid, friendly(e))
+                    // A conta continua conectada; a verificação é refeita sozinha quando possível.
+                    val reason = diagnose(user.uid) ?: friendly(e)
+                    if (lastSetupError != reason) _notice.value = "Conta conectada. $reason"
+                    lastSetupError = reason
+                    _resolution.value = null
+                    scheduleSetupRetry()
                     return
                 }
+                lastSetupError = null
                 val local = localHasData()
                 when {
                     !cloud -> {
@@ -196,12 +204,64 @@ class SyncManager(
         }
     }
 
+    /** Motivo da última falha ao preparar a sincronização (mostrado em Conta e sincronização). */
+    @Volatile var lastSetupError: String? = null
+        private set
+
+    private fun scheduleSetupRetry() {
+        val request = OneTimeWorkRequestBuilder<SyncWorker>()
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .setInitialDelay(30, TimeUnit.SECONDS)
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork("sync_setup_retry", ExistingWorkPolicy.KEEP, request)
+    }
+
+    /**
+     * Descobre a causa exata quando o Firestore não responde: banco não criado, regras não
+     * publicadas ou internet. Usa a API REST do próprio Firestore com o token da conta.
+     */
+    private suspend fun diagnose(uid: String): String? = withContext(Dispatchers.IO) {
+        runCatching {
+            val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser ?: return@runCatching null
+            val token = user.getIdToken(false).await().token ?: return@runCatching null
+            val opts = com.google.firebase.FirebaseApp.getInstance().options
+            val project = opts.projectId ?: return@runCatching null
+            val url = java.net.URL(
+                "https://firestore.googleapis.com/v1/projects/$project/databases/(default)/documents/users/$uid?key=${opts.apiKey}",
+            )
+            val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
+                connectTimeout = 10_000
+                readTimeout = 10_000
+                setRequestProperty("Authorization", "Bearer $token")
+            }
+            try {
+                val code = conn.responseCode
+                val body = (if (code in 200..299) conn.inputStream else conn.errorStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
+                when {
+                    "does not exist" in body && "database" in body.lowercase() ->
+                        "O banco de dados ainda não foi criado no Firebase. No console, abra Firestore Database e toque em Criar banco de dados."
+                    "Cloud Firestore API has not been used" in body || "SERVICE_DISABLED" in body ->
+                        "O Firestore ainda não foi ativado no projeto. No console, abra Firestore Database e crie o banco de dados."
+                    code == 403 || "PERMISSION_DENIED" in body ->
+                        "As regras do Firestore bloqueiam o acesso. Publique as regras do MusiBox na aba Regras do Firestore."
+                    code in 200..299 || code == 404 -> null // o banco existe; foi só a conexão
+                    else -> null
+                }
+            } finally {
+                conn.disconnect()
+            }
+        }.getOrNull()
+    }
+
     /** Verifica de novo ao abrir o app (ex.: login feito sem internet). */
-    suspend fun checkPendingSetup() {
-        val user = auth.currentUser ?: return
+    /** Devolve true quando a conta já está pronta para sincronizar. */
+    suspend fun checkPendingSetup(): Boolean {
+        val user = auth.currentUser ?: return true
         val s = settings.snapshot()
         if (s.ownerUid != user.uid && _resolution.value == null) onSignedIn(user)
         else if (s.ownerUid == user.uid) requestSync(2)
+        return settings.snapshot().ownerUid == user.uid || _resolution.value != null
     }
 
     fun dismissResolution() {
@@ -598,7 +658,8 @@ class SyncManager(
     private fun friendly(e: Exception): String = when {
         e is FirebaseFirestoreException && e.code == FirebaseFirestoreException.Code.PERMISSION_DENIED ->
             "Acesso negado pelo servidor. Verifique as regras do Firestore."
-        e is FirebaseFirestoreException && e.code == FirebaseFirestoreException.Code.UNAVAILABLE -> "Sem conexão com o servidor."
+        e is FirebaseFirestoreException && e.code == FirebaseFirestoreException.Code.UNAVAILABLE ->
+            "O servidor de sincronização não respondeu. Vamos tentar de novo automaticamente."
         e is FirebaseFirestoreException && e.code == FirebaseFirestoreException.Code.NOT_FOUND ->
             "Banco de dados não encontrado. Crie o Firestore no console do Firebase."
         else -> e.message ?: "Erro ao sincronizar."
@@ -724,6 +785,9 @@ class SyncManager(
 class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorker(appContext, params) {
     override suspend fun doWork(): Result {
         val container = (applicationContext as MusiBoxApp).container
+        // Conta conectada, mas a configuração inicial ainda não foi concluída (ex.: banco recém-criado).
+        val ready = runCatching { container.sync.checkPendingSetup() }.getOrDefault(false)
+        if (!ready) return if (runAttemptCount < 20) Result.retry() else Result.success()
         val done = container.sync.performSync()
         return when {
             done -> Result.success()

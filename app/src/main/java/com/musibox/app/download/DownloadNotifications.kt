@@ -42,17 +42,47 @@ object DownloadNotifications {
 
     fun notificationId(downloadId: String) = 10_000 + (downloadId.hashCode() and 0x0FFFFFFF)
 
+    private fun actionIntent(context: Context, action: String, downloadId: String): PendingIntent {
+        val intent = Intent(context, DownloadActionReceiver::class.java)
+            .setAction(action)
+            .putExtra(DownloadActionReceiver.EXTRA_ID, downloadId)
+        return PendingIntent.getBroadcast(
+            context,
+            (action + downloadId).hashCode(),
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+    }
+
+    /**
+     * Notificação "Baixando…" com a porcentagem em tempo real, velocidade e tempo restante,
+     * e os botões Pausar e Cancelar.
+     */
     fun progressInfo(context: Context, downloadId: String, title: String, percent: Int, text: String): ForegroundInfo {
+        val p = percent.coerceIn(0, 100)
+        val preparing = p <= 0 && (text.startsWith("Preparando") || text.isBlank())
+        val finishing = text.startsWith("Finalizando") || text.startsWith("Salvando")
+        val heading = when {
+            finishing -> "Finalizando download…"
+            preparing -> "Preparando download…"
+            else -> "Baixando… $p%"
+        }
         val n = NotificationCompat.Builder(context, CHANNEL_PROGRESS)
             .setSmallIcon(R.drawable.ic_stat_download)
-            .setContentTitle(title)
-            .setContentText(text)
-            .setProgress(100, percent.coerceIn(0, 100), percent <= 0)
+            .setContentTitle(heading)
+            .setContentText(title)
+            .setSubText(if (preparing || finishing) null else text.substringAfter("% • ", "").ifBlank { null })
+            .setStyle(NotificationCompat.BigTextStyle().bigText("$title\n$text"))
+            .setProgress(100, p, preparing || finishing)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setSilent(true)
+            .setShowWhen(false)
+            .setColor(0xFF1E8BFF.toInt())
             .setContentIntent(openDownloadsIntent(context))
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+            .addAction(0, "Pausar", actionIntent(context, DownloadActionReceiver.ACTION_PAUSE, downloadId))
+            .addAction(0, "Cancelar", actionIntent(context, DownloadActionReceiver.ACTION_CANCEL, downloadId))
             .build()
         return ForegroundInfo(notificationId(downloadId), n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
     }
@@ -69,8 +99,9 @@ object DownloadNotifications {
         if (!Permissions.hasNotifications(context)) return
         val n = NotificationCompat.Builder(context, CHANNEL_DONE)
             .setSmallIcon(R.drawable.ic_stat_download)
-            .setContentTitle(if (success) "Download concluído" else "Falha no download")
-            .setContentText(if (success) title else "$title — $message")
+            .setContentTitle(if (success) "Download concluído ✓" else "Falha no download")
+            .setContentText(if (success) "$title • $message" else "$title — $message")
+            .setColor(0xFF1E8BFF.toInt())
             .setStyle(NotificationCompat.BigTextStyle().bigText(if (success) "$title\n$message" else "$title\n$message"))
             .setAutoCancel(true)
             .setContentIntent(openDownloadsIntent(context))

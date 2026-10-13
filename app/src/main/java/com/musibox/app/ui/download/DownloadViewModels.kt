@@ -59,7 +59,7 @@ class LinkDownloadViewModel(private val c: AppContainer) : ViewModel() {
     private var job: Job? = null
     private var lastUrl: String? = null
 
-    fun analyze(raw: String, preferAudio: Boolean = false) {
+    fun analyze(raw: String, preferAudio: Boolean = false, videoHint: String? = null) {
         val url = LinkUtils.extractUrl(raw)
         if (url == null) {
             _state.value = AnalyzeState.Error(null, "Link inválido. Copie o link completo do vídeo ou música.")
@@ -76,7 +76,7 @@ class LinkDownloadViewModel(private val c: AppContainer) : ViewModel() {
             }
             try {
                 val s = c.settings.snapshot()
-                val info = c.ytdlp.fetchInfo(url, s.audioBitrate)
+                val info = c.ytdlp.fetchInfo(url, s.audioBitrate, videoHint)
                 fileName = info.title
                 selected = FormatParser.defaultOption(info, preferAudio, s.videoQuality, s.audioFormat == AudioFormat.MP3)
                 destination = if (s.askDestination) null else s.defaultDestination

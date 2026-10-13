@@ -32,14 +32,14 @@ data class Site(
 
 val DownloadSites = listOf(
     Site("YouTube", "https://m.youtube.com", listOf(Color(0xFFFF2D3D), Color(0xFFD90F1F)), platform = Platform.YOUTUBE),
-    Site("YT Music", "https://music.youtube.com", listOf(Color(0xFFFF4757), Color(0xFFB3001B)), mark = "♪"),
     Site("TikTok", "https://www.tiktok.com", listOf(Color(0xFF111116), Color(0xFF000000)), platform = Platform.TIKTOK),
     Site("Instagram", "https://www.instagram.com", emptyList(), platform = Platform.INSTAGRAM),
+    Site("Kwai", "https://www.kwai.com", listOf(Color(0xFFFFB13D), Color(0xFFFF6A00)), mark = "K"),
+    Site("YT Music", "https://music.youtube.com", listOf(Color(0xFFFF4757), Color(0xFFB3001B)), mark = "♪"),
     Site("Facebook", "https://m.facebook.com", listOf(Color(0xFF3B8BFF), Color(0xFF1864E8)), mark = "f"),
     Site("X", "https://x.com", listOf(Color(0xFF2A2F3A), Color(0xFF0B0D12)), mark = "X"),
-    Site("SoundCloud", "https://m.soundcloud.com", listOf(Color(0xFFFF8A3D), Color(0xFFFF4E00)), mark = "SC"),
-    Site("Kwai", "https://www.kwai.com", listOf(Color(0xFFFFB13D), Color(0xFFFF6A00)), mark = "K"),
     Site("Pinterest", "https://www.pinterest.com", listOf(Color(0xFFFF4060), Color(0xFFC8001E)), mark = "P"),
+    Site("SoundCloud", "https://m.soundcloud.com", listOf(Color(0xFFFF8A3D), Color(0xFFFF4E00)), mark = "SC"),
     Site("Vimeo", "https://vimeo.com", listOf(Color(0xFF3CCBF4), Color(0xFF1196C9)), mark = "V"),
     Site("Dailymotion", "https://www.dailymotion.com", listOf(Color(0xFF3A8BFF), Color(0xFF0050C8)), mark = "D"),
     Site("Twitch", "https://m.twitch.tv", listOf(Color(0xFFA77BFF), Color(0xFF6A2BE0)), mark = "T"),

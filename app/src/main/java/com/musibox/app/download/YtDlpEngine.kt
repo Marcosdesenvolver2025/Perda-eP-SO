@@ -108,16 +108,16 @@ class YtDlpEngine(private val context: Context) {
         }
     }
 
-    suspend fun fetchInfo(url: String, mp3Kbps: Int): MediaInfo = withContext(Dispatchers.IO) {
+    suspend fun fetchInfo(url: String, mp3Kbps: Int, videoHint: String? = null): MediaInfo = withContext(Dispatchers.IO) {
         ensureReady()
         updateIfStale()
         try {
             fetchInfoOnce(url, mp3Kbps)
         } catch (e: DownloadError) {
             if (e.retryable) throw e
-            // Post só com foto (Instagram, Pinterest, TikTok…): usa a imagem pública da página.
-            _stage.value = "Procurando fotos…"
-            DirectMedia.photosFromPage(url)?.let { return@withContext it }
+            // Sites sem suporte no motor (ex.: Kwai) ou posts só com foto: usa o vídeo/foto públicos da página.
+            _stage.value = "Procurando o vídeo na página…"
+            DirectMedia.mediaFromPage(url, videoHint)?.let { return@withContext it }
             // A plataforma mudou: atualiza o motor (versão de desenvolvimento, mais recente) e tenta de novo.
             if (!e.platformChanged || nightlyTried) throw e
             nightlyTried = true

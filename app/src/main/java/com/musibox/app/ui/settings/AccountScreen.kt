@@ -56,6 +56,7 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.musibox.app.AppContainer
 import com.musibox.app.core.Fmt
+import com.musibox.app.ui.account.LoginContent
 import com.musibox.app.core.findActivity
 import com.musibox.app.sync.RestoreMode
 import com.musibox.app.sync.SignInResolution
@@ -111,6 +112,10 @@ fun AccountScreen(nav: NavController) {
 
     Column(Modifier.fillMaxSize()) {
         MbTopBar("Conta e sincronização", onBack = { nav.popBackStack() })
+        if (container.auth.isConfigured && user == null) {
+            LoginContent(onDone = {}, onSkip = null, showLogo = false, modifier = Modifier.weight(1f))
+            return@Column
+        }
         Column(
             Modifier
                 .fillMaxSize()
@@ -126,44 +131,7 @@ fun AccountScreen(nav: NavController) {
                     )
                 }
             } else if (u == null) {
-                Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(
-                        Modifier
-                            .size(84.dp)
-                            .clip(CircleShape)
-                            .background(Mb.colors.accentGradient),
-                        contentAlignment = Alignment.Center,
-                    ) { Icon(Icons.Rounded.CloudSync, null, tint = Color.White, modifier = Modifier.size(42.dp)) }
-                    Spacer(Modifier.height(18.dp))
-                    Text("Proteja e sincronize seus dados", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
-                    Spacer(Modifier.height(10.dp))
-                    Text(
-                        "Entre com sua Conta Google para manter configurações, playlists, favoritos e outros dados compatíveis " +
-                            "sincronizados. Assim você poderá recuperá-los ao trocar de celular ou reinstalar o aplicativo.",
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.height(10.dp))
-                    Text(
-                        "Suas músicas, fotos e vídeos continuam no aparelho. Nada do cofre é enviado.",
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.height(24.dp))
-                    GradientButton(
-                        "Continuar com Google",
-                        onClick = {
-                            busy = true
-                            scope.launch {
-                                startGoogleSignIn(container, context.findActivity()) { snack(it) }
-                                busy = false
-                            }
-                        },
-                        loading = busy,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
+                Unit
             } else {
                 Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(
@@ -334,8 +302,17 @@ private fun SyncStatusCard(status: SyncStatus, lastSyncAt: Long, error: String?,
 fun SyncResolutionHost() {
     val container = LocalAppContainer.current
     val resolution by container.sync.resolution.collectAsStateWithLifecycle()
+    val notice by container.sync.notice.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    val snack = rememberSnack()
     var working by remember { mutableStateOf(false) }
+
+    LaunchedEffect(notice) {
+        notice?.let {
+            snack(it)
+            container.sync.clearNotice()
+        }
+    }
 
     fun resolve(mode: RestoreMode) {
         working = true

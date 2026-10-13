@@ -40,9 +40,8 @@ step "Primeira abertura"
 adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
 sleep 6
 shot 01_apresentacao
-$UI tap "Próximo"; $UI tap "Próximo"; $UI tap "Começar"
 shot 02_conta
-$UI tap "Continuar sem conta"
+$UI tap "Continuar sem conta" 30
 $UI wait "músicas encontradas" 40; shot 03_indexacao
 $UI tap "Ir para o início"
 sleep 3; shot 04_inicio

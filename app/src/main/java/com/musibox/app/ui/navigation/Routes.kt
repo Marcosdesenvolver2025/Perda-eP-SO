@@ -26,6 +26,7 @@ object Routes {
     const val VAULT_CHANGE_PIN = "vault_change_pin"
     const val VAULT_RECOVER = "vault_recover"
     const val DOWNLOADS = "downloads"
+    const val LOGIN = "login"
     const val BROWSER = "browser?url={url}"
 
     fun library(tab: Int = 0) = "library?tab=$tab"

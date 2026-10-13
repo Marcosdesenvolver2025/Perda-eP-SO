@@ -55,6 +55,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.musibox.app.core.Fmt
+import com.musibox.app.ui.account.LoginContent
 import com.musibox.app.core.findActivity
 import com.musibox.app.ui.components.GradientButton
 import com.musibox.app.ui.components.LocalAppContainer
@@ -68,14 +69,16 @@ import kotlinx.coroutines.launch
 
 private data class Slide(val icon: ImageVector, val brush: Brush, val title: String, val text: String)
 
-private enum class Step { INTRO, ACCOUNT, PERMISSION, INDEXING }
+private enum class Step { LOGIN, PERMISSION, INDEXING }
 
-/** Primeira abertura: apresentação → conta (opcional) → permissão de músicas → indexação. */
+/** Primeira abertura: entrar (Google ou e-mail, opcional) → permissão de músicas → indexação. */
 @Composable
 fun OnboardingScreen(onFinished: () -> Unit) {
     val container = LocalAppContainer.current
     val scope = rememberCoroutineScope()
-    var step by rememberSaveable { mutableStateOf(Step.INTRO) }
+    var step by rememberSaveable {
+        mutableStateOf(if (container.auth.isConfigured && container.auth.currentUser == null) Step.LOGIN else Step.PERMISSION)
+    }
 
     val finish: () -> Unit = {
         scope.launch {
@@ -93,134 +96,14 @@ fun OnboardingScreen(onFinished: () -> Unit) {
     ) {
         AnimatedContent(step, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "onboarding") { s ->
             when (s) {
-                Step.INTRO -> IntroStep(onNext = { step = if (container.auth.isConfigured) Step.ACCOUNT else Step.PERMISSION })
-                Step.ACCOUNT -> AccountStep(onNext = { step = Step.PERMISSION })
+                Step.LOGIN -> LoginContent(onDone = { step = Step.PERMISSION }, onSkip = {
+                    scope.launch { container.settings.setLoginSkipped(true) }
+                    step = Step.PERMISSION
+                })
                 Step.PERMISSION -> PermissionStep(onGranted = { step = Step.INDEXING }, onSkip = finish)
                 Step.INDEXING -> IndexingStep(onDone = finish)
             }
         }
-    }
-}
-
-@Composable
-private fun IntroStep(onNext: () -> Unit) {
-    val slides = listOf(
-        Slide(Icons.Rounded.Headphones, Brush.linearGradient(listOf(MbPalette.BlueBright, MbPalette.BlueDeep)),
-            "Suas músicas em um só lugar", "Ouça as músicas do seu aparelho com um player completo, em segundo plano e sem internet."),
-        Slide(Icons.Rounded.Download, Brush.linearGradient(listOf(Color(0xFFFF5A4E), Color(0xFFE0201C))),
-            "Baixe pelo Compartilhar", "No YouTube, TikTok ou Instagram, toque em Compartilhar e escolha \"Baixar com MusiBox\"."),
-        Slide(Icons.Rounded.Lock, Brush.linearGradient(listOf(MbPalette.Purple, Color(0xFF4F5BFF))),
-            "Cofre privado", "Guarde fotos, vídeos e arquivos criptografados, protegidos por PIN ou biometria."),
-    )
-    val pager = rememberPagerState { slides.size }
-    val scope = rememberCoroutineScope()
-    Column(Modifier.fillMaxSize().padding(24.dp)) {
-        MusiLogo(iconSize = 30.dp)
-        HorizontalPager(pager, Modifier.weight(1f)) { page ->
-            val slide = slides[page]
-            Column(
-                Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Box(
-                    Modifier
-                        .size(150.dp)
-                        .clip(RoundedCornerShape(44.dp))
-                        .background(slide.brush),
-                    contentAlignment = Alignment.Center,
-                ) { Icon(slide.icon, null, tint = Color.White, modifier = Modifier.size(76.dp)) }
-                Spacer(Modifier.height(36.dp))
-                Text(slide.title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
-                Spacer(Modifier.height(12.dp))
-                Text(slide.text, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
-            }
-        }
-        Row(Modifier.fillMaxWidth().padding(vertical = 16.dp), horizontalArrangement = Arrangement.Center) {
-            repeat(slides.size) { i ->
-                Box(
-                    Modifier
-                        .padding(4.dp)
-                        .size(width = if (pager.currentPage == i) 22.dp else 8.dp, height = 8.dp)
-                        .clip(CircleShape)
-                        .background(if (pager.currentPage == i) MaterialTheme.colorScheme.primary else Mb.colors.border),
-                )
-            }
-        }
-        GradientButton(
-            if (pager.currentPage < slides.lastIndex) "Próximo" else "Começar",
-            onClick = {
-                if (pager.currentPage < slides.lastIndex) scope.launch { pager.animateScrollToPage(pager.currentPage + 1) } else onNext()
-            },
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
-}
-
-@Composable
-private fun AccountStep(onNext: () -> Unit) {
-    val container = LocalAppContainer.current
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val snack = rememberSnack()
-    var busy by remember { mutableStateOf(false) }
-    var message by remember { mutableStateOf<String?>(null) }
-
-    Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Spacer(Modifier.height(40.dp))
-        Box(
-            Modifier
-                .size(120.dp)
-                .clip(CircleShape)
-                .background(Mb.colors.accentGradient),
-            contentAlignment = Alignment.Center,
-        ) { Icon(Icons.Rounded.CloudSync, null, tint = Color.White, modifier = Modifier.size(60.dp)) }
-        Spacer(Modifier.height(30.dp))
-        Text("Proteja e sincronize seus dados", style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
-        Spacer(Modifier.height(14.dp))
-        Text(
-            "Entre com sua Conta Google para manter configurações, playlists, favoritos e outros dados compatíveis sincronizados. " +
-                "Assim você poderá recuperá-los ao trocar de celular ou reinstalar o aplicativo.",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(10.dp))
-        Text(
-            "O login é opcional. Músicas, fotos e vídeos continuam no aparelho e o cofre nunca é enviado.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        message?.let {
-            Spacer(Modifier.height(12.dp))
-            Text(it, color = Mb.colors.warning, textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium)
-        }
-        Spacer(Modifier.height(36.dp))
-        GradientButton(
-            "Continuar com Google",
-            onClick = {
-                busy = true
-                scope.launch {
-                    val ok = startGoogleSignIn(container, context.findActivity()) { msg -> message = msg }
-                    busy = false
-                    if (ok) {
-                        snack(message ?: "Conectado.")
-                        onNext()
-                    }
-                }
-            },
-            loading = busy,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(8.dp))
-        TextButton(onClick = onNext, enabled = !busy) { Text("Continuar sem conta") }
     }
 }
 

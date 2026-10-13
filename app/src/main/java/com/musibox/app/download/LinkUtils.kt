@@ -82,7 +82,8 @@ object LinkUtils {
             host.endsWith("dailymotion.com") -> "/video/" in "/$path"
             host.endsWith("pinterest.com") || host.endsWith("pinterest.com.br") || host == "pin.it" ->
                 "/pin/" in "/$path" || host == "pin.it"
-            host.endsWith("kwai.com") -> "/video/" in "/$path" || "/photo/" in "/$path"
+            host.endsWith("kwai.com") || host.endsWith("kwai.net") -> "/video/" in "/$path" || "/photo/" in "/$path" || "/short-video/" in "/$path"
+            host == "kw.ai" -> segments.isNotEmpty()
             host.endsWith("twitch.tv") -> "/videos/" in "/$path" || "/clip/" in "/$path" || host.startsWith("clips.")
             host.endsWith("bandcamp.com") -> "/track/" in "/$path"
             else -> false

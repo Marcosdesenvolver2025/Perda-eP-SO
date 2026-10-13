@@ -55,6 +55,7 @@ class DownloadWorker(appContext: Context, params: WorkerParameters) : CoroutineW
                     workDir,
                     d.targetExt,
                     isCanceled = { isStopped },
+                    referer = d.sourceUrl,
                 ) { percent, total ->
                     val now = System.currentTimeMillis()
                     if (now - lastDb > 400) {

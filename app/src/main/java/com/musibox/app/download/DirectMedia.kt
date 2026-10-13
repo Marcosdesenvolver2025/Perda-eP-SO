@@ -18,9 +18,12 @@ object DirectMedia {
     private val attr = Regex("""([a-zA-Z:_-]+)\s*=\s*("([^"]*)"|'([^']*)')""")
     private val titleTag = Regex("""<title[^>]*>([^<]*)</title>""", RegexOption.IGNORE_CASE)
 
-    /** Monta opções de foto a partir das imagens públicas da página, ou null se não houver. */
-    fun photosFromPage(pageUrl: String): MediaInfo? {
-        val html = runCatching { fetchText(pageUrl) }.getOrNull() ?: return null
+    /**
+     * Monta opções a partir da própria página: vídeo público (og:video ou o vídeo que estava
+     * tocando no navegador do app, [videoHint]) e fotos (og:image). Null se não achar nada.
+     */
+    fun mediaFromPage(pageUrl: String, videoHint: String? = null): MediaInfo? {
+        val html = runCatching { fetchText(pageUrl) }.getOrNull().orEmpty()
         val metas = metaTag.findAll(html).map { tag ->
             attr.findAll(tag.value).associate { m ->
                 m.groupValues[1].lowercase(Locale.ROOT) to unescape(m.groupValues[3].ifEmpty { m.groupValues[4] })
@@ -30,32 +33,59 @@ object DirectMedia {
             val key = m["property"] ?: m["name"] ?: return@mapNotNull null
             if (key.lowercase(Locale.ROOT) in names) m["content"] else null
         }
+        val videos = (listOfNotNull(videoHint) + metaValues("og:video:secure_url", "og:video:url", "og:video", "twitter:player:stream"))
+            .filter { it.startsWith("http") && !it.contains("/embed") }
+            .distinct()
+            .take(1)
         val images = metaValues("og:image", "og:image:secure_url", "og:image:url", "twitter:image", "twitter:image:src")
             .filter { it.startsWith("http") }
             .distinct()
             .take(10)
-        if (images.isEmpty()) return null
+        if (videos.isEmpty() && images.isEmpty()) return null
         val title = metaValues("og:title", "twitter:title").firstOrNull()
             ?: titleTag.find(html)?.groupValues?.get(1)?.let { unescape(it).trim() }
-            ?: "Foto"
-        val platform = LinkUtils.platformOf(pageUrl)
+            ?: if (videos.isNotEmpty()) "Vídeo" else "Foto"
+        val videoOptions = videos.map { url ->
+            DownloadOption(
+                id = "direct_video",
+                label = "Vídeo original",
+                detail = "MP4 • qualidade da página",
+                kind = OptionKind.VIDEO,
+                selector = "direct:$url",
+                ext = "mp4",
+                convertTo = null,
+                mergeMp4 = false,
+                estimatedBytes = 0,
+            )
+        }
         return MediaInfo(
             url = pageUrl,
             webpageUrl = pageUrl,
-            title = title.take(120).ifBlank { "Foto" },
-            thumbnail = images.first(),
+            title = title.take(120).ifBlank { "Mídia" },
+            thumbnail = images.firstOrNull(),
             durationSec = 0,
             uploader = null,
-            platform = platform,
-            options = FormatParser.photoOptions(images),
-            moreOptions = emptyList(),
+            platform = LinkUtils.platformOf(pageUrl),
+            options = videoOptions + if (videoOptions.isEmpty()) FormatParser.photoOptions(images) else emptyList(),
+            moreOptions = if (videoOptions.isNotEmpty()) FormatParser.photoOptions(images.take(1)) else emptyList(),
         )
     }
 
     /** Baixa um arquivo direto para [dir]. Devolve o arquivo salvo. */
-    fun download(url: String, dir: File, fallbackExt: String, isCanceled: () -> Boolean, onProgress: (Float, Long) -> Unit): File {
+    fun download(
+        url: String,
+        dir: File,
+        fallbackExt: String,
+        isCanceled: () -> Boolean,
+        referer: String? = null,
+        onProgress: (Float, Long) -> Unit,
+    ): File {
         dir.mkdirs()
         val conn = open(url)
+        referer?.takeIf { it.startsWith("http") }?.let { conn.setRequestProperty("Referer", it) }
+        // Cookies que o navegador do app recebeu desse site (alguns servidores de vídeo exigem).
+        runCatching { android.webkit.CookieManager.getInstance().getCookie(url) }.getOrNull()
+            ?.takeIf { it.isNotBlank() }?.let { conn.setRequestProperty("Cookie", it) }
         try {
             val code = conn.responseCode
             if (code !in 200..299) throw DownloadError("Não foi possível baixar a imagem (erro $code).", retryable = code >= 500)

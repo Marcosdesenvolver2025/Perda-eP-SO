@@ -19,6 +19,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,6 +39,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.musibox.app.ui.components.LocalAppContainer
 import com.musibox.app.ui.components.LocalSnackbar
+import com.musibox.app.ui.account.LoginContent
 import com.musibox.app.ui.download.BrowserScreen
 import com.musibox.app.ui.download.DownloadScreen
 import com.musibox.app.ui.download.DownloadsManagerScreen
@@ -73,8 +80,16 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
     val route = backStack?.destination?.route
 
     val showBottom = route in Routes.topLevel
-    val hideMiniOn = setOf(Routes.PLAYER, Routes.QUEUE, Routes.ONBOARDING, Routes.VAULT_PLAYER, Routes.VAULT_VIEWER, Routes.BROWSER)
+    val hideMiniOn = setOf(Routes.PLAYER, Routes.QUEUE, Routes.ONBOARDING, Routes.VAULT_PLAYER, Routes.VAULT_VIEWER, Routes.BROWSER, Routes.LOGIN)
     val showMini = playerState.current != null && route != null && route !in hideMiniOn
+
+    // Quem ainda não entrou na conta (e não escolheu "Continuar sem conta") vê a tela de entrada uma vez.
+    LaunchedEffect(Unit) {
+        if (!startOnboarding && container.auth.isConfigured && container.auth.currentUser == null) {
+            val s = container.settings.snapshot()
+            if (!s.loginSkipped) navController.navigate(Routes.LOGIN) { launchSingleTop = true }
+        }
+    }
 
     LaunchedEffect(navRequests) {
         navRequests.collect { target ->
@@ -139,6 +154,18 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
                     DownloadScreen(navController, entry.arguments?.getInt("tab") ?: 0, entry.arguments?.getString("url"))
                 }
                 composable(Routes.DOWNLOADS) { DownloadsManagerScreen(navController) }
+                composable(Routes.LOGIN) {
+                    val scope = rememberCoroutineScope()
+                    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding()) {
+                        LoginContent(
+                            onDone = { navController.popBackStack() },
+                            onSkip = {
+                                scope.launch { container.settings.setLoginSkipped(true) }
+                                navController.popBackStack()
+                            },
+                        )
+                    }
+                }
                 composable(
                     Routes.BROWSER,
                     arguments = listOf(navArgument("url") { type = NavType.StringType; defaultValue = "https://m.youtube.com" }),

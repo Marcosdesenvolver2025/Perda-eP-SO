@@ -58,6 +58,7 @@ data class AppSettings(
     val vaultSecureScreen: Boolean = true,
     val vaultHideThumbnails: Boolean = false,
     val onboardingDone: Boolean = false,
+    val loginSkipped: Boolean = false,
     val ownerUid: String? = null,
     val restoreDeclined: Boolean = false,
     val settingsUpdatedAt: Long = 0,
@@ -94,6 +95,7 @@ object SettingKeys {
     // Somente deste aparelho (não sincronizam)
     val vaultBiometric = booleanPreferencesKey("vault_biometric")
     val onboardingDone = booleanPreferencesKey("onboarding_done")
+    val loginSkipped = booleanPreferencesKey("login_skipped")
     val ownerUid = stringPreferencesKey("owner_uid")
     val restoreDeclined = booleanPreferencesKey("restore_declined")
     val settingsUpdatedAt = longPreferencesKey("settings_updated_at")
@@ -155,6 +157,7 @@ class SettingsRepository(context: Context) {
             vaultSecureScreen = this[k.vaultSecureScreen] ?: d.vaultSecureScreen,
             vaultHideThumbnails = this[k.vaultHideThumbnails] ?: d.vaultHideThumbnails,
             onboardingDone = this[k.onboardingDone] ?: d.onboardingDone,
+            loginSkipped = this[k.loginSkipped] ?: d.loginSkipped,
             ownerUid = this[k.ownerUid]?.takeIf { it.isNotBlank() },
             restoreDeclined = this[k.restoreDeclined] ?: d.restoreDeclined,
             settingsUpdatedAt = this[k.settingsUpdatedAt] ?: d.settingsUpdatedAt,
@@ -216,6 +219,7 @@ class SettingsRepository(context: Context) {
 
     // Estado local
     suspend fun setOnboardingDone(v: Boolean) = setLocal(SettingKeys.onboardingDone, v)
+    suspend fun setLoginSkipped(v: Boolean) = setLocal(SettingKeys.loginSkipped, v)
     suspend fun setYtdlpUpdatedAt(v: Long) = setLocal(SettingKeys.ytdlpUpdatedAt, v)
 
     suspend fun setOwner(uid: String?, restoreDeclined: Boolean) {

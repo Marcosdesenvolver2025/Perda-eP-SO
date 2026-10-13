@@ -24,6 +24,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -109,9 +110,27 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
     var imageToSave by remember { mutableStateOf<String?>(null) }
     val isMedia = LinkUtils.isMediaPage(currentUrl)
 
-    fun startDownload(url: String) {
-        vm.analyze(url)
+    fun startDownload(url: String, videoHint: String? = null) {
+        vm.analyze(url, videoHint = videoHint)
         showSheet = true
+    }
+
+    // Procura o vídeo que está na página (para sites que o motor não conhece, como o Kwai).
+    fun downloadCurrentPage() {
+        val view = webView
+        if (view == null) {
+            startDownload(currentUrl)
+            return
+        }
+        view.evaluateJavascript(FIND_VIDEO_JS) { result ->
+            val src = runCatching { org.json.JSONTokener(result).nextValue() as? String }.getOrNull()
+            startDownload(currentUrl, src?.takeIf { it.startsWith("http") })
+        }
+    }
+
+    fun openSite(url: String) {
+        editing = false
+        webView?.loadUrl(url)
     }
 
     BackHandler(enabled = editing || canGoBack) {
@@ -194,6 +213,31 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
             }
             Spacer(Modifier.width(6.dp))
             BarButton(Icons.Rounded.Refresh, "Recarregar") { webView?.reload() }
+        }
+        // Abas rápidas dos sites
+        val host = LinkUtils.hostOf(currentUrl)
+        androidx.compose.foundation.lazy.LazyRow(
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(bottom = 6.dp),
+        ) {
+            items(DownloadSites.size) { i ->
+                val site = DownloadSites[i]
+                val selected = host.isNotEmpty() && LinkUtils.hostOf(site.url).let { h -> host == h || host.endsWith(".$h") }
+                Row(
+                    Modifier
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f) else Mb.colors.card)
+                        .border(1.dp, if (selected) MaterialTheme.colorScheme.primary else Mb.colors.border, RoundedCornerShape(18.dp))
+                        .clickable { openSite(site.url) }
+                        .padding(start = 5.dp, end = 12.dp, top = 5.dp, bottom = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    SiteIcon(site, 24.dp)
+                    Spacer(Modifier.width(6.dp))
+                    Text(site.name, style = MaterialTheme.typography.labelMedium, color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
+                }
+            }
         }
         if (progress in 1..99) {
             LinearProgressIndicator(
@@ -306,27 +350,18 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
                 }
             }
 
-            // Botão flutuante "Baixar"
-            androidx.compose.animation.AnimatedVisibility(
-                isMedia,
-                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 18.dp, bottom = 84.dp),
-                enter = scaleIn() + fadeIn(),
-                exit = scaleOut() + fadeOut(),
+            // Botão flutuante "Baixar" (fica ativo e pulsando quando a página tem um vídeo)
+            Box(
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 18.dp, bottom = 84.dp),
             ) {
-                val pulse = rememberInfiniteTransition(label = "fab")
-                val s by pulse.animateFloat(1f, 1.08f, infiniteRepeatable(tween(800), RepeatMode.Reverse), label = "fabScale")
-                Row(
-                    Modifier
-                        .scale(s)
-                        .clip(RoundedCornerShape(30.dp))
-                        .background(Mb.colors.accentGradient)
-                        .clickable { startDownload(currentUrl) }
-                        .padding(horizontal = 22.dp, vertical = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(Icons.Rounded.Download, null, tint = Color.White, modifier = Modifier.size(24.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("Baixar", color = Color.White, style = MaterialTheme.typography.titleMedium)
+                if (isMedia) {
+                    val pulse = rememberInfiniteTransition(label = "fab")
+                    val sc by pulse.animateFloat(1f, 1.08f, infiniteRepeatable(tween(800), RepeatMode.Reverse), label = "fabScale")
+                    DownloadFab(active = true, modifier = Modifier.scale(sc)) { downloadCurrentPage() }
+                } else {
+                    DownloadFab(active = false) { downloadCurrentPage() }
                 }
             }
         }
@@ -361,6 +396,43 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
         )
     }
 }
+
+@Composable
+private fun DownloadFab(active: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Row(
+        modifier
+            .clip(RoundedCornerShape(30.dp))
+            .then(
+                if (active) Modifier.background(Mb.colors.accentGradient)
+                else Modifier.background(Color.Black.copy(alpha = 0.72f)).border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(30.dp)),
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = if (active) 22.dp else 16.dp, vertical = if (active) 16.dp else 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Rounded.Download, null, tint = Color.White, modifier = Modifier.size(if (active) 24.dp else 20.dp))
+        Spacer(Modifier.width(8.dp))
+        Text("Baixar", color = Color.White, style = if (active) MaterialTheme.typography.titleMedium else MaterialTheme.typography.labelLarge)
+    }
+}
+
+/** Devolve o endereço do vídeo da página (ignora "blob:"), ou o og:video. */
+private const val FIND_VIDEO_JS = """
+(function(){
+  try {
+    var vs = document.querySelectorAll('video');
+    for (var i = 0; i < vs.length; i++) {
+      var v = vs[i];
+      var s = v.currentSrc || v.src || '';
+      if (!s) { var so = v.querySelector('source'); if (so) s = so.src || ''; }
+      if (s && s.indexOf('http') === 0) return s;
+    }
+    var m = document.querySelector('meta[property="og:video:secure_url"],meta[property="og:video:url"],meta[property="og:video"]');
+    if (m && m.content && m.content.indexOf('http') === 0) return m.content;
+  } catch (e) {}
+  return '';
+})();
+"""
 
 @Composable
 private fun SaveImageDialog(imageUrl: String, onSave: (SaveDestination) -> Unit, onDismiss: () -> Unit) {

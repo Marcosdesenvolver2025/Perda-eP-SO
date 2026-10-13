@@ -79,6 +79,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.musibox.app.core.Fmt
@@ -363,12 +364,13 @@ private fun HubHome(
         if (clipUrl != null) {
             item(key = "clip") { ClipboardCard(clipUrl, { onClipDownload(clipUrl) }, { onClipDismiss(clipUrl) }) }
         }
+        item(key = "browserHero") { BrowserHero { site -> nav.navigate(Routes.browser(site.url)) } }
         item(key = "sites") {
             Column(Modifier.padding(horizontal = 16.dp)) {
-                Spacer(Modifier.height(6.dp))
-                SectionTitle("Sites")
+                Spacer(Modifier.height(18.dp))
+                SectionTitle("Mais sites")
                 Spacer(Modifier.height(10.dp))
-                SitesGrid { site -> nav.navigate(Routes.browser(site.url)) }
+                SitesGrid(DownloadSites.filter { it.name !in HERO_SITES }) { site -> nav.navigate(Routes.browser(site.url)) }
             }
         }
         if (active.isNotEmpty()) {
@@ -451,8 +453,62 @@ private fun ClipboardCard(url: String, onDownload: () -> Unit, onDismiss: () -> 
     }
 }
 
+private val HERO_SITES = listOf("YouTube", "TikTok", "Instagram", "Kwai")
+
+/** Cartão principal: o navegador do MusiBox com os 4 sites mais usados em destaque. */
 @Composable
-private fun SitesGrid(onSite: (Site) -> Unit) {
+private fun BrowserHero(onSite: (Site) -> Unit) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(28.dp))
+            .background(Brush.linearGradient(listOf(Color(0xFF0E2A6E), Color(0xFF2B1A6B), Color(0xFF0B1530))))
+            .border(1.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(28.dp))
+            .padding(18.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color.White.copy(alpha = 0.14f)),
+                contentAlignment = Alignment.Center,
+            ) { Icon(Icons.Rounded.Public, null, tint = Color.White) }
+            Spacer(Modifier.width(12.dp))
+            Column {
+                Text("Navegador MusiBox", color = Color.White, fontFamily = androidx.compose.ui.text.font.FontFamily.Serif, fontSize = 22.sp)
+                Text(
+                    "Entre no site, abra o vídeo e toque em Baixar",
+                    color = Color.White.copy(alpha = 0.72f),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            HERO_SITES.mapNotNull { n -> DownloadSites.firstOrNull { it.name == n } }.forEach { site ->
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color.White.copy(alpha = 0.08f))
+                        .border(1.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(20.dp))
+                        .clickable { onSite(site) }
+                        .padding(vertical = 14.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    SiteIcon(site, 48.dp)
+                    Spacer(Modifier.height(8.dp))
+                    Text(site.name, color = Color.White, style = MaterialTheme.typography.labelLarge, maxLines = 1)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SitesGrid(sites: List<Site>, onSite: (Site) -> Unit) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val columns = when {
             maxWidth >= 840.dp -> 8
@@ -460,7 +516,7 @@ private fun SitesGrid(onSite: (Site) -> Unit) {
             else -> 4
         }
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            DownloadSites.chunked(columns).forEach { row ->
+            sites.chunked(columns).forEach { row ->
                 Row(Modifier.fillMaxWidth()) {
                     row.forEach { site ->
                         Column(

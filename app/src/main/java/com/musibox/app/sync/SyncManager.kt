@@ -101,6 +101,11 @@ class SyncManager(
     private val _resolution = MutableStateFlow<SignInResolution?>(null)
     val resolution: StateFlow<SignInResolution?> = _resolution.asStateFlow()
 
+    private val _notice = MutableStateFlow<String?>(null)
+    /** Aviso curto para mostrar na tela (ex.: "Seus dados foram restaurados."). */
+    val notice: StateFlow<String?> = _notice.asStateFlow()
+    fun clearNotice() { _notice.value = null }
+
     private val pendingCount: Flow<Int> = combine(
         favDao.observeDirtyCount(),
         plDao.observeDirtyCount(),
@@ -176,7 +181,15 @@ class SyncManager(
                         _resolution.value = null
                         requestSync(0)
                     }
-                    !local -> _resolution.value = SignInResolution.OfferRestore(user.uid)
+                    !local -> {
+                        // Aparelho novo ou app reinstalado: restaura tudo automaticamente, como os apps comuns.
+                        try {
+                            resolve(RestoreMode.CLOUD)
+                            _notice.value = "Bem-vindo de volta! Seus dados foram restaurados."
+                        } catch (e: Exception) {
+                            _resolution.value = SignInResolution.OfferRestore(user.uid)
+                        }
+                    }
                     else -> _resolution.value = SignInResolution.Conflict(user.uid)
                 }
             }

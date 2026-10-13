@@ -19,13 +19,13 @@ app/src/main/java/com/musibox/app/
 
 ## Firebase (projeto do google-services.json)
 
-1. **Authentication → Método de login → Google**: ativar.
+1. **Authentication → Método de login**: ativar **Google** e **E-mail/senha**.
 2. **Firestore Database**: criar o banco.
 3. **Regras do Firestore**: copiar o conteúdo de `firestore.rules` e publicar.
 4. **Configurações do projeto → Adicionar app → Android**: package `br.com.musibox`, e em **Impressões digitais**
    adicionar o SHA-1 e o SHA-256 da chave que assina o APK (`keystore/musibox.jks`):
-   - SHA-1: `0B:C5:01:F9:E2:2E:20:F5:A0:26:3F:62:57:6D:AD:8A:AF:05:45:F6`
-   - SHA-256: `57:E0:4A:79:08:1D:EE:C1:B4:3A:38:CD:1E:5A:71:0A:2B:F1:F1:4D:88:6F:8E:92:5B:F7:89:D1:DC:E3:37:4F`
+   - SHA-1: `E5:77:27:28:5F:A8:0A:68:31:DE:07:21:16:12:BC:EB:6B:F5:98:FD`
+   - SHA-256: `7F:64:FD:2C:04:CE:DD:7C:84:DD:A8:42:BF:21:A0:51:55:AF:06:E0:2F:47:A7:40:77:39:7E:AD:F9:E4:BE:18`
 
 O `applicationId` é lido de `gradle.properties` (`musibox.applicationId`, hoje `br.com.musibox`). Se o
 `app/google-services.json` tiver uma entrada para esse package, o plugin oficial do Google Services é usado. Se o

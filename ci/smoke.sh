@@ -13,6 +13,10 @@ step() { echo "== $1"; }
 launch() { adb shell am start -n "$PKG/com.musibox.app.MainActivity" "$@" >/dev/null 2>&1; sleep 3; }
 
 adb logcat -c
+# Sem animações do sistema: o uiautomator só lê a tela quando ela fica parada.
+adb shell settings put global animator_duration_scale 0
+adb shell settings put global transition_animation_scale 0
+adb shell settings put global window_animation_scale 0
 adb install -r -g "$APK" || { echo "FALHA AO INSTALAR"; exit 1; }
 
 step "Arquivos de teste"

@@ -148,7 +148,6 @@ fun DownloadScreen(nav: NavController, request: MainTabs.DownloadRequest?, onReq
     // Pedidos vindos de outras telas (link compartilhado, busca, "abrir downloads").
     LaunchedEffect(request?.id) {
         val r = request ?: return@LaunchedEffect
-        onRequestHandled()
         val initialUrl = r.url
         when {
             r.tab == 2 -> nav.navigate(Routes.DOWNLOADS)
@@ -158,6 +157,7 @@ fun DownloadScreen(nav: NavController, request: MainTabs.DownloadRequest?, onReq
             }
             !initialUrl.isNullOrBlank() -> startDownload(initialUrl)
         }
+        onRequestHandled()
     }
 
     // Link copiado (como no Snaptube): lido quando a tela está em foco.

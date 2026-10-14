@@ -3,6 +3,13 @@ package com.musibox.app.ui.browser
 import android.net.Uri
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.lazy.itemsIndexed
+import com.musibox.app.ui.components.bounceClick
+import com.musibox.app.ui.components.intro
+import com.musibox.app.ui.components.pressScale
+import com.musibox.app.ui.components.rememberIntroState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -114,6 +121,7 @@ fun BrowserHomeScreen(nav: NavController) {
     var sheet by remember { mutableStateOf<BrowserSheet?>(null) }
     var adding by remember { mutableStateOf(false) }
     var removing by remember { mutableStateOf<BrowserStore.Entry?>(null) }
+    val intro = rememberIntroState()
 
     fun open(url: String) {
         focus.clearFocus()
@@ -164,6 +172,7 @@ fun BrowserHomeScreen(nav: NavController) {
             item(key = "search") {
                 Row(
                     Modifier
+                        .intro("search", 0, intro)
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                         .fillMaxWidth()
                         .height(54.dp)
@@ -203,6 +212,7 @@ fun BrowserHomeScreen(nav: NavController) {
             item(key = "chips") {
                 Row(
                     Modifier
+                        .intro("chips", 1, intro)
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -212,7 +222,7 @@ fun BrowserHomeScreen(nav: NavController) {
                     BrowserChip("Abas", Icons.Rounded.FilterNone, Modifier.weight(1f)) { open(lastUrl ?: "https://m.youtube.com") }
                 }
             }
-            item(key = "hero") { ExploreCard { open("https://m.youtube.com") } }
+            item(key = "hero") { Box(Modifier.intro("hero", 2, intro)) { ExploreCard { open("https://m.youtube.com") } } }
             item(key = "shortcutsTitle") {
                 Row(
                     Modifier
@@ -236,6 +246,7 @@ fun BrowserHomeScreen(nav: NavController) {
                 item(key = "tiles$row") {
                     Row(
                         Modifier
+                            .intro("tiles$row", 3 + row, intro)
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 5.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -295,7 +306,9 @@ fun BrowserHomeScreen(nav: NavController) {
                     )
                 }
             } else {
-                items(history.take(5), key = { "h" + it.url }) { e -> VisitRow(e) { open(e.url) } }
+                itemsIndexed(history.take(5), key = { _, it -> "h" + it.url }) { i, e ->
+                    Box(Modifier.animateItem().intro("h" + e.url, 6 + i, intro)) { VisitRow(e) { open(e.url) } }
+                }
             }
         }
     }
@@ -371,8 +384,8 @@ private fun BrowserChip(label: String, icon: androidx.compose.ui.graphics.vector
     Row(
         modifier
             .height(46.dp)
-            .neoGlass(RoundedCornerShape(23.dp))
-            .clickable(onClick = onClick),
+            .bounceClick(pressed = 0.92f, shape = RoundedCornerShape(23.dp), onClick = onClick)
+            .neoGlass(RoundedCornerShape(23.dp)),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -436,11 +449,13 @@ private fun ShortcutTile(
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
 ) {
+    val interaction = remember { MutableInteractionSource() }
     Column(
         modifier
             .height(104.dp)
+            .pressScale(interaction, 0.9f)
             .neoGlass(RoundedCornerShape(18.dp))
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .combinedClickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onClick, onLongClick = onLongClick)
             .padding(6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,

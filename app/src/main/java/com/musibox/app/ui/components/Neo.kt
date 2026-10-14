@@ -1,6 +1,15 @@
 package com.musibox.app.ui.components
 
 import androidx.compose.foundation.Image
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -78,8 +87,8 @@ fun GlassCircleButton(icon: ImageVector, description: String, onClick: () -> Uni
         Box(
             Modifier
                 .size(size)
+                .bounceClick(pressed = 0.86f, shape = CircleShape, onClick = onClick)
                 .neoGlass(CircleShape)
-                .clickable(onClick = onClick)
                 .semantics { contentDescription = description },
             contentAlignment = Alignment.Center,
         ) {
@@ -109,9 +118,31 @@ fun BrandHeader(onSearch: () -> Unit, onBell: () -> Unit, bellDot: Boolean, onSe
             .padding(start = 12.dp, end = 14.dp, top = 8.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Image(painterResource(R.drawable.logo_note3d), null, Modifier.size(50.dp))
+        val enter = remember { Animatable(0f) }
+        LaunchedEffect(Unit) { enter.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 180f)) }
+        Image(
+            painterResource(R.drawable.logo_note3d),
+            null,
+            Modifier
+                .size(50.dp)
+                .graphicsLayer {
+                    val v = enter.value
+                    scaleX = 0.5f + 0.5f * v
+                    scaleY = 0.5f + 0.5f * v
+                    rotationZ = (1f - v) * -25f
+                    alpha = v.coerceIn(0f, 1f)
+                },
+        )
         Spacer(Modifier.width(6.dp))
-        Column(Modifier.weight(1f)) {
+        Column(
+            Modifier
+                .weight(1f)
+                .graphicsLayer {
+                    val v = enter.value
+                    alpha = v.coerceIn(0f, 1f)
+                    translationX = (1f - v) * -24.dp.toPx()
+                },
+        ) {
             Text(
                 buildAnnotatedString {
                     withStyle(SpanStyle(color = Color.White)) { append("Musi") }
@@ -160,25 +191,42 @@ fun NeoSearchPill(placeholder: String, onClick: () -> Unit, modifier: Modifier =
 @Composable
 fun NeoChip(label: String, icon: ImageVector, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val shape = RoundedCornerShape(22.dp)
-    Row(
+    val on by animateFloatAsState(if (selected) 1f else 0f, tween(260), label = "chip")
+    Box(
         modifier
             .height(42.dp)
-            .then(
-                if (selected) Modifier
-                    .shadow(12.dp, shape, ambientColor = Neo.Blue, spotColor = Neo.Blue)
-                    .clip(shape)
-                    .background(Brush.horizontalGradient(listOf(Color(0xFF2F7BFF), Color(0xFF1840F0))))
-                    .border(1.dp, Color(0xFF6FA8FF), shape)
-                else Modifier.neoGlass(shape),
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
+            .bounceClick(pressed = 0.92f, shape = shape, onClick = onClick)
+            .neoGlass(shape),
+        contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, null, tint = if (selected) Color.White else Color(0xFF8FC3FF), modifier = Modifier.size(20.dp))
-        Spacer(Modifier.width(8.dp))
-        Text(label, color = Color.White, style = MaterialTheme.typography.labelLarge, maxLines = 1)
+        // camada azul que acende quando o filtro é escolhido
+        Box(
+            Modifier
+                .matchParentSize()
+                .graphicsLayer { alpha = on }
+                .background(Brush.horizontalGradient(listOf(Color(0xFF2F7BFF), Color(0xFF1840F0))))
+                .border(1.dp, Color(0xFF6FA8FF), shape),
+        )
+        Row(
+            Modifier.padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            Icon(
+                icon,
+                null,
+                tint = lerp(Color(0xFF8FC3FF), Color.White, on),
+                modifier = Modifier
+                    .size(20.dp)
+                    .graphicsLayer {
+                        val s = 1f + 0.15f * on * (1f - on) * 4f
+                        scaleX = s
+                        scaleY = s
+                    },
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(label, color = Color.White, style = MaterialTheme.typography.labelLarge, maxLines = 1)
+        }
     }
 }
 

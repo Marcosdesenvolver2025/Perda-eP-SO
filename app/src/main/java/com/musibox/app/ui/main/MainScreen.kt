@@ -2,6 +2,7 @@ package com.musibox.app.ui.main
 
 import android.content.Context
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -18,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -87,12 +89,28 @@ fun MainScreen(nav: NavController, pager: PagerState) {
             key = { it },
         ) { page ->
             CompositionLocalProvider(LocalPageActive provides (pager.settledPage == page && !pager.isScrollInProgress)) {
-                when (page) {
-                    MainTabs.HOME -> HomeScreen(nav)
-                    MainTabs.BROWSER -> BrowserHomeScreen(nav)
-                    MainTabs.DOWNLOAD -> DownloadScreen(nav, downloadRequest) { MainTabs.consumeDownload() }
-                    MainTabs.VAULT -> VaultScreen(nav)
-                    else -> MoreScreen(nav)
+                // Transição 3D: a página que sai gira levemente, diminui e escurece.
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            val offset = ((pager.currentPage - page) + pager.currentPageOffsetFraction).coerceIn(-1f, 1f)
+                            val a = abs(offset)
+                            alpha = 1f - a * 0.45f
+                            val sc = 1f - a * 0.1f
+                            scaleX = sc
+                            scaleY = sc
+                            rotationY = offset * 14f
+                            cameraDistance = 18f * density
+                        },
+                ) {
+                    when (page) {
+                        MainTabs.HOME -> HomeScreen(nav)
+                        MainTabs.BROWSER -> BrowserHomeScreen(nav)
+                        MainTabs.DOWNLOAD -> DownloadScreen(nav, downloadRequest) { MainTabs.consumeDownload() }
+                        MainTabs.VAULT -> VaultScreen(nav)
+                        else -> MoreScreen(nav)
+                    }
                 }
             }
         }

@@ -82,6 +82,10 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
 
     val showBottom = route == Routes.MAIN
     val pagerState = rememberPagerState { MainTabs.COUNT }
+    val allDownloads by container.downloads.all.collectAsStateWithLifecycle(initialValue = emptyList())
+    val downloading = allDownloads.any {
+        it.status == com.musibox.app.data.db.DownloadStatus.RUNNING || it.status == com.musibox.app.data.db.DownloadStatus.QUEUED
+    }
     val rootScope = rememberCoroutineScope()
     val hideMiniOn = setOf(Routes.PLAYER, Routes.QUEUE, Routes.ONBOARDING, Routes.VAULT_PLAYER, Routes.VAULT_VIEWER, Routes.BROWSER, Routes.LOGIN)
     val showMini = playerState.current != null && route != null && route !in hideMiniOn
@@ -125,10 +129,11 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
                             onOpen = { navController.navigate(Routes.PLAYER) { launchSingleTop = true } },
                             onPlayPause = { container.player.togglePlayPause() },
                             onNext = { container.player.next() },
+                            onClose = { container.player.clearQueue() },
                         )
                     }
                     if (showBottom) {
-                        BottomBar(pagerState.targetPage) { page -> rootScope.launch { pagerState.animateScrollToPage(page) } }
+                        BottomBar(pagerState.targetPage, downloading) { page -> rootScope.launch { pagerState.animateScrollToPage(page) } }
                     } else if (route != Routes.PLAYER && route != Routes.VAULT_PLAYER && route != Routes.ONBOARDING) {
                         Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
                     }

@@ -38,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.musibox.app.ui.components.intro
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -60,11 +61,12 @@ fun MoreScreen(nav: NavController) {
     val user by container.auth.user.collectAsStateWithLifecycle()
     val sync by container.sync.state.collectAsStateWithLifecycle()
     var about by remember { mutableStateOf(false) }
+    val intro = com.musibox.app.ui.components.rememberIntroState()
 
     Column(Modifier.fillMaxSize()) {
         com.musibox.app.ui.components.PageTitle("Mais", "Conta, biblioteca e ajustes")
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
-            item {
+            item { Box(Modifier.intro("more0", 0, intro)) {
                 MbCard(
                     Modifier
                         .fillMaxWidth()
@@ -97,8 +99,8 @@ fun MoreScreen(nav: NavController) {
                         Icon(Icons.Rounded.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-            }
-            item {
+            } }
+            item { Box(Modifier.intro("more1", 1, intro)) {
                 SettingsSection("Biblioteca") {
                     SettingItem(Icons.Rounded.LibraryMusic, "Biblioteca completa", "Músicas, artistas, álbuns e pastas", onClick = { nav.navigateTopLevel(Routes.library(0)) })
                     SettingDivider()
@@ -112,8 +114,8 @@ fun MoreScreen(nav: NavController) {
                     SettingDivider()
                     SettingItem(Icons.Rounded.DownloadDone, "Gerenciador de downloads", onClick = { nav.navigate(Routes.DOWNLOADS) })
                 }
-            }
-            item {
+            } }
+            item { Box(Modifier.intro("more2", 2, intro)) {
                 SettingsSection("Aplicativo") {
                     SettingItem(Icons.Rounded.Settings, "Configurações", onClick = { nav.navigate(Routes.SETTINGS) })
                     SettingDivider()
@@ -121,7 +123,7 @@ fun MoreScreen(nav: NavController) {
                     SettingDivider()
                     SettingItem(Icons.Rounded.Info, "Sobre o MusiBox", "Versão ${BuildConfig.VERSION_NAME}", onClick = { about = true })
                 }
-            }
+            } }
         }
     }
 

@@ -1,6 +1,15 @@
 package com.musibox.app.ui.navigation
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.ui.graphics.drawscope.rotate
+import com.musibox.app.ui.components.pressScale
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -56,7 +65,7 @@ import com.musibox.app.ui.main.MainTabs
  * como uma esfera iluminada no centro. Acompanha a página do deslize.
  */
 @Composable
-fun BottomBar(selectedPage: Int, onSelect: (Int) -> Unit) {
+fun BottomBar(selectedPage: Int, downloading: Boolean = false, onSelect: (Int) -> Unit) {
     Box(
         Modifier
             .fillMaxWidth()
@@ -87,7 +96,7 @@ fun BottomBar(selectedPage: Int, onSelect: (Int) -> Unit) {
             NavItem3D(R.drawable.ic3d_vault, "Cofre", selectedPage == MainTabs.VAULT) { onSelect(MainTabs.VAULT) }
             NavItem3D(R.drawable.ic3d_more, "Mais", selectedPage == MainTabs.MORE) { onSelect(MainTabs.MORE) }
         }
-        DownloadOrb(selectedPage == MainTabs.DOWNLOAD, Modifier.align(Alignment.BottomCenter).offset(y = (-6).dp)) {
+        DownloadOrb(selectedPage == MainTabs.DOWNLOAD, downloading, Modifier.align(Alignment.BottomCenter).offset(y = (-6).dp)) {
             onSelect(MainTabs.DOWNLOAD)
         }
     }
@@ -95,12 +104,19 @@ fun BottomBar(selectedPage: Int, onSelect: (Int) -> Unit) {
 
 @Composable
 private fun NavItem3D(icon: Int, label: String, selected: Boolean, big: Boolean = false, onClick: () -> Unit) {
-    val scale by animateFloatAsState(if (selected) 1.12f else 1f, label = "navScale")
+    val scale by animateFloatAsState(
+        if (selected) 1.14f else 1f,
+        spring(dampingRatio = 0.38f, stiffness = 420f),
+        label = "navScale",
+    )
+    val lift by animateFloatAsState(if (selected) 1f else 0f, spring(dampingRatio = 0.5f, stiffness = 300f), label = "navLift")
+    val interaction = remember { MutableInteractionSource() }
     Column(
         Modifier
             .clip(RoundedCornerShape(18.dp))
+            .pressScale(interaction, 0.88f)
             .clickable(
-                interactionSource = remember { MutableInteractionSource() },
+                interactionSource = interaction,
                 indication = null,
                 onClick = onClick,
             )
@@ -129,6 +145,7 @@ private fun NavItem3D(icon: Int, label: String, selected: Boolean, big: Boolean 
                     .graphicsLayer {
                         scaleX = scale
                         scaleY = scale
+                        translationY = -lift * 3.dp.toPx()
                     },
             )
         }
@@ -151,10 +168,19 @@ private fun NavItem3D(icon: Int, label: String, selected: Boolean, big: Boolean 
 
 /** Esfera 3D do botão Baixar: anel de energia, aro escuro, esfera azul com reflexo e o ícone. */
 @Composable
-private fun DownloadOrb(selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+private fun DownloadOrb(selected: Boolean, downloading: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    // Anel gira e a esfera "respira" só enquanto há downloads em andamento.
+    val spin = if (downloading) {
+        val t = rememberInfiniteTransition(label = "orb")
+        t.animateFloat(0f, 360f, infiniteRepeatable(tween(1800, easing = LinearEasing)), label = "orbSpin").value
+    } else {
+        0f
+    }
+    val interaction = remember { MutableInteractionSource() }
     Box(
         modifier
             .size(88.dp)
+            .pressScale(interaction, 0.88f)
             .semantics {
                 contentDescription = "Baixar"
                 role = Role.Tab
@@ -166,12 +192,14 @@ private fun DownloadOrb(selected: Boolean, modifier: Modifier = Modifier, onClic
             val r = size.minDimension / 2
             // brilho externo
             drawCircle(Brush.radialGradient(listOf(Color(0x552F7BFF), Color.Transparent), radius = r), radius = r)
-            // anel de energia
-            drawCircle(
-                Brush.sweepGradient(listOf(Color(0xFF1EC8FF), Color(0xFF2F5BFF), Color(0xFF9B5CFF), Color(0xFF2F7BFF), Color(0xFF1EC8FF))),
-                radius = r * 0.9f,
-                style = Stroke(width = (if (selected) 5.dp else 4.dp).toPx()),
-            )
+            // anel de energia (gira durante downloads)
+            rotate(spin) {
+                drawCircle(
+                    Brush.sweepGradient(listOf(Color(0xFF1EC8FF), Color(0xFF2F5BFF), Color(0xFF9B5CFF), Color(0xFF2F7BFF), Color(0xFF1EC8FF))),
+                    radius = r * 0.9f,
+                    style = Stroke(width = (if (selected || downloading) 5.dp else 4.dp).toPx()),
+                )
+            }
             // aro escuro
             drawCircle(Color(0xFF040812), radius = r * 0.84f)
         }
@@ -180,7 +208,7 @@ private fun DownloadOrb(selected: Boolean, modifier: Modifier = Modifier, onClic
                 .size(66.dp)
                 .shadow(16.dp, CircleShape, ambientColor = Color(0xFF1E6BFF), spotColor = Color(0xFF1E6BFF))
                 .clip(CircleShape)
-                .clickable(onClick = onClick),
+                .clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
             Canvas(Modifier.fillMaxSize()) {

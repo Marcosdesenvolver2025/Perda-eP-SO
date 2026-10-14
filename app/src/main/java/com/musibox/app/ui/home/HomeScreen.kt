@@ -73,6 +73,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.musibox.app.ui.components.bounceClick
+import com.musibox.app.ui.components.rememberIntroState
+import com.musibox.app.ui.components.intro
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -172,17 +176,8 @@ fun HomeScreen(nav: NavController) {
     val allSongs = songs.orEmpty()
     val recentSongs = recent.orEmpty().mapNotNull { it.song }
 
-    val continuePlay: () -> Unit = {
-        when {
-            player.current != null -> container.player.togglePlayPause()
-            recentSongs.isNotEmpty() -> container.player.playSongs(recentSongs, 0)
-            allSongs.isNotEmpty() -> container.player.playSongs(allSongs.shuffled(), 0, shuffle = true)
-            else -> {
-                snack("Nenhuma música ainda. Baixe ou importe pela aba Baixar.")
-                nav.navigateTopLevel(Routes.download())
-            }
-        }
-    }
+    val introTop = rememberIntroState()
+    val intro = rememberIntroState(filter)
 
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         LazyColumn(
@@ -195,11 +190,14 @@ fun HomeScreen(nav: NavController) {
                 NeoSearchPill(
                     "Buscar músicas, artistas, playlists...",
                     onClick = { nav.navigate(Routes.SEARCH) },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                    modifier = Modifier
+                        .intro("search", 0, introTop)
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
                 )
             }
             item(key = "chips") {
                 LazyRow(
+                    modifier = Modifier.intro("chips", 1, introTop),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
@@ -209,49 +207,6 @@ fun HomeScreen(nav: NavController) {
                     item { NeoChip("Recentes", Icons.Rounded.Schedule, filter == HomeFilter.RECENT, { filter = HomeFilter.RECENT }) }
                 }
             }
-            item(key = "continue") {
-                ContinueCard(
-                    player = player,
-                    onPlay = continuePlay,
-                    menu = listOf(
-                        MenuAction("Abrir player", Icons.Rounded.OpenInFull) {
-                            if (player.current != null) nav.navigate(Routes.PLAYER) else continuePlay()
-                        },
-                        MenuAction("Tocar tudo no aleatório", Icons.Rounded.Shuffle) {
-                            if (allSongs.isNotEmpty()) container.player.playSongs(allSongs.shuffled(), 0, shuffle = true)
-                            else snack("Nenhuma música no aparelho ainda.")
-                        },
-                        MenuAction("Fila de reprodução", Icons.AutoMirrored.Rounded.QueueMusic) { nav.navigate(Routes.QUEUE) },
-                    ),
-                )
-            }
-
-            // Tocadas recentemente (ou, se ainda não ouviu nada, as que chegaram por último)
-            val strip = if (recentSongs.isNotEmpty()) recentSongs.take(15) else allSongs.sortedByDescending { it.dateAddedMs }.take(15)
-            if (strip.isNotEmpty()) {
-                item(key = "recentTitle") {
-                    NeoSectionTitle(
-                        if (recentSongs.isNotEmpty()) "Tocadas recentemente" else "Chegaram agora",
-                        Modifier.padding(start = 16.dp, end = 10.dp, top = 18.dp, bottom = 8.dp),
-                        action = "Ver todas",
-                        onAction = { if (recentSongs.isNotEmpty()) nav.navigate(Routes.history(0)) else nav.navigate(Routes.library(6)) },
-                    )
-                }
-                item(key = "recentRow") {
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        items(strip, key = { "r" + it.id }) { s ->
-                            val isCurrent = player.current?.songId == s.id
-                            RecentCard(s, isCurrent && player.isPlaying) {
-                                if (isCurrent) container.player.togglePlayPause() else container.player.playSong(s, strip)
-                            }
-                        }
-                    }
-                }
-            }
-
             // Lista conforme o filtro escolhido
             when {
                 filter != HomeFilter.PLAYLISTS && !permission.granted -> item(key = "perm") {
@@ -280,8 +235,10 @@ fun HomeScreen(nav: NavController) {
                                 onSecondary = { vm.rescan() },
                             )
                         }
-                        else -> items(allSongs, key = { "s" + it.id }) { song ->
-                            SongItem(song, allSongs, player, song.contentKey in favoriteKeys, nav, { playlistSongs = listOf(it) })
+                        else -> itemsIndexed(allSongs, key = { _, it -> "s" + it.id }) { i, song ->
+                            Box(Modifier.animateItem().intro("s" + song.id, i + 1, intro)) {
+                                SongItem(song, allSongs, player, song.contentKey in favoriteKeys, nav, { playlistSongs = listOf(it) })
+                            }
                         }
                     }
                 }
@@ -305,8 +262,9 @@ fun HomeScreen(nav: NavController) {
                                 "Toque no coração no player ou use o menu ⋮ de uma música.",
                             )
                         }
-                        else -> items(favs, key = { "f" + it.songKey }) { t ->
+                        else -> itemsIndexed(favs, key = { _, it -> "f" + it.songKey }) { i, t ->
                             val song = t.song
+                            Box(Modifier.animateItem().intro("f" + t.songKey, i + 1, intro)) {
                             if (song != null) {
                                 SongItem(song, available, player, true, nav, { playlistSongs = listOf(it) })
                             } else {
@@ -319,6 +277,7 @@ fun HomeScreen(nav: NavController) {
                                     onClick = { snack("Arquivo não encontrado neste aparelho.") },
                                 )
                             }
+                            }
                         }
                     }
                 }
@@ -327,14 +286,18 @@ fun HomeScreen(nav: NavController) {
                         NeoSectionTitle("Playlists", Modifier.padding(start = 16.dp, end = 10.dp, top = 18.dp, bottom = 6.dp))
                     }
                     item(key = "plNew") {
-                        PlaylistRow("Nova playlist", "Crie e adicione músicas pelo menu ⋮", isNew = true) { creatingPlaylist = true }
+                        Box(Modifier.intro("plNew", 1, intro)) {
+                            PlaylistRow("Nova playlist", "Crie e adicione músicas pelo menu ⋮", isNew = true) { creatingPlaylist = true }
+                        }
                     }
                     val pls = playlists
                     if (pls == null) {
                         item(key = "plLoading") { LoadingState("Carregando playlists…") }
                     } else {
-                        items(pls, key = { "p" + it.playlist.id }) { p ->
-                            PlaylistRow(p.playlist.name, Fmt.plural(p.count, "música", "músicas")) { nav.navigate(Routes.playlist(p.playlist.id)) }
+                        itemsIndexed(pls, key = { _, it -> "p" + it.playlist.id }) { i, p ->
+                            Box(Modifier.animateItem().intro("p" + p.playlist.id, i + 2, intro)) {
+                                PlaylistRow(p.playlist.name, Fmt.plural(p.count, "música", "músicas")) { nav.navigate(Routes.playlist(p.playlist.id)) }
+                            }
                         }
                     }
                 }
@@ -353,8 +316,10 @@ fun HomeScreen(nav: NavController) {
                             StateMessage(Icons.Rounded.Headphones, "Nada tocado ainda", "As músicas que você ouvir aparecem aqui.")
                         }
                     } else {
-                        items(recentSongs, key = { "h" + it.id }) { song ->
-                            SongItem(song, recentSongs, player, song.contentKey in favoriteKeys, nav, { playlistSongs = listOf(it) })
+                        itemsIndexed(recentSongs, key = { _, it -> "h" + it.id }) { i, song ->
+                            Box(Modifier.animateItem().intro("h" + song.id, i + 1, intro)) {
+                                SongItem(song, recentSongs, player, song.contentKey in favoriteKeys, nav, { playlistSongs = listOf(it) })
+                            }
                         }
                     }
                 }
@@ -374,161 +339,6 @@ fun HomeScreen(nav: NavController) {
                 vm.createPlaylist(name) { id -> nav.navigate(Routes.playlist(id)) }
             },
             onDismiss = { creatingPlaylist = false },
-        )
-    }
-}
-
-// ---------------------------------------------------------------------------
-
-/** Cartão "Continue ouvindo" com fone 3D, botão de play e ondas sonoras. */
-@Composable
-private fun ContinueCard(player: PlayerState, onPlay: () -> Unit, menu: List<MenuAction>) {
-    val shape = RoundedCornerShape(26.dp)
-    val playing = player.isPlaying
-    Box(
-        Modifier
-            .padding(horizontal = 16.dp, vertical = 6.dp)
-            .fillMaxWidth()
-            .height(156.dp)
-            .shadow(18.dp, shape, ambientColor = Color(0xFF2F5BFF), spotColor = Color(0xFF2F5BFF))
-            .clip(shape)
-            .background(Brush.linearGradient(listOf(Color(0xFF0B2A6E), Color(0xFF071542), Color(0xFF1A0E55))))
-            .border(1.2.dp, Brush.linearGradient(listOf(Color(0xFF2F7BFF), Color(0xFF233A90), Color(0xFFB04DFF))), shape)
-            .clickable(onClick = onPlay),
-    ) {
-        // fone 3D à direita, desbotando para a esquerda
-        Image(
-            painterResource(R.drawable.hero_headphones),
-            null,
-            contentScale = ContentScale.Crop,
-            alignment = Alignment.CenterEnd,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .fillMaxHeight()
-                .fillMaxWidth(0.6f)
-                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                .drawWithContent {
-                    drawContent()
-                    drawRect(
-                        Brush.horizontalGradient(0f to Color.Transparent, 0.35f to Color.Black, 1f to Color.Black),
-                        blendMode = BlendMode.DstIn,
-                    )
-                },
-        )
-        Column(Modifier.padding(start = 20.dp, top = 20.dp, end = 110.dp)) {
-            Text("Continue ouvindo", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1)
-            Text(
-                player.current?.let { "${it.title} • ${it.displayArtist}" } ?: "Suas músicas, onde parou.",
-                fontSize = 15.sp,
-                color = Color(0xFFD2DCF0),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        Row(
-            Modifier
-                .align(Alignment.BottomStart)
-                .padding(start = 18.dp, bottom = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                Modifier
-                    .size(54.dp)
-                    .shadow(14.dp, CircleShape, ambientColor = Neo.Blue, spotColor = Neo.Blue)
-                    .clip(CircleShape)
-                    .background(Brush.linearGradient(listOf(Color(0xFF4A98FF), Color(0xFF1C45F0))))
-                    .clickable(onClick = onPlay),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (playing) "Pausar" else "Tocar", tint = Color.White, modifier = Modifier.size(32.dp))
-            }
-            Spacer(Modifier.width(14.dp))
-            Waveform(playing, Modifier.size(width = 130.dp, height = 40.dp))
-        }
-        Box(Modifier.align(Alignment.TopEnd).padding(4.dp)) {
-            OverflowMenu(menu, tint = Color.White)
-        }
-    }
-}
-
-private val WAVE = floatArrayOf(0.2f, 0.35f, 0.5f, 0.3f, 0.7f, 0.45f, 0.9f, 0.55f, 1f, 0.6f, 0.85f, 0.4f, 0.75f, 0.5f, 0.95f, 0.45f, 0.65f, 0.3f, 0.5f, 0.25f, 0.35f, 0.15f)
-
-/** Ondas sonoras: animam só enquanto toca. */
-@Composable
-private fun Waveform(playing: Boolean, modifier: Modifier) {
-    val phase = if (playing) {
-        val t = rememberInfiniteTransition(label = "wave")
-        t.animateFloat(0f, 6.2832f, infiniteRepeatable(tween(1400, easing = LinearEasing), RepeatMode.Restart), label = "phase").value
-    } else {
-        0f
-    }
-    Canvas(modifier) {
-        val n = WAVE.size
-        val gap = size.width / n
-        val bw = gap * 0.42f
-        for (i in 0 until n) {
-            val base = WAVE[i]
-            val h = if (playing) base * (0.55f + 0.45f * abs(sin(phase + i * 0.55f))) else base * 0.8f
-            val bh = size.height * h.coerceIn(0.08f, 1f)
-            drawRoundRect(
-                Brush.verticalGradient(listOf(Color(0xFF7FD4FF), Color(0xFF2F7BFF))),
-                topLeft = Offset(i * gap, (size.height - bh) / 2),
-                size = Size(bw, bh),
-                cornerRadius = CornerRadius(bw / 2),
-            )
-        }
-    }
-}
-
-@Composable
-private fun RecentCard(song: Song, playing: Boolean, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(18.dp)
-    Column(
-        Modifier
-            .width(150.dp)
-            .neoGlass(shape)
-            .clickable(onClick = onClick)
-            .padding(6.dp),
-    ) {
-        Box {
-            Artwork(
-                AudioCover(song.contentUri()),
-                Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1.2f),
-                corner = 14.dp,
-            )
-            Box(
-                Modifier
-                    .align(Alignment.BottomEnd)
-                    .offset(x = (-6).dp, y = (-6).dp)
-                    .size(34.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xCC050B17))
-                    .border(1.dp, Color.White.copy(alpha = 0.7f), CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, null, tint = Color.White, modifier = Modifier.size(20.dp))
-            }
-        }
-        Spacer(Modifier.height(6.dp))
-        Text(
-            song.title,
-            color = Color.White,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            lineHeight = 17.sp,
-            modifier = Modifier.padding(horizontal = 4.dp),
-        )
-        Text(
-            song.displayArtist(),
-            color = Neo.Text2,
-            fontSize = 12.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
         )
     }
 }
@@ -567,11 +377,11 @@ private fun SmallRound(icon: ImageVector, description: String, onClick: () -> Un
     Box(
         Modifier
             .size(40.dp)
+            .bounceClick(pressed = 0.85f, shape = CircleShape, onClick = onClick)
             .then(
                 if (filled) Modifier.clip(CircleShape).background(Neo.Accent)
                 else Modifier.neoGlass(CircleShape),
-            )
-            .clickable(onClick = onClick),
+            ),
         contentAlignment = Alignment.Center,
     ) {
         Icon(icon, description, tint = Color.White, modifier = Modifier.size(22.dp))
@@ -584,7 +394,7 @@ private fun PlaylistRow(name: String, subtitle: String, isNew: Boolean = false, 
     Row(
         Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .bounceClick(pressed = 0.97f, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

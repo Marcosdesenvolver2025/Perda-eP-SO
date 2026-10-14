@@ -2,6 +2,14 @@ package com.musibox.app.media
 
 import android.app.PendingIntent
 import android.content.Intent
+import android.os.Bundle
+import androidx.media3.session.CommandButton
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionResult
+import com.google.common.collect.ImmutableList
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
@@ -47,6 +55,39 @@ class PlaybackService : MediaSessionService() {
     private var transitionToken = 0
     private var recordedToken = -1
     private var consecutiveErrors = 0
+    private val currentKey = MutableStateFlow<String?>(null)
+    @Volatile private var currentFav = false
+
+    private fun notificationButtons(fav: Boolean): ImmutableList<CommandButton> = ImmutableList.of(
+        CommandButton.Builder()
+            .setDisplayName(if (fav) "Remover dos favoritos" else "Favoritar")
+            .setIconResId(if (fav) R.drawable.ic_notif_heart_filled else R.drawable.ic_notif_heart)
+            .setSessionCommand(CMD_FAVORITE)
+            .build(),
+        CommandButton.Builder()
+            .setDisplayName("Fechar")
+            .setIconResId(R.drawable.ic_notif_close)
+            .setSessionCommand(CMD_CLOSE)
+            .build(),
+    )
+
+    private fun toggleFavoriteFromNotification() {
+        val item = player.currentMediaItem ?: return
+        val np = item.toNowPlaying()
+        val target = !currentFav
+        container.appScope.launch {
+            runCatching {
+                container.library.setFavorite(np.songKey, np.looseKey, np.title, np.artist, np.album, np.durationMs, target)
+            }
+        }
+    }
+
+    /** "X" da notificação ou do mini player: para e limpa a fila (o player some até tocar de novo). */
+    private fun closePlayback() {
+        savePlaybackState(markForSync = true)
+        player.stop()
+        player.clearMediaItems()
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -74,11 +115,28 @@ class PlaybackService : MediaSessionService() {
             .setCallback(SessionCallback())
             .build()
 
-        val provider = DefaultMediaNotificationProvider.Builder(this).build()
+        val provider = DefaultMediaNotificationProvider.Builder(this)
+            .setChannelName(R.string.notif_channel_playback)
+            .build()
         provider.setSmallIcon(R.drawable.ic_stat_music)
         setMediaNotificationProvider(provider)
 
         player.addListener(listener)
+        player.addListener(object : Player.Listener {
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                currentKey.value = mediaItem?.mediaMetadata?.extras?.getString(Extras.SONG_KEY)
+            }
+        })
+
+        // Botões próprios na notificação: coração (favoritar) e X (fechar o player).
+        scope.launch {
+            combine(container.library.favoriteKeys, currentKey) { favs, key -> key != null && key in favs }
+                .distinctUntilChanged()
+                .collect { fav ->
+                    currentFav = fav
+                    session?.setCustomLayout(notificationButtons(fav))
+                }
+        }
 
         scope.launch {
             container.settings.settings.collect { s ->
@@ -223,6 +281,33 @@ class PlaybackService : MediaSessionService() {
     }
 
     private inner class SessionCallback : MediaSession.Callback {
+        override fun onConnect(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+        ): MediaSession.ConnectionResult {
+            val commands = MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
+                .add(CMD_FAVORITE)
+                .add(CMD_CLOSE)
+                .build()
+            return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+                .setAvailableSessionCommands(commands)
+                .setCustomLayout(notificationButtons(currentFav))
+                .build()
+        }
+
+        override fun onCustomCommand(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            customCommand: SessionCommand,
+            args: Bundle,
+        ): ListenableFuture<SessionResult> {
+            when (customCommand.customAction) {
+                CMD_FAVORITE.customAction -> toggleFavoriteFromNotification()
+                CMD_CLOSE.customAction -> closePlayback()
+            }
+            return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+        }
+
         override fun onAddMediaItems(
             mediaSession: MediaSession,
             controller: MediaSession.ControllerInfo,
@@ -249,5 +334,10 @@ class PlaybackService : MediaSessionService() {
             }
             return future
         }
+    }
+
+    companion object {
+        private val CMD_FAVORITE = SessionCommand("musibox.FAVORITE", Bundle.EMPTY)
+        private val CMD_CLOSE = SessionCommand("musibox.CLOSE", Bundle.EMPTY)
     }
 }

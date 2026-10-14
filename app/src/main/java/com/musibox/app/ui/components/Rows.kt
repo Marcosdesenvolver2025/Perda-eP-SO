@@ -139,7 +139,10 @@ fun TrackRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        if (trailingText != null) {
+        if (isCurrent && available) {
+            Spacer(Modifier.width(8.dp))
+            Equalizer(isPlaying)
+        } else if (trailingText != null) {
             Spacer(Modifier.width(8.dp))
             Text(trailingText, style = MaterialTheme.typography.bodySmall, color = Color(0xFFB7D8F5), maxLines = 1)
         }
@@ -148,10 +151,10 @@ fun TrackRow(
             Box(
                 Modifier
                     .size(42.dp)
+                    .bounceClick(enabled = available, pressed = 0.82f, shape = CircleShape, onClick = onPlayPause)
                     .clip(CircleShape)
                     .background(if (isCurrent) Neo.Accent else Neo.Glass)
-                    .border(1.dp, Color.White.copy(alpha = if (isCurrent) 0.5f else 0.22f), CircleShape)
-                    .clickable(enabled = available, onClick = onPlayPause),
+                    .border(1.dp, Color.White.copy(alpha = if (isCurrent) 0.5f else 0.22f), CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(

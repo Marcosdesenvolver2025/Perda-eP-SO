@@ -35,6 +35,7 @@ class DownloadWorker(appContext: Context, params: WorkerParameters) : CoroutineW
         }
         val ctx = applicationContext
         DownloadNotifications.ensureChannels(ctx)
+        DownloadNotifications.prepare(ctx, id, d.thumbnailUrl, isPrivate = d.destination == SaveDestination.VAULT.name)
         runCatching { setForeground(DownloadNotifications.progressInfo(ctx, id, d.title, 0, "Preparando…")) }
         dao.setStatus(id, DownloadStatus.RUNNING, null, System.currentTimeMillis())
 

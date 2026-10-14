@@ -54,6 +54,10 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.rounded.Add
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.musibox.app.core.Fmt
@@ -94,11 +98,13 @@ fun SongListScreen(nav: NavController, type: String, value: String) {
         all?.filter {
             when (type) {
                 "artist" -> it.displayArtist() == value
+                "singer" -> if (value == com.musibox.app.ui.home.UNKNOWN_SINGER) com.musibox.app.core.AudioKinds.singers(it.artist).isEmpty()
+                else com.musibox.app.core.AudioKinds.singers(it.artist).any { n -> n.equals(value, ignoreCase = true) }
                 "album" -> it.albumId.toString() == value
                 "folder" -> it.folderPath == value
                 else -> false
             }
-        }?.let { list -> if (type == "artist") list.sortedBy { it.title.lowercase() } else list }
+        }?.let { list -> if (type == "artist" || type == "singer") list.sortedBy { it.title.lowercase() } else list }
     }
     val title = when (type) {
         "album" -> songs?.firstOrNull()?.displayAlbum() ?: "Álbum"
@@ -170,9 +176,9 @@ fun PlaylistScreen(nav: NavController, id: String) {
             list.isEmpty() -> StateMessage(
                 Icons.AutoMirrored.Rounded.QueueMusic,
                 "Playlist vazia",
-                "Adicione músicas pelo menu ⋮ de cada música em Músicas.",
-                actionText = "Ir para Músicas",
-                onAction = { nav.navigate(Routes.library()) },
+                "Escolha várias músicas de uma vez para colocar aqui.",
+                actionText = "Adicionar músicas",
+                onAction = { nav.navigate(Routes.pickSongs(id)) },
             )
             else -> {
                 val available = list.mapNotNull { it.track.song }
@@ -192,6 +198,21 @@ fun PlaylistScreen(nav: NavController, id: String) {
                                     container.player.playSongs(available, 0, shuffle = true)
                                 }
                             }
+                        }
+                    }
+                    item {
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .clickable { nav.navigate(Routes.pickSongs(id)) }
+                                .padding(vertical = 10.dp, horizontal = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(Icons.Rounded.Add, null, tint = com.musibox.app.ui.components.Neo.Link)
+                            Spacer(Modifier.width(12.dp))
+                            Text("Adicionar músicas", color = com.musibox.app.ui.components.Neo.Link, style = MaterialTheme.typography.titleSmall)
                         }
                     }
                     if (available.size < list.size) {

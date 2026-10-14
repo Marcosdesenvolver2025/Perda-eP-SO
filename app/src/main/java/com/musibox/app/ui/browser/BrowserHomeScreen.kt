@@ -114,6 +114,7 @@ fun BrowserHomeScreen(nav: NavController) {
     val bookmarks by store.bookmarks.collectAsStateWithLifecycle()
     val shortcuts by store.shortcuts.collectAsStateWithLifecycle()
     val lastUrl by store.lastUrl.collectAsStateWithLifecycle()
+    val tabs by store.tabs.collectAsStateWithLifecycle()
     val clipboard = LocalClipboardManager.current
     val focus = LocalFocusManager.current
     val snack = rememberSnack()
@@ -128,15 +129,11 @@ fun BrowserHomeScreen(nav: NavController) {
         nav.navigate(Routes.browser(url))
     }
 
+    // Pesquisa no Google ou abre o endereço digitado (como no Chrome)
     fun go(text: String) {
         val t = text.trim()
         if (t.isEmpty()) return
-        val url = LinkUtils.extractUrl(t)
-        when {
-            url != null -> open(url)
-            LinkUtils.looksLikeAddress(t) -> open(LinkUtils.normalizeAddress(t))
-            else -> open("https://m.youtube.com/results?search_query=${Uri.encode(t)}")
-        }
+        open(BrowserStore.searchOrUrl(t))
         query = ""
     }
 
@@ -159,10 +156,10 @@ fun BrowserHomeScreen(nav: NavController) {
                             .size(40.dp)
                             .clip(RoundedCornerShape(10.dp))
                             .border(2.dp, Color(0xFFDCE6F5), RoundedCornerShape(10.dp))
-                            .clickable { open(lastUrl ?: "https://m.youtube.com") },
+                            .clickable { open(BrowserStore.TABS_URL) },
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text(if (lastUrl != null) "1" else "0", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text("${tabs.size}", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
                     IconButton(onClick = { sheet = BrowserSheet.HISTORY }) {
                         Icon(Icons.Rounded.History, "Histórico", tint = Color.White)
@@ -184,7 +181,7 @@ fun BrowserHomeScreen(nav: NavController) {
                     Spacer(Modifier.width(12.dp))
                     Box(Modifier.weight(1f)) {
                         if (query.isEmpty()) {
-                            Text("Pesquisar ou digitar endereço", color = Neo.Text2, style = MaterialTheme.typography.bodyLarge, maxLines = 1)
+                            Text("Pesquisar no Google ou digitar endereço", color = Neo.Text2, style = MaterialTheme.typography.bodyLarge, maxLines = 1)
                         }
                         BasicTextField(
                             value = query,
@@ -219,10 +216,10 @@ fun BrowserHomeScreen(nav: NavController) {
                 ) {
                     BrowserChip("Favoritos", Icons.Rounded.Star, Modifier.weight(1f)) { sheet = BrowserSheet.FAVORITES }
                     BrowserChip("Histórico", Icons.Rounded.History, Modifier.weight(1f)) { sheet = BrowserSheet.HISTORY }
-                    BrowserChip("Abas", Icons.Rounded.FilterNone, Modifier.weight(1f)) { open(lastUrl ?: "https://m.youtube.com") }
+                    BrowserChip("Abas", Icons.Rounded.FilterNone, Modifier.weight(1f)) { open(BrowserStore.TABS_URL) }
                 }
             }
-            item(key = "hero") { Box(Modifier.intro("hero", 2, intro)) { ExploreCard { open("https://m.youtube.com") } } }
+            item(key = "hero") { Box(Modifier.intro("hero", 2, intro)) { ExploreCard { open(BrowserStore.HOME_URL) } } }
             item(key = "shortcutsTitle") {
                 Row(
                     Modifier
@@ -435,7 +432,7 @@ private fun ExploreCard(onClick: () -> Unit) {
         ) {
             Text("Explore a web", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1)
             Spacer(Modifier.height(4.dp))
-            Text("Música, vídeos e muito mais.", fontSize = 15.sp, color = Color(0xFFD2DCF0), maxLines = 2)
+            Text("Navegue e pesquise na internet, como no Chrome.", fontSize = 15.sp, color = Color(0xFFD2DCF0), maxLines = 2)
         }
     }
 }

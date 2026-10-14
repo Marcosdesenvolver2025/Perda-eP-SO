@@ -42,6 +42,11 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material.icons.rounded.StarBorder
 import androidx.compose.material.icons.rounded.Star
@@ -93,8 +98,8 @@ import com.musibox.app.ui.components.rememberSnack
 import com.musibox.app.ui.theme.Mb
 
 /**
- * Navegador interno (como no Snaptube): o usuário navega no site e, ao abrir um vídeo ou música,
- * aparece o botão "Baixar". Não usa login nem cookies do usuário no download.
+ * Navegador do MusiBox, no estilo do Chrome: abas, pesquisa no Google, favoritos, histórico
+ * e o botão "Baixar" quando a página tem um vídeo ou música.
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -102,7 +107,22 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
     val vm = appViewModel { LinkDownloadViewModel(it) }
     val snack = rememberSnack()
     val focus = LocalFocusManager.current
-    var currentUrl by rememberSaveable { mutableStateOf(startUrl) }
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+    val ctx0 = androidx.compose.ui.platform.LocalContext.current
+    val tabStore = remember { com.musibox.app.download.BrowserStore.get(ctx0) }
+    // Como no Chrome: links abrem numa aba nova; "Abas" mostra as abertas.
+    val initialUrl = rememberSaveable {
+        when (startUrl) {
+            com.musibox.app.download.BrowserStore.TABS_URL -> tabStore.ensureCurrentTab(com.musibox.app.download.BrowserStore.HOME_URL).url
+            else -> tabStore.openInNewTab(startUrl).url
+        }
+    }
+    var showTabs by remember { mutableStateOf(startUrl == com.musibox.app.download.BrowserStore.TABS_URL) }
+    var menuOpen by remember { mutableStateOf(false) }
+    var clearHistoryOnLoad by remember { mutableStateOf(false) }
+    val tabs by tabStore.tabs.collectAsStateWithLifecycle()
+    val currentTabId by tabStore.currentTab.collectAsStateWithLifecycle()
+    var currentUrl by rememberSaveable { mutableStateOf(initialUrl) }
     var title by remember { mutableStateOf("") }
     var progress by remember { mutableIntStateOf(0) }
     var canGoBack by remember { mutableStateOf(false) }
@@ -219,9 +239,7 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
                         keyboardActions = KeyboardActions(onGo = {
                             val text = address.trim()
                             if (text.isNotEmpty()) {
-                                val target = if (LinkUtils.looksLikeAddress(text)) LinkUtils.normalizeAddress(text)
-                                else "https://m.youtube.com/results?search_query=${Uri.encode(text)}"
-                                webView?.loadUrl(target)
+                                webView?.loadUrl(com.musibox.app.download.BrowserStore.searchOrUrl(text))
                             }
                             editing = false
                             focus.clearFocus()
@@ -252,31 +270,6 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
             }
             Spacer(Modifier.width(6.dp))
             BarButton(Icons.Rounded.Refresh, "Recarregar") { webView?.reload() }
-        }
-        // Abas rápidas dos sites
-        val host = LinkUtils.hostOf(currentUrl)
-        androidx.compose.foundation.lazy.LazyRow(
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(bottom = 6.dp),
-        ) {
-            items(DownloadSites.size) { i ->
-                val site = DownloadSites[i]
-                val selected = host.isNotEmpty() && LinkUtils.hostOf(site.url).let { h -> host == h || host.endsWith(".$h") }
-                Row(
-                    Modifier
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f) else Mb.colors.card)
-                        .border(1.dp, if (selected) MaterialTheme.colorScheme.primary else Mb.colors.border, RoundedCornerShape(18.dp))
-                        .clickable { openSite(site.url) }
-                        .padding(start = 5.dp, end = 12.dp, top = 5.dp, bottom = 5.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    SiteIcon(site, 24.dp)
-                    Spacer(Modifier.width(6.dp))
-                    Text(site.name, style = MaterialTheme.typography.labelMedium, color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
-                }
-            }
         }
         if (progress in 1..99) {
             LinearProgressIndicator(
@@ -334,6 +327,11 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
                                 url?.let {
                                     currentUrl = it
                                     store.recordVisit(it, view.title)
+                                    tabStore.updateCurrentTab(it, view.title)
+                                }
+                                if (clearHistoryOnLoad) {
+                                    clearHistoryOnLoad = false
+                                    view.clearHistory()
                                 }
                                 canGoBack = view.canGoBack()
                                 canGoForward = view.canGoForward()
@@ -402,19 +400,76 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
             }
         }
 
-        // Barra inferior de navegação do navegador
+        // Barra inferior (como no Chrome): voltar, avançar, início, abas e menu
         Row(
             Modifier
                 .fillMaxWidth()
-                .background(Mb.colors.card)
-                .padding(horizontal = 24.dp, vertical = 6.dp),
+                .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFF12122E), Color(0xFF09091C))))
+                .padding(horizontal = 12.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             BarButton(Icons.AutoMirrored.Rounded.ArrowBack, "Voltar", enabled = canGoBack) { webView?.goBack() }
             Spacer(Modifier.weight(1f))
-            BarButton(Icons.Rounded.Home, "Início do site") { webView?.loadUrl(startUrl) }
-            Spacer(Modifier.weight(1f))
             BarButton(Icons.AutoMirrored.Rounded.ArrowForward, "Avançar", enabled = canGoForward) { webView?.goForward() }
+            Spacer(Modifier.weight(1f))
+            BarButton(Icons.Rounded.Home, "Página inicial (Google)") { webView?.loadUrl(com.musibox.app.download.BrowserStore.HOME_URL) }
+            Spacer(Modifier.weight(1f))
+            // Contador de abas
+            Box(
+                Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .clickable { showTabs = true },
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    Modifier
+                        .size(24.dp)
+                        .border(2.dp, Color.White, RoundedCornerShape(6.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("${tabs.size.coerceAtLeast(1)}", color = Color.White, style = MaterialTheme.typography.labelMedium)
+                }
+            }
+            Spacer(Modifier.weight(1f))
+            Box {
+                BarButton(Icons.Rounded.MoreVert, "Menu") { menuOpen = true }
+                androidx.compose.material3.DropdownMenu(menuOpen, { menuOpen = false }, containerColor = Mb.colors.cardHigh) {
+                    MenuLine(Icons.Rounded.Add, "Nova aba") {
+                        menuOpen = false
+                        tabStore.newTab(com.musibox.app.download.BrowserStore.HOME_URL)
+                        clearHistoryOnLoad = true
+                        webView?.loadUrl(com.musibox.app.download.BrowserStore.HOME_URL)
+                    }
+                    MenuLine(if (bookmarked) Icons.Rounded.Star else Icons.Rounded.StarBorder, if (bookmarked) "Remover dos favoritos" else "Adicionar aos favoritos") {
+                        menuOpen = false
+                        val saved = store.toggleBookmark(currentUrl, title)
+                        snack(if (saved) "Página salva nos favoritos." else "Removida dos favoritos.")
+                    }
+                    MenuLine(Icons.Rounded.Download, "Baixar desta página") {
+                        menuOpen = false
+                        downloadCurrentPage()
+                    }
+                    MenuLine(Icons.Rounded.Share, "Compartilhar link") {
+                        menuOpen = false
+                        val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, currentUrl)
+                        runCatching { ctx0.startActivity(Intent.createChooser(send, "Compartilhar link").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+                    }
+                    MenuLine(Icons.Rounded.ContentCopy, "Copiar link") {
+                        menuOpen = false
+                        clipboard.setText(androidx.compose.ui.text.AnnotatedString(currentUrl))
+                        snack("Link copiado.")
+                    }
+                    MenuLine(Icons.Rounded.Refresh, "Recarregar") {
+                        menuOpen = false
+                        webView?.reload()
+                    }
+                    MenuLine(Icons.Rounded.Close, "Fechar navegador") {
+                        menuOpen = false
+                        nav.popBackStack()
+                    }
+                }
+            }
         }
     }
 
@@ -434,6 +489,43 @@ fun BrowserScreen(nav: NavController, startUrl: String) {
 
     if (showSheet) {
         DownloadSheet(vm, onDismiss = { showSheet = false }, onMessage = snack)
+    }
+    if (showTabs) {
+        com.musibox.app.ui.browser.TabsSheet(
+            tabs = tabs,
+            currentId = currentTabId,
+            onSelect = { tab ->
+                showTabs = false
+                if (tab.id != currentTabId) {
+                    tabStore.selectTab(tab.id)
+                    clearHistoryOnLoad = true
+                    webView?.loadUrl(tab.url)
+                }
+            },
+            onClose = { tab ->
+                val wasCurrent = tab.id == currentTabId
+                val next = tabStore.closeTab(tab.id)
+                if (wasCurrent) {
+                    val target = next ?: tabStore.newTab(com.musibox.app.download.BrowserStore.HOME_URL)
+                    clearHistoryOnLoad = true
+                    webView?.loadUrl(target.url)
+                }
+            },
+            onNewTab = {
+                showTabs = false
+                tabStore.newTab(com.musibox.app.download.BrowserStore.HOME_URL)
+                clearHistoryOnLoad = true
+                webView?.loadUrl(com.musibox.app.download.BrowserStore.HOME_URL)
+            },
+            onCloseAll = {
+                showTabs = false
+                tabStore.closeAllTabs()
+                tabStore.newTab(com.musibox.app.download.BrowserStore.HOME_URL)
+                clearHistoryOnLoad = true
+                webView?.loadUrl(com.musibox.app.download.BrowserStore.HOME_URL)
+            },
+            onDismiss = { showTabs = false },
+        )
     }
     imageToSave?.let { img ->
         SaveImageDialog(
@@ -560,4 +652,13 @@ private fun BarButton(
             tint = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
         )
     }
+}
+
+@Composable
+private fun MenuLine(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
+    androidx.compose.material3.DropdownMenuItem(
+        text = { Text(label) },
+        leadingIcon = { Icon(icon, null) },
+        onClick = onClick,
+    )
 }

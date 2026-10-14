@@ -36,22 +36,22 @@ fun SpaceBackdrop(modifier: Modifier = Modifier) {
                     )
                 }
                 val nebulaBlue = Brush.radialGradient(
-                    listOf(Color(0x381E8BFF), Color.Transparent),
+                    listOf(Color(0x402F6BFF), Color.Transparent),
                     center = Offset(w * 0.1f, h * 0.08f),
                     radius = w * 0.95f,
                 )
                 val nebulaPurple = Brush.radialGradient(
-                    listOf(Color(0x2E9B6BFF), Color.Transparent),
+                    listOf(Color(0x3A8B3DFF), Color.Transparent),
                     center = Offset(w * 1.0f, h * 0.5f),
                     radius = w * 0.85f,
                 )
                 val nebulaCyan = Brush.radialGradient(
-                    listOf(Color(0x221EC8FF), Color.Transparent),
+                    listOf(Color(0x28E03DFF), Color.Transparent),
                     center = Offset(w * 0.35f, h * 1.02f),
                     radius = w * 0.9f,
                 )
                 val horizon = h * 0.74f
-                val gridColor = Color(0xFF1EC8FF)
+                val gridColor = Color(0xFF8B7BFF)
                 onDrawBehind {
                     drawRect(bg)
                     if (!dark) return@onDrawBehind

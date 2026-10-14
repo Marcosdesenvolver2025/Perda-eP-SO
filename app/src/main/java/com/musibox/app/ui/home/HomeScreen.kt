@@ -73,6 +73,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material.icons.rounded.GraphicEq
+import androidx.compose.material.icons.rounded.FolderSpecial
+import com.musibox.app.core.AudioKinds
 import com.musibox.app.ui.components.bounceClick
 import com.musibox.app.ui.components.rememberIntroState
 import com.musibox.app.ui.components.intro
@@ -151,7 +156,7 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
     }
 }
 
-private enum class HomeFilter { ALL, FAVORITES, PLAYLISTS, RECENT }
+private enum class HomeFilter { ALL, SINGERS, FAVORITES, PLAYLISTS, AUDIOS, RECENT }
 
 /**
  * Início: busca, filtros (Todas, Favoritas, Playlists, Recentes), "Continue ouvindo",
@@ -173,7 +178,15 @@ fun HomeScreen(nav: NavController) {
     var playlistSongs by remember { mutableStateOf<List<Song>?>(null) }
     var creatingPlaylist by remember { mutableStateOf(false) }
 
-    val allSongs = songs.orEmpty()
+    val context = LocalContext.current
+    val kinds = remember { AudioKinds.get(context) }
+    val overrides by kinds.overrides.collectAsStateWithLifecycle()
+    val everything = songs.orEmpty()
+    // Músicas e áudios (aulas, gravações…) ficam separados
+    val split = remember(everything, overrides) { everything.partition { kinds.isMusic(it, overrides) } }
+    val allSongs = split.first
+    val audioSongs = split.second
+    val singerFolders = remember(allSongs) { buildSingerFolders(allSongs) }
     val recentSongs = recent.orEmpty().mapNotNull { it.song }
 
     val introTop = rememberIntroState()
@@ -202,21 +215,23 @@ fun HomeScreen(nav: NavController) {
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     item { NeoChip("Todas", Icons.Rounded.GridView, filter == HomeFilter.ALL, { filter = HomeFilter.ALL }) }
+                    item { NeoChip("Cantores", Icons.Rounded.FolderSpecial, filter == HomeFilter.SINGERS, { filter = HomeFilter.SINGERS }) }
                     item { NeoChip("Favoritas", Icons.Rounded.Favorite, filter == HomeFilter.FAVORITES, { filter = HomeFilter.FAVORITES }) }
                     item { NeoChip("Playlists", Icons.AutoMirrored.Rounded.QueueMusic, filter == HomeFilter.PLAYLISTS, { filter = HomeFilter.PLAYLISTS }) }
+                    item { NeoChip("Áudios", Icons.Rounded.GraphicEq, filter == HomeFilter.AUDIOS, { filter = HomeFilter.AUDIOS }) }
                     item { NeoChip("Recentes", Icons.Rounded.Schedule, filter == HomeFilter.RECENT, { filter = HomeFilter.RECENT }) }
                 }
             }
             // Lista conforme o filtro escolhido
             when {
-                filter != HomeFilter.PLAYLISTS && !permission.granted -> item(key = "perm") {
+                filter != HomeFilter.PLAYLISTS && filter != HomeFilter.FAVORITES && !permission.granted -> item(key = "perm") {
                     PermissionNeeded(permission.permanentlyDenied, permission.request, permission.openSettings)
                 }
                 filter == HomeFilter.ALL -> {
                     item(key = "allTitle") {
                         ListHeader(
                             "Suas músicas",
-                            songs?.let { Fmt.plural(it.size, "música", "músicas") },
+                            songs?.let { Fmt.plural(allSongs.size, "música", "músicas") },
                             onShuffle = { if (allSongs.isNotEmpty()) container.player.playSongs(allSongs, 0, shuffle = true) },
                             onPlay = { if (allSongs.isNotEmpty()) container.player.playSongs(allSongs, 0) },
                             onMore = { nav.navigate(Routes.library()) },
@@ -224,7 +239,7 @@ fun HomeScreen(nav: NavController) {
                     }
                     when {
                         songs == null -> item(key = "loading") { LoadingState("Carregando suas músicas…") }
-                        allSongs.isEmpty() -> item(key = "empty") {
+                        everything.isEmpty() -> item(key = "empty") {
                             StateMessage(
                                 Icons.Rounded.MusicOff,
                                 "Nenhuma música encontrada",
@@ -238,6 +253,67 @@ fun HomeScreen(nav: NavController) {
                         else -> itemsIndexed(allSongs, key = { _, it -> "s" + it.id }) { i, song ->
                             Box(Modifier.animateItem().intro("s" + song.id, i + 1, intro)) {
                                 SongItem(song, allSongs, player, song.contentKey in favoriteKeys, nav, { playlistSongs = listOf(it) })
+                            }
+                        }
+                    }
+                }
+                filter == HomeFilter.SINGERS -> {
+                    item(key = "singTitle") {
+                        Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = 8.dp)) {
+                            Text("Cantores", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
+                            Text(
+                                "Uma pasta para cada cantor, criada sozinha • ${Fmt.plural(singerFolders.size, "pasta", "pastas")}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Neo.Text2,
+                            )
+                        }
+                    }
+                    if (songs == null) {
+                        item(key = "singLoading") { LoadingState("Organizando as pastas…") }
+                    } else if (singerFolders.isEmpty()) {
+                        item(key = "singEmpty") {
+                            StateMessage(Icons.Rounded.FolderSpecial, "Nenhum cantor ainda", "As pastas aparecem quando houver músicas com o nome do artista.")
+                        }
+                    } else {
+                        val rows = singerFolders.chunked(2)
+                        itemsIndexed(rows, key = { _, r -> "sg" + r.first().name }) { i, row ->
+                            Row(
+                                Modifier
+                                    .animateItem()
+                                    .intro("sg" + row.first().name, i + 1, intro)
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                row.forEachIndexed { j, f ->
+                                    SingerFolderCard(f, i * 2 + j, Modifier.weight(1f)) { nav.navigate(Routes.songs("singer", f.name)) }
+                                }
+                                if (row.size == 1) Spacer(Modifier.weight(1f))
+                            }
+                        }
+                    }
+                }
+                filter == HomeFilter.AUDIOS -> {
+                    item(key = "audTitle") {
+                        ListHeader(
+                            "Áudios",
+                            "Aulas, gravações e outros áudios • ${Fmt.plural(audioSongs.size, "áudio", "áudios")}",
+                            onShuffle = { if (audioSongs.isNotEmpty()) container.player.playSongs(audioSongs, 0, shuffle = true) },
+                            onPlay = { if (audioSongs.isNotEmpty()) container.player.playSongs(audioSongs, 0) },
+                        )
+                    }
+                    if (audioSongs.isEmpty()) {
+                        item(key = "audEmpty") {
+                            StateMessage(
+                                Icons.Rounded.GraphicEq,
+                                "Nenhum áudio separado",
+                                "Aulas, gravações e áudios de conversa aparecem aqui. Para mover uma faixa, use o menu ⋮ dela.",
+                            )
+                        }
+                    } else {
+                        itemsIndexed(audioSongs, key = { _, it -> "a" + it.id }) { i, song ->
+                            Box(Modifier.animateItem().intro("a" + song.id, i + 1, intro)) {
+                                SongItem(song, audioSongs, player, song.contentKey in favoriteKeys, nav, { playlistSongs = listOf(it) })
                             }
                         }
                     }
@@ -287,7 +363,7 @@ fun HomeScreen(nav: NavController) {
                     }
                     item(key = "plNew") {
                         Box(Modifier.intro("plNew", 1, intro)) {
-                            PlaylistRow("Nova playlist", "Crie e adicione músicas pelo menu ⋮", isNew = true) { creatingPlaylist = true }
+                            PlaylistRow("Nova playlist", "Crie e escolha as músicas de uma vez", isNew = true) { creatingPlaylist = true }
                         }
                     }
                     val pls = playlists
@@ -336,7 +412,10 @@ fun HomeScreen(nav: NavController) {
             confirmText = "Criar",
             onConfirm = { name ->
                 creatingPlaylist = false
-                vm.createPlaylist(name) { id -> nav.navigate(Routes.playlist(id)) }
+                vm.createPlaylist(name) { id ->
+                    nav.navigate(Routes.playlist(id))
+                    nav.navigate(Routes.pickSongs(id))
+                }
             },
             onDismiss = { creatingPlaylist = false },
         )
@@ -416,3 +495,122 @@ private fun PlaylistRow(name: String, subtitle: String, isNew: Boolean = false, 
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Pastas de cantores
+
+private data class SingerFolder(val name: String, val songs: List<Song>)
+
+private fun buildSingerFolders(songs: List<Song>): List<SingerFolder> {
+    val map = LinkedHashMap<String, MutableList<Song>>()
+    val display = HashMap<String, String>()
+    val unknown = ArrayList<Song>()
+    for (s in songs) {
+        val names = AudioKinds.singers(s.artist)
+        if (names.isEmpty()) {
+            unknown += s
+            continue
+        }
+        for (n in names) {
+            val key = n.lowercase()
+            display.putIfAbsent(key, n)
+            map.getOrPut(key) { ArrayList() } += s
+        }
+    }
+    val folders = map.map { (k, list) -> SingerFolder(display[k] ?: k, list) }
+        .sortedWith(compareByDescending<SingerFolder> { it.songs.size >= 2 }.thenBy { it.name.lowercase() })
+    return if (unknown.isEmpty()) folders else folders + SingerFolder(UNKNOWN_SINGER, unknown)
+}
+
+const val UNKNOWN_SINGER = "Artista desconhecido"
+
+private val FOLDER_COLORS = listOf(
+    listOf(Color(0xFF2F7BFF), Color(0xFF8B3DFF)),
+    listOf(Color(0xFFFF3D7F), Color(0xFFFF8A3D)),
+    listOf(Color(0xFF00C2A8), Color(0xFF2F7BFF)),
+    listOf(Color(0xFFB03DFF), Color(0xFFFF3DB8)),
+    listOf(Color(0xFFFFB300), Color(0xFFFF4D4D)),
+    listOf(Color(0xFF00B4FF), Color(0xFF00E08A)),
+)
+
+/** Pasta 3D com a capa de uma música do cantor saindo de dentro. */
+@Composable
+private fun SingerFolderCard(folder: SingerFolder, index: Int, modifier: Modifier, onClick: () -> Unit) {
+    val colors = FOLDER_COLORS[(folder.name.hashCode() and 0x7fffffff) % FOLDER_COLORS.size]
+    val shape = RoundedCornerShape(20.dp)
+    Column(
+        modifier
+            .bounceClick(pressed = 0.95f, shape = shape, onClick = onClick)
+            .neoGlass(shape)
+            .padding(10.dp),
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(104.dp),
+        ) {
+            // fundo da pasta (com a aba)
+            Canvas(Modifier.matchParentSize()) {
+                val w = size.width
+                val h = size.height
+                val tab = Path().apply {
+                    moveTo(0f, h * 0.16f)
+                    lineTo(0f, h * 0.06f)
+                    quadraticTo(0f, 0f, w * 0.06f, 0f)
+                    lineTo(w * 0.34f, 0f)
+                    lineTo(w * 0.42f, h * 0.12f)
+                    lineTo(w, h * 0.12f)
+                    lineTo(w, h * 0.3f)
+                    close()
+                }
+                drawPath(tab, Brush.linearGradient(listOf(colors[0].copy(alpha = 0.75f), colors[1].copy(alpha = 0.75f))))
+                drawRoundRect(
+                    Brush.linearGradient(listOf(colors[0].copy(alpha = 0.55f), colors[1].copy(alpha = 0.55f))),
+                    topLeft = Offset(0f, h * 0.12f),
+                    size = Size(w, h * 0.88f),
+                    cornerRadius = CornerRadius(w * 0.06f),
+                )
+            }
+            // capa saindo da pasta
+            Artwork(
+                AudioCover(folder.songs.first().contentUri()),
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 16.dp)
+                    .size(64.dp)
+                    .graphicsLayer { rotationZ = if (index % 2 == 0) -6f else 6f },
+                corner = 10.dp,
+            )
+            // frente da pasta
+            Canvas(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(56.dp),
+            ) {
+                drawRoundRect(
+                    Brush.verticalGradient(listOf(colors[0], colors[1])),
+                    cornerRadius = CornerRadius(size.width * 0.06f),
+                )
+                drawRoundRect(
+                    Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.35f), Color.Transparent)),
+                    size = Size(size.width, size.height * 0.4f),
+                    cornerRadius = CornerRadius(size.width * 0.06f),
+                )
+            }
+            Text(
+                "${folder.songs.size}",
+                color = Color.White,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 18.sp,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 10.dp, bottom = 6.dp),
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(folder.name, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(Fmt.plural(folder.songs.size, "música", "músicas"), color = Neo.Artist, fontSize = 12.sp, maxLines = 1)
+    }
+}
+

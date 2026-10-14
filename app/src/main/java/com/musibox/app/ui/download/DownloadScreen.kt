@@ -79,6 +79,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.musibox.app.ui.components.intro
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -254,7 +256,7 @@ fun DownloadScreen(nav: NavController, request: MainTabs.DownloadRequest?, onReq
                     clipUrl = null
                 },
                 active = active,
-                recent = list.filter { it.status == DownloadStatus.COMPLETED }.take(3),
+                recent = list.filter { it.status == DownloadStatus.COMPLETED || it.status == DownloadStatus.FAILED }.take(15),
                 actions = actions.actions,
             )
             SearchState.Loading -> LoadingState("Pesquisando no YouTube…")
@@ -362,33 +364,49 @@ private fun HubHome(
     recent: List<DownloadEntity>,
     actions: DownloadActions,
 ) {
+    val intro = com.musibox.app.ui.components.rememberIntroState()
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
         if (clipUrl != null) {
             item(key = "clip") { ClipboardCard(clipUrl, { onClipDownload(clipUrl) }, { onClipDismiss(clipUrl) }) }
         }
-        item(key = "browserHero") { BrowserHero { site -> nav.navigate(Routes.browser(site.url)) } }
-        if (active.isNotEmpty()) {
-            item(key = "activeTitle") {
-                SectionTitle(
-                    "Baixando agora",
-                    Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 4.dp),
-                    actionText = "Ver todos",
-                    onAction = { nav.navigate(Routes.DOWNLOADS) },
-                )
-            }
-            items(active.take(4), key = { "a_" + it.id }) { d -> DownloadRow(d, actions, Modifier.padding(horizontal = 4.dp)) }
+        // Carrossel "como funciona"
+        item(key = "how") {
+            HowItWorksCarousel(Modifier.padding(top = 8.dp))
         }
-        item(key = "howto") { HowToCard() }
-        if (recent.isNotEmpty()) {
-            item(key = "recentTitle") {
-                SectionTitle(
-                    "Baixados recentemente",
-                    Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 4.dp),
-                    actionText = "Ver todos",
-                    onAction = { nav.navigate(Routes.DOWNLOADS) },
+        // Downloads iniciados (em andamento e os últimos concluídos)
+        item(key = "dlTitle") {
+            SectionTitle(
+                if (active.isNotEmpty()) "Baixando agora • ${active.size}" else "Seus downloads",
+                Modifier.padding(start = 16.dp, end = 16.dp, top = 22.dp, bottom = 4.dp),
+                actionText = "Ver todos",
+                onAction = { nav.navigate(Routes.DOWNLOADS) },
+            )
+        }
+        if (active.isEmpty() && recent.isEmpty()) {
+            item(key = "dlEmpty") {
+                Text(
+                    "Os downloads que você iniciar aparecem aqui, com o progresso em tempo real.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
                 )
             }
-            items(recent, key = { "r_" + it.id }) { d -> DownloadRow(d, actions, Modifier.padding(horizontal = 4.dp)) }
+        }
+        itemsIndexed(active, key = { _, d -> "a_" + d.id }) { i, d ->
+            Box(Modifier.animateItem().intro("a_" + d.id, i, intro)) { DownloadRow(d, actions, Modifier.padding(horizontal = 4.dp)) }
+        }
+        if (recent.isNotEmpty()) {
+            if (active.isNotEmpty()) {
+                item(key = "recentTitle") {
+                    SectionTitle(
+                        "Concluídos",
+                        Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
+                    )
+                }
+            }
+            itemsIndexed(recent, key = { _, d -> "r_" + d.id }) { i, d ->
+                Box(Modifier.animateItem().intro("r_" + d.id, active.size + i, intro)) { DownloadRow(d, actions, Modifier.padding(horizontal = 4.dp)) }
+            }
         }
     }
 }

@@ -24,22 +24,23 @@ import com.musibox.app.core.findActivity
 import com.musibox.app.data.prefs.ThemeMode
 
 object MbPalette {
-    val Blue = Color(0xFF1E8BFF)
-    val BlueBright = Color(0xFF1EC8FF)
-    val BlueDeep = Color(0xFF2F6BFF)
-    val Purple = Color(0xFF7B4DFF)
-    val PurpleBright = Color(0xFF9B6BFF)
+    val Blue = Color(0xFF2F7BFF)
+    val BlueBright = Color(0xFF19C6FF)
+    val BlueDeep = Color(0xFF3A4BFF)
+    val Purple = Color(0xFF8B3DFF)
+    val PurpleBright = Color(0xFFA66BFF)
+    val Magenta = Color(0xFFE03DFF)
     val Red = Color(0xFFFF2D3D)
     val Pink = Color(0xFFFF4D8D)
     val Green = Color(0xFF2ECC71)
     val Orange = Color(0xFFFFA43B)
 
-    val Bg = Color(0xFF07090F)
-    val Surface = Color(0xFF0E121B)
-    val Card = Color(0xFF121722)
-    val CardHigh = Color(0xFF181E2B)
-    val Border = Color(0xFF222A3A)
-    val TextSecondary = Color(0xFF9AA4B8)
+    val Bg = Color(0xFF06061A)
+    val Surface = Color(0xFF0C0C24)
+    val Card = Color(0xFF131331)
+    val CardHigh = Color(0xFF1B1B40)
+    val Border = Color(0xFF2B2B5C)
+    val TextSecondary = Color(0xFFADB4D6)
 }
 
 @Immutable
@@ -67,9 +68,9 @@ private val DarkExtras = MbExtraColors(
     success = MbPalette.Green,
     warning = MbPalette.Orange,
     danger = Color(0xFFFF5A5F),
-    accentGradient = Brush.horizontalGradient(listOf(MbPalette.BlueBright, MbPalette.BlueDeep)),
-    vaultGradient = Brush.linearGradient(listOf(MbPalette.Purple, Color(0xFF4F5BFF))),
-    heroGradient = Brush.linearGradient(listOf(Color(0xFF0B1A3D), Color(0xFF0E3B8C), Color(0xFF1E6BFF))),
+    accentGradient = Brush.horizontalGradient(listOf(MbPalette.BlueBright, MbPalette.BlueDeep, MbPalette.Purple)),
+    vaultGradient = Brush.linearGradient(listOf(MbPalette.Purple, MbPalette.Magenta)),
+    heroGradient = Brush.linearGradient(listOf(Color(0xFF14105A), Color(0xFF2A2AB8), Color(0xFF8B3DFF))),
     isDark = true,
 )
 
@@ -91,7 +92,7 @@ private val LightExtras = MbExtraColors(
 private val DarkScheme = darkColorScheme(
     primary = MbPalette.Blue,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFF0D2A55),
+    primaryContainer = Color(0xFF1A1A66),
     onPrimaryContainer = Color.White,
     secondary = MbPalette.PurpleBright,
     onSecondary = Color.White,
@@ -108,9 +109,9 @@ private val DarkScheme = darkColorScheme(
     surfaceContainerLow = MbPalette.Surface,
     surfaceContainer = MbPalette.Card,
     surfaceContainerHigh = MbPalette.CardHigh,
-    surfaceContainerHighest = Color(0xFF1E2533),
+    surfaceContainerHighest = Color(0xFF22224A),
     outline = MbPalette.Border,
-    outlineVariant = Color(0xFF1A2130),
+    outlineVariant = Color(0xFF1C1C40),
     error = Color(0xFFFF5A5F),
     onError = Color.White,
     inverseSurface = Color(0xFFE6EAF2),

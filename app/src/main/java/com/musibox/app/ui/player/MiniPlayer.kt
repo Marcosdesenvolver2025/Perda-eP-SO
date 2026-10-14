@@ -115,10 +115,10 @@ fun MiniPlayer(
         Column(
             Modifier
                 .fillMaxWidth()
-                .shadow(14.dp, shape, ambientColor = Color(0xFF0F4BFF), spotColor = Color(0xFF0F4BFF))
+                .shadow(14.dp, shape, ambientColor = Color(0xFF6A3DFF), spotColor = Color(0xFF6A3DFF))
                 .clip(shape)
-                .background(Brush.verticalGradient(listOf(Color(0xFF0D1C34), Color(0xFF071021))))
-                .border(1.dp, Brush.linearGradient(listOf(Color(0xFF2D5C9C), Color(0xFF1A2C4E), Color(0xFF3A3C8C))), shape)
+                .background(Brush.verticalGradient(listOf(Color(0xFF18184C), Color(0xFF0A0A26))))
+                .border(1.dp, Brush.linearGradient(listOf(Color(0xFF19C6FF), Color(0xFF3A4BFF), Color(0xFFB03DFF))), shape)
                 .clickable(onClick = onOpen),
         ) {
             Row(
@@ -191,14 +191,14 @@ fun MiniPlayer(
                     .fillMaxWidth()
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(Color(0xFF1A2A44)),
+                    .background(Color(0xFF26265A)),
             ) {
                 Box(
                     Modifier
                         .fillMaxWidth(progress)
                         .fillMaxHeight()
                         .clip(RoundedCornerShape(2.dp))
-                        .background(Brush.horizontalGradient(listOf(Color(0xFF1E6BFF), Color(0xFF7FD4FF)))),
+                        .background(Brush.horizontalGradient(listOf(Color(0xFF19C6FF), Color(0xFF6A3DFF), Color(0xFFE03DFF)))),
                 )
             }
         }

@@ -32,6 +32,7 @@ object Routes {
     const val DOWNLOADS = "downloads"
     const val LOGIN = "login"
     const val BROWSER = "browser?url={url}"
+    const val PICK_SONGS = "pick_songs/{id}"
 
     fun library(tab: Int = 0) = "library?tab=$tab"
     fun download(tab: Int = 0, url: String? = null) =
@@ -40,6 +41,7 @@ object Routes {
     fun browser(url: String) = "browser?url=${Uri.encode(url)}"
     fun songs(type: String, value: String) = "songs/$type/${Uri.encode(value)}"
     fun playlist(id: String) = "playlist/$id"
+    fun pickSongs(playlistId: String) = "pick_songs/$playlistId"
     fun vaultViewer(id: String) = "vault_view/$id"
     fun vaultPlayer(id: String) = "vault_play/$id"
 

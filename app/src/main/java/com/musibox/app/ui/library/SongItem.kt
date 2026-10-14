@@ -4,6 +4,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.GraphicEq
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Share
@@ -83,6 +85,17 @@ fun SongItem(
                     nav.navigate(Routes.songs("artist", song.displayArtist()))
                 })
             }
+            val kinds = com.musibox.app.core.AudioKinds.get(context)
+            val isMusic = kinds.isMusic(song)
+            add(
+                MenuAction(
+                    if (isMusic) "Mover para Áudios" else "Mover para Músicas",
+                    if (isMusic) Icons.Rounded.GraphicEq else Icons.Rounded.MusicNote,
+                ) {
+                    kinds.set(song, !isMusic)
+                    snack(if (isMusic) "Movida para Áudios." else "Movida para Músicas.")
+                },
+            )
             add(MenuAction("Compartilhar", Icons.Rounded.Share) {
                 if (!ExternalActions.shareContent(context, listOf(song.contentUri()), song.mimeType)) {
                     snack("Não foi possível compartilhar.")

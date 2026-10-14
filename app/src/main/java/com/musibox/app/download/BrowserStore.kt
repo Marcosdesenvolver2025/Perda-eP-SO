@@ -10,6 +10,7 @@ import org.json.JSONObject
 /** Histórico, favoritos e atalhos do navegador do MusiBox (ficam só no aparelho). */
 class BrowserStore private constructor(context: Context) {
     data class Entry(val title: String, val url: String, val time: Long)
+    data class Tab(val id: String, val url: String, val title: String)
 
     private val prefs = context.getSharedPreferences("browser_store", Context.MODE_PRIVATE)
 
@@ -24,6 +25,86 @@ class BrowserStore private constructor(context: Context) {
 
     private val _lastUrl = MutableStateFlow(prefs.getString(KEY_LAST, null))
     val lastUrl: StateFlow<String?> = _lastUrl.asStateFlow()
+
+    // ---------------- Abas (como no Chrome) ----------------
+
+    private val _tabs = MutableStateFlow(loadTabs())
+    val tabs: StateFlow<List<Tab>> = _tabs.asStateFlow()
+
+    private val _currentTab = MutableStateFlow(prefs.getString(KEY_CURRENT_TAB, null)?.takeIf { id -> _tabs.value.any { it.id == id } })
+    val currentTab: StateFlow<String?> = _currentTab.asStateFlow()
+
+    fun current(): Tab? = _tabs.value.firstOrNull { it.id == _currentTab.value }
+
+    /** Aba atual (cria uma com a página inicial se não houver nenhuma). */
+    fun ensureCurrentTab(homeUrl: String): Tab = current() ?: _tabs.value.lastOrNull()?.also { selectTab(it.id) } ?: newTab(homeUrl)
+
+    /** Abre o endereço numa aba nova (ou reaproveita a atual se já estiver nele). */
+    fun openInNewTab(url: String): Tab {
+        val cur = current()
+        if (cur != null && same(cur.url, url)) return cur
+        return newTab(url)
+    }
+
+    fun newTab(url: String): Tab {
+        val tab = Tab(java.util.UUID.randomUUID().toString(), url, hostOf(url))
+        val updated = (_tabs.value + tab).takeLast(MAX_TABS)
+        _tabs.value = updated
+        saveTabs(updated)
+        selectTab(tab.id)
+        return tab
+    }
+
+    fun selectTab(id: String) {
+        _currentTab.value = id
+        prefs.edit().putString(KEY_CURRENT_TAB, id).apply()
+    }
+
+    fun updateCurrentTab(url: String, title: String?) {
+        val id = _currentTab.value ?: return
+        val updated = _tabs.value.map { if (it.id == id) it.copy(url = url, title = title?.ifBlank { null } ?: hostOf(url)) else it }
+        _tabs.value = updated
+        saveTabs(updated)
+    }
+
+    /** Fecha a aba; devolve a aba que fica aberta no lugar (ou null se não sobrou nenhuma). */
+    fun closeTab(id: String): Tab? {
+        val list = _tabs.value
+        val index = list.indexOfFirst { it.id == id }
+        val updated = list.filterNot { it.id == id }
+        _tabs.value = updated
+        saveTabs(updated)
+        if (_currentTab.value == id) {
+            val next = updated.getOrNull(index.coerceAtMost(updated.lastIndex)) ?: updated.lastOrNull()
+            if (next != null) selectTab(next.id) else {
+                _currentTab.value = null
+                prefs.edit().remove(KEY_CURRENT_TAB).apply()
+            }
+            return next
+        }
+        return current()
+    }
+
+    fun closeAllTabs() {
+        _tabs.value = emptyList()
+        saveTabs(emptyList())
+        _currentTab.value = null
+        prefs.edit().remove(KEY_CURRENT_TAB).apply()
+    }
+
+    private fun loadTabs(): List<Tab> = runCatching {
+        val arr = JSONArray(prefs.getString(KEY_TABS, "[]"))
+        (0 until arr.length()).map { i ->
+            val o = arr.getJSONObject(i)
+            Tab(o.getString("id"), o.getString("u"), o.optString("t"))
+        }
+    }.getOrDefault(emptyList())
+
+    private fun saveTabs(list: List<Tab>) {
+        val arr = JSONArray()
+        list.forEach { arr.put(JSONObject().put("id", it.id).put("u", it.url).put("t", it.title)) }
+        prefs.edit().putString(KEY_TABS, arr.toString()).apply()
+    }
 
     fun recordVisit(url: String, title: String?) {
         if (!url.startsWith("http")) return
@@ -96,6 +177,22 @@ class BrowserStore private constructor(context: Context) {
         private const val KEY_BOOKMARKS = "bookmarks"
         private const val KEY_SHORTCUTS = "shortcuts"
         private const val KEY_LAST = "last_url"
+        private const val KEY_TABS = "tabs"
+        private const val KEY_CURRENT_TAB = "current_tab"
+        private const val MAX_TABS = 30
+        const val HOME_URL = "https://www.google.com/"
+        const val TABS_URL = "musibox://tabs"
+
+        /** O que a pessoa digitou: endereço vira site, o resto vira pesquisa no Google. */
+        fun searchOrUrl(text: String): String {
+            val t = text.trim()
+            val url = LinkUtils.extractUrl(t)
+            return when {
+                url != null -> url
+                LinkUtils.looksLikeAddress(t) -> LinkUtils.normalizeAddress(t)
+                else -> "https://www.google.com/search?q=" + android.net.Uri.encode(t)
+            }
+        }
         private const val MAX_HISTORY = 80
 
         @Volatile private var instance: BrowserStore? = null

@@ -87,7 +87,7 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
         it.status == com.musibox.app.data.db.DownloadStatus.RUNNING || it.status == com.musibox.app.data.db.DownloadStatus.QUEUED
     }
     val rootScope = rememberCoroutineScope()
-    val hideMiniOn = setOf(Routes.PLAYER, Routes.QUEUE, Routes.ONBOARDING, Routes.VAULT_PLAYER, Routes.VAULT_VIEWER, Routes.BROWSER, Routes.LOGIN)
+    val hideMiniOn = setOf(Routes.PICK_SONGS, Routes.PLAYER, Routes.QUEUE, Routes.ONBOARDING, Routes.VAULT_PLAYER, Routes.VAULT_VIEWER, Routes.BROWSER, Routes.LOGIN)
     val showMini = playerState.current != null && route != null && route !in hideMiniOn
 
     // Quem ainda não entrou na conta (e não escolheu "Continuar sem conta") vê a tela de entrada uma vez.
@@ -114,6 +114,8 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
         SpaceBackdrop()
         Scaffold(
             containerColor = androidx.compose.ui.graphics.Color.Transparent,
+            // Fundo transparente (para o espaço aparecer), mas texto sempre claro e visível.
+            contentColor = MaterialTheme.colorScheme.onBackground,
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             snackbarHost = { SnackbarHost(snackbar) },
             bottomBar = {
@@ -200,6 +202,9 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
                     )
                 }
                 composable(Routes.PLAYLIST) { entry -> PlaylistScreen(navController, entry.arguments?.getString("id").orEmpty()) }
+                composable(Routes.PICK_SONGS) { entry ->
+                    com.musibox.app.ui.library.SongPickerScreen(navController, entry.arguments?.getString("id").orEmpty())
+                }
                 composable(Routes.VAULT_SETTINGS) { VaultSettingsScreen(navController) }
                 composable(Routes.VAULT_VIEWER) { entry -> VaultViewerScreen(navController, entry.arguments?.getString("id").orEmpty()) }
                 composable(Routes.VAULT_PLAYER) { entry -> VaultPlayerScreen(navController, entry.arguments?.getString("id").orEmpty()) }

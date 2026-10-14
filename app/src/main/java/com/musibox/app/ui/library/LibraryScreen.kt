@@ -420,7 +420,10 @@ private fun PlaylistsTab(vm: LibraryViewModel, nav: NavController) {
             confirmText = "Criar",
             onConfirm = { name ->
                 creating = false
-                vm.createPlaylist(name) { id -> nav.navigate(Routes.playlist(id)) }
+                vm.createPlaylist(name) { id ->
+                    nav.navigate(Routes.playlist(id))
+                    nav.navigate(Routes.pickSongs(id))
+                }
             },
             onDismiss = { creating = false },
         )

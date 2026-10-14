@@ -51,6 +51,9 @@ $UI tap "Faixa de Teste 1" 20; sleep 4; shot 06_tocando
 # Deslizar para o lado troca de tela (Início -> Navegador -> Início)
 adb shell input swipe 950 1300 120 1300 250; sleep 2; shot 05_deslize_navegador
 adb shell input swipe 120 1300 950 1300 250; sleep 2; shot 05b_deslize_inicio
+$UI tapx "Cantores" 5; sleep 2; shot 05c_cantores
+$UI tapx "Áudios" 5; sleep 2; shot 05d_audios
+$UI tapx "Todas" 5; sleep 1
 launch --ez open_player true; sleep 3; shot 07_player
 adb shell input keyevent KEYCODE_HOME; sleep 2
 adb shell cmd statusbar expand-notifications; sleep 3; shot 08_notificacao
@@ -71,9 +74,10 @@ $UI tap "Meus downloads" 10; sleep 3; shot 12_downloads
 adb shell input keyevent KEYCODE_BACK; sleep 1
 
 step "Navegador interno"
+$UI tapx "Navegador" 10; sleep 2; shot 12a_navegador_inicio
 $UI tapx "YouTube" 10; sleep 15; shot 12b_navegador
 adb shell input keyevent KEYCODE_BACK; sleep 1
-$UI tap "Fechar navegador" 5; sleep 1
+adb shell input keyevent KEYCODE_BACK; sleep 1
 
 step "Download para o cofre pelo Compartilhar"
 adb shell am start -n "$PKG/com.musibox.app.share.DownloadShareAlias" -a android.intent.action.SEND -t text/plain \

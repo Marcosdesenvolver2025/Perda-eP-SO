@@ -60,19 +60,21 @@ import com.musibox.app.R
 
 /** Paleta do visual "neon" (fundo azul-marinho, vidro, bordas que brilham). */
 object Neo {
+    // Cores do logo do MusiBox: ciano, azul, roxo e magenta
     val Cyan = Color(0xFF19E6F5)
-    val Blue = Color(0xFF1E8BFF)
-    val BlueDeep = Color(0xFF1B4DFF)
-    val Purple = Color(0xFF8B5CFF)
-    val Link = Color(0xFF22B8F0)
-    val Artist = Color(0xFF7FB2E6)
-    val Text2 = Color(0xFFB9C6DA)
-    val GlassTop = Color(0xFF0E1C33)
-    val GlassBottom = Color(0xFF070F1E)
+    val Blue = Color(0xFF2F7BFF)
+    val BlueDeep = Color(0xFF3A4BFF)
+    val Purple = Color(0xFF8B3DFF)
+    val Magenta = Color(0xFFE03DFF)
+    val Link = Color(0xFF3FD0FF)
+    val Artist = Color(0xFF9FB8FF)
+    val Text2 = Color(0xFFC3C9E8)
+    val GlassTop = Color(0xFF16164A)
+    val GlassBottom = Color(0xFF0B0B26)
     val Glass = Brush.verticalGradient(listOf(GlassTop, GlassBottom))
-    val Edge = Brush.linearGradient(listOf(Color(0xFF2D4C78), Color(0xFF15253F), Color(0xFF2B3F70)))
-    val EdgeBright = Brush.linearGradient(listOf(Color(0xFF1EC8FF), Color(0xFF4A6BFF), Color(0xFF9B5CFF)))
-    val Accent = Brush.linearGradient(listOf(Color(0xFF2F7BFF), Color(0xFF1B3DFF)))
+    val Edge = Brush.linearGradient(listOf(Color(0xFF3D4FA8), Color(0xFF22225A), Color(0xFF5B3399)))
+    val EdgeBright = Brush.linearGradient(listOf(Color(0xFF19C6FF), Color(0xFF3A4BFF), Color(0xFFB03DFF), Color(0xFFE03DFF)))
+    val Accent = Brush.linearGradient(listOf(Color(0xFF2F7BFF), Color(0xFF6A3DFF), Color(0xFFB03DFF)))
 }
 
 /** Fundo de vidro com borda suave. */
@@ -204,8 +206,8 @@ fun NeoChip(label: String, icon: ImageVector, selected: Boolean, onClick: () -> 
             Modifier
                 .matchParentSize()
                 .graphicsLayer { alpha = on }
-                .background(Brush.horizontalGradient(listOf(Color(0xFF2F7BFF), Color(0xFF1840F0))))
-                .border(1.dp, Color(0xFF6FA8FF), shape),
+                .background(Brush.horizontalGradient(listOf(Color(0xFF2F7BFF), Color(0xFF7A3DFF), Color(0xFFC23DFF))))
+                .border(1.dp, Color(0xFFB9A6FF), shape),
         )
         Row(
             Modifier.padding(horizontal = 16.dp),

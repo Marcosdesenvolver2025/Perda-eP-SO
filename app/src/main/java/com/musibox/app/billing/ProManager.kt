@@ -208,6 +208,6 @@ object ProManager {
             .getHttpsCallable("ext-firestore-stripe-payments-createPortalLink")
             .call(mapOf("returnUrl" to cancelUrl, "locale" to "pt-BR"))
             .await()
-        return (result.data as? Map<*, *>)?.get("url") as? String ?: error("Portal indisponível.")
+        return (result.getData() as? Map<*, *>)?.get("url") as? String ?: error("Portal indisponível.")
     }
 }

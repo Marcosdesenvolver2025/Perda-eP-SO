@@ -202,10 +202,17 @@ fun DownloadScreen(nav: NavController, request: MainTabs.DownloadRequest?, onReq
             }
             Column(Modifier.weight(1f)) {
                 Text("Baixar", fontSize = 30.sp, fontWeight = FontWeight.ExtraBold)
+                val pro by com.musibox.app.billing.ProManager.state.collectAsStateWithLifecycle()
+                val credits by com.musibox.app.ads.DownloadQuota.credits.collectAsStateWithLifecycle()
                 Text(
-                    "Vídeos e músicas de qualquer site",
+                    when {
+                        pro.active -> "Pró ✓ • downloads sem anúncios"
+                        credits > 0 -> "${if (credits == 1) "1 download grátis" else "$credits downloads grátis"} • depois 1 anúncio libera mais"
+                        else -> "Próximo download: 1 anúncio libera mais 2 • toque para o Pró"
+                    },
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (pro.active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.clickable { nav.navigate(Routes.PRO) },
                 )
             }
             MbIconButton(Icons.Rounded.FileOpen, "Importar arquivo do aparelho", { importLauncher.launch(arrayOf("audio/*", "video/*")) })

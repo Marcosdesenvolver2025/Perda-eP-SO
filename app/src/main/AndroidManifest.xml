@@ -51,6 +51,11 @@
         android:theme="@style/Theme.MusiBox"
         tools:targetApi="35">
 
+        <!-- AdMob (o ID vem do build.gradle; sem ID real usa o ID de teste do Google) -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="${admobAppId}" />
+
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|density|uiMode"

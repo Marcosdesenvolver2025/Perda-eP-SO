@@ -38,6 +38,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.rounded.WorkspacePremium
 import com.musibox.app.ui.components.intro
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
@@ -66,6 +69,32 @@ fun MoreScreen(nav: NavController) {
     Column(Modifier.fillMaxSize()) {
         com.musibox.app.ui.components.PageTitle("Mais", "Conta, biblioteca e ajustes")
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
+            item(key = "pro") {
+                val pro by com.musibox.app.billing.ProManager.state.collectAsStateWithLifecycle()
+                Row(
+                    Modifier
+                        .intro("pro", 0, intro)
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Mb.colors.accentGradient)
+                        .clickable { nav.navigate(Routes.PRO) }
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Rounded.WorkspacePremium, null, tint = Mb.colors.onAccent, modifier = Modifier.size(34.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(if (pro.active) "Você é Pró ✓" else "MusiBox Pró", color = Mb.colors.onAccent, style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                        Text(
+                            if (pro.active) "Downloads sem anúncios" else "Baixe sem anúncios • a partir de R$ 4,99",
+                            color = Mb.colors.onAccent.copy(alpha = 0.8f),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                    Icon(Icons.Rounded.ChevronRight, null, tint = Mb.colors.onAccent)
+                }
+            }
             item { Box(Modifier.intro("more0", 0, intro)) {
                 MbCard(
                     Modifier

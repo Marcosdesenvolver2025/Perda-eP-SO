@@ -74,6 +74,7 @@ class MainActivity : FragmentActivity() {
             intent.getBooleanExtra(EXTRA_OPEN_PLAYER, false) -> Routes.PLAYER
             intent.getBooleanExtra(EXTRA_OPEN_DOWNLOADS, false) -> Routes.DOWNLOADS
             intent.getBooleanExtra(EXTRA_OPEN_VAULT, false) -> Routes.VAULT
+            intent.getBooleanExtra(EXTRA_OPEN_PRO, false) -> Routes.PRO
             intent.getStringExtra(EXTRA_DOWNLOAD_URL) != null -> Routes.download(0, intent.getStringExtra(EXTRA_DOWNLOAD_URL))
             else -> null
         } ?: return
@@ -81,6 +82,7 @@ class MainActivity : FragmentActivity() {
         intent.removeExtra(EXTRA_OPEN_PLAYER)
         intent.removeExtra(EXTRA_OPEN_DOWNLOADS)
         intent.removeExtra(EXTRA_OPEN_VAULT)
+        intent.removeExtra(EXTRA_OPEN_PRO)
         intent.removeExtra(EXTRA_DOWNLOAD_URL)
     }
 
@@ -88,6 +90,7 @@ class MainActivity : FragmentActivity() {
         const val EXTRA_OPEN_PLAYER = "open_player"
         const val EXTRA_OPEN_DOWNLOADS = "open_downloads"
         const val EXTRA_OPEN_VAULT = "open_vault"
+        const val EXTRA_OPEN_PRO = "open_pro"
         const val EXTRA_DOWNLOAD_URL = "download_url"
     }
 }

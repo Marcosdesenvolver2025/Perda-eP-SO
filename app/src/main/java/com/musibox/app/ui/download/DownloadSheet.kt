@@ -231,6 +231,8 @@ private fun ReadyBlock(vm: LinkDownloadViewModel, info: MediaInfo, onEnqueued: (
     val context = LocalContext.current
     val settings by vm.settings.collectAsStateWithLifecycle()
     val notifLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    val gateContext = androidx.compose.ui.platform.LocalContext.current
+    val gate = rememberDownloadGate { com.musibox.app.ui.pro.ProLauncher.open(gateContext) }
     var showMore by remember { mutableStateOf(false) }
     var rename by remember { mutableStateOf(false) }
     val kinds = listOf(OptionKind.AUDIO, OptionKind.VIDEO, OptionKind.PHOTO).filter { k -> info.options.any { it.kind == k } }
@@ -348,7 +350,8 @@ private fun ReadyBlock(vm: LinkDownloadViewModel, info: MediaInfo, onEnqueued: (
                 if (Build.VERSION.SDK_INT >= 33 && !Permissions.hasNotifications(context)) {
                     notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
-                vm.enqueue(onEnqueued, onError)
+                // 2 downloads grátis; depois um anúncio libera mais 2 (Pró baixa direto)
+                gate.request { vm.enqueue(onEnqueued, onError) }
             },
             enabled = sel != null && vm.destination != null,
             loading = vm.enqueueing,

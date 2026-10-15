@@ -24,6 +24,10 @@ class MusiBoxApp : Application(), ImageLoaderFactory {
         initFirebase()
         container = AppContainer(this)
         container.start()
+        // Anúncios (downloads grátis com anúncio) e status do Pró
+        com.musibox.app.ads.DownloadQuota.load(this)
+        com.musibox.app.ads.RewardedAds.init(this)
+        com.musibox.app.billing.ProManager.start(this)
     }
 
     /**

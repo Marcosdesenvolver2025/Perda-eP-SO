@@ -88,6 +88,8 @@ fun DownloadOptionsPanel(
     val context = LocalContext.current
     var showFormats by remember { mutableStateOf(false) }
     val notifLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    val gateContext = androidx.compose.ui.platform.LocalContext.current
+    val gate = rememberDownloadGate { com.musibox.app.ui.pro.ProLauncher.open(gateContext) }
 
     when (val s = state) {
         AnalyzeState.Idle -> Unit
@@ -172,7 +174,7 @@ fun DownloadOptionsPanel(
                         if (Build.VERSION.SDK_INT >= 33 && !Permissions.hasNotifications(context)) {
                             notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                         }
-                        vm.enqueue(onEnqueued, onError)
+                        gate.request { vm.enqueue(onEnqueued, onError) }
                     },
                     enabled = selected != null && vm.destination != null,
                     loading = vm.enqueueing,

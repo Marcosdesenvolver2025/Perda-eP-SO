@@ -87,7 +87,7 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
         it.status == com.musibox.app.data.db.DownloadStatus.RUNNING || it.status == com.musibox.app.data.db.DownloadStatus.QUEUED
     }
     val rootScope = rememberCoroutineScope()
-    val hideMiniOn = setOf(Routes.PICK_SONGS, Routes.PLAYER, Routes.QUEUE, Routes.ONBOARDING, Routes.VAULT_PLAYER, Routes.VAULT_VIEWER, Routes.BROWSER, Routes.LOGIN)
+    val hideMiniOn = setOf(Routes.PRO, Routes.PRO_CHECKOUT, Routes.PICK_SONGS, Routes.PLAYER, Routes.QUEUE, Routes.ONBOARDING, Routes.VAULT_PLAYER, Routes.VAULT_VIEWER, Routes.BROWSER, Routes.LOGIN)
     val showMini = playerState.current != null && route != null && route !in hideMiniOn
 
     // Quem ainda não entrou na conta (e não escolheu "Continuar sem conta") vê a tela de entrada uma vez.
@@ -202,6 +202,11 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
                     )
                 }
                 composable(Routes.PLAYLIST) { entry -> PlaylistScreen(navController, entry.arguments?.getString("id").orEmpty()) }
+                composable(Routes.PRO) { com.musibox.app.ui.pro.ProScreen(navController) }
+                composable(
+                    Routes.PRO_CHECKOUT,
+                    arguments = listOf(navArgument("url") { type = NavType.StringType; defaultValue = "" }),
+                ) { entry -> com.musibox.app.ui.pro.ProCheckoutScreen(navController, entry.arguments?.getString("url").orEmpty()) }
                 composable(Routes.PICK_SONGS) { entry ->
                     com.musibox.app.ui.library.SongPickerScreen(navController, entry.arguments?.getString("id").orEmpty())
                 }

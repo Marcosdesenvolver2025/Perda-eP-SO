@@ -53,17 +53,13 @@ import com.musibox.app.ui.components.pressScale
 import com.musibox.app.ui.main.MainTabs
 
 /**
- * Barra de baixo no estilo do novo visual: fundo cinza-escuro, ícones de contorno e a aba
+ * Barra de baixo no estilo do novo visual: sem fundo próprio, ícones de contorno e a aba
  * escolhida em verde com um tracinho embaixo. Acompanha a página do deslize.
  */
 @Composable
 fun BottomBar(selectedPage: Int, downloading: Boolean = false, onSelect: (Int) -> Unit) {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .background(Color(0xFF1A1A1A)),
-    ) {
-        HorizontalDivider(color = Color(0xFF2A2A2A), thickness = 1.dp)
+    // Sem faixa cinza: os ícones ficam direto sobre o fundo do app
+    Column(Modifier.fillMaxWidth()) {
         Row(
             Modifier
                 .fillMaxWidth()

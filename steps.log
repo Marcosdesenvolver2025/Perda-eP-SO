@@ -1,0 +1,143 @@
+APK=apk/teste.apk PKG=br.com.musibox
+Serving...
+All files should be loaded. Notifying the device.
+Performing Incremental Install
+Success
+Install command complete in 6679 ms
+== Arquivos de teste
+/tmp/teste1.mp3: 1 file pushed, 0 skipped. 8.9 MB/s (641269 bytes in 0.068s)
+/tmp/teste2.mp3: 1 file pushed, 0 skipped. 144.7 MB/s (641269 bytes in 0.004s)
+/tmp/teste3.mp3: 1 file pushed, 0 skipped. 254.6 MB/s (641269 bytes in 0.002s)
+/tmp/teste4.m4a: 1 file pushed, 0 skipped. 256.7 MB/s (648646 bytes in 0.002s)
+/tmp/media/clipe_demo.mp4: 1 file pushed, 0 skipped. 142.3 MB/s (123704 bytes in 0.001s)
+== Primeira abertura
+print 01_apresentacao
+print 02_conta
+NÃO ENCONTRADO: 'Continuar sem conta'
+NÃO APARECEU: 'músicas encontradas'
+print 03_indexacao
+NÃO ENCONTRADO: 'Ir para o início'
+print 04_inicio
+== Biblioteca e player
+NÃO ENCONTRADO: 'Faixa de Teste 1'
+print 06_tocando
+print 05_deslize_navegador
+print 05b_deslize_inicio
+NÃO ENCONTRADO: 'Cantores'
+print 05c_cantores
+NÃO ENCONTRADO: 'Áudios'
+print 05d_audios
+NÃO ENCONTRADO: 'Todas'
+print 07_player
+print 08_notificacao
+== Download completo (servidor local)
+NÃO ENCONTRADO: 'Início'
+NÃO ENCONTRADO: 'Baixador'
+print 09_baixar
+NÃO APARECEU: 'Salvar em'
+print 10_opcoes
+NÃO ENCONTRADO: 'Música'
+NÃO ENCONTRADO: 'Galeria'
+print 11_escolhas
+NÃO ENCONTRADO: 'Baixar •'
+NÃO ENCONTRADO: 'Baixar'
+NÃO ENCONTRADO: 'Meus downloads'
+print 12_downloads
+== Navegador interno
+NÃO ENCONTRADO: 'Navegador'
+print 12a_navegador_inicio
+tap 'YouTube' em (918, 1615)
+print 12b_navegador
+== Download para o cofre pelo Compartilhar
+visível: 'Salvar em'
+print 13_compartilhar
+tap 'Vídeo' em (817, 1270)
+tap 'Cofre' em (719, 1838)
+print 14_compartilhar_cofre
+NÃO ENCONTRADO: 'Baixar •'
+tap 'Baixar' em (582, 2221)
+== Cofre: PIN, código de recuperação e recuperação
+NÃO ENCONTRADO: 'Cofre'
+NÃO ENCONTRADO: 'Criar PIN'
+NÃO ENCONTRADO: 'Criar código de recuperação'
+codigo de recuperacao: 
+NÃO ENCONTRADO: 'Anotei o código'
+NÃO ENCONTRADO: 'Concluir'
+NÃO ENCONTRADO: 'Configurações do cofre'
+NÃO ENCONTRADO: 'Bloquear capturas de tela'
+print 15_cofre_config
+NÃO ENCONTRADO: 'Recuperação do PIN'
+print 15b_recuperacao
+print 16_cofre_fotos
+NÃO ENCONTRADO: 'Vídeos'
+print 17_cofre_videos
+NÃO ENCONTRADO: 'clipe_demo'
+print 18_cofre_player
+NÃO ENCONTRADO: 'Início'
+NÃO ENCONTRADO: 'Cofre'
+print 18a_cofre_bloqueado
+NÃO ENCONTRADO: 'Esqueci o PIN'
+print 18b_esqueci_pin
+NÃO ENCONTRADO: 'Usar código de recuperação'
+
+Exception occurred while executing 'text':
+java.lang.IllegalArgumentException: Argument expected after "text"
+	at com.android.modules.utils.BasicShellCommandHandler.getNextArgRequired(BasicShellCommandHandler.java:295)
+	at com.android.server.input.InputShellCommand.runText(InputShellCommand.java:291)
+	at com.android.server.input.InputShellCommand.onCommand(InputShellCommand.java:232)
+	at com.android.modules.utils.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:97)
+	at android.os.ShellCommand.exec(ShellCommand.java:38)
+	at com.android.server.input.InputManagerService.onShellCommand(InputManagerService.java:3297)
+	at android.os.Binder.shellCommand(Binder.java:1068)
+	at android.os.Binder.onTransact(Binder.java:888)
+	at android.hardware.input.IInputManager$Stub.onTransact(IInputManager.java:1339)
+	at android.os.Binder.execTransactInternal(Binder.java:1344)
+	at android.os.Binder.execTransact(Binder.java:1275)
+print 18b2_codigo_digitado
+NÃO ENCONTRADO: 'Confirmar'
+print 18c_cofre_recuperado
+== Histórico, configurações e armazenamento
+NÃO ENCONTRADO: 'Mais'
+print 19_mais
+NÃO ENCONTRADO: 'Histórico'
+print 20_historico
+NÃO ENCONTRADO: 'Configurações'
+print 21_configuracoes
+NÃO ENCONTRADO: 'Armazenamento'
+print 22_armazenamento
+NÃO ENCONTRADO: 'Biblioteca completa'
+print 23_biblioteca
+== Rotação
+print 24_paisagem
+Nenhum crash.
+--- avisos do app
+10-15 22:27:54.253  9035  9035 W libpython.so: type=1400 audit(0.0:2109): avc:  denied  { ioctl } for  path="pipe:[120877]" dev="pipefs" ino=120877 ioctlcmd=0x5413 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tclass=fifo_file permissive=0 app=br.com.musibox
+10-15 22:27:54.625  9053  9053 W file    : type=1400 audit(0.0:2110): avc:  granted  { execute } for  path="/data/data/br.com.musibox/no_backup/youtubedl-android/packages/python/usr/lib/libz.so.1.3.1" dev="dm-40" ino=327862 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=br.com.musibox
+10-15 22:27:54.629  9053  9053 W file    : type=1400 audit(0.0:2111): avc:  granted  { execute } for  path="/data/data/br.com.musibox/no_backup/youtubedl-android/packages/python/usr/lib/libcrypto.so.3" dev="dm-40" ino=328690 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=br.com.musibox
+10-15 22:27:54.633  9054  9054 W uname   : type=1400 audit(0.0:2112): avc:  granted  { execute } for  path="/data/data/br.com.musibox/no_backup/youtubedl-android/packages/python/usr/lib/libcrypto.so.3" dev="dm-40" ino=328690 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=br.com.musibox
+10-15 22:27:54.633  9054  9054 W uname   : type=1400 audit(0.0:2113): avc:  granted  { execute } for  path="/data/data/br.com.musibox/no_backup/youtubedl-android/packages/python/usr/lib/libz.so.1.3.1" dev="dm-40" ino=327862 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=br.com.musibox
+10-15 22:27:56.832   521   924 W JobScheduler: Job didn't exist in JobStore: 7ddec51 {androidx.work.systemjobscheduler} #u0a192/3 @androidx.work.systemjobscheduler@br.com.musibox/androidx.work.impl.background.systemjob.SystemJobService
+10-15 22:28:33.383   521   540 W ziparchive: Unable to open '/data/app/~~-3ABTLEwTUn9wQO1dG4DjA==/br.com.musibox-EPshZ0Ra1yWdGCWB0YFuJQ==/base.dm': No such file or directory
+10-15 22:28:33.407   521  2463 W InputManager-JNI: Input channel object 'b5539f3 Splash Screen br.com.musibox (client)' was disposed without first being removed with the input manager!
+10-15 22:30:40.456   521   923 W InputManager-JNI: Input channel object 'c4085e3 br.com.musibox/com.musibox.app.MainActivity (client)' was disposed without first being removed with the input manager!
+10-15 22:30:40.545  9736  9736 W mount   : type=1400 audit(0.0:2221): avc:  denied  { getattr } for  path="/metadata" dev="vdd1" ino=2 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:metadata_file:s0 tclass=dir permissive=0 app=br.com.musibox
+10-15 22:30:40.549  9736  9736 W mount   : type=1400 audit(0.0:2222): avc:  denied  { getattr } for  path="/system_dlkm" dev="dm-1" ino=38 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:system_dlkm_file:s0 tclass=dir permissive=0 app=br.com.musibox
+10-15 22:30:40.549  9736  9736 W mount   : type=1400 audit(0.0:2223): avc:  denied  { getattr } for  path="/apex/apex-info-list.xml" dev="tmpfs" ino=88 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:apex_info_file:s0 tclass=file permissive=0 app=br.com.musibox
+10-15 22:30:40.549  9736  9736 W mount   : type=1400 audit(0.0:2224): avc:  denied  { getattr } for  path="/linkerconfig" dev="tmpfs" ino=3 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:linkerconfig_file:s0 tclass=dir permissive=0 app=br.com.musibox
+10-15 22:30:40.549  9736  9736 W mount   : type=1400 audit(0.0:2225): avc:  denied  { getattr } for  path="/linkerconfig" dev="tmpfs" ino=3 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:linkerconfig_file:s0 tclass=dir permissive=0 app=br.com.musibox
+10-15 22:30:40.549  9736  9736 W mount   : type=1400 audit(0.0:2226): avc:  denied  { getattr } for  path="/data_mirror" dev="tmpfs" ino=1 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:mirror_data_file:s0 tclass=dir permissive=0 app=br.com.musibox
+10-15 22:30:40.553  9736  9736 W mount   : type=1400 audit(0.0:2227): avc:  denied  { getattr } for  path="/data/misc/profiles/cur/0/br.com.musibox" dev="dm-40" ino=49262 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:user_profile_data_file:s0 tclass=dir permissive=0 app=br.com.musibox
+10-15 22:30:40.553  9736  9736 W mount   : type=1400 audit(0.0:2228): avc:  denied  { getattr } for  path="/data/misc/profiles/ref/br.com.musibox" dev="dm-40" ino=49263 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:user_profile_data_file:s0 tclass=dir permissive=0 app=br.com.musibox
+10-15 22:30:40.553  9736  9736 W mount   : type=1400 audit(0.0:2229): avc:  denied  { search } for  name="block" dev="tmpfs" ino=12 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:block_device:s0 tclass=dir permissive=0 app=br.com.musibox
+10-15 22:33:06.163   521   540 W ziparchive: Unable to open '/data/app/~~-3ABTLEwTUn9wQO1dG4DjA==/br.com.musibox-EPshZ0Ra1yWdGCWB0YFuJQ==/base.dm': No such file or directory
+10-15 22:33:06.203   521   597 W InputManager-JNI: Input channel object 'a163ee9 Splash Screen br.com.musibox (client)' was disposed without first being removed with the input manager!
+10-15 22:33:06.421 10357 10357 W mount   : type=1400 audit(0.0:2503): avc:  denied  { getattr } for  path="/metadata" dev="vdd1" ino=2 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:metadata_file:s0 tclass=dir permissive=0 app=br.com.musibox
+10-15 22:33:06.437 10357 10357 W mount   : type=1400 audit(0.0:2504): avc:  denied  { getattr } for  path="/system_dlkm" dev="dm-1" ino=38 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:system_dlkm_file:s0 tclass=dir permissive=0 app=br.com.musibox
+10-15 22:33:06.445 10357 10357 W mount   : type=1400 audit(0.0:2505): avc:  denied  { getattr } for  path="/apex/apex-info-list.xml" dev="tmpfs" ino=88 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:apex_info_file:s0 tclass=file permissive=0 app=br.com.musibox
+10-15 22:33:06.453 10357 10357 W mount   : type=1400 audit(0.0:2506): avc:  denied  { getattr } for  path="/linkerconfig" dev="tmpfs" ino=3 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:linkerconfig_file:s0 tclass=dir permissive=0 app=br.com.musibox
+10-15 22:33:06.453 10357 10357 W mount   : type=1400 audit(0.0:2507): avc:  denied  { getattr } for  path="/linkerconfig" dev="tmpfs" ino=3 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:linkerconfig_file:s0 tclass=dir permissive=0 app=br.com.musibox
+10-15 22:33:06.453 10357 10357 W mount   : type=1400 audit(0.0:2508): avc:  denied  { getattr } for  path="/data_mirror" dev="tmpfs" ino=1 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:mirror_data_file:s0 tclass=dir permissive=0 app=br.com.musibox
+10-15 22:33:06.461 10357 10357 W mount   : type=1400 audit(0.0:2509): avc:  denied  { getattr } for  path="/data/misc/profiles/cur/0/br.com.musibox" dev="dm-40" ino=49262 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:user_profile_data_file:s0 tclass=dir permissive=0 app=br.com.musibox
+10-15 22:33:06.461 10357 10357 W mount   : type=1400 audit(0.0:2510): avc:  denied  { getattr } for  path="/data/misc/profiles/ref/br.com.musibox" dev="dm-40" ino=49263 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:user_profile_data_file:s0 tclass=dir permissive=0 app=br.com.musibox
+10-15 22:33:06.473 10357 10357 W mount   : type=1400 audit(0.0:2511): avc:  denied  { search } for  name="block" dev="tmpfs" ino=12 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:block_device:s0 tclass=dir permissive=0 app=br.com.musibox
+10-15 22:33:40.256   521  2456 W InputManager-JNI: Input channel object 'ede221 br.com.musibox/com.musibox.app.MainActivity (client)' was disposed without first being removed with the input manager!

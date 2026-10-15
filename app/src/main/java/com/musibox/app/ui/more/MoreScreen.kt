@@ -81,7 +81,7 @@ fun MoreScreen(nav: NavController) {
                                 .background(Mb.colors.accentGradient),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Icon(if (user == null) Icons.Rounded.CloudSync else Icons.Rounded.Person, null, tint = androidx.compose.ui.graphics.Color.White)
+                            Icon(if (user == null) Icons.Rounded.CloudSync else Icons.Rounded.Person, null, tint = Mb.colors.onAccent)
                             user?.photoUrl?.let { AsyncImage(it, null, Modifier.fillMaxSize().clip(CircleShape)) }
                         }
                         Spacer(Modifier.width(14.dp))
@@ -106,7 +106,7 @@ fun MoreScreen(nav: NavController) {
                     SettingDivider()
                     SettingItem(Icons.AutoMirrored.Rounded.QueueMusic, "Playlists", onClick = { nav.navigateTopLevel(Routes.library(4), restore = false) })
                     SettingDivider()
-                    SettingItem(Icons.Rounded.Favorite, "Favoritos", onClick = { nav.navigateTopLevel(Routes.library(5), restore = false) }, tint = androidx.compose.ui.graphics.Color(0xFFFF4D8D))
+                    SettingItem(Icons.Rounded.Favorite, "Favoritos", onClick = { nav.navigateTopLevel(Routes.library(5), restore = false) }, tint = androidx.compose.ui.graphics.Color(0xFF1FDF67))
                     SettingDivider()
                     SettingItem(Icons.AutoMirrored.Rounded.TrendingUp, "Mais tocadas", onClick = { nav.navigateTopLevel(Routes.library(7), restore = false) })
                     SettingDivider()

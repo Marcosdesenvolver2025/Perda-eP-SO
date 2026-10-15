@@ -469,7 +469,7 @@ private fun VaultPlayer(nav: NavController, initialId: String) {
                         .clickable { if (exo.isPlaying) exo.pause() else { if (exo.playbackState == Player.STATE_ENDED) exo.seekTo(0); exo.play() } },
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (isPlaying) "Pausar" else "Tocar", tint = Color.White, modifier = Modifier.size(38.dp))
+                    Icon(if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (isPlaying) "Pausar" else "Tocar", tint = Mb.colors.onAccent, modifier = Modifier.size(38.dp))
                 }
                 IconButton(onClick = {
                     val idx = list.indexOfFirst { it.id == currentId }

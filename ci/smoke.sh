@@ -66,7 +66,7 @@ launch
 
 step "Download completo (servidor local)"
 launch; $UI tapx "Início" 5; sleep 1
-$UI tapx "Baixar" 10; sleep 2; shot 09_baixar
+$UI tapx "Baixador" 10; sleep 2; shot 09_baixar
 launch --es download_url "http://10.0.2.2:8000/clipe_demo.mp4"
 $UI wait "Salvar em" 120; shot 10_opcoes
 $UI tapx "Música" 5
@@ -96,6 +96,7 @@ sleep 40
 step "Cofre: PIN, código de recuperação e recuperação"
 launch
 $UI tapx "Cofre" 10; sleep 2
+$UI tap "Criar PIN" 5; sleep 1
 for d in 1 2 3 4; do $UI tapx "$d" 3 >/dev/null; done
 sleep 1
 for d in 1 2 3 4; do $UI tapx "$d" 3 >/dev/null; done
@@ -117,7 +118,7 @@ $UI tap "clipe_demo" 5; sleep 5; shot 18_cofre_player
 adb shell input keyevent KEYCODE_BACK; sleep 2
 # Sai do cofre (bloqueia) e recupera o acesso com o código
 $UI tapx "Início" 10; sleep 2
-$UI tapx "Cofre" 10; sleep 2
+$UI tapx "Cofre" 10; sleep 2; shot 18a_cofre_bloqueado
 $UI tap "Esqueci o PIN" 10; sleep 1; shot 18b_esqueci_pin
 $UI tap "Usar código de recuperação" 10; sleep 2
 adb shell input text "$CODE"; sleep 1; shot 18b2_codigo_digitado

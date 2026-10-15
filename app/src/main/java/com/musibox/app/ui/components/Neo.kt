@@ -42,6 +42,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -58,31 +62,35 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.musibox.app.R
 
-/** Paleta do visual "neon" (fundo azul-marinho, vidro, bordas que brilham). */
+/** Paleta do visual MusiBox: fundo preto, cartões cinza-escuro e verde de destaque. */
 object Neo {
-    // Cores do logo do MusiBox: ciano, azul, roxo e magenta
-    val Cyan = Color(0xFF19E6F5)
-    val Blue = Color(0xFF2F7BFF)
-    val BlueDeep = Color(0xFF3A4BFF)
+    val Green = Color(0xFF1FDF67)
+    val Cyan = Green
+    val Blue = Green
+    val BlueDeep = Color(0xFF14A84A)
     val Purple = Color(0xFF8B3DFF)
     val Magenta = Color(0xFFE03DFF)
-    val Link = Color(0xFF3FD0FF)
-    val Artist = Color(0xFF9FB8FF)
-    val Text2 = Color(0xFFC3C9E8)
-    val GlassTop = Color(0xFF16164A)
-    val GlassBottom = Color(0xFF0B0B26)
-    val Glass = Brush.verticalGradient(listOf(GlassTop, GlassBottom))
-    val Edge = Brush.linearGradient(listOf(Color(0xFF3D4FA8), Color(0xFF22225A), Color(0xFF5B3399)))
-    val EdgeBright = Brush.linearGradient(listOf(Color(0xFF19C6FF), Color(0xFF3A4BFF), Color(0xFFB03DFF), Color(0xFFE03DFF)))
-    val Accent = Brush.linearGradient(listOf(Color(0xFF2F7BFF), Color(0xFF6A3DFF), Color(0xFFB03DFF)))
+    val Link = Green
+    val Artist = Color(0xFF9A9A9A)
+    val Text2 = Color(0xFFB3B3B3)
+    val OnGreen = Color(0xFF0A0A0A)
+    val Card = Color(0xFF1E1E1E)
+    val Line = Color(0xFF2A2A2A)
+    val GlassTop = Card
+    val GlassBottom = Card
+    val Glass: Brush = SolidColor(Card)
+    val Edge: Brush = SolidColor(Line)
+    val EdgeBright: Brush = SolidColor(Green)
+    val Accent: Brush = SolidColor(Green)
 }
 
-/** Fundo de vidro com borda suave. */
+/** Cartão cinza-escuro com borda fina (estilo do novo visual). */
 fun Modifier.neoGlass(shape: Shape, bright: Boolean = false): Modifier = this
     .clip(shape)
-    .background(Neo.Glass)
+    .background(Neo.Card)
     .border(1.dp, if (bright) Neo.EdgeBright else Neo.Edge, shape)
 
+/** Botão de ícone simples (sem fundo), como no topo do app. */
 @Composable
 fun GlassCircleButton(icon: ImageVector, description: String, onClick: () -> Unit, size: Dp = 46.dp, dot: Boolean = false) {
     Box(contentAlignment = Alignment.Center) {
@@ -90,21 +98,19 @@ fun GlassCircleButton(icon: ImageVector, description: String, onClick: () -> Uni
             Modifier
                 .size(size)
                 .bounceClick(pressed = 0.86f, shape = CircleShape, onClick = onClick)
-                .neoGlass(CircleShape)
                 .semantics { contentDescription = description },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(icon, null, tint = Color.White, modifier = Modifier.size(size * 0.48f))
+            Icon(icon, null, tint = Color.White, modifier = Modifier.size(size * 0.6f))
         }
         if (dot) {
             Box(
                 Modifier
                     .align(Alignment.TopEnd)
-                    .offset(x = (-2).dp, y = 3.dp)
-                    .size(10.dp)
-                    .shadow(6.dp, CircleShape, ambientColor = Neo.Blue, spotColor = Neo.Blue)
+                    .offset(x = (-8).dp, y = 9.dp)
+                    .size(9.dp)
                     .clip(CircleShape)
-                    .background(Neo.Blue),
+                    .background(Neo.Green),
             )
         }
     }
@@ -123,10 +129,10 @@ fun BrandHeader(onSearch: () -> Unit, onBell: () -> Unit, bellDot: Boolean, onSe
         val enter = remember { Animatable(0f) }
         LaunchedEffect(Unit) { enter.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 180f)) }
         Image(
-            painterResource(R.drawable.logo_note3d),
+            painterResource(R.drawable.ic_brand_note),
             null,
             Modifier
-                .size(50.dp)
+                .size(52.dp)
                 .graphicsLayer {
                     val v = enter.value
                     scaleX = 0.5f + 0.5f * v
@@ -148,7 +154,7 @@ fun BrandHeader(onSearch: () -> Unit, onBell: () -> Unit, bellDot: Boolean, onSe
             Text(
                 buildAnnotatedString {
                     withStyle(SpanStyle(color = Color.White)) { append("Musi") }
-                    withStyle(SpanStyle(color = Color(0xFF1E9BFF))) { append("Box") }
+                    withStyle(SpanStyle(color = Neo.Green)) { append("Box") }
                 },
                 fontSize = 28.sp,
                 fontWeight = FontWeight.ExtraBold,
@@ -163,10 +169,10 @@ fun BrandHeader(onSearch: () -> Unit, onBell: () -> Unit, bellDot: Boolean, onSe
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            GlassCircleButton(Icons.Rounded.Search, "Pesquisar", onSearch)
-            GlassCircleButton(Icons.Rounded.NotificationsNone, "Avisos e downloads", onBell, dot = bellDot)
-            GlassCircleButton(Icons.Rounded.Settings, "Configurações", onSettings)
+        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+            GlassCircleButton(Icons.Outlined.Search, "Pesquisar", onSearch)
+            GlassCircleButton(Icons.Outlined.Notifications, "Avisos e downloads", onBell, dot = bellDot)
+            GlassCircleButton(Icons.Outlined.Settings, "Configurações", onSettings)
         }
     }
 }
@@ -183,7 +189,7 @@ fun NeoSearchPill(placeholder: String, onClick: () -> Unit, modifier: Modifier =
             .padding(start = 18.dp, end = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Rounded.Search, null, tint = Neo.Text2, modifier = Modifier.size(24.dp))
+        Icon(Icons.Outlined.Search, null, tint = Color.White, modifier = Modifier.size(26.dp))
         Spacer(Modifier.width(12.dp))
         Text(placeholder, color = Neo.Text2, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
         trailing?.invoke(this)
@@ -192,42 +198,43 @@ fun NeoSearchPill(placeholder: String, onClick: () -> Unit, modifier: Modifier =
 
 @Composable
 fun NeoChip(label: String, icon: ImageVector, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val shape = RoundedCornerShape(22.dp)
-    val on by animateFloatAsState(if (selected) 1f else 0f, tween(260), label = "chip")
+    val shape = RoundedCornerShape(24.dp)
+    val on by animateFloatAsState(if (selected) 1f else 0f, tween(220), label = "chip")
     Box(
         modifier
-            .height(42.dp)
+            .height(44.dp)
             .bounceClick(pressed = 0.92f, shape = shape, onClick = onClick)
-            .neoGlass(shape),
+            .background(Color(0xFF181818))
+            .border(1.dp, Neo.Line, shape),
         contentAlignment = Alignment.Center,
     ) {
-        // camada azul que acende quando o filtro é escolhido
+        // verde acende quando o filtro é escolhido
         Box(
             Modifier
                 .matchParentSize()
                 .graphicsLayer { alpha = on }
-                .background(Brush.horizontalGradient(listOf(Color(0xFF2F7BFF), Color(0xFF7A3DFF), Color(0xFFC23DFF))))
-                .border(1.dp, Color(0xFFB9A6FF), shape),
+                .background(Neo.Green),
         )
+        val content = lerp(Color.White, Neo.OnGreen, on)
         Row(
-            Modifier.padding(horizontal = 16.dp),
+            Modifier.padding(horizontal = 18.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
         ) {
             Icon(
                 icon,
                 null,
-                tint = lerp(Color(0xFF8FC3FF), Color.White, on),
+                tint = content,
                 modifier = Modifier
-                    .size(20.dp)
+                    .size(21.dp)
                     .graphicsLayer {
                         val s = 1f + 0.15f * on * (1f - on) * 4f
                         scaleX = s
                         scaleY = s
                     },
             )
-            Spacer(Modifier.width(8.dp))
-            Text(label, color = Color.White, style = MaterialTheme.typography.labelLarge, maxLines = 1)
+            Spacer(Modifier.width(9.dp))
+            Text(label, color = content, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, maxLines = 1)
         }
     }
 }

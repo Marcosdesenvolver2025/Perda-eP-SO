@@ -33,6 +33,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Favorite
@@ -215,7 +216,7 @@ fun HomeScreen(nav: NavController) {
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     item { NeoChip("Todas", Icons.Rounded.GridView, filter == HomeFilter.ALL, { filter = HomeFilter.ALL }) }
-                    item { NeoChip("Cantores", Icons.Rounded.FolderSpecial, filter == HomeFilter.SINGERS, { filter = HomeFilter.SINGERS }) }
+                    item { NeoChip("Cantores", Icons.Outlined.Person, filter == HomeFilter.SINGERS, { filter = HomeFilter.SINGERS }) }
                     item { NeoChip("Favoritas", Icons.Rounded.Favorite, filter == HomeFilter.FAVORITES, { filter = HomeFilter.FAVORITES }) }
                     item { NeoChip("Playlists", Icons.AutoMirrored.Rounded.QueueMusic, filter == HomeFilter.PLAYLISTS, { filter = HomeFilter.PLAYLISTS }) }
                     item { NeoChip("Áudios", Icons.Rounded.GraphicEq, filter == HomeFilter.AUDIOS, { filter = HomeFilter.AUDIOS }) }
@@ -431,8 +432,8 @@ private fun ListHeader(title: String, subtitle: String?, onShuffle: () -> Unit, 
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
-            if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Neo.Text2)
+            Text(title, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = Neo.Text2)
         }
         if (onMore != null) {
             Text(
@@ -446,7 +447,7 @@ private fun ListHeader(title: String, subtitle: String?, onShuffle: () -> Unit, 
             )
         }
         SmallRound(Icons.Rounded.Shuffle, "Aleatório", onShuffle)
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(10.dp))
         SmallRound(Icons.Rounded.PlayArrow, "Tocar tudo", onPlay, filled = true)
     }
 }
@@ -455,15 +456,15 @@ private fun ListHeader(title: String, subtitle: String?, onShuffle: () -> Unit, 
 private fun SmallRound(icon: ImageVector, description: String, onClick: () -> Unit, filled: Boolean = false) {
     Box(
         Modifier
-            .size(40.dp)
+            .size(if (filled) 52.dp else 46.dp)
             .bounceClick(pressed = 0.85f, shape = CircleShape, onClick = onClick)
             .then(
-                if (filled) Modifier.clip(CircleShape).background(Neo.Accent)
-                else Modifier.neoGlass(CircleShape),
+                if (filled) Modifier.clip(CircleShape).background(Neo.Green)
+                else Modifier.clip(CircleShape).background(Color(0xFF212121)),
             ),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, description, tint = Color.White, modifier = Modifier.size(22.dp))
+        Icon(icon, description, tint = if (filled) Neo.OnGreen else Color.White, modifier = Modifier.size(24.dp))
     }
 }
 
@@ -482,11 +483,11 @@ private fun PlaylistRow(name: String, subtitle: String, isNew: Boolean = false, 
                 .size(56.dp)
                 .then(
                     if (isNew) Modifier.neoGlass(shape)
-                    else Modifier.clip(shape).background(Brush.linearGradient(listOf(Color(0xFF2F7BFF), Color(0xFF8B5CFF)))),
+                    else Modifier.clip(shape).background(Brush.linearGradient(listOf(Color(0xFF1FDF67), Color(0xFF14A84A)))),
                 ),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(if (isNew) Icons.Rounded.Add else Icons.AutoMirrored.Rounded.QueueMusic, null, tint = if (isNew) Neo.Link else Color.White)
+            Icon(if (isNew) Icons.Rounded.Add else Icons.AutoMirrored.Rounded.QueueMusic, null, tint = if (isNew) Neo.Link else Neo.OnGreen)
         }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
@@ -525,12 +526,9 @@ private fun buildSingerFolders(songs: List<Song>): List<SingerFolder> {
 const val UNKNOWN_SINGER = "Artista desconhecido"
 
 private val FOLDER_COLORS = listOf(
-    listOf(Color(0xFF2F7BFF), Color(0xFF8B3DFF)),
-    listOf(Color(0xFFFF3D7F), Color(0xFFFF8A3D)),
-    listOf(Color(0xFF00C2A8), Color(0xFF2F7BFF)),
-    listOf(Color(0xFFB03DFF), Color(0xFFFF3DB8)),
-    listOf(Color(0xFFFFB300), Color(0xFFFF4D4D)),
-    listOf(Color(0xFF00B4FF), Color(0xFF00E08A)),
+    listOf(Color(0xFF1FDF67), Color(0xFF14A84A)),
+    listOf(Color(0xFF2BEA7A), Color(0xFF11923F)),
+    listOf(Color(0xFF1FDF67), Color(0xFF0E7A35)),
 )
 
 /** Pasta 3D com a capa de uma música do cantor saindo de dentro. */

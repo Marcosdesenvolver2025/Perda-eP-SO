@@ -233,9 +233,9 @@ fun HeaderButton(icon: androidx.compose.ui.graphics.vector.ImageVector, label: S
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, null, tint = if (primary) Color.White else MaterialTheme.colorScheme.onSurface)
+        Icon(icon, null, tint = if (primary) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
         Spacer(Modifier.width(8.dp))
-        Text(label, color = if (primary) Color.White else MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.labelLarge)
+        Text(label, color = if (primary) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.labelLarge)
     }
 }
 
@@ -402,7 +402,7 @@ private fun PlaylistsTab(vm: LibraryViewModel, nav: NavController) {
                             .clip(RoundedCornerShape(14.dp))
                             .background(Mb.colors.accentGradient),
                         contentAlignment = Alignment.Center,
-                    ) { Icon(Icons.AutoMirrored.Rounded.QueueMusic, null, tint = Color.White) }
+                    ) { Icon(Icons.AutoMirrored.Rounded.QueueMusic, null, tint = Mb.colors.onAccent) }
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
                         Text(p.playlist.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)

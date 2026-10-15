@@ -106,9 +106,11 @@ fun TrackRow(
     badge: (@Composable () -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     trailingText: String? = null,
+    divider: Boolean = true,
 ) {
+  Column(modifier.fillMaxWidth()) {
     Row(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
@@ -126,7 +128,7 @@ fun TrackRow(
                 title,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
-                color = if (isCurrent) Neo.Cyan else Color.White,
+                color = if (isCurrent) Neo.Green else Color.White,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -144,7 +146,7 @@ fun TrackRow(
             Equalizer(isPlaying)
         } else if (trailingText != null) {
             Spacer(Modifier.width(8.dp))
-            Text(trailingText, style = MaterialTheme.typography.bodySmall, color = Color(0xFFB7D8F5), maxLines = 1)
+            Text(trailingText, style = MaterialTheme.typography.bodySmall, color = Color(0xFFB3B3B3), maxLines = 1)
         }
         if (onPlayPause != null) {
             Spacer(Modifier.width(10.dp))
@@ -153,20 +155,28 @@ fun TrackRow(
                     .size(42.dp)
                     .bounceClick(enabled = available, pressed = 0.82f, shape = CircleShape, onClick = onPlayPause)
                     .clip(CircleShape)
-                    .background(if (isCurrent) Neo.Accent else Neo.Glass)
-                    .border(1.dp, Color.White.copy(alpha = if (isCurrent) 0.5f else 0.22f), CircleShape),
+                    .background(if (isCurrent) Neo.Green else Color(0xFF242424)),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     if (isCurrent && isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                     if (isCurrent && isPlaying) "Pausar" else "Tocar",
-                    tint = Color.White,
+                    tint = if (isCurrent) Neo.OnGreen else Color.White,
                     modifier = Modifier.size(24.dp),
                 )
             }
         }
         OverflowMenu(menu)
     }
+    // Linha fina separando as músicas (como no novo visual)
+    if (divider) {
+        HorizontalDivider(
+            Modifier.padding(start = artSize + 30.dp, end = 12.dp),
+            color = Color(0xFF242424),
+            thickness = 1.dp,
+        )
+    }
+  }
 }
 
 // ---------------- Configurações ----------------

@@ -3,6 +3,14 @@ package com.musibox.app.ui.vault
 import android.app.Activity
 import android.view.WindowManager
 import androidx.compose.foundation.background
+import androidx.compose.material.icons.rounded.Dialpad
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -93,7 +101,9 @@ fun VaultGate(content: @Composable () -> Unit) {
         onDispose { if (secure) SecureFlag.release(activity) }
     }
 
+    var setupStarted by remember { mutableStateOf(false) }
     when {
+        !pinSet && !setupStarted -> VaultIntro(onCreate = { setupStarted = true })
         !pinSet -> PinSetupFlow(
             title = "Proteja seu cofre",
             onDone = {
@@ -269,9 +279,10 @@ fun PinUnlock(biometricEnabled: Boolean, onUnlocked: () -> Unit, onVaultReset: (
         }
     }
 
-    // Só pede a digital quando o cofre está de fato na tela (não ao passar por ele no deslize).
-    val pageActive = com.musibox.app.ui.main.LocalPageActive.current
-    LaunchedEffect(pageActive) { if (pageActive && biometricAvailable && lockout == 0L) promptBiometric() }
+    // Nada abre sozinho: a digital só aparece quando a pessoa toca no ícone,
+    // e o teclado do PIN só quando toca em "Digitar senha".
+    var typing by rememberSaveable { mutableStateOf(false) }
+    BackHandler(enabled = typing && !forgot && !resettingPin) { typing = false; entry = ""; error = null }
     LaunchedEffect(lockout) {
         while (lockout > 0) {
             delay(1000)
@@ -313,6 +324,18 @@ fun PinUnlock(biometricEnabled: Boolean, onUnlocked: () -> Unit, onVaultReset: (
                 onDismiss = { wipeDialog = false },
             )
         }
+        return
+    }
+
+    if (!typing) {
+        VaultLockedChooser(
+            biometricAvailable = biometricAvailable,
+            lockoutSeconds = if (lockout > 0) (lockout / 1000) + 1 else 0,
+            error = error,
+            onFingerprint = promptBiometric,
+            onPin = { typing = true; error = null },
+            onForgot = { forgot = true },
+        )
         return
     }
 
@@ -409,6 +432,105 @@ private fun IconCircle(icon: androidx.compose.ui.graphics.vector.ImageVector) {
             .background(Mb.colors.vaultGradient),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, null, tint = Color.White, modifier = Modifier.size(42.dp))
+        Icon(icon, null, tint = Mb.colors.onAccent, modifier = Modifier.size(42.dp))
     }
 }
+
+/** Primeira vez no cofre: explica e só cria o PIN quando a pessoa tocar no botão. */
+@Composable
+private fun VaultIntro(onCreate: () -> Unit) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Spacer(Modifier.height(24.dp))
+        IconCircle(Icons.Rounded.Shield)
+        Spacer(Modifier.height(20.dp))
+        Text("Cofre privado", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Fotos, vídeos e músicas guardados aqui ficam criptografados e escondidos da galeria. Crie um PIN de 4 dígitos para começar.",
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(28.dp))
+        GradientButton("Criar PIN", onCreate, icon = Icons.Rounded.Key)
+    }
+}
+
+/**
+ * Cofre bloqueado: mostra as opções e espera a pessoa escolher.
+ * A digital só é pedida ao tocar no ícone; o PIN só ao tocar em "Digitar senha".
+ */
+@Composable
+private fun VaultLockedChooser(
+    biometricAvailable: Boolean,
+    lockoutSeconds: Long,
+    error: String?,
+    onFingerprint: () -> Unit,
+    onPin: () -> Unit,
+    onForgot: () -> Unit,
+) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 28.dp, vertical = 20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Spacer(Modifier.height(24.dp))
+        IconCircle(Icons.Rounded.Lock)
+        Spacer(Modifier.height(18.dp))
+        Text("Cofre bloqueado", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(6.dp))
+        Text(
+            if (lockoutSeconds > 0) "Muitas tentativas. Tente de novo em $lockoutSeconds s."
+            else "Escolha como desbloquear.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        if (error != null) {
+            Spacer(Modifier.height(8.dp))
+            Text(error, color = Mb.colors.danger, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+        }
+        Spacer(Modifier.height(30.dp))
+        if (biometricAvailable) {
+            Box(
+                Modifier
+                    .size(96.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF1E1E1E))
+                    .border(2.dp, Mb.colors.vault, CircleShape)
+                    .clickable(onClick = onFingerprint),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Rounded.Fingerprint, "Usar digital", tint = Mb.colors.vault, modifier = Modifier.size(58.dp))
+            }
+            Spacer(Modifier.height(10.dp))
+            Text("Toque para usar a digital", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+            Spacer(Modifier.height(26.dp))
+        }
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .height(54.dp)
+                .clip(RoundedCornerShape(27.dp))
+                .border(1.5.dp, Color(0xFF3A3A3A), RoundedCornerShape(27.dp))
+                .clickable(onClick = onPin),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Rounded.Dialpad, null, tint = Color.White)
+            Spacer(Modifier.width(10.dp))
+            Text("Digitar senha", color = Color.White, style = MaterialTheme.typography.titleMedium)
+        }
+        Spacer(Modifier.height(10.dp))
+        TextButton(onClick = onForgot) { Text("Esqueci o PIN", color = Mb.colors.vault) }
+    }
+}
+

@@ -221,9 +221,9 @@ fun LoginContent(
                             if (emailValid) {
                                 Spacer(Modifier.height(12.dp))
                                 PillButton(onClick = { message = null; stage = LoginStage.PASSWORD }, enabled = busy == null, brush = Mb.colors.accentGradient) {
-                                    Icon(Icons.Rounded.Email, null, tint = Color.White)
+                                    Icon(Icons.Rounded.Email, null, tint = Mb.colors.onAccent)
                                     Spacer(Modifier.width(10.dp))
-                                    Text("Continuar com e-mail", color = Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                                    Text("Continuar com e-mail", color = Mb.colors.onAccent, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                                 }
                             }
                         }
@@ -295,7 +295,7 @@ fun LoginContent(
                             ) {
                                 Text(
                                     if (creating) "Criar conta" else "Entrar",
-                                    color = Color.White,
+                                    color = Mb.colors.onAccent,
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold,
                                 )
@@ -317,7 +317,7 @@ fun LoginContent(
                             Text(info.orEmpty(), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
                             Spacer(Modifier.height(16.dp))
                             PillButton(onClick = { stage = LoginStage.PASSWORD; creating = false }, brush = Mb.colors.accentGradient) {
-                                Text("Voltar para entrar", color = Color.White, style = MaterialTheme.typography.titleMedium)
+                                Text("Voltar para entrar", color = Mb.colors.onAccent, style = MaterialTheme.typography.titleMedium)
                             }
                         }
                     }

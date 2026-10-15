@@ -139,7 +139,7 @@ fun DownloadRow(d: DownloadEntity, actions: DownloadActions, modifier: Modifier 
                                 .clip(CircleShape)
                                 .background(Mb.colors.vault),
                             contentAlignment = Alignment.Center,
-                        ) { Icon(Icons.Rounded.Lock, "No cofre", tint = Color.White, modifier = Modifier.size(13.dp)) }
+                        ) { Icon(Icons.Rounded.Lock, "No cofre", tint = Mb.colors.onAccent, modifier = Modifier.size(13.dp)) }
                     } else if (platform != Platform.OTHER && platform != Platform.LOCAL) {
                         PlatformIcon(platform, 22.dp)
                     }

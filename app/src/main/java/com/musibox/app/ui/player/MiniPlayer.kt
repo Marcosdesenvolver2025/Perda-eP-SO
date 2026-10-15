@@ -115,10 +115,10 @@ fun MiniPlayer(
         Column(
             Modifier
                 .fillMaxWidth()
-                .shadow(14.dp, shape, ambientColor = Color(0xFF6A3DFF), spotColor = Color(0xFF6A3DFF))
+                .shadow(10.dp, shape)
                 .clip(shape)
-                .background(Brush.verticalGradient(listOf(Color(0xFF18184C), Color(0xFF0A0A26))))
-                .border(1.dp, Brush.linearGradient(listOf(Color(0xFF19C6FF), Color(0xFF3A4BFF), Color(0xFFB03DFF))), shape)
+                .background(Brush.verticalGradient(listOf(Color(0xFF1E1E1E), Color(0xFF1E1E1E))))
+                .border(1.dp, Color(0xFF2E2E2E), shape)
                 .clickable(onClick = onOpen),
         ) {
             Row(
@@ -155,7 +155,7 @@ fun MiniPlayer(
                     Icon(
                         if (isFav) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                         if (isFav) "Remover dos favoritos" else "Favoritar",
-                        tint = if (isFav) Color(0xFFFF4D8D) else Color(0xFF9FC8F5),
+                        tint = if (isFav) Color(0xFF1FDF67) else Color(0xFFFFFFFF),
                         modifier = Modifier.size(26.dp),
                     )
                 }
@@ -174,13 +174,11 @@ fun MiniPlayer(
                 Box(
                     Modifier
                         .padding(start = 2.dp, end = 4.dp)
-                        .size(32.dp)
-                        .bounceClick(pressed = 0.8f, shape = CircleShape, onClick = onClose)
-                        .background(Color.White.copy(alpha = 0.08f))
-                        .border(1.dp, Color.White.copy(alpha = 0.18f), CircleShape),
+                        .size(40.dp)
+                        .bounceClick(pressed = 0.8f, shape = CircleShape, onClick = onClose),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.Rounded.Close, "Fechar player", tint = Color(0xFFDDE6F3), modifier = Modifier.size(18.dp))
+                    Icon(Icons.Rounded.Close, "Fechar player", tint = Color.White, modifier = Modifier.size(24.dp))
                 }
             }
             val target = if (state.durationMs > 0) (state.positionMs.toFloat() / state.durationMs).coerceIn(0f, 1f) else 0f
@@ -191,14 +189,14 @@ fun MiniPlayer(
                     .fillMaxWidth()
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(Color(0xFF26265A)),
+                    .background(Color(0xFF3F3F3F)),
             ) {
                 Box(
                     Modifier
                         .fillMaxWidth(progress)
                         .fillMaxHeight()
                         .clip(RoundedCornerShape(2.dp))
-                        .background(Brush.horizontalGradient(listOf(Color(0xFF19C6FF), Color(0xFF6A3DFF), Color(0xFFE03DFF)))),
+                        .background(Color(0xFF1FDF67)),
                 )
             }
         }

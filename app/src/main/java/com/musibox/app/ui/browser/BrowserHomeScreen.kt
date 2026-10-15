@@ -392,47 +392,35 @@ private fun BrowserChip(label: String, icon: androidx.compose.ui.graphics.vector
     }
 }
 
-/** Cartão "Explore a web" com o globo 3D. */
+/** Cartão "Explore a web": abre a internet (Google) numa aba nova. */
 @Composable
 private fun ExploreCard(onClick: () -> Unit) {
-    val shape = RoundedCornerShape(26.dp)
-    Box(
+    val shape = RoundedCornerShape(22.dp)
+    Row(
         Modifier
             .padding(horizontal = 16.dp, vertical = 10.dp)
             .fillMaxWidth()
-            .height(156.dp)
-            .shadow(18.dp, shape, ambientColor = Color(0xFF2F5BFF), spotColor = Color(0xFF2F5BFF))
-            .clip(shape)
-            .background(Brush.linearGradient(listOf(Color(0xFF0A2C8A), Color(0xFF071B66), Color(0xFF0B1550))))
-            .border(1.2.dp, Brush.linearGradient(listOf(Color(0xFF2F7BFF), Color(0xFF1E3A9A), Color(0xFFB04DFF))), shape)
-            .clickable(onClick = onClick),
+            .height(128.dp)
+            .bounceClick(pressed = 0.97f, shape = shape, onClick = onClick)
+            .background(Color(0xFF1E1E1E))
+            .border(1.dp, Color(0xFF2A2A2A), shape)
+            .padding(horizontal = 20.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Image(
-            painterResource(R.drawable.hero_globe),
-            null,
-            contentScale = ContentScale.Crop,
-            alignment = Alignment.CenterEnd,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .fillMaxHeight()
-                .fillMaxWidth(0.55f)
-                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                .drawWithContent {
-                    drawContent()
-                    drawRect(
-                        Brush.horizontalGradient(0f to Color.Transparent, 0.3f to Color.Black, 1f to Color.Black),
-                        blendMode = BlendMode.DstIn,
-                    )
-                },
-        )
-        Column(
-            Modifier
-                .align(Alignment.CenterStart)
-                .padding(start = 22.dp, end = 150.dp),
-        ) {
-            Text("Explore a web", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1)
+        Column(Modifier.weight(1f)) {
+            Text("Explore a web", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1)
             Spacer(Modifier.height(4.dp))
-            Text("Navegue e pesquise na internet, como no Chrome.", fontSize = 15.sp, color = Color(0xFFD2DCF0), maxLines = 2)
+            Text("Navegue e pesquise na internet, como no Chrome.", fontSize = 14.sp, color = Neo.Text2, maxLines = 2)
+        }
+        Spacer(Modifier.width(12.dp))
+        Box(
+            Modifier
+                .size(72.dp)
+                .clip(CircleShape)
+                .background(Neo.Green),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Rounded.Public, null, tint = Neo.OnGreen, modifier = Modifier.size(44.dp))
         }
     }
 }
@@ -469,10 +457,10 @@ private fun LetterIcon(name: String, size: androidx.compose.ui.unit.Dp) {
         Modifier
             .size(size)
             .clip(RoundedCornerShape(size * 0.28f))
-            .background(Brush.linearGradient(listOf(Color(0xFF2F7BFF), Color(0xFF8B5CFF)))),
+            .background(Brush.linearGradient(listOf(Color(0xFF1FDF67), Color(0xFF14A84A)))),
         contentAlignment = Alignment.Center,
     ) {
-        Text(name.trim().take(1).uppercase().ifBlank { "•" }, color = Color.White, fontWeight = FontWeight.Black, fontSize = (size.value * 0.46f).sp)
+        Text(name.trim().take(1).uppercase().ifBlank { "•" }, color = Neo.OnGreen, fontWeight = FontWeight.Black, fontSize = (size.value * 0.46f).sp)
     }
 }
 

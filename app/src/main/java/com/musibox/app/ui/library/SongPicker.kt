@@ -205,7 +205,7 @@ fun SongPickerScreen(nav: NavController, playlistId: String) {
 
 @Composable
 private fun PickRow(song: Song, checked: Boolean, locked: Boolean, onToggle: () -> Unit) {
-    val bg by animateColorAsState(if (checked && !locked) Color(0x332F7BFF) else Color.Transparent, label = "pickBg")
+    val bg by animateColorAsState(if (checked && !locked) Color(0x331FDF67) else Color.Transparent, label = "pickBg")
     val check by animateFloatAsState(if (checked) 1f else 0f, spring(dampingRatio = 0.5f, stiffness = 500f), label = "pickCheck")
     Row(
         Modifier
@@ -241,7 +241,7 @@ private fun PickRow(song: Song, checked: Boolean, locked: Boolean, onToggle: () 
             Icon(
                 Icons.Rounded.Check,
                 null,
-                tint = Color.White,
+                tint = if (locked) Color.White else Neo.OnGreen,
                 modifier = Modifier
                     .size(18.dp)
                     .graphicsLayer {

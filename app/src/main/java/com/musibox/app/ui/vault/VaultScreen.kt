@@ -659,9 +659,9 @@ private fun AddFab(modifier: Modifier, open: Boolean, onToggle: () -> Unit, onPi
                             .padding(horizontal = 20.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(t.icon, null, tint = Color.White)
+                        Icon(t.icon, null, tint = Mb.colors.onAccent)
                         Spacer(Modifier.width(12.dp))
-                        Text(t.label.removeSuffix("s").let { if (t.category == VaultCategory.AUDIO) "Áudio" else it }, color = Color.White, style = MaterialTheme.typography.titleSmall)
+                        Text(t.label.removeSuffix("s").let { if (t.category == VaultCategory.AUDIO) "Áudio" else it }, color = Mb.colors.onAccent, style = MaterialTheme.typography.titleSmall)
                     }
                 }
             }
@@ -675,10 +675,10 @@ private fun AddFab(modifier: Modifier, open: Boolean, onToggle: () -> Unit, onPi
                 .padding(horizontal = 20.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(if (open) Icons.Rounded.Close else Icons.Rounded.Add, null, tint = Color.White)
+            Icon(if (open) Icons.Rounded.Close else Icons.Rounded.Add, null, tint = Mb.colors.onAccent)
             if (!open) {
                 Spacer(Modifier.width(8.dp))
-                Text("ADICIONAR", color = Color.White, style = MaterialTheme.typography.titleSmall)
+                Text("ADICIONAR", color = Mb.colors.onAccent, style = MaterialTheme.typography.titleSmall)
             }
         }
     }

@@ -552,9 +552,9 @@ private fun DownloadFab(active: Boolean, modifier: Modifier = Modifier, onClick:
             .padding(horizontal = if (active) 22.dp else 16.dp, vertical = if (active) 16.dp else 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Rounded.Download, null, tint = Color.White, modifier = Modifier.size(if (active) 24.dp else 20.dp))
+        Icon(Icons.Rounded.Download, null, tint = if (active) Mb.colors.onAccent else Color.White, modifier = Modifier.size(if (active) 24.dp else 20.dp))
         Spacer(Modifier.width(8.dp))
-        Text("Baixar", color = Color.White, style = if (active) MaterialTheme.typography.titleMedium else MaterialTheme.typography.labelLarge)
+        Text("Baixar", color = if (active) Mb.colors.onAccent else Color.White, style = if (active) MaterialTheme.typography.titleMedium else MaterialTheme.typography.labelLarge)
     }
 }
 

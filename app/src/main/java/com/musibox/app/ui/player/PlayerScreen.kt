@@ -196,7 +196,7 @@ fun PlayerScreen(nav: NavController) {
                     Icon(
                         if (isFav) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                         if (isFav) "Remover dos favoritos" else "Favoritar",
-                        tint = if (isFav) Color(0xFFFF4D8D) else MaterialTheme.colorScheme.onSurface,
+                        tint = if (isFav) Color(0xFF1FDF67) else MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(30.dp),
                     )
                 }
@@ -251,7 +251,7 @@ fun PlayerScreen(nav: NavController) {
                     Icon(
                         if (state.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                         if (state.isPlaying) "Pausar" else "Tocar",
-                        tint = Color.White,
+                        tint = Mb.colors.onAccent,
                         modifier = Modifier.size(44.dp),
                     )
                 }
@@ -388,7 +388,7 @@ private fun HoloArtwork(model: Any, tilt: State<Offset>) {
                 }
                 .shadow(30.dp, shape, ambientColor = glow, spotColor = glow)
                 .clip(shape)
-                .border(1.dp, Brush.linearGradient(listOf(Color(0x881EC8FF), Color.White.copy(alpha = 0.25f), Color(0x889B6BFF))), shape),
+                .border(1.dp, Brush.linearGradient(listOf(Color(0x881FDF67), Color.White.copy(alpha = 0.25f), Color(0x8814A84A))), shape),
         ) {
             Artwork(model, Modifier.fillMaxSize(), corner = 28.dp, fallbackIcon = Icons.Rounded.Headphones)
             // brilho que acompanha a inclinação (lido só no desenho)

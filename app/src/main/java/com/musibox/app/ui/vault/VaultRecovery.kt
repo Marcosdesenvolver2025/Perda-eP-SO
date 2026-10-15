@@ -356,7 +356,7 @@ fun ForgotPinPanel(
                 .clip(CircleShape)
                 .background(Mb.colors.vaultGradient),
             contentAlignment = Alignment.Center,
-        ) { Icon(Icons.Rounded.LockReset, null, tint = Color.White, modifier = Modifier.size(42.dp)) }
+        ) { Icon(Icons.Rounded.LockReset, null, tint = Mb.colors.onAccent, modifier = Modifier.size(42.dp)) }
         Spacer(Modifier.height(16.dp))
 
         if (mode == ForgotMode.CODE) {

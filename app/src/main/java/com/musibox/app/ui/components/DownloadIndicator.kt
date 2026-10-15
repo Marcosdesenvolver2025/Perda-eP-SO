@@ -89,7 +89,7 @@ fun DownloadIndicator(visible: Boolean, onOpen: () -> Unit) {
                 CircularProgressIndicator(
                     progress = { progress },
                     modifier = Modifier.size(34.dp),
-                    color = Color(0xFF1EC8FF),
+                    color = Color(0xFF1FDF67),
                     trackColor = Color.White.copy(alpha = 0.15f),
                     strokeWidth = 3.dp,
                 )
@@ -112,7 +112,7 @@ fun DownloadIndicator(visible: Boolean, onOpen: () -> Unit) {
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            Text("Ver", color = Color(0xFF1EC8FF), style = MaterialTheme.typography.labelLarge)
+            Text("Ver", color = Color(0xFF1FDF67), style = MaterialTheme.typography.labelLarge)
         }
     }
 }

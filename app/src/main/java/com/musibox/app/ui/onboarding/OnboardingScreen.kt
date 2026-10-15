@@ -129,7 +129,7 @@ private fun IntroStep(onNext: () -> Unit) {
             "Baixe de qualquer site", "YouTube, TikTok, Instagram, Kwai e outros: compartilhe o link ou use o navegador do app e toque em Baixar."),
         Slide(Icons.Rounded.Lock, Brush.linearGradient(listOf(MbPalette.Purple, Color(0xFF4F5BFF))),
             "Cofre privado", "Fotos, vídeos e arquivos criptografados, protegidos por PIN, digital e código de recuperação."),
-        Slide(Icons.Rounded.CloudSync, Brush.linearGradient(listOf(Color(0xFF2ECC71), Color(0xFF1E8BFF))),
+        Slide(Icons.Rounded.CloudSync, Brush.linearGradient(listOf(Color(0xFF2ECC71), Color(0xFF1FDF67))),
             "Sua conta guarda tudo", "Entre com o Google e suas playlists, favoritos e configurações voltam até depois de reinstalar."),
     )
     val pager = rememberPagerState { slides.size }
@@ -201,7 +201,7 @@ private fun HoloOrb(slide: Slide) {
         Canvas(Modifier.fillMaxSize()) {
             val r = size.minDimension / 2
             // halo
-            drawCircle(Brush.radialGradient(listOf(Color(0x551EC8FF), Color.Transparent), radius = r), radius = r)
+            drawCircle(Brush.radialGradient(listOf(Color(0x551FDF67), Color.Transparent), radius = r), radius = r)
         }
         // anel inclinado (perspectiva)
         Canvas(

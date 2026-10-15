@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="mb_background">#07090F</color>
-    <color name="mb_launcher_background">#0A1022</color>
+    <color name="mb_background">#121212</color>
+    <color name="mb_launcher_background">#181818</color>
 
     <style name="Theme.MusiBox" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/mb_background</item>

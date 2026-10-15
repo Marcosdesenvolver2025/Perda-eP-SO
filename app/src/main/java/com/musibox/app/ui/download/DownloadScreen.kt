@@ -347,9 +347,9 @@ private fun SearchBox(
                 .padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(if (value.isBlank()) Icons.Rounded.ContentPaste else Icons.Rounded.Search, null, tint = Color.White, modifier = Modifier.size(18.dp))
+            Icon(if (value.isBlank()) Icons.Rounded.ContentPaste else Icons.Rounded.Search, null, tint = Mb.colors.onAccent, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(6.dp))
-            Text(if (value.isBlank()) "Colar" else "Ir", color = Color.White, style = MaterialTheme.typography.labelLarge)
+            Text(if (value.isBlank()) "Colar" else "Ir", color = Mb.colors.onAccent, style = MaterialTheme.typography.labelLarge)
         }
     }
 }
@@ -451,9 +451,9 @@ private fun ClipboardCard(url: String, onDownload: () -> Unit, onDismiss: () -> 
                 .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(Icons.Rounded.Download, null, tint = Color.White, modifier = Modifier.size(18.dp))
+            Icon(Icons.Rounded.Download, null, tint = Mb.colors.onAccent, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(4.dp))
-            Text("Baixar", color = Color.White, style = MaterialTheme.typography.labelLarge)
+            Text("Baixar", color = Mb.colors.onAccent, style = MaterialTheme.typography.labelLarge)
         }
         Box(
             Modifier
@@ -657,7 +657,7 @@ private fun SearchCard(r: SearchResult, modifier: Modifier, onOpen: () -> Unit, 
                     .background(Mb.colors.accentGradient)
                     .clickable(onClick = onDownload),
                 contentAlignment = Alignment.Center,
-            ) { Icon(Icons.Rounded.Download, "Baixar", tint = Color.White) }
+            ) { Icon(Icons.Rounded.Download, "Baixar", tint = Mb.colors.onAccent) }
         }
     }
 }

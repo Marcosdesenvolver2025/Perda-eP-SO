@@ -31,6 +31,8 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Link
+import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Notifications
@@ -82,27 +84,27 @@ fun HowItWorksCarousel(modifier: Modifier = Modifier, onAction: (Int) -> Unit = 
             HowSlide(
                 "1", "Cole o link",
                 "Copiou um link do YouTube, TikTok ou Instagram? Toque em Colar e escolha música ou vídeo.",
-                listOf(Color(0xFF2F6BFF), Color(0xFF8B3DFF)),
+                listOf(Color(0xFF1FDF67), Color(0xFF14A84A)),
             ) { active -> PasteArt(active) },
             HowSlide(
                 "2", "Compartilhe direto do app",
                 "No vídeo, toque em Compartilhar e escolha \"Baixar com MusiBox\".",
-                listOf(Color(0xFFFF2D7A), Color(0xFFFF8A00)),
+                listOf(Color(0xFF1FDF67), Color(0xFF1FDF67)),
             ) { active -> ShareArt(active) },
             HowSlide(
                 "3", "Navegue e baixe",
                 "Abra o Navegador, entre no vídeo e toque no botão Baixar.",
-                listOf(Color(0xFF00B894), Color(0xFF0984E3)),
+                listOf(Color(0xFF1FDF67), Color(0xFF1FDF67)),
             ) { active -> BrowseArt(active) },
             HowSlide(
                 "4", "Música ou vídeo, galeria ou cofre",
                 "Escolha o formato e onde salvar: na galeria do celular ou escondido no cofre.",
-                listOf(Color(0xFF9B3DFF), Color(0xFFFF3DB8)),
+                listOf(Color(0xFF1FDF67), Color(0xFF1FDF67)),
             ) { active -> ChooseArt(active) },
             HowSlide(
                 "5", "Acompanhe em tempo real",
                 "O progresso aparece aqui embaixo e na notificação, até \"Download concluído\".",
-                listOf(Color(0xFFFFB300), Color(0xFFFF4D4D)),
+                listOf(Color(0xFFFFB300), Color(0xFF1FDF67)),
             ) { active -> ProgressArt(active) },
         )
     val pager = rememberPagerState { slides.size }
@@ -138,31 +140,30 @@ fun HowItWorksCarousel(modifier: Modifier = Modifier, onAction: (Int) -> Unit = 
                         rotationY = off * 10f
                         cameraDistance = 16f * density
                     }
-                    .shadow(16.dp, shape, ambientColor = slide.colors[0], spotColor = slide.colors[0])
                     .clip(shape)
-                    .background(Brush.linearGradient(slide.colors.map { it.copy(alpha = 0.92f) }))
-                    .border(1.dp, Color.White.copy(alpha = 0.22f), shape),
+                    .background(Brush.linearGradient(listOf(Color(0xFF242424), Color(0xFF161616))))
+                    .border(1.dp, Color(0xFF2E2E2E), shape),
             ) {
                 // brilho
                 Box(
                     Modifier
                         .fillMaxSize()
-                        .background(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent), radius = 520f)),
+                        .background(Brush.radialGradient(listOf(Color(0x331FDF67), Color.Transparent), radius = 520f)),
                 )
                 Row(Modifier.fillMaxSize().padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Box(
                             Modifier
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(Color.Black.copy(alpha = 0.25f))
+                                .background(Color(0xFF1FDF67))
                                 .padding(horizontal = 10.dp, vertical = 3.dp),
                         ) {
-                            Text("PASSO ${slide.step}", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                            Text("PASSO ${slide.step}", color = Color(0xFF0A0A0A), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                         }
                         Spacer(Modifier.height(8.dp))
                         Text(slide.title, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 23.sp, maxLines = 2)
                         Spacer(Modifier.height(6.dp))
-                        Text(slide.text, color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp, lineHeight = 17.sp, maxLines = 4, overflow = TextOverflow.Ellipsis)
+                        Text(slide.text, color = Color(0xFFB3B3B3), fontSize = 13.sp, lineHeight = 17.sp, maxLines = 4, overflow = TextOverflow.Ellipsis)
                     }
                     Spacer(Modifier.width(10.dp))
                     Box(Modifier.size(118.dp), contentAlignment = Alignment.Center) {
@@ -186,7 +187,7 @@ fun HowItWorksCarousel(modifier: Modifier = Modifier, onAction: (Int) -> Unit = 
                         .padding(horizontal = 3.dp)
                         .size(width = w, height = 7.dp)
                         .clip(CircleShape)
-                        .background(if (selected) Brush.horizontalGradient(slides[i].colors) else Brush.linearGradient(listOf(Color(0x55FFFFFF), Color(0x55FFFFFF)))),
+                        .background(if (selected) Color(0xFF1FDF67) else Color(0xFF3A3A3A)),
                 )
             }
         }
@@ -213,7 +214,7 @@ private fun PhoneFrame(content: @Composable () -> Unit) {
         Modifier
             .size(width = 76.dp, height = 118.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFF0B0B1E))
+            .background(Color(0xFF141414))
             .border(2.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
             .padding(6.dp),
         contentAlignment = Alignment.Center,
@@ -221,7 +222,7 @@ private fun PhoneFrame(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun Bubble(icon: ImageVector, size: Int = 34, bg: Color = Color.White, tint: Color = Color(0xFF2F6BFF)) {
+private fun Bubble(icon: ImageVector, size: Int = 34, bg: Color = Color.White, tint: Color = Color(0xFF1FDF67)) {
     Box(
         Modifier
             .size(size.dp)
@@ -277,25 +278,26 @@ private fun ShareArt(active: Boolean) {
                     .padding(horizontal = 4.dp, vertical = 3.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Image(painterResource(R.drawable.logo_note3d), null, Modifier.size(14.dp))
+                    Image(painterResource(R.drawable.ic_brand_note), null, Modifier.size(14.dp))
                     Text(" Baixar", color = Color(0xFF111133), fontSize = 9.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
     }
-    Box(Modifier.offset(x = -34.dp, y = 36.dp)) { Bubble(Icons.Rounded.Share, bg = Color.White, tint = Color(0xFFFF2D7A)) }
+    Box(Modifier.offset(x = -34.dp, y = 36.dp)) { Bubble(Icons.Rounded.Share, bg = Color.White, tint = Color(0xFF1FDF67)) }
 }
 
 @Composable
 private fun BrowseArt(active: Boolean) {
     val t = rememberPlay(active)
-    Image(
-        painterResource(R.drawable.ic3d_browser),
-        null,
+    Box(
         Modifier
             .size(84.dp)
-            .graphicsLayer { rotationZ = -20f + 20f * t },
-    )
+            .graphicsLayer { rotationZ = -20f + 20f * t }
+            .clip(CircleShape)
+            .background(Color(0xFF1FDF67)),
+        contentAlignment = Alignment.Center,
+    ) { Icon(Icons.Rounded.Language, null, tint = Color(0xFF0A0A0A), modifier = Modifier.size(54.dp)) }
     Box(
         Modifier
             .offset(x = 30.dp, y = 40.dp)
@@ -305,8 +307,8 @@ private fun BrowseArt(active: Boolean) {
             .padding(horizontal = 10.dp, vertical = 6.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Rounded.Download, null, tint = Color(0xFF0984E3), modifier = Modifier.size(14.dp))
-            Text(" Baixar", color = Color(0xFF0984E3), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Icon(Icons.Rounded.Download, null, tint = Color(0xFF1FDF67), modifier = Modifier.size(14.dp))
+            Text(" Baixar", color = Color(0xFF1FDF67), fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
     }
     Box(Modifier.offset(x = 44.dp, y = 8.dp).graphicsLayer { alpha = t }) {
@@ -319,15 +321,15 @@ private fun ChooseArt(active: Boolean) {
     val t = rememberPlay(active)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Box(Modifier.graphicsLayer { alpha = t.coerceIn(0f, 1f) }) { Bubble(Icons.Rounded.MusicNote, 40, Color.White, Color(0xFF9B3DFF)) }
-            Box(Modifier.graphicsLayer { alpha = (t * 1.4f - 0.2f).coerceIn(0f, 1f) }) { Bubble(Icons.Rounded.Videocam, 40, Color.White, Color(0xFFFF3DB8)) }
+            Box(Modifier.graphicsLayer { alpha = t.coerceIn(0f, 1f) }) { Bubble(Icons.Rounded.MusicNote, 40, Color.White, Color(0xFF1FDF67)) }
+            Box(Modifier.graphicsLayer { alpha = (t * 1.4f - 0.2f).coerceIn(0f, 1f) }) { Bubble(Icons.Rounded.Videocam, 40, Color.White, Color(0xFF1FDF67)) }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(Modifier.graphicsLayer { alpha = (t * 1.6f - 0.5f).coerceIn(0f, 1f) }) {
-                Image(painterResource(R.drawable.ic3d_home), null, Modifier.size(40.dp))
+                Bubble(Icons.Rounded.PhotoLibrary, 40, Color(0xFF1FDF67), Color(0xFF0A0A0A))
             }
             Box(Modifier.graphicsLayer { alpha = (t * 1.8f - 0.7f).coerceIn(0f, 1f) }) {
-                Image(painterResource(R.drawable.ic3d_vault), null, Modifier.size(40.dp))
+                Bubble(Icons.Rounded.Lock, 40, Color(0xFF1FDF67), Color(0xFF0A0A0A))
             }
         }
     }
@@ -349,7 +351,7 @@ private fun ProgressArt(active: Boolean) {
         ) {
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Rounded.Notifications, null, tint = Color(0xFFFF4D4D), modifier = Modifier.size(12.dp))
+                    Icon(Icons.Rounded.Notifications, null, tint = Color(0xFF1FDF67), modifier = Modifier.size(12.dp))
                     Text(
                         if (t >= 1f) " Concluído ✓" else " Baixando… ${(t * 100).toInt()}%",
                         color = Color(0xFF111133),
@@ -361,7 +363,7 @@ private fun ProgressArt(active: Boolean) {
                 LinearProgressIndicator(
                     progress = { t },
                     modifier = Modifier.fillMaxWidth().height(5.dp).clip(CircleShape),
-                    color = Color(0xFFFF8A00),
+                    color = Color(0xFF1FDF67),
                     trackColor = Color(0x22000000),
                     drawStopIndicator = {},
                 )

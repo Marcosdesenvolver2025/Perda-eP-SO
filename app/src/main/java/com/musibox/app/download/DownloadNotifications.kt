@@ -35,7 +35,7 @@ object DownloadNotifications {
     private const val CHANNEL_PROGRESS = "downloads_progress"
     private const val CHANNEL_DONE = "downloads_done"
     private const val GROUP = "musibox_downloads"
-    private const val BRAND = 0xFF1E6BFF.toInt()
+    private const val BRAND = 0xFF1FDF67.toInt()
 
     private val thumbs = ConcurrentHashMap<String, Bitmap>()
     private val privateIds = ConcurrentHashMap.newKeySet<String>()
@@ -77,7 +77,20 @@ object DownloadNotifications {
     }
 
     private fun appLogo(context: Context): Bitmap? =
-        logo ?: runCatching { BitmapFactory.decodeResource(context.resources, R.drawable.logo_note3d) }.getOrNull()?.also { logo = it }
+        logo ?: runCatching {
+            // Ícone do app (barra + play verde no fundo preto) como imagem da notificação
+            val size = 192
+            val out = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+            val c = Canvas(out)
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF181818.toInt() }
+            c.drawRoundRect(RectF(0f, 0f, size.toFloat(), size.toFloat()), size * 0.26f, size * 0.26f, paint)
+            androidx.core.content.ContextCompat.getDrawable(context, R.drawable.ic_launcher_foreground)?.let { d ->
+                val pad = -(size * 0.18f).toInt() // o desenho tem margem de ícone adaptável
+                d.setBounds(pad, pad, size - pad, size - pad)
+                d.draw(c)
+            }
+            out
+        }.getOrNull()?.also { logo = it }
 
     /** Miniatura com cantos arredondados para o ícone grande. */
     private fun rounded(src: Bitmap): Bitmap {

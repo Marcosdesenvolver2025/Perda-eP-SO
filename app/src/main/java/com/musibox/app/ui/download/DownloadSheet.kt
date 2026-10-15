@@ -154,7 +154,7 @@ private fun LoadingBlock(stage: String?, firstRun: Boolean) {
                 .clip(CircleShape)
                 .background(Mb.colors.accentGradient),
             contentAlignment = Alignment.Center,
-        ) { Icon(Icons.Rounded.Download, null, tint = Color.White, modifier = Modifier.size(36.dp)) }
+        ) { Icon(Icons.Rounded.Download, null, tint = Mb.colors.onAccent, modifier = Modifier.size(36.dp)) }
         Spacer(Modifier.height(18.dp))
         Text(stage ?: "Lendo o link…", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(6.dp))
@@ -425,9 +425,9 @@ private fun KindTab(modifier: Modifier, icon: androidx.compose.ui.graphics.vecto
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {
-        Icon(icon, null, tint = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+        Icon(icon, null, tint = if (selected) Mb.colors.onAccent else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(8.dp))
-        Text(label, style = MaterialTheme.typography.labelLarge, color = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(label, style = MaterialTheme.typography.labelLarge, color = if (selected) Mb.colors.onAccent else MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

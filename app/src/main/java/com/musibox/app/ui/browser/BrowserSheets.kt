@@ -74,7 +74,7 @@ fun TabsSheet(
     onCloseAll: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color(0xFF0B0B24)) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color(0xFF181818)) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("Abas", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
@@ -89,9 +89,9 @@ fun TabsSheet(
                     .padding(horizontal = 14.dp, vertical = 8.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Rounded.Add, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Rounded.Add, null, tint = Neo.OnGreen, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("Nova aba", color = Color.White, style = MaterialTheme.typography.labelLarge)
+                    Text("Nova aba", color = Neo.OnGreen, style = MaterialTheme.typography.labelLarge)
                 }
             }
         }
@@ -108,7 +108,7 @@ fun TabsSheet(
                 Column(
                     Modifier
                         .bounceClick(pressed = 0.95f, shape = shape) { onSelect(tab) }
-                        .background(Brush.verticalGradient(listOf(Color(0xFF16163A), Color(0xFF0C0C26))))
+                        .background(Brush.verticalGradient(listOf(Color(0xFF242424), Color(0xFF1A1A1A))))
                         .border(if (current) 2.dp else 1.dp, if (current) Neo.EdgeBright else Neo.Edge, shape)
                         .padding(10.dp),
                 ) {
@@ -133,7 +133,7 @@ fun TabsSheet(
                             .fillMaxWidth()
                             .height(96.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Brush.linearGradient(listOf(Color(0xFF1B2A6B), Color(0xFF3A1B6B)))),
+                            .background(Brush.linearGradient(listOf(Color(0xFF2A2A2A), Color(0xFF1F3A2A)))),
                         contentAlignment = Alignment.Center,
                     ) {
                         SiteBadge(tab.url, 44.dp)

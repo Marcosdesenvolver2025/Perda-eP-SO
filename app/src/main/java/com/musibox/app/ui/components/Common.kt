@@ -205,13 +205,13 @@ fun GradientButton(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (loading) {
-                CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                CircularProgressIndicator(Modifier.size(20.dp), color = Mb.colors.onAccent, strokeWidth = 2.dp)
                 Spacer(Modifier.width(10.dp))
             } else if (icon != null) {
-                Icon(icon, null, tint = Color.White, modifier = Modifier.size(22.dp))
+                Icon(icon, null, tint = Mb.colors.onAccent, modifier = Modifier.size(22.dp))
                 Spacer(Modifier.width(10.dp))
             }
-            Text(text, color = Color.White, style = MaterialTheme.typography.titleMedium)
+            Text(text, color = Mb.colors.onAccent, style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
         }
     }
 }

@@ -51,10 +51,16 @@
         android:theme="@style/Theme.MusiBox"
         tools:targetApi="35">
 
-        <!-- AdMob (o ID vem do build.gradle; sem ID real usa o ID de teste do Google) -->
+        <!-- Anúncios Start.io: só o vídeo premiado (sem anúncio ao abrir e sem anúncio ao voltar) -->
         <meta-data
-            android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="${admobAppId}" />
+            android:name="com.startapp.sdk.APPLICATION_ID"
+            android:value="${startioAppId}" />
+        <meta-data
+            android:name="com.startapp.sdk.SPLASH_ENABLED"
+            android:value="false" />
+        <meta-data
+            android:name="com.startapp.sdk.RETURN_ADS_ENABLED"
+            android:value="false" />
 
         <activity
             android:name=".MainActivity"

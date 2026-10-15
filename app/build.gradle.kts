@@ -10,10 +10,9 @@ plugins {
 
 val appId = (project.findProperty("musibox.applicationId") as String?) ?: "br.com.musibox"
 
-// Anúncios (AdMob) e Pró (Stripe). Sem IDs reais, usa os IDs de TESTE oficiais do Google.
+// Anúncios (Start.io) e Pró (Stripe)
 fun prop(name: String, default: String = ""): String = ((project.findProperty(name) as String?) ?: default).trim()
-val admobAppId = prop("musibox.admobAppId", "ca-app-pub-3940256099942544~3347511713")
-val admobRewardedId = prop("musibox.admobRewardedId", "ca-app-pub-3940256099942544/5224354917")
+val startioAppId = prop("musibox.startioAppId", "209698277")
 
 // Lê o google-services.json REAL (nunca é alterado nem substituído).
 val googleServicesFile = file("google-services.json")
@@ -79,8 +78,8 @@ android {
         applicationId = appId
         minSdk = 29
         targetSdk = 35
-        versionCode = 13
-        versionName = "1.8.0"
+        versionCode = 14
+        versionName = "1.8.1"
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${readWebClientId()}\"")
         buildConfigField("boolean", "FIREBASE_CONFIGURED", (firebaseClient != null).toString())
         buildConfigField("boolean", "FIREBASE_MANUAL_INIT", (firebaseClient != null && !usePluginConfig).toString())
@@ -89,9 +88,9 @@ android {
         buildConfigField("String", "FB_PROJECT_ID", "\"${firebaseValue("projectId")}\"")
         buildConfigField("String", "FB_SENDER_ID", "\"${firebaseValue("senderId")}\"")
         buildConfigField("String", "FB_STORAGE_BUCKET", "\"${firebaseValue("storageBucket")}\"")
-        manifestPlaceholders["admobAppId"] = admobAppId
-        buildConfigField("String", "ADMOB_REWARDED_ID", "\"$admobRewardedId\"")
-        buildConfigField("boolean", "ADMOB_TEST", admobAppId.startsWith("ca-app-pub-3940256099942544").toString())
+        manifestPlaceholders["startioAppId"] = startioAppId
+        // Anúncios de teste até o lançamento (true = anúncios de teste da Start.io)
+        buildConfigField("boolean", "ADS_TEST", prop("musibox.adsTest", "true"))
         buildConfigField("String", "STRIPE_PRICE_3D", "\"${prop("musibox.stripePrice3d")}\"")
         buildConfigField("String", "STRIPE_PRICE_WEEK", "\"${prop("musibox.stripePriceWeek")}\"")
         buildConfigField("String", "STRIPE_PRICE_MONTH", "\"${prop("musibox.stripePriceMonth")}\"")
@@ -228,7 +227,7 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-functions")
-    implementation("com.google.android.gms:play-services-ads:23.6.0")
+    implementation("com.startapp:inapp-sdk:5.+")
     implementation("androidx.credentials:credentials:1.5.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.5.0")
     implementation("com.google.android.gms:play-services-auth:21.3.0")

@@ -3,22 +3,16 @@ package com.musibox.app.ads
 import android.app.Activity
 import android.content.Context
 import android.util.Log
-import com.google.android.gms.ads.AdError
-import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.FullScreenContentCallback
-import com.google.android.gms.ads.LoadAdError
-import com.google.android.gms.ads.MobileAds
-import com.google.android.gms.ads.rewarded.RewardedAd
-import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
+import com.startapp.sdk.adsbase.Ad
+import com.startapp.sdk.adsbase.StartAppAd
+import com.startapp.sdk.adsbase.StartAppSDK
+import com.startapp.sdk.adsbase.adlisteners.AdDisplayListener
+import com.startapp.sdk.adsbase.adlisteners.AdEventListener
+import com.startapp.sdk.adsbase.adlisteners.VideoListener
 import com.musibox.app.BuildConfig
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /**
  * Downloads grátis por ciclo: a pessoa baixa 2 vídeos/músicas, assiste a 1 anúncio e
@@ -52,68 +46,78 @@ object DownloadQuota {
     fun refill(context: Context) = save(context, PER_CYCLE)
 }
 
-/** Anúncio premiado (AdMob) que libera mais downloads. */
+/** Vídeo premiado (Start.io) que libera mais downloads. */
 object RewardedAds {
     private const val TAG = "MusiBoxAds"
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     @Volatile private var initialized = false
-    private var ad: RewardedAd? = null
+    private var ad: StartAppAd? = null
+    private var ready = false
     private var loading = false
-    private val waiting = ArrayList<(RewardedAd?) -> Unit>()
+    private val waiting = ArrayList<(StartAppAd?) -> Unit>()
 
     fun init(context: Context) {
         if (initialized) return
         initialized = true
-        val app = context.applicationContext
-        scope.launch {
-            runCatching { withContext(Dispatchers.IO) { MobileAds.initialize(app) {} } }
-                .onFailure { Log.w(TAG, "Falha ao iniciar AdMob", it) }
-        }
+        runCatching {
+            // O App ID e o "sem anúncio ao abrir/voltar" vêm do AndroidManifest.
+            StartAppSDK.setTestAdsEnabled(BuildConfig.ADS_TEST)
+        }.onFailure { Log.w(TAG, "Falha ao configurar anúncios", it) }
     }
 
-    /** Já deixa um anúncio carregado para não fazer a pessoa esperar. */
+    /** Já deixa um vídeo carregado para não fazer a pessoa esperar. */
     fun preload(context: Context) {
-        if (ad != null || loading) return
+        if (ready || loading) return
         load(context.applicationContext) {}
     }
 
-    private fun load(context: Context, onReady: (RewardedAd?) -> Unit) {
+    private fun load(context: Context, onReady: (StartAppAd?) -> Unit) {
         val cached = ad
-        if (cached != null) {
+        if (cached != null && ready) {
             onReady(cached)
             return
         }
         waiting += onReady
         if (loading) return
         loading = true
-        RewardedAd.load(
-            context,
-            BuildConfig.ADMOB_REWARDED_ID,
-            AdRequest.Builder().build(),
-            object : RewardedAdLoadCallback() {
-                override fun onAdLoaded(loaded: RewardedAd) {
-                    loading = false
-                    ad = loaded
-                    val list = waiting.toList()
-                    waiting.clear()
-                    list.forEach { it(loaded) }
-                }
+        val fresh = StartAppAd(context)
+        ad = fresh
+        runCatching {
+            fresh.loadAd(
+                StartAppAd.AdMode.REWARDED_VIDEO,
+                object : AdEventListener {
+                    override fun onReceiveAd(loaded: Ad) {
+                        loading = false
+                        ready = true
+                        val list = waiting.toList()
+                        waiting.clear()
+                        list.forEach { it(fresh) }
+                    }
 
-                override fun onAdFailedToLoad(error: LoadAdError) {
-                    loading = false
-                    Log.w(TAG, "Anúncio não carregou: ${error.code} ${error.message}")
-                    val list = waiting.toList()
-                    waiting.clear()
-                    list.forEach { it(null) }
-                }
-            },
-        )
+                    override fun onFailedToReceiveAd(failed: Ad?) {
+                        loading = false
+                        ready = false
+                        ad = null
+                        Log.w(TAG, "Vídeo não carregou")
+                        val list = waiting.toList()
+                        waiting.clear()
+                        list.forEach { it(null) }
+                    }
+                },
+            )
+        }.onFailure {
+            loading = false
+            ready = false
+            ad = null
+            Log.w(TAG, "Falha ao carregar vídeo", it)
+            val list = waiting.toList()
+            waiting.clear()
+            list.forEach { cb -> cb(null) }
+        }
     }
 
     /**
-     * Mostra o anúncio. [onReward] quando a pessoa assiste até ganhar a recompensa;
-     * [onUnavailable] se não houver anúncio (sem internet ou sem anúncio disponível);
-     * [onClosed] quando o anúncio fecha sem recompensa.
+     * Mostra o vídeo. [onReward] quando a pessoa assiste até o fim; [onUnavailable] se não houver
+     * vídeo (sem internet ou sem anúncio); [onClosed] quando fecha antes do fim.
      */
     fun show(activity: Activity, onReward: () -> Unit, onUnavailable: () -> Unit, onClosed: () -> Unit) {
         load(activity.applicationContext) { loaded ->
@@ -122,20 +126,28 @@ object RewardedAds {
                 return@load
             }
             ad = null
+            ready = false
             var rewarded = false
-            loaded.fullScreenContentCallback = object : FullScreenContentCallback() {
-                override fun onAdDismissedFullScreenContent() {
-                    if (rewarded) onReward() else onClosed()
-                    preload(activity)
-                }
+            loaded.setVideoListener(VideoListener { rewarded = true })
+            val shown = runCatching {
+                loaded.showAd(object : AdDisplayListener {
+                    override fun adHidden(a: Ad?) {
+                        if (rewarded) onReward() else onClosed()
+                        preload(activity)
+                    }
 
-                override fun onAdFailedToShowFullScreenContent(error: AdError) {
-                    Log.w(TAG, "Anúncio não abriu: ${error.message}")
-                    onUnavailable()
-                    preload(activity)
-                }
+                    override fun adDisplayed(a: Ad?) = Unit
+                    override fun adClicked(a: Ad?) = Unit
+                    override fun adNotDisplayed(a: Ad?) {
+                        onUnavailable()
+                        preload(activity)
+                    }
+                })
+            }.getOrDefault(false)
+            if (!shown) {
+                onUnavailable()
+                preload(activity)
             }
-            loaded.show(activity) { rewarded = true }
         }
     }
 }

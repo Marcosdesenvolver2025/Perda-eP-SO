@@ -17,6 +17,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.core.graphics.drawable.toBitmap
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.material.icons.rounded.TheaterComedy
 import androidx.compose.material.icons.rounded.Backup
 import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.DeleteForever
@@ -89,6 +97,11 @@ private fun VaultSettingsContent(nav: NavController) {
     var wipeDialog by remember { mutableStateOf(false) }
     val biometricHardware = remember { Biometrics.isAvailable(context) }
     val vault = Mb.colors.vault
+    val proState by com.musibox.app.billing.PlayBilling.pro.collectAsStateWithLifecycle()
+    val isPro = proState.subscription || proState.passUntil > System.currentTimeMillis()
+    var disguise by remember { mutableStateOf(com.musibox.app.vault.IconDisguise.current(context)) }
+    var disguiseDialog by remember { mutableStateOf(false) }
+    var intrusionsDialog by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize()) {
         MbTopBar("Configurações do cofre", onBack = { nav.popBackStack() })
@@ -152,6 +165,26 @@ private fun VaultSettingsContent(nav: NavController) {
                 }
             }
             item {
+                SettingsSection("Recursos Pró") {
+                    SettingItem(
+                        Icons.Rounded.TheaterComedy,
+                        "Ícone disfarçado",
+                        if (!isPro) "O MusiBox aparece como Calculadora, Notas, Relógio ou Clima • Pró" else disguise.label,
+                        onClick = { if (isPro) disguiseDialog = true else nav.navigate(Routes.PRO) },
+                        tint = vault,
+                    )
+                    SettingDivider()
+                    SettingItem(
+                        Icons.Rounded.Shield,
+                        "Alerta de invasão",
+                        if (!isPro) "Veja quando alguém errou o PIN do cofre • Pró"
+                        else container.pin.intrusions().size.let { n -> if (n == 0) "Nenhuma tentativa errada" else "$n tentativas erradas registradas" },
+                        onClick = { if (isPro) intrusionsDialog = true else nav.navigate(Routes.PRO) },
+                        tint = vault,
+                    )
+                }
+            }
+            item {
                 SettingsSection("Backup do cofre") {
                     Row(Modifier.padding(16.dp)) {
                         Icon(Icons.Rounded.CloudOff, null, tint = Mb.colors.warning)
@@ -205,6 +238,76 @@ private fun VaultSettingsContent(nav: NavController) {
                 scope.launch { container.settings.setVaultAutoLock(v) }
             },
             onDismiss = { lockDialog = false },
+        )
+    }
+    if (disguiseDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { disguiseDialog = false },
+            title = { Text("Ícone disfarçado") },
+            text = {
+                Column {
+                    Text(
+                        "Troca o ícone e o nome do MusiBox na tela inicial. Ao tocar, o MusiBox abre normalmente. " +
+                            "A troca pode levar alguns segundos e alguns celulares tiram o atalho da tela inicial (ele continua na lista de apps).",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    com.musibox.app.vault.IconDisguise.Option.entries.forEach { o ->
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
+                                .clickable {
+                                    disguiseDialog = false
+                                    runCatching { com.musibox.app.vault.IconDisguise.apply(context, o) }
+                                        .onSuccess { disguise = o; snack(if (o == com.musibox.app.vault.IconDisguise.Option.DEFAULT) "Ícone normal de volta." else "Agora o MusiBox aparece como \"${o.label}\".") }
+                                        .onFailure { snack("Não foi possível trocar o ícone.") }
+                                }
+                                .padding(vertical = 8.dp, horizontal = 6.dp),
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                        ) {
+                            androidx.compose.foundation.Image(
+                                androidx.compose.ui.graphics.painter.BitmapPainter(
+                                    androidx.core.content.ContextCompat.getDrawable(context, o.icon)!!.toBitmap(96, 96).asImageBitmap(),
+                                ),
+                                null,
+                                Modifier.size(42.dp).clip(androidx.compose.foundation.shape.CircleShape),
+                            )
+                            Spacer(Modifier.width(14.dp))
+                            Text(o.label, modifier = Modifier.weight(1f))
+                            if (o == disguise) Icon(Icons.Rounded.Check, null, tint = vault)
+                        }
+                    }
+                }
+            },
+            confirmButton = { androidx.compose.material3.TextButton(onClick = { disguiseDialog = false }) { Text("Fechar") } },
+            containerColor = Mb.colors.cardHigh,
+        )
+    }
+    if (intrusionsDialog) {
+        val list = remember { container.pin.intrusions().reversed() }
+        val fmt = remember { java.text.SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", java.util.Locale("pt", "BR")) }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { intrusionsDialog = false },
+            title = { Text("Tentativas erradas") },
+            text = {
+                Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                    if (list.isEmpty()) Text("Ninguém errou o PIN do cofre.")
+                    list.take(50).forEach { t -> Text("• ${fmt.format(java.util.Date(t))}") }
+                }
+            },
+            confirmButton = { androidx.compose.material3.TextButton(onClick = { intrusionsDialog = false }) { Text("Fechar") } },
+            dismissButton = {
+                if (list.isNotEmpty()) {
+                    androidx.compose.material3.TextButton(onClick = {
+                        container.pin.clearIntrusions()
+                        intrusionsDialog = false
+                        snack("Registro apagado.")
+                    }) { Text("Limpar") }
+                }
+            },
+            containerColor = Mb.colors.cardHigh,
         )
     }
     if (wipeDialog) {

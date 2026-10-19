@@ -36,6 +36,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Bedtime
+import androidx.compose.material.icons.rounded.Equalizer
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.ArrowDownward
@@ -293,6 +295,32 @@ fun PlayerScreen(nav: NavController) {
                         }
                     }
                 }
+                BottomAction(Icons.Rounded.Equalizer, "Equalizador") { nav.navigate(Routes.EQUALIZER) }
+                Box {
+                    val timer by com.musibox.app.media.SleepTimer.state.collectAsStateWithLifecycle()
+                    var timerMenu by remember { mutableStateOf(false) }
+                    BottomAction(Icons.Rounded.Bedtime, if (timer.active) "Timer ✓" else "Timer") {
+                        if (com.musibox.app.billing.PlayBilling.isProNow()) timerMenu = true else nav.navigate(Routes.PRO)
+                    }
+                    DropdownMenu(timerMenu, { timerMenu = false }, containerColor = Mb.colors.cardHigh) {
+                        if (timer.active) {
+                            DropdownMenuItem(
+                                text = { Text("${com.musibox.app.media.SleepTimer.label(timer)} • cancelar", color = MaterialTheme.colorScheme.primary) },
+                                onClick = { timerMenu = false; com.musibox.app.media.SleepTimer.cancel(); snack("Timer de sono cancelado.") },
+                            )
+                        }
+                        listOf(15, 30, 45, 60, 90).forEach { m ->
+                            DropdownMenuItem(
+                                text = { Text("Parar em $m min") },
+                                onClick = { timerMenu = false; com.musibox.app.media.SleepTimer.start(m); snack("A música para em $m minutos.") },
+                            )
+                        }
+                        DropdownMenuItem(
+                            text = { Text("No fim desta música") },
+                            onClick = { timerMenu = false; com.musibox.app.media.SleepTimer.endOfTrack(); snack("A música para quando esta terminar.") },
+                        )
+                    }
+                }
                 BottomAction(Icons.AutoMirrored.Rounded.PlaylistAdd, "Playlist") {
                     val song = index.byId(current.songId)
                     if (song != null) playlistSong = song else snack("Arquivo não encontrado neste dispositivo.")
@@ -314,7 +342,7 @@ private fun BottomAction(icon: androidx.compose.ui.graphics.vector.ImageVector, 
         Modifier
             .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 8.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Icon(icon, label, tint = MaterialTheme.colorScheme.onSurface)

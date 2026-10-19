@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ícone disfarçado do MusiBox (desenho próprio) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#FFFFFFFF" android:pathData="M54,26a28,28 0,1 1,0 56a28,28 0,1 1,0 -56z"/>
+    <path android:fillColor="#FF1E2A3A" android:pathData="M52.5,34h3v21h-3z"/>
+    <path android:fillColor="#FF1E2A3A" android:pathData="M53.2,52.2l14,8.1l-1.5,2.6l-14,-8.1z"/>
+    <path android:fillColor="#FFFF5A5A" android:pathData="M54,51a3,3 0,1 1,0 6a3,3 0,1 1,0 -6z"/>
+</vector>

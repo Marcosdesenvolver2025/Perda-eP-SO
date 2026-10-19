@@ -163,7 +163,14 @@ fun WallpaperPreviewScreen(nav: NavController, id: String) {
                 }
                 else -> BigButton("Comprar • $price", w.accent, onAccent, Modifier.fillMaxWidth(), Icons.Rounded.Lock) {
                     val activity = context.findActivity()
-                    if (activity != null) PlayBilling.buyWallpaper(activity, w) { toast(it) } else toast("Não foi possível abrir a Google Play.")
+                    if (activity == null) {
+                        toast("Não foi possível abrir a Google Play.")
+                    } else {
+                        PlayBilling.buyWallpaper(activity, w) { msg ->
+                            toast(msg)
+                            if (msg == PlayBilling.LOGIN_MSG) nav.navigate(Routes.LOGIN)
+                        }
+                    }
                 }
             }
         }

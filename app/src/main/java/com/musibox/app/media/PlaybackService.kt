@@ -8,6 +8,7 @@ import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import com.google.common.collect.ImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.annotation.OptIn
@@ -47,6 +48,7 @@ class PlaybackService : MediaSessionService() {
 
     private var session: MediaSession? = null
     private lateinit var player: ExoPlayer
+    private var autoPlayNext = true
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val container get() = (application as MusiBoxApp).container
 
@@ -103,6 +105,35 @@ class PlaybackService : MediaSessionService() {
             .setWakeMode(C.WAKE_MODE_LOCAL)
             .build()
 
+        // Equalizador / graves / som 3D (Pró) presos à sessão de áudio do player
+        runCatching {
+            val sid = (getSystemService(AUDIO_SERVICE) as android.media.AudioManager).generateAudioSessionId()
+            player.audioSessionId = sid
+            AudioFx.attach(this, sid)
+        }
+        scope.launch {
+            com.musibox.app.billing.PlayBilling.pro.collect { AudioFx.allowed = com.musibox.app.billing.PlayBilling.isProNow() }
+        }
+        // Timer de sono (Pró)
+        scope.launch {
+            SleepTimer.state.collectLatest { t ->
+                player.pauseAtEndOfMediaItems = t.endOfTrack || !autoPlayNext
+                if (t.endsAt > 0L) {
+                    val wait = t.endsAt - System.currentTimeMillis()
+                    if (wait > 0) delay(wait)
+                    fadeOutAndPause()
+                    SleepTimer.cancel()
+                }
+            }
+        }
+        player.addListener(object : Player.Listener {
+            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+                if (!playWhenReady && reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM && SleepTimer.state.value.endOfTrack) {
+                    SleepTimer.cancel()
+                }
+            }
+        })
+
         val openApp = Intent(this, MainActivity::class.java)
             .putExtra(MainActivity.EXTRA_OPEN_PLAYER, true)
             .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -140,7 +171,8 @@ class PlaybackService : MediaSessionService() {
 
         scope.launch {
             container.settings.settings.collect { s ->
-                player.pauseAtEndOfMediaItems = !s.autoPlayNext
+                autoPlayNext = s.autoPlayNext
+                player.pauseAtEndOfMediaItems = !s.autoPlayNext || SleepTimer.state.value.endOfTrack
                 player.skipSilenceEnabled = s.skipSilence
                 player.setHandleAudioBecomingNoisy(s.pauseOnDisconnect)
                 stopOnTaskRemoved = s.stopOnTaskRemoved
@@ -169,7 +201,19 @@ class PlaybackService : MediaSessionService() {
         }
     }
 
+    /** Abaixa o volume aos poucos e pausa (timer de sono). */
+    private suspend fun fadeOutAndPause() {
+        val start = player.volume
+        for (i in 1..20) {
+            player.volume = start * (1f - i / 20f)
+            delay(400)
+        }
+        player.pause()
+        player.volume = start
+    }
+
     override fun onDestroy() {
+        AudioFx.release()
         savePlaybackState(markForSync = true)
         session?.run {
             player.removeListener(listener)

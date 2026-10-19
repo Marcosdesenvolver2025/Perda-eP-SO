@@ -334,7 +334,8 @@ class SyncManager(
             val docs = root.collection(name).get(Source.SERVER).await().documents
             docs.chunked(400).forEach { chunk ->
                 val batch = fs.batch()
-                chunk.forEach { batch.delete(it.reference) }
+                // As compras de papéis de parede ficam na conta mesmo ao excluir os dados
+                chunk.forEach { if (!(name == "appData" && it.id == "wallpapers")) batch.delete(it.reference) }
                 batch.commit().await()
             }
         }

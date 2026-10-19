@@ -84,15 +84,14 @@ private fun fmtDate(ms: Long): String = SimpleDateFormat("dd/MM 'às' HH:mm", Lo
 private data class Perk(val icon: androidx.compose.ui.graphics.vector.ImageVector, val title: String, val text: String, val ready: Boolean)
 
 private val perks = listOf(
-    Perk(Icons.Rounded.Block, "Bloqueador de anúncios", "Navegue sem propagandas e rastreadores nos sites.", false),
-    Perk(Icons.Rounded.Equalizer, "Equalizador no player", "Graves, presets (pop, rock, funk…) e ajuste por faixa.", false),
+    Perk(Icons.Rounded.Block, "Bloqueador de anúncios", "Navegue sem propagandas e rastreadores nos sites.", true),
+    Perk(Icons.Rounded.Equalizer, "Equalizador no player", "Estilos (pop, rock, funk…), graves e som 3D.", true),
     Perk(Icons.Rounded.Wallpaper, "8 papéis de parede exclusivos", "Eclipse, Aurora Suprema, Planeta Rubi e outros.", true),
-    Perk(Icons.Rounded.TheaterComedy, "Ícone disfarçado do cofre", "O MusiBox aparece como Calculadora, Notas ou Relógio.", false),
-    Perk(Icons.Rounded.Bedtime, "Timer de sono", "A música para sozinha na hora que você escolher.", false),
-    Perk(Icons.Rounded.Speed, "Velocidade e pular silêncio", "Ouça áudios mais rápido ou mais devagar.", false),
-    Perk(Icons.Rounded.DarkMode, "Modo escuro em todos os sites", "Sites claros ficam escuros no navegador.", false),
-    Perk(Icons.Rounded.Lock, "Abas privadas com senha", "A navegação privada só abre com o PIN do cofre.", false),
-    Perk(Icons.Rounded.Shield, "Alerta de invasão no cofre", "Veja quando alguém errou a senha do cofre.", false),
+    Perk(Icons.Rounded.TheaterComedy, "Ícone disfarçado do cofre", "O MusiBox aparece como Calculadora, Notas, Relógio ou Clima.", true),
+    Perk(Icons.Rounded.Bedtime, "Timer de sono", "A música para sozinha na hora que você escolher.", true),
+    Perk(Icons.Rounded.DarkMode, "Modo escuro em todos os sites", "Sites claros ficam escuros no navegador.", true),
+    Perk(Icons.Rounded.Lock, "Abas privadas com senha", "A navegação privada só abre com o PIN do cofre.", true),
+    Perk(Icons.Rounded.Shield, "Alerta de invasão no cofre", "Veja dia e hora de cada vez que alguém errou o PIN.", true),
 )
 
 /** Tela "MusiBox Pró": benefícios e planos (pagamento pela Google Play). */

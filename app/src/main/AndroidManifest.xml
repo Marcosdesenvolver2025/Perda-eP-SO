@@ -53,12 +53,74 @@
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|density|uiMode"
             android:exported="true"
             android:launchMode="singleTask"
-            android:windowSoftInputMode="adjustResize">
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Ícone na tela inicial. Os outros são o "ícone disfarçado" do cofre (recurso do Pró). -->
+        <activity-alias
+            android:name=".LauncherDefault"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:roundIcon="@mipmap/ic_launcher_round"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
+        </activity-alias>
+        <activity-alias
+            android:name=".LauncherCalc"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_disguise_calc"
+            android:roundIcon="@mipmap/ic_disguise_calc"
+            android:label="Calculadora"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".LauncherNotes"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_disguise_notes"
+            android:roundIcon="@mipmap/ic_disguise_notes"
+            android:label="Notas"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".LauncherClock"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_disguise_clock"
+            android:roundIcon="@mipmap/ic_disguise_clock"
+            android:label="Relógio"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".LauncherWeather"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_disguise_weather"
+            android:roundIcon="@mipmap/ic_disguise_weather"
+            android:label="Clima"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
 
         <!-- Recebe links e mídias pelo menu Compartilhar -->
         <activity

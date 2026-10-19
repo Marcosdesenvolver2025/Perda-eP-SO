@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Equalizer
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.ChevronRight
@@ -151,6 +152,8 @@ fun MoreScreen(nav: NavController) {
             } }
             item { Box(Modifier.intro("more2", 2, intro)) {
                 SettingsSection("Aplicativo") {
+                    SettingItem(androidx.compose.material.icons.Icons.Rounded.Equalizer, "Equalizador", "Graves, estilos e som 3D • Pró", onClick = { nav.navigate(Routes.EQUALIZER) })
+                    SettingDivider()
                     SettingItem(Icons.Rounded.Settings, "Configurações", onClick = { nav.navigate(Routes.SETTINGS) })
                     SettingDivider()
                     SettingItem(Icons.Rounded.Storage, "Armazenamento", onClick = { nav.navigate(Routes.STORAGE) })

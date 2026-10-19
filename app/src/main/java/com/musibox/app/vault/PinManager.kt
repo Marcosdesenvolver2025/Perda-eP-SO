@@ -62,9 +62,16 @@ class PinManager(context: Context) {
         val ok = MessageDigest.isEqual(verifierFor(pin, salt), stored)
         if (ok) {
             prefs.edit().putInt(KEY_FAILS, 0).putLong(KEY_LOCK_UNTIL, 0).apply()
+            // Tentativas erradas desde o último desbloqueio, sem contar os erros de digitação
+            // de agora há pouco (do próprio dono, que acabou de acertar)
+            val now = System.currentTimeMillis()
+            val seen = prefs.getLong(KEY_INTRUSION_SEEN, 0L)
+            unlockAlerts = intrusions().filter { it > seen && it < now - OWN_TYPO_WINDOW_MS }
+            prefs.edit().putLong(KEY_INTRUSION_SEEN, now).apply()
             VerifyResult.Ok
         } else {
             val fails = prefs.getInt(KEY_FAILS, 0) + 1
+            recordIntrusion()
             val editor = prefs.edit().putInt(KEY_FAILS, fails)
             val result = if (fails >= MAX_ATTEMPTS) {
                 // 30 s, 60 s, 120 s ... até 30 min
@@ -78,6 +85,35 @@ class PinManager(context: Context) {
             editor.apply()
             result
         }
+    }
+
+    // ---------------- Alerta de invasão (Pró) ----------------
+
+    private fun recordIntrusion() {
+        val list = intrusions() + System.currentTimeMillis()
+        prefs.edit().putString(KEY_INTRUSIONS, list.takeLast(50).joinToString(",")).apply()
+    }
+
+    /** Todas as tentativas erradas registradas (mais antigas primeiro). */
+    fun intrusions(): List<Long> =
+        prefs.getString(KEY_INTRUSIONS, "").orEmpty().split(',').mapNotNull { it.toLongOrNull() }
+
+    @Volatile private var unlockAlerts: List<Long> = emptyList()
+
+    /** Tentativas erradas desde o último desbloqueio (devolve uma vez só; vale também para a digital). */
+    fun takeUnlockAlerts(): List<Long> {
+        val now = System.currentTimeMillis()
+        val fromPin = unlockAlerts
+        unlockAlerts = emptyList()
+        if (fromPin.isNotEmpty()) return fromPin
+        val seen = prefs.getLong(KEY_INTRUSION_SEEN, 0L)
+        val list = intrusions().filter { it > seen && it < now - OWN_TYPO_WINDOW_MS }
+        prefs.edit().putLong(KEY_INTRUSION_SEEN, now).apply()
+        return list
+    }
+
+    fun clearIntrusions() {
+        prefs.edit().remove(KEY_INTRUSIONS).putLong(KEY_INTRUSION_SEEN, System.currentTimeMillis()).apply()
     }
 
     // ---------------- Recuperação do PIN ----------------
@@ -178,6 +214,9 @@ class PinManager(context: Context) {
         private const val KEY_VERIFIER = "pin_verifier"
         private const val KEY_FAILS = "pin_fails"
         private const val KEY_LOCK_UNTIL = "pin_lock_until"
+        private const val KEY_INTRUSIONS = "intrusions"
+        private const val KEY_INTRUSION_SEEN = "intrusions_seen"
+        private const val OWN_TYPO_WINDOW_MS = 2 * 60_000L
         private const val HMAC_ALIAS = "musibox_pin_hmac"
         private const val KEY_RC_SALT = "rc_salt"
         private const val KEY_RC_VERIFIER = "rc_verifier"

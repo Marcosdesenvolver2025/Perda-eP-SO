@@ -54,6 +54,8 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.VisibilityOff
+import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Image
@@ -137,6 +139,18 @@ fun BrowserScreen(nav: NavController, startUrl: String, private: Boolean = false
     val store = remember { BrowserStore.get(ctx) }
     val bookmarks by store.bookmarks.collectAsStateWithLifecycle()
     val bookmarked = bookmarks.any { it.url.trimEnd('/') == currentUrl.trimEnd('/') }
+    // Pró: bloqueador de anúncios e modo escuro nos sites
+    val proState by com.musibox.app.billing.PlayBilling.pro.collectAsStateWithLifecycle()
+    val isPro = proState.subscription || proState.passUntil > System.currentTimeMillis()
+    var adblockPref by remember { mutableStateOf(com.musibox.app.browser.AdBlocker.isEnabled(ctx)) }
+    var darkPref by remember { mutableStateOf(com.musibox.app.browser.AdBlocker.darkSites(ctx)) }
+    val flags = remember { BrowserFlags() }
+    val openPrivate = rememberPrivateOpener { nav.navigate(com.musibox.app.ui.navigation.Routes.browser(BrowserStore.HOME_URL, private = true)) }
+    flags.adblock = isPro && adblockPref
+    val blockedCount by com.musibox.app.browser.AdBlocker.blocked.collectAsStateWithLifecycle()
+    androidx.compose.runtime.LaunchedEffect(isPro, darkPref, webView) {
+        webView?.let { applyDark(it, isPro && darkPref) }
+    }
 
     fun openSite(url: String) {
         editing = false
@@ -246,6 +260,21 @@ fun BrowserScreen(nav: NavController, startUrl: String, private: Boolean = false
                     }
                 }
             }
+            if (isPro && adblockPref && blockedCount > 0) {
+                Spacer(Modifier.width(6.dp))
+                Row(
+                    Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f))
+                        .clickable { snack("$blockedCount anúncios e rastreadores bloqueados nesta página.") }
+                        .padding(horizontal = 8.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(androidx.compose.material.icons.Icons.Rounded.Shield, "Anúncios bloqueados", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(3.dp))
+                    Text("$blockedCount", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelMedium)
+                }
+            }
             Spacer(Modifier.width(6.dp))
             BarButton(if (bookmarked) Icons.Rounded.Star else Icons.Rounded.StarBorder, if (bookmarked) "Remover dos favoritos" else "Salvar nos favoritos") {
                 val saved = store.toggleBookmark(currentUrl, title)
@@ -283,6 +312,13 @@ fun BrowserScreen(nav: NavController, startUrl: String, private: Boolean = false
                         CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
                         setBackgroundColor(android.graphics.Color.BLACK)
                         webViewClient = object : WebViewClient() {
+                            override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): android.webkit.WebResourceResponse? {
+                                if (flags.adblock && !request.isForMainFrame && com.musibox.app.browser.AdBlocker.isAd(request.url.host)) {
+                                    return com.musibox.app.browser.AdBlocker.emptyResponse()
+                                }
+                                return null
+                            }
+
                             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                                 val uri = request.url
                                 val scheme = uri.scheme?.lowercase()
@@ -299,6 +335,7 @@ fun BrowserScreen(nav: NavController, startUrl: String, private: Boolean = false
 
                             override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
                                 url?.let { currentUrl = it }
+                                com.musibox.app.browser.AdBlocker.resetCount()
                             }
 
                             override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) {
@@ -308,6 +345,7 @@ fun BrowserScreen(nav: NavController, startUrl: String, private: Boolean = false
                             }
 
                             override fun onPageFinished(view: WebView, url: String?) {
+                                if (flags.adblock) view.evaluateJavascript(com.musibox.app.browser.AdBlocker.HIDE_JS, null)
                                 url?.let {
                                     currentUrl = it
                                     if (!private) store.recordVisit(it, view.title)
@@ -412,6 +450,26 @@ fun BrowserScreen(nav: NavController, startUrl: String, private: Boolean = false
                         val saved = store.toggleBookmark(currentUrl, title)
                         snack(if (saved) "Página salva nos favoritos." else "Removida dos favoritos.")
                     }
+                    MenuLine(androidx.compose.material.icons.Icons.Rounded.Shield, if (isPro && adblockPref) "Bloqueador de anúncios: ligado" else "Bloqueador de anúncios: desligado") {
+                        menuOpen = false
+                        if (!isPro) {
+                            nav.navigate(com.musibox.app.ui.navigation.Routes.PRO)
+                        } else {
+                            adblockPref = !adblockPref
+                            com.musibox.app.browser.AdBlocker.setEnabled(ctx, adblockPref)
+                            snack(if (adblockPref) "Bloqueador ligado." else "Bloqueador desligado.")
+                            webView?.reload()
+                        }
+                    }
+                    MenuLine(androidx.compose.material.icons.Icons.Rounded.DarkMode, if (isPro && darkPref) "Sites escuros: ligado" else "Sites escuros: desligado") {
+                        menuOpen = false
+                        if (!isPro) {
+                            nav.navigate(com.musibox.app.ui.navigation.Routes.PRO)
+                        } else {
+                            darkPref = !darkPref
+                            com.musibox.app.browser.AdBlocker.setDarkSites(ctx, darkPref)
+                        }
+                    }
                     MenuLine(Icons.Rounded.Share, "Compartilhar link") {
                         menuOpen = false
                         val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, currentUrl)
@@ -428,7 +486,7 @@ fun BrowserScreen(nav: NavController, startUrl: String, private: Boolean = false
                     }
                     if (!private) MenuLine(androidx.compose.material.icons.Icons.Rounded.VisibilityOff, "Nova aba privada") {
                         menuOpen = false
-                        nav.navigate(com.musibox.app.ui.navigation.Routes.browser(BrowserStore.HOME_URL, private = true))
+                        openPrivate()
                     }
                     MenuLine(Icons.Rounded.Close, if (private) "Fechar navegação privada" else "Fechar navegador") {
                         menuOpen = false
@@ -493,6 +551,20 @@ fun BrowserScreen(nav: NavController, startUrl: String, private: Boolean = false
 }
 
 private const val PRIVATE_PROFILE = "musibox_privado"
+
+/** Opções lidas pelo WebView fora da thread principal. */
+private class BrowserFlags {
+    @Volatile var adblock: Boolean = false
+}
+
+/** Modo escuro nos sites (Pró): o próprio WebView escurece páginas claras. */
+private fun applyDark(view: WebView, on: Boolean) {
+    runCatching {
+        if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.ALGORITHMIC_DARKENING)) {
+            androidx.webkit.WebSettingsCompat.setAlgorithmicDarkeningAllowed(view.settings, on)
+        }
+    }
+}
 
 /** Navegação privada: cookies e dados do site num perfil separado, apagado ao sair. */
 private fun usePrivateProfile(view: WebView) {

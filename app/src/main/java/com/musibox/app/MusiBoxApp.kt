@@ -2,6 +2,7 @@ package com.musibox.app
 
 import android.app.Application
 import coil.ImageLoader
+import kotlinx.coroutines.launch
 import coil.ImageLoaderFactory
 import coil.decode.VideoFrameDecoder
 import coil.disk.DiskCache
@@ -27,6 +28,22 @@ class MusiBoxApp : Application(), ImageLoaderFactory {
         // Tema (papel de parede/cor) e compras pela Google Play
         com.musibox.app.themes.ThemeStore.get(this)
         com.musibox.app.billing.PlayBilling.start(this)
+        com.musibox.app.media.AudioFx.init(this)
+        // Quando a Play confirma as compras: sem Pró, desfaz o ícone disfarçado; papel não comprado volta ao padrão
+        container.appScope.launch {
+            kotlinx.coroutines.flow.combine(
+                com.musibox.app.billing.PlayBilling.synced,
+                com.musibox.app.billing.PlayBilling.pro,
+                com.musibox.app.billing.PlayBilling.owned,
+            ) { synced, _, _ -> synced }.collect { synced ->
+                if (!synced) return@collect
+                val app = this@MusiBoxApp
+                if (!com.musibox.app.billing.PlayBilling.isProNow()) {
+                    runCatching { com.musibox.app.vault.IconDisguise.resetIfNeeded(app) }
+                }
+                com.musibox.app.themes.ThemeStore.get(app).revalidate { com.musibox.app.billing.PlayBilling.canUse(it) }
+            }
+        }
     }
 
     /**

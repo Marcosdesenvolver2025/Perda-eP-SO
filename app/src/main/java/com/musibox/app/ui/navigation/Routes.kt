@@ -35,6 +35,7 @@ object Routes {
     const val WALLPAPER = "wallpaper/{id}"
     const val PICK_SONGS = "pick_songs/{id}"
     const val PRO = "pro"
+    const val EQUALIZER = "equalizer"
 
     fun library(tab: Int = 0) = "library?tab=$tab"
     fun history(tab: Int = 0) = "history?tab=$tab"

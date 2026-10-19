@@ -145,6 +145,13 @@ fun BrowserHomeScreen(nav: NavController) {
     var removeTarget by remember { mutableStateOf<BrowserStore.Entry?>(null) }
     var moreSites by remember { mutableStateOf(false) }
 
+    val openPrivate = rememberPrivateOpener { nav.navigate(Routes.browser(BrowserStore.HOME_URL, private = true)) }
+    val proState by com.musibox.app.billing.PlayBilling.pro.collectAsStateWithLifecycle()
+    val isPro = proState.subscription || proState.passUntil > System.currentTimeMillis()
+    var adblockOn by remember { mutableStateOf(com.musibox.app.browser.AdBlocker.isEnabled(context)) }
+    var darkOn by remember { mutableStateOf(com.musibox.app.browser.AdBlocker.darkSites(context)) }
+    var lockOn by remember { mutableStateOf(com.musibox.app.browser.AdBlocker.privateLock(context)) }
+
     // Primeira vez no navegador: "Configurar seu navegador" (papel de parede e interesses)
     LaunchedEffect(active, setupDone) {
         if (active && !setupDone) nav.navigate(Routes.BROWSER_SETUP) { launchSingleTop = true }
@@ -256,7 +263,7 @@ fun BrowserHomeScreen(nav: NavController) {
                     Modifier.weight(1f),
                 ) {
                     focus.clearFocus()
-                    nav.navigate(Routes.browser(BrowserStore.HOME_URL, private = true))
+                    openPrivate()
                 }
             }
 
@@ -287,6 +294,19 @@ fun BrowserHomeScreen(nav: NavController) {
                 MenuRow(Icons.Rounded.History, "Histórico", "${history.size} páginas") { menu = false; sheet = "history" }
                 MenuRow(Icons.Rounded.Tab, "Abas abertas", "${tabs.size} abas") { menu = false; nav.navigate(Routes.browser(BrowserStore.TABS_URL)) }
                 MenuRow(Icons.Rounded.Add, "Adicionar atalho", "Coloque um site na página inicial") { menu = false; addDialog = true }
+                Text("Recursos Pró", color = Color(0xFF9A9A9A), fontSize = 13.sp, modifier = Modifier.padding(start = 10.dp, top = 12.dp, bottom = 2.dp))
+                ProToggle("Bloquear anúncios e rastreadores", isPro, isPro && adblockOn, onPro = { menu = false; nav.navigate(Routes.PRO) }) {
+                    adblockOn = it
+                    com.musibox.app.browser.AdBlocker.setEnabled(context, it)
+                }
+                ProToggle("Modo escuro em todos os sites", isPro, isPro && darkOn, onPro = { menu = false; nav.navigate(Routes.PRO) }) {
+                    darkOn = it
+                    com.musibox.app.browser.AdBlocker.setDarkSites(context, it)
+                }
+                ProToggle("Senha (PIN do cofre) nas abas privadas", isPro, isPro && lockOn, onPro = { menu = false; nav.navigate(Routes.PRO) }) {
+                    lockOn = it
+                    com.musibox.app.browser.AdBlocker.setPrivateLock(context, it)
+                }
             }
         }
     }
@@ -729,6 +749,34 @@ private fun MenuRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title
         Column {
             Text(title, color = Color.White, fontSize = 16.sp)
             Text(subtitle, color = Color(0xFF9A9A9A), fontSize = 12.sp)
+        }
+    }
+}
+
+@Composable
+private fun ProToggle(label: String, isPro: Boolean, checked: Boolean, onPro: () -> Unit, onChange: (Boolean) -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { if (isPro) onChange(!checked) else onPro() }
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, color = Color.White, fontSize = 15.sp, modifier = Modifier.weight(1f))
+        if (isPro) {
+            androidx.compose.material3.Switch(checked = checked, onCheckedChange = onChange)
+        } else {
+            Text(
+                "Pró",
+                color = Color(0xFF0A0A0A),
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFFFFC857))
+                    .padding(horizontal = 8.dp, vertical = 3.dp),
+            )
         }
     }
 }

@@ -94,6 +94,11 @@ $UI tapx "Início" 10; sleep 3; shot 14e_inicio_com_tema
 $UI tapx "Mais" 10; sleep 2
 $UI tap "MusiBox Pró" 10; sleep 3; shot 14f_pro
 adb shell input keyevent KEYCODE_BACK; sleep 1
+$UI tap "Equalizador" 10; sleep 3; shot 14g_equalizador
+adb shell input keyevent KEYCODE_BACK; sleep 1
+launch; $UI tapx "Navegador" 10; sleep 3
+$UI tap "Personalizar navegador" 10; sleep 2; shot 14h_menu_navegador
+adb shell input keyevent KEYCODE_BACK; sleep 1
 
 step "Cofre: PIN, código de recuperação e recuperação"
 launch
@@ -111,6 +116,7 @@ $UI tap "Concluir" 5; sleep 2
 $UI tap "Configurações do cofre" 10
 $UI tap "Bloquear capturas de tela" 10
 shot 15_cofre_config
+adb shell input swipe 540 1700 540 700 300; sleep 2; shot 15a_cofre_config_pro
 $UI tap "Recuperação do PIN" 10; sleep 2; shot 15b_recuperacao
 adb shell input keyevent KEYCODE_BACK; sleep 1
 adb shell input keyevent KEYCODE_BACK; sleep 2

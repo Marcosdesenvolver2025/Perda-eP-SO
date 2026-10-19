@@ -83,6 +83,12 @@ object PlayBilling : PurchasesUpdatedListener {
     private val _pro = MutableStateFlow(ProState())
     val pro: StateFlow<ProState> = _pro.asStateFlow()
 
+    /** true depois que a Play confirmou as compras (papéis e assinatura) nesta abertura do app. */
+    private val _synced = MutableStateFlow(false)
+    val synced: StateFlow<Boolean> = _synced.asStateFlow()
+    @Volatile private var inappOk = false
+    @Volatile private var subsOk = false
+
     private var client: BillingClient? = null
     private var appContext: Context? = null
     private val details = mutableMapOf<String, ProductDetails>()
@@ -101,6 +107,11 @@ object PlayBilling : PurchasesUpdatedListener {
             renews = prefs.getBoolean("renews", false),
             passUntil = prefs.getLong("pass_until", 0L),
         )
+        if (firebaseReady()) {
+            runCatching {
+                com.google.firebase.auth.FirebaseAuth.getInstance().addAuthStateListener { a -> a.currentUser?.uid?.let { loadOwnedFromCloud(it) } }
+            }
+        }
         client = runCatching {
             BillingClient.newBuilder(ctx)
                 .setListener(this)
@@ -154,7 +165,7 @@ object PlayBilling : PurchasesUpdatedListener {
 
     private fun loadProducts() {
         val c = client ?: return
-        val inapp = Wallpapers.all.filter { !it.free && !it.pro }.map { it.productId } + PASS_3D
+        val inapp = Wallpapers.tierProducts + PASS_3D
         queryDetails(c, inapp, ProductType.INAPP)
         queryDetails(c, listOf(SUB_PRO), ProductType.SUBS)
     }
@@ -183,24 +194,48 @@ object PlayBilling : PurchasesUpdatedListener {
         val c = client ?: return
         if (_status.value != Status.READY) return
         c.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(ProductType.INAPP).build()) { result, purchases ->
-            if (result.responseCode == BillingResponseCode.OK) handleInapp(purchases, fullList = true)
+            if (result.responseCode == BillingResponseCode.OK) {
+                handleInapp(purchases, fullList = true)
+                inappOk = true
+                _synced.value = inappOk && subsOk
+            }
         }
         c.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(ProductType.SUBS).build()) { result, purchases ->
-            if (result.responseCode == BillingResponseCode.OK) handleSubs(purchases)
+            if (result.responseCode == BillingResponseCode.OK) {
+                handleSubs(purchases)
+                subsOk = true
+                _synced.value = inappOk && subsOk
+            }
         }
     }
 
     // ---------------------------------------------------------------- compras
 
+    /**
+     * Compra um papel. Cada faixa de preço é um produto da Play; o papel escolhido vai junto
+     * na compra e fica salvo na conta Google da pessoa (Firestore), então volta ao reinstalar.
+     */
     fun buyWallpaper(activity: Activity, w: Wallpaper, onResult: (String) -> Unit) {
-        launch(activity, w.productId, null, onResult)
+        val uid = currentUid()
+        if (uid == null) {
+            onResult(LOGIN_MSG)
+            return
+        }
+        launch(activity, w.productId, null, onResult, accountId = hashUid(uid), profileId = w.id)
     }
 
     fun buyPro(activity: Activity, plan: ProPlan, onResult: (String) -> Unit) {
         launch(activity, plan.productId, plan.basePlanId, onResult)
     }
 
-    private fun launch(activity: Activity, productId: String, basePlanId: String?, onResult: (String) -> Unit) {
+    private fun launch(
+        activity: Activity,
+        productId: String,
+        basePlanId: String?,
+        onResult: (String) -> Unit,
+        accountId: String? = currentUid()?.let { hashUid(it) },
+        profileId: String? = null,
+    ) {
         val c = client
         if (c == null || _status.value != Status.READY) {
             onResult(UNAVAILABLE_MSG)
@@ -223,7 +258,10 @@ object PlayBilling : PurchasesUpdatedListener {
             }
             builder.setOfferToken(offer.offerToken)
         }
-        val flow = BillingFlowParams.newBuilder().setProductDetailsParamsList(listOf(builder.build())).build()
+        val flowBuilder = BillingFlowParams.newBuilder().setProductDetailsParamsList(listOf(builder.build()))
+        accountId?.let { flowBuilder.setObfuscatedAccountId(it) }
+        profileId?.let { flowBuilder.setObfuscatedProfileId(it) }
+        val flow = flowBuilder.build()
         pendingResult = onResult
         val r = c.launchBillingFlow(activity, flow)
         if (r.responseCode != BillingResponseCode.OK) {
@@ -261,30 +299,91 @@ object PlayBilling : PurchasesUpdatedListener {
         else -> "Não foi possível concluir a compra (${r.responseCode})."
     }
 
+    const val LOGIN_MSG = "Entre com sua conta Google para comprar. Assim o papel fica salvo na sua conta para sempre."
+
     private const val UNAVAILABLE_MSG =
         "A Google Play não está disponível neste aparelho agora. As compras funcionam no app baixado pela Play Store."
 
     // ---------------------------------------------------------------- processamento
 
+    @Suppress("UNUSED_PARAMETER")
     private fun handleInapp(purchases: List<Purchase>, fullList: Boolean) {
         val c = client ?: return
-        val owned = if (fullList) mutableSetOf() else _owned.value.toMutableSet()
         purchases.forEach { p ->
             if (p.purchaseState != Purchase.PurchaseState.PURCHASED) return@forEach
-            p.products.forEach { product ->
-                when {
-                    product == PASS_3D -> grantPass(p)
-                    product.startsWith("wp_") -> Wallpapers.byProduct(product)?.let { owned += it.id }
+            when {
+                p.products.contains(PASS_3D) -> {
+                    grantPass(p)
+                    c.consumeAsync(ConsumeParams.newBuilder().setPurchaseToken(p.purchaseToken).build()) { _, _ -> }
+                }
+                p.products.any { it.startsWith("papel_") } -> {
+                    val id = p.accountIdentifiers?.obfuscatedProfileId
+                    val w = Wallpapers.get(id)
+                    if (w == null) {
+                        // compra sem papel identificado: não consome (fica para o suporte resolver)
+                        Log.w(TAG, "Compra de papel sem identificação: ${p.orderId}")
+                        return@forEach
+                    }
+                    addOwned(setOf(w.id))
+                    // Salva na conta e só então consome (se falhar, tenta de novo na próxima abertura)
+                    saveOwnedToCloud(w.id) { ok ->
+                        if (ok) c.consumeAsync(ConsumeParams.newBuilder().setPurchaseToken(p.purchaseToken).build()) { _, _ -> }
+                    }
+                }
+                !p.isAcknowledged -> {
+                    c.acknowledgePurchase(AcknowledgePurchaseParams.newBuilder().setPurchaseToken(p.purchaseToken).build()) { }
                 }
             }
-            if (p.products.contains(PASS_3D)) {
-                c.consumeAsync(ConsumeParams.newBuilder().setPurchaseToken(p.purchaseToken).build()) { _, _ -> }
-            } else if (!p.isAcknowledged) {
-                c.acknowledgePurchase(AcknowledgePurchaseParams.newBuilder().setPurchaseToken(p.purchaseToken).build()) { }
+        }
+        save()
+    }
+
+    private fun addOwned(ids: Set<String>) {
+        if (ids.isEmpty() || _owned.value.containsAll(ids)) return
+        _owned.update { it + ids }
+        save()
+    }
+
+    // ---------------------------------------------------------------- conta (Firestore)
+
+    private fun firebaseReady(): Boolean = appContext?.let { com.google.firebase.FirebaseApp.getApps(it).isNotEmpty() } == true
+
+    private fun currentUid(): String? =
+        if (firebaseReady()) runCatching { com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid }.getOrNull() else null
+
+    private fun hashUid(uid: String): String =
+        java.security.MessageDigest.getInstance("SHA-256").digest(uid.toByteArray()).joinToString("") { "%02x".format(it) }
+
+    private fun wallpapersDoc(uid: String) =
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            .collection("users").document(uid).collection("appData").document("wallpapers")
+
+    private fun saveOwnedToCloud(id: String, done: (Boolean) -> Unit) {
+        val uid = currentUid()
+        if (uid == null) {
+            done(!firebaseReady()) // sem Firebase no app: guarda só no aparelho
+            return
+        }
+        runCatching {
+            wallpapersDoc(uid).set(
+                mapOf(
+                    "owned" to com.google.firebase.firestore.FieldValue.arrayUnion(id),
+                    "updatedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp(),
+                ),
+                com.google.firebase.firestore.SetOptions.merge(),
+            ).addOnCompleteListener { done(it.isSuccessful) }
+        }.onFailure { done(false) }
+    }
+
+    /** Traz da conta os papéis já comprados (ao entrar com Google ou abrir o app). */
+    private fun loadOwnedFromCloud(uid: String) {
+        runCatching {
+            wallpapersDoc(uid).get().addOnSuccessListener { doc ->
+                @Suppress("UNCHECKED_CAST")
+                val ids = (doc.get("owned") as? List<String>).orEmpty().filter { Wallpapers.get(it) != null }.toSet()
+                addOwned(ids)
             }
         }
-        _owned.value = owned
-        save()
     }
 
     /** Passe de 3 dias: soma 3 dias (uma vez por compra). */

@@ -130,7 +130,52 @@ const val EXPORT_WARNING = "Este arquivo ficará visível fora do cofre. Deseja 
 
 @Composable
 fun VaultScreen(nav: NavController) {
-    VaultGate { VaultContent(nav) }
+    VaultGate {
+        VaultContent(nav)
+        IntrusionAlert(nav)
+    }
+}
+
+/** Alerta de invasão: mostra quem errou o PIN enquanto o cofre estava trancado (detalhes no Pró). */
+@Composable
+private fun IntrusionAlert(nav: NavController) {
+    val container = com.musibox.app.ui.components.LocalAppContainer.current
+    var alerts by remember { mutableStateOf<List<Long>>(emptyList()) }
+    androidx.compose.runtime.LaunchedEffect(Unit) { alerts = container.pin.takeUnlockAlerts() }
+    if (alerts.isEmpty()) return
+    val isPro = com.musibox.app.billing.PlayBilling.isProNow()
+    val fmt = remember { java.text.SimpleDateFormat("dd/MM 'às' HH:mm", java.util.Locale("pt", "BR")) }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = { alerts = emptyList() },
+        icon = { androidx.compose.material3.Icon(Icons.Rounded.Lock, null, tint = androidx.compose.ui.graphics.Color(0xFFFF5A5F)) },
+        title = { Text("Alerta de invasão") },
+        text = {
+            Column {
+                Text(
+                    if (alerts.size == 1) "Alguém errou o PIN do cofre 1 vez enquanto você estava fora."
+                    else "Alguém errou o PIN do cofre ${alerts.size} vezes enquanto você estava fora.",
+                )
+                if (isPro) {
+                    Spacer(Modifier.height(10.dp))
+                    alerts.takeLast(8).reversed().forEach { t ->
+                        Text("• ${fmt.format(java.util.Date(t))}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                } else {
+                    Spacer(Modifier.height(10.dp))
+                    Text("Veja o dia e a hora de cada tentativa com o MusiBox Pró.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        },
+        confirmButton = {
+            if (isPro) {
+                androidx.compose.material3.TextButton(onClick = { alerts = emptyList() }) { Text("Entendi") }
+            } else {
+                androidx.compose.material3.TextButton(onClick = { alerts = emptyList(); nav.navigate(Routes.PRO) }) { Text("Ver com o Pró") }
+            }
+        },
+        dismissButton = if (isPro) null else ({ androidx.compose.material3.TextButton(onClick = { alerts = emptyList() }) { Text("Agora não") } }),
+        containerColor = Mb.colors.cardHigh,
+    )
 }
 
 private sealed interface VaultDialog {

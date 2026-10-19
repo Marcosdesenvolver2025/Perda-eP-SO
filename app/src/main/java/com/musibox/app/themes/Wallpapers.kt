@@ -16,7 +16,8 @@ data class Wallpaper(
 ) {
     val accent: Color get() = Color(accentArgb)
     val free: Boolean get() = price == 0 && !pro
-    val productId: String get() = "wp_$id"
+    /** Produto da Google Play da faixa de preço (ex.: "papel_099" = R$ 0,99). */
+    val productId: String get() = "papel_" + price.toString().padStart(3, '0')
     val assetUri: String get() = "file:///android_asset/wallpapers/$id.webp"
 
     /** Preço da tabela (o preço real vem da Play Store quando disponível). */
@@ -97,7 +98,8 @@ object Wallpapers {
 
     fun get(id: String?): Wallpaper? = id?.let { byId[it] }
 
-    fun byProduct(productId: String): Wallpaper? = if (productId.startsWith("wp_")) byId[productId.removePrefix("wp_")] else null
+    /** Faixas de preço vendidas na Play (um produto por faixa). */
+    val tierProducts: List<String> get() = all.filter { !it.free && !it.pro }.map { it.productId }.distinct()
 
     /** Papel padrão do navegador (grátis). */
     const val DEFAULT_BROWSER = "noite_estrelada"

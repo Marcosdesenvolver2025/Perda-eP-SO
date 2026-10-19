@@ -3,7 +3,7 @@
 exec > >(tee install.log) 2>&1
 BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
 echo "abilist: $(adb shell getprop ro.product.cpu.abilist)"
-for f in MusiBox.apk MusiBox-celular-antigo.apk; do
+for f in MusiBox.apk; do
   PKG=$("$BT/aapt2" dump packagename "$f")
   ABI=$("$BT/aapt2" dump badging "$f" | sed -n "s/native-code: '\(.*\)'/\1/p")
   adb shell getprop ro.product.cpu.abilist | grep -q "$ABI" || { echo "$f: emulador sem $ABI, pulando"; continue; }

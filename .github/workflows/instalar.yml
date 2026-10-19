@@ -18,7 +18,7 @@ jobs:
         run: |
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
           {
-            for f in MusiBox.apk MusiBox-celular-antigo.apk; do
+            for f in MusiBox.apk; do
               echo "== $f"
               "$BT/apksigner" verify --print-certs "$f" | grep -E "SHA-1|SHA-256" ; echo "apksigner exit=${PIPESTATUS[0]}"
               "$BT/zipalign" -c -P 16 4 "$f" > /dev/null; echo "zipalign exit=$?"

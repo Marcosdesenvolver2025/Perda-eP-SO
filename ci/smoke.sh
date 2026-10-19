@@ -44,6 +44,8 @@ step "Primeira abertura"
 adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
 sleep 6
 shot 01_apresentacao
+adb shell uiautomator dump /sdcard/full.xml >/dev/null 2>&1; adb pull /sdcard/full.xml "$OUT/full_onboarding.xml" >/dev/null 2>&1
+adb shell dumpsys window | grep -E "mCurrentFocus|mFocusedApp" | head -3
 $UI tapx "Pular" 20; sleep 2
 shot 02_conta
 $UI tap "Continuar sem conta" 30

@@ -21,6 +21,17 @@ def dump():
     return None
 
 
+def debug():
+    """Mostra o que o uiautomator leu (pacote e alguns textos) para entender falhas."""
+    root = dump()
+    if root is None:
+        print("   (dump vazio)")
+        return
+    pkgs = sorted({n.get("package", "") for n in root.iter("node")})
+    texts = [v for n in root.iter("node") for v in (n.get("text"), n.get("content-desc")) if v][:14]
+    print(f"   pacotes={pkgs} nós={sum(1 for _ in root.iter('node'))} textos={texts}")
+
+
 def find(text, exact=False):
     root = dump()
     if root is None:
@@ -47,6 +58,7 @@ def tap(text, timeout=20, exact=False):
             return True
         time.sleep(1)
     print(f"NÃO ENCONTRADO: '{text}'")
+    debug()
     return False
 
 

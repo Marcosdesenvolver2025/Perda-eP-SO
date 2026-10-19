@@ -5,8 +5,11 @@ BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
 echo "abilist: $(adb shell getprop ro.product.cpu.abilist)"
 for f in MusiBox.apk; do
   PKG=$("$BT/aapt2" dump packagename "$f")
-  ABI=$("$BT/aapt2" dump badging "$f" | sed -n "s/native-code: '\(.*\)'/\1/p")
-  adb shell getprop ro.product.cpu.abilist | grep -q "$ABI" || { echo "$f: emulador sem $ABI, pulando"; continue; }
+  ABIS=$("$BT/aapt2" dump badging "$f" | sed -n "s/native-code: //p" | tr -d "'")
+  DEV=$(adb shell getprop ro.product.cpu.abilist)
+  OK=1
+  if [ -n "$ABIS" ]; then OK=0; for a in $ABIS; do echo "$DEV" | grep -q "$a" && OK=1; done; fi
+  [ "$OK" = 1 ] || { echo "$f: emulador sem $ABIS, pulando"; continue; }
   adb uninstall $PKG > /dev/null 2>&1
   t0=$(date +%s)
   r=$(adb install "$f" 2>&1 | tail -1)

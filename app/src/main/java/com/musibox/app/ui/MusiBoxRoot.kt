@@ -40,10 +40,11 @@ import androidx.navigation.navArgument
 import com.musibox.app.ui.components.LocalAppContainer
 import com.musibox.app.ui.components.LocalSnackbar
 import com.musibox.app.ui.account.LoginContent
-import com.musibox.app.ui.components.DownloadIndicator
 import com.musibox.app.ui.components.SpaceBackdrop
-import com.musibox.app.ui.download.BrowserScreen
-import com.musibox.app.ui.download.DownloadsManagerScreen
+import com.musibox.app.ui.browser.BrowserScreen
+import com.musibox.app.ui.browser.BrowserSetupScreen
+import com.musibox.app.ui.themes.WallpaperPreviewScreen
+import com.musibox.app.ui.themes.WallpaperStoreScreen
 import com.musibox.app.ui.history.HistoryScreen
 import com.musibox.app.ui.library.LibraryScreen
 import com.musibox.app.ui.library.PlaylistScreen
@@ -82,12 +83,13 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
 
     val showBottom = route == Routes.MAIN
     val pagerState = rememberPagerState { MainTabs.COUNT }
-    val allDownloads by container.downloads.all.collectAsStateWithLifecycle(initialValue = emptyList())
-    val downloading = allDownloads.any {
-        it.status == com.musibox.app.data.db.DownloadStatus.RUNNING || it.status == com.musibox.app.data.db.DownloadStatus.QUEUED
-    }
     val rootScope = rememberCoroutineScope()
-    val hideMiniOn = setOf(Routes.PRO, Routes.PRO_CHECKOUT, Routes.PICK_SONGS, Routes.PLAYER, Routes.QUEUE, Routes.ONBOARDING, Routes.VAULT_PLAYER, Routes.VAULT_VIEWER, Routes.BROWSER, Routes.LOGIN)
+    val hideMiniOn = setOf(
+        Routes.PRO, Routes.PICK_SONGS, Routes.PLAYER, Routes.QUEUE, Routes.ONBOARDING, Routes.VAULT_PLAYER, Routes.VAULT_VIEWER,
+        Routes.BROWSER, Routes.LOGIN, Routes.BROWSER_SETUP, Routes.WALLPAPER,
+    )
+    val fullScreen = route == Routes.PLAYER || route == Routes.VAULT_PLAYER || route == Routes.ONBOARDING ||
+        route == Routes.BROWSER_SETUP || route == Routes.WALLPAPER || route == Routes.BROWSER
     val showMini = playerState.current != null && route != null && route !in hideMiniOn
 
     // Quem ainda não entrou na conta (e não escolheu "Continuar sem conta") vê a tela de entrada uma vez.
@@ -101,7 +103,7 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
     LaunchedEffect(navRequests) {
         navRequests.collect { target ->
             if (navController.currentDestination?.route == Routes.ONBOARDING) return@collect
-            if (target.startsWith("download?") || target == Routes.VAULT || target == Routes.HOME) {
+            if (target == Routes.VAULT || target == Routes.HOME || target == Routes.BROWSER_HOME) {
                 navController.navigateTopLevel(target)
             } else {
                 navController.navigate(target) { launchSingleTop = true }
@@ -111,7 +113,15 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
 
     CompositionLocalProvider(LocalSnackbar provides snackbar) {
         Box(Modifier.fillMaxSize()) {
-        SpaceBackdrop()
+        // Na página do navegador, o fundo vira o papel de parede do navegador (troca durante o deslize)
+        SpaceBackdrop(browserAmount = {
+            if (navController.currentDestination?.route != Routes.MAIN) {
+                0f
+            } else {
+                val off = (pagerState.currentPage - MainTabs.BROWSER) + pagerState.currentPageOffsetFraction
+                1f - kotlin.math.abs(off)
+            }
+        })
         Scaffold(
             containerColor = androidx.compose.ui.graphics.Color.Transparent,
             // Fundo transparente (para o espaço aparecer), mas texto sempre claro e visível.
@@ -120,11 +130,6 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
             snackbarHost = { SnackbarHost(snackbar) },
             bottomBar = {
                 Column {
-                    DownloadIndicator(
-                        visible = route != null && route != Routes.DOWNLOADS && route != Routes.ONBOARDING &&
-                            route != Routes.PLAYER && route != Routes.VAULT_PLAYER && route != Routes.LOGIN,
-                        onOpen = { navController.navigate(Routes.DOWNLOADS) { launchSingleTop = true } },
-                    )
                     AnimatedVisibility(showMini, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut()) {
                         MiniPlayer(
                             state = playerState,
@@ -135,8 +140,8 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
                         )
                     }
                     if (showBottom) {
-                        BottomBar(pagerState.targetPage, downloading) { page -> rootScope.launch { pagerState.animateScrollToPage(page) } }
-                    } else if (route != Routes.PLAYER && route != Routes.VAULT_PLAYER && route != Routes.ONBOARDING) {
+                        BottomBar(pagerState.targetPage) { page -> rootScope.launch { pagerState.animateScrollToPage(page) } }
+                    } else if (!fullScreen) {
                         Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
                     }
                 }
@@ -161,7 +166,9 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
                     Routes.LIBRARY,
                     arguments = listOf(navArgument("tab") { type = NavType.IntType; defaultValue = 0 }),
                 ) { entry -> LibraryScreen(navController, entry.arguments?.getInt("tab") ?: 0) }
-                composable(Routes.DOWNLOADS) { DownloadsManagerScreen(navController) }
+                composable(Routes.BROWSER_SETUP) { BrowserSetupScreen(navController) }
+                composable(Routes.WALLPAPERS) { WallpaperStoreScreen(navController) }
+                composable(Routes.WALLPAPER) { entry -> WallpaperPreviewScreen(navController, entry.arguments?.getString("id").orEmpty()) }
                 composable(Routes.LOGIN) {
                     val scope = rememberCoroutineScope()
                     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding()) {
@@ -176,8 +183,17 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
                 }
                 composable(
                     Routes.BROWSER,
-                    arguments = listOf(navArgument("url") { type = NavType.StringType; defaultValue = "https://m.youtube.com" }),
-                ) { entry -> BrowserScreen(navController, entry.arguments?.getString("url") ?: "https://m.youtube.com") }
+                    arguments = listOf(
+                        navArgument("url") { type = NavType.StringType; defaultValue = "https://www.google.com/" },
+                        navArgument("private") { type = NavType.BoolType; defaultValue = false },
+                    ),
+                ) { entry ->
+                    BrowserScreen(
+                        navController,
+                        entry.arguments?.getString("url") ?: "https://www.google.com/",
+                        private = entry.arguments?.getBoolean("private") ?: false,
+                    )
+                }
                 composable(
                     Routes.PLAYER,
                     enterTransition = { slideInVertically(tween(300)) { it } },
@@ -203,10 +219,6 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
                 }
                 composable(Routes.PLAYLIST) { entry -> PlaylistScreen(navController, entry.arguments?.getString("id").orEmpty()) }
                 composable(Routes.PRO) { com.musibox.app.ui.pro.ProScreen(navController) }
-                composable(
-                    Routes.PRO_CHECKOUT,
-                    arguments = listOf(navArgument("url") { type = NavType.StringType; defaultValue = "" }),
-                ) { entry -> com.musibox.app.ui.pro.ProCheckoutScreen(navController, entry.arguments?.getString("url").orEmpty()) }
                 composable(Routes.PICK_SONGS) { entry ->
                     com.musibox.app.ui.library.SongPickerScreen(navController, entry.arguments?.getString("id").orEmpty())
                 }

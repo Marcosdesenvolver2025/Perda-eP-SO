@@ -10,9 +10,6 @@ plugins {
 
 val appId = (project.findProperty("musibox.applicationId") as String?) ?: "br.com.musibox"
 
-// Anúncios (Start.io) e Pró (Stripe)
-fun prop(name: String, default: String = ""): String = ((project.findProperty(name) as String?) ?: default).trim()
-val startioAppId = prop("musibox.startioAppId", "209698277")
 
 // Lê o google-services.json REAL (nunca é alterado nem substituído).
 val googleServicesFile = file("google-services.json")
@@ -78,8 +75,8 @@ android {
         applicationId = appId
         minSdk = 29
         targetSdk = 35
-        versionCode = 14
-        versionName = "1.8.1"
+        versionCode = 15
+        versionName = "2.0.0"
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${readWebClientId()}\"")
         buildConfigField("boolean", "FIREBASE_CONFIGURED", (firebaseClient != null).toString())
         buildConfigField("boolean", "FIREBASE_MANUAL_INIT", (firebaseClient != null && !usePluginConfig).toString())
@@ -88,13 +85,6 @@ android {
         buildConfigField("String", "FB_PROJECT_ID", "\"${firebaseValue("projectId")}\"")
         buildConfigField("String", "FB_SENDER_ID", "\"${firebaseValue("senderId")}\"")
         buildConfigField("String", "FB_STORAGE_BUCKET", "\"${firebaseValue("storageBucket")}\"")
-        manifestPlaceholders["startioAppId"] = startioAppId
-        // Anúncios de teste até o lançamento (true = anúncios de teste da Start.io)
-        buildConfigField("boolean", "ADS_TEST", prop("musibox.adsTest", "true"))
-        buildConfigField("String", "STRIPE_PRICE_3D", "\"${prop("musibox.stripePrice3d")}\"")
-        buildConfigField("String", "STRIPE_PRICE_WEEK", "\"${prop("musibox.stripePriceWeek")}\"")
-        buildConfigField("String", "STRIPE_PRICE_MONTH", "\"${prop("musibox.stripePriceMonth")}\"")
-        buildConfigField("String", "STRIPE_REGION", "\"${prop("musibox.stripeRegion", "southamerica-east1")}\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -121,15 +111,6 @@ android {
         }
     }
 
-    splits {
-        abi {
-            isEnable = true
-            reset()
-            include("arm64-v8a", "armeabi-v7a", "x86_64")
-            isUniversalApk = false
-        }
-    }
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -141,8 +122,6 @@ android {
     }
 
     packaging {
-        // Necessário para o motor yt-dlp (python/ffmpeg empacotados como bibliotecas nativas).
-        jniLibs { useLegacyPackaging = true }
         resources {
             excludes += setOf(
                 "/META-INF/{AL2.0,LGPL2.1}",
@@ -226,16 +205,19 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.9.0"))
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
-    implementation("com.google.firebase:firebase-functions")
-    implementation("com.startapp:inapp-sdk:5.1.0")
     implementation("androidx.credentials:credentials:1.5.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.5.0")
     implementation("com.google.android.gms:play-services-auth:21.3.0")
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
 
-    // Motor de download (yt-dlp + ffmpeg)
-    implementation("io.github.junkfood02.youtubedl-android:library:0.18.1")
-    implementation("io.github.junkfood02.youtubedl-android:ffmpeg:0.18.1")
+    // Compras pela Google Play (papéis de parede e MusiBox Pró)
+    implementation("com.android.billingclient:billing:8.0.0")
+
+    // Navegador: perfil separado para a navegação privada
+    implementation("androidx.webkit:webkit:1.12.1")
+
+    // Leitor de QR Code do Google (sem pedir permissão de câmera)
+    implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")

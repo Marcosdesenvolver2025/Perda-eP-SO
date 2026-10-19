@@ -35,7 +35,6 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.musibox.app.download.Platform
 import com.musibox.app.ui.theme.MbPalette
 
 /** Logo do MusiBox: barra + "play" em gradiente, com o nome ao lado. */
@@ -77,91 +76,5 @@ fun LogoMark(size: Dp) {
             close()
         }
         drawPath(path, Brush.linearGradient(listOf(MbPalette.BlueBright, MbPalette.BlueDeep)))
-    }
-}
-
-/** Ícones genéricos das plataformas (formas próprias, não os logotipos oficiais). */
-@Composable
-fun PlatformIcon(platform: Platform, size: Dp = 52.dp) {
-    when (platform) {
-        Platform.YOUTUBE -> Box(
-            Modifier
-                .size(width = size, height = size * 0.72f)
-                .clip(RoundedCornerShape(size * 0.22f))
-                .background(MbPalette.Red),
-            contentAlignment = Alignment.Center,
-        ) {
-            Canvas(Modifier.size(size * 0.3f)) {
-                val w = this.size.width
-                val h = this.size.height
-                val p = Path().apply {
-                    moveTo(w * 0.15f, 0f)
-                    lineTo(w, h / 2)
-                    lineTo(w * 0.15f, h)
-                    close()
-                }
-                drawPath(p, Color.White)
-            }
-        }
-        Platform.TIKTOK -> Box(
-            Modifier
-                .size(size)
-                .clip(RoundedCornerShape(size * 0.26f))
-                .background(Color(0xFF0B0B0F)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                Icons.Rounded.MusicNote, null, tint = Color(0xFF25F4EE),
-                modifier = Modifier
-                    .offset(x = size * -0.03f, y = size * -0.03f)
-                    .size(size * 0.62f),
-            )
-            Icon(
-                Icons.Rounded.MusicNote, null, tint = Color(0xFFFE2C55),
-                modifier = Modifier
-                    .offset(x = size * 0.03f, y = size * 0.03f)
-                    .size(size * 0.62f),
-            )
-            Icon(Icons.Rounded.MusicNote, null, tint = Color.White, modifier = Modifier.size(size * 0.62f))
-        }
-        Platform.INSTAGRAM -> Box(
-            Modifier
-                .size(size)
-                .clip(RoundedCornerShape(size * 0.28f))
-                .background(
-                    Brush.linearGradient(
-                        listOf(Color(0xFFFEDA75), Color(0xFFFA7E1E), Color(0xFFD62976), Color(0xFF962FBF), Color(0xFF4F5BD5)),
-                        start = Offset(0f, Float.POSITIVE_INFINITY),
-                        end = Offset(Float.POSITIVE_INFINITY, 0f),
-                    ),
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Canvas(Modifier.size(size * 0.62f)) {
-                val s = this.size.width
-                val stroke = Stroke(width = s * 0.09f)
-                drawRoundRect(Color.White, size = Size(s, s), cornerRadius = CornerRadius(s * 0.3f), style = stroke)
-                drawCircle(Color.White, radius = s * 0.22f, center = Offset(s / 2, s / 2), style = stroke)
-                drawCircle(Color.White, radius = s * 0.06f, center = Offset(s * 0.77f, s * 0.23f))
-            }
-        }
-        Platform.LOCAL -> GenericIcon(Icons.Rounded.Folder, size)
-        Platform.FACEBOOK, Platform.TWITTER, Platform.OTHER -> GenericIcon(Icons.Rounded.Link, size)
-    }
-}
-
-@Composable
-fun MorePlatformsIcon(size: Dp = 52.dp) = GenericIcon(Icons.Rounded.MoreHoriz, size)
-
-@Composable
-private fun GenericIcon(icon: androidx.compose.ui.graphics.vector.ImageVector, size: Dp) {
-    Box(
-        Modifier
-            .size(size)
-            .clip(RoundedCornerShape(size * 0.28f))
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(icon, null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(size * 0.55f))
     }
 }

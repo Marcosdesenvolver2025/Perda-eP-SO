@@ -244,11 +244,9 @@ fun HomeScreen(nav: NavController) {
                             StateMessage(
                                 Icons.Rounded.MusicOff,
                                 "Nenhuma música encontrada",
-                                "Baixe músicas pelo MusiBox ou copie arquivos de áudio para o aparelho.",
-                                actionText = "Ir para Baixar",
-                                onAction = { nav.navigateTopLevel(Routes.download()) },
-                                secondaryText = "Procurar novamente",
-                                onSecondary = { vm.rescan() },
+                                "Copie arquivos de áudio para o aparelho (pasta Música ou Download) e eles aparecem aqui.",
+                                actionText = "Procurar novamente",
+                                onAction = { vm.rescan() },
                             )
                         }
                         else -> itemsIndexed(allSongs, key = { _, it -> "s" + it.id }) { i, song ->
@@ -483,7 +481,7 @@ private fun PlaylistRow(name: String, subtitle: String, isNew: Boolean = false, 
                 .size(56.dp)
                 .then(
                     if (isNew) Modifier.neoGlass(shape)
-                    else Modifier.clip(shape).background(Brush.linearGradient(listOf(Color(0xFF1FDF67), Color(0xFF14A84A)))),
+                    else Modifier.clip(shape).background(Brush.linearGradient(listOf(Neo.Green, androidx.compose.ui.graphics.lerp(Neo.Green, Color.Black, 0.3f)))),
                 ),
             contentAlignment = Alignment.Center,
         ) {
@@ -525,11 +523,15 @@ private fun buildSingerFolders(songs: List<Song>): List<SingerFolder> {
 
 const val UNKNOWN_SINGER = "Artista desconhecido"
 
-private val FOLDER_COLORS = listOf(
-    listOf(Color(0xFF1FDF67), Color(0xFF14A84A)),
-    listOf(Color(0xFF2BEA7A), Color(0xFF11923F)),
-    listOf(Color(0xFF1FDF67), Color(0xFF0E7A35)),
-)
+private val FOLDER_COLORS: List<List<Color>>
+    get() {
+        val g = Neo.Green
+        return listOf(
+            listOf(g, androidx.compose.ui.graphics.lerp(g, Color.Black, 0.3f)),
+            listOf(androidx.compose.ui.graphics.lerp(g, Color.White, 0.12f), androidx.compose.ui.graphics.lerp(g, Color.Black, 0.4f)),
+            listOf(g, androidx.compose.ui.graphics.lerp(g, Color.Black, 0.5f)),
+        )
+    }
 
 /** Pasta 3D com a capa de uma música do cantor saindo de dentro. */
 @Composable

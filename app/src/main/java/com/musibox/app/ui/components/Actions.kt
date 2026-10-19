@@ -6,29 +6,10 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.core.content.FileProvider
-import com.musibox.app.download.Platform
 import java.io.File
 
-/** Ações que abrem outros apps (abrir, compartilhar, plataformas). */
+/** Ações que abrem outros apps (abrir e compartilhar). */
 object ExternalActions {
-
-    /** Abre o app oficial da plataforma (ou o site) para o usuário escolher o conteúdo e compartilhar. */
-    fun openPlatform(context: Context, platform: Platform): Boolean {
-        val (packages, site) = when (platform) {
-            Platform.YOUTUBE -> listOf("com.google.android.youtube") to "https://m.youtube.com"
-            Platform.TIKTOK -> listOf("com.zhiliaoapp.musically", "com.ss.android.ugc.trill") to "https://www.tiktok.com"
-            Platform.INSTAGRAM -> listOf("com.instagram.android") to "https://www.instagram.com"
-            Platform.FACEBOOK -> listOf("com.facebook.katana") to "https://m.facebook.com"
-            else -> emptyList<String>() to "https://www.google.com"
-        }
-        for (pkg in packages) {
-            val launch = context.packageManager.getLaunchIntentForPackage(pkg)
-            if (launch != null) {
-                return runCatching { context.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); true }.getOrDefault(false)
-            }
-        }
-        return openUrl(context, site)
-    }
 
     fun openUrl(context: Context, url: String): Boolean = try {
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))

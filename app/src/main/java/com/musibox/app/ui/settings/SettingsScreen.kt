@@ -21,6 +21,7 @@ import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.PlayCircle
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.SaveAlt
@@ -80,8 +81,6 @@ fun SettingsScreen(nav: NavController) {
     val scope = rememberCoroutineScope()
     val snack = rememberSnack()
     var dialog by remember { mutableStateOf<SettingDialog?>(null) }
-    var updatingEngine by remember { mutableStateOf(false) }
-    var engineVersion by remember { mutableStateOf(container.ytdlp.version()) }
     val audioPermission = rememberAudioPermission(onGranted = { container.music.launchRescan() })
     val notifPermission = rememberPermissionState(
         if (Build.VERSION.SDK_INT >= 33) arrayOf(Manifest.permission.POST_NOTIFICATIONS) else emptyArray(),
@@ -104,7 +103,9 @@ fun SettingsScreen(nav: NavController) {
             }
             item {
                 SettingsSection("Aparência") {
-                    SettingItem(Icons.Rounded.Palette, "Tema", settings.themeMode.label, onClick = { dialog = SettingDialog.THEME })
+                    SettingItem(Icons.Rounded.Palette, "Papéis de parede e temas", "Fundo do app e do navegador", onClick = { nav.navigate(Routes.WALLPAPERS) })
+                    SettingDivider()
+                    SettingItem(Icons.Rounded.DarkMode, "Modo", settings.themeMode.label, onClick = { dialog = SettingDialog.THEME })
                 }
             }
             item {
@@ -125,7 +126,7 @@ fun SettingsScreen(nav: NavController) {
                         settings.stopOnTaskRemoved, { v -> scope.launch { container.settings.setStopOnTaskRemoved(v) } })
                     SettingDivider()
                     SettingItem(Icons.Rounded.GraphicEq, "Qualidade de áudio",
-                        "Arquivos do aparelho tocam na qualidade original. A qualidade dos MP3 baixados fica em Downloads.")
+                        "Os arquivos do aparelho tocam na qualidade original.")
                 }
             }
             item {
@@ -143,53 +144,16 @@ fun SettingsScreen(nav: NavController) {
                 }
             }
             item {
-                SettingsSection("Downloads") {
-                    SettingSwitch(Icons.AutoMirrored.Rounded.HelpOutline, "Sempre perguntar onde salvar", "Galeria ou cofre a cada download",
-                        settings.askDestination, { v -> scope.launch { container.settings.setAskDestination(v) } })
-                    SettingDivider()
-                    SettingItem(Icons.Rounded.SaveAlt, "Destino padrão", settings.defaultDestination.label, onClick = { dialog = SettingDialog.DESTINATION })
-                    SettingDivider()
-                    SettingItem(Icons.Rounded.Folder, "Pasta padrão", settings.downloadFolder.label, onClick = { dialog = SettingDialog.FOLDER })
-                    SettingDivider()
-                    SettingSwitch(Icons.Rounded.Wifi, "Somente Wi-Fi", "Downloads esperam uma rede Wi-Fi",
-                        settings.wifiOnly, { v -> scope.launch { container.settings.setWifiOnly(v) } })
-                    SettingDivider()
-                    SettingItem(Icons.Rounded.HighQuality, "Qualidade de vídeo padrão", "Até ${settings.videoQuality}p, quando disponível",
-                        onClick = { dialog = SettingDialog.VIDEO_QUALITY })
-                    SettingDivider()
-                    SettingItem(Icons.Rounded.AudioFile, "Formato de áudio padrão", settings.audioFormat.label, onClick = { dialog = SettingDialog.AUDIO_FORMAT })
-                    SettingDivider()
-                    SettingItem(Icons.Rounded.MusicNote, "Qualidade do MP3", "${settings.audioBitrate} kbps", onClick = { dialog = SettingDialog.BITRATE })
-                    SettingDivider()
-                    SettingItem(
-                        Icons.Rounded.SystemUpdate,
-                        "Motor de download",
-                        if (updatingEngine) "Atualizando…" else "Versão ${engineVersion ?: "—"} • toque para atualizar",
-                        onClick = {
-                            if (!updatingEngine) {
-                                updatingEngine = true
-                                scope.launch {
-                                    val msg = runCatching { container.ytdlp.update() }.getOrElse { it.message ?: "Não foi possível atualizar." }
-                                    container.settings.setYtdlpUpdatedAt(System.currentTimeMillis())
-                                    engineVersion = container.ytdlp.version()
-                                    updatingEngine = false
-                                    snack(msg)
-                                }
-                            }
-                        },
-                        trailing = if (updatingEngine) ({ CircularProgressIndicator(Modifier) }) else null,
-                    )
-                }
-            }
-            item {
                 SettingsSection("Cofre") {
                     SettingItem(Icons.Rounded.Lock, "Configurações do cofre", "Alterar PIN, biometria, bloqueio automático e privacidade",
                         onClick = { nav.navigate(Routes.VAULT_SETTINGS) }, tint = Mb.colors.vault)
+                    SettingDivider()
+                    SettingItem(Icons.Rounded.Folder, "Pasta ao tirar do cofre", settings.downloadFolder.label, onClick = { dialog = SettingDialog.FOLDER })
                 }
             }
             item {
                 SettingsSection("Armazenamento") {
-                    SettingItem(Icons.Rounded.Storage, "Espaço usado e cache", "Músicas, vídeos, imagens, cofre, downloads e cache",
+                    SettingItem(Icons.Rounded.Storage, "Espaço usado e cache", "Músicas, vídeos, imagens, cofre e cache",
                         onClick = { nav.navigate(Routes.STORAGE) })
                 }
             }
@@ -205,14 +169,14 @@ fun SettingsScreen(nav: NavController) {
                     SettingItem(
                         Icons.Rounded.Notifications,
                         "Notificações",
-                        if (notifPermission.granted) "Permitido" else "Negado — o progresso dos downloads não aparece na barra",
+                        if (notifPermission.granted) "Permitido" else "Negado — os controles da música não aparecem na barra",
                         onClick = { if (notifPermission.granted || notifPermission.permanentlyDenied) notifPermission.openSettings() else notifPermission.request() },
                     )
                 }
             }
             item {
                 SettingsSection("Sobre") {
-                    SettingItem(Icons.Rounded.Info, "MusiBox ${BuildConfig.VERSION_NAME}", "Player, downloads e cofre privado. Use downloads apenas de conteúdo que você tem direito de salvar.")
+                    SettingItem(Icons.Rounded.Info, "MusiBox ${BuildConfig.VERSION_NAME}", "Player de músicas, navegador e cofre privado.")
                 }
             }
         }
@@ -227,7 +191,7 @@ fun SettingsScreen(nav: NavController) {
         }, { dialog = null }, description = "Usado quando \"Sempre perguntar\" está desligado (e já vem marcado ao baixar).")
         SettingDialog.FOLDER -> ChoiceDialog("Pasta padrão", DownloadFolder.entries, settings.downloadFolder, { it.label }, { v ->
             dialog = null; scope.launch { container.settings.setDownloadFolder(v) }
-        }, { dialog = null }, description = "Onde os arquivos salvos na galeria ficam no aparelho.")
+        }, { dialog = null }, description = "Onde ficam os arquivos que você tira do cofre.")
         SettingDialog.VIDEO_QUALITY -> ChoiceDialog("Qualidade de vídeo", videoQualities, settings.videoQuality, { "${it}p" }, { v ->
             dialog = null; scope.launch { container.settings.setVideoQuality(v) }
         }, { dialog = null })

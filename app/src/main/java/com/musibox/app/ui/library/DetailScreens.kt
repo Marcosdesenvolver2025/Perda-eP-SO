@@ -351,12 +351,12 @@ fun SearchScreen(nav: NavController) {
                         Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 6.dp),
-                        onClick = { nav.navigateTopLevel(Routes.download(tab = 1, url = query.trim())) },
+                        onClick = { nav.navigate(Routes.browser(com.musibox.app.browser.BrowserStore.searchOrUrl(query.trim()))) },
                     ) {
                         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Rounded.Download, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+                            Icon(Icons.Rounded.Search, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
                             Spacer(Modifier.size(12.dp))
-                            Text("Buscar \"${query.trim()}\" para baixar", color = MaterialTheme.colorScheme.primary)
+                            Text("Pesquisar \"${query.trim()}\" na internet", color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
@@ -384,7 +384,7 @@ fun SearchScreen(nav: NavController) {
                 }
             }
             if (query.isNotBlank() && results.isEmpty() && all != null) {
-                item { StateMessage(Icons.Rounded.SearchOff, "Nada encontrado para \"${query.trim()}\"", "Tente outro nome ou busque para baixar.") }
+                item { StateMessage(Icons.Rounded.SearchOff, "Nada encontrado para \"${query.trim()}\"", "Tente outro nome ou pesquise na internet.") }
             }
             if (query.isBlank()) {
                 item {

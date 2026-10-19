@@ -89,7 +89,6 @@ fun StorageScreen(nav: NavController) {
                 Triple("Vídeos", i.videos, Icons.Rounded.Movie) to MbPalette.Orange,
                 Triple("Imagens", i.images, Icons.Rounded.Image) to MbPalette.Green,
                 Triple("Cofre", i.vault, Icons.Rounded.Lock) to MbPalette.PurpleBright,
-                Triple("Downloads do MusiBox", i.downloads, Icons.Rounded.Download) to MbPalette.Blue,
                 Triple("Cache", i.cache, Icons.Rounded.Cached) to MbPalette.TextSecondary,
             )
             val max = rows.maxOf { it.first.second ?: 0L }.coerceAtLeast(1)
@@ -107,8 +106,8 @@ fun StorageScreen(nav: NavController) {
             }
             Spacer(Modifier.height(16.dp))
             Text(
-                "Limpar o cache apaga apenas arquivos temporários e miniaturas. Suas músicas, os arquivos baixados, o cofre, " +
-                    "playlists e favoritos não são apagados. Downloads pausados continuam de onde pararam.",
+                "Limpar o cache apaga apenas arquivos temporários e miniaturas. Suas músicas, o cofre, " +
+                    "playlists e favoritos não são apagados.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

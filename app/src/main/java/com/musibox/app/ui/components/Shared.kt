@@ -36,65 +36,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.musibox.app.data.db.Song
-import com.musibox.app.download.Platform
 import com.musibox.app.ui.theme.Mb
 import kotlinx.coroutines.launch
 
-@Composable
-fun PlatformTiles(modifier: Modifier = Modifier, onPlatform: (Platform) -> Unit, onMore: () -> Unit) {
-    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        listOf(Platform.YOUTUBE, Platform.TIKTOK, Platform.INSTAGRAM).forEach { p ->
-            PlatformTile(Modifier.weight(1f), p.label, { PlatformIcon(p, 48.dp) }) { onPlatform(p) }
-        }
-        PlatformTile(Modifier.weight(1f), "Mais", { MorePlatformsIcon(48.dp) }, onMore)
-    }
-}
-
-@Composable
-private fun PlatformTile(modifier: Modifier, label: String, icon: @Composable () -> Unit, onClick: () -> Unit) {
-    MbCard(modifier.height(110.dp), onClick = onClick) {
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = 14.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Box(Modifier.height(48.dp), contentAlignment = Alignment.Center) { icon() }
-            Spacer(Modifier.height(10.dp))
-            Text(label, style = MaterialTheme.typography.labelLarge, maxLines = 1)
-        }
-    }
-}
-
-@Composable
-fun MorePlatformsDialog(onDismiss: () -> Unit, onPaste: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Como baixar") },
-        text = {
-            Column {
-                Text(
-                    "1. Abra o vídeo ou música no app (YouTube, TikTok, Instagram, Facebook, X, Vimeo, SoundCloud, Dailymotion e muitos outros sites).\n" +
-                        "2. Toque em Compartilhar.\n" +
-                        "3. Escolha \"Baixar com MusiBox\".\n\n" +
-                        "Você também pode copiar o link e colar na tela Baixar.",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    "Conteúdo protegido (DRM), privado ou que exige login não pode ser baixado.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        },
-        confirmButton = { TextButton(onClick = onPaste) { Text("Colar um link") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Fechar") } },
-        containerColor = Mb.colors.cardHigh,
-    )
-}
-
-/** Escolher uma playlist (ou criar uma nova) para adicionar músicas. */
 @Composable
 fun AddToPlaylistDialog(songs: List<Song>, onDismiss: () -> Unit) {
     val container = LocalAppContainer.current

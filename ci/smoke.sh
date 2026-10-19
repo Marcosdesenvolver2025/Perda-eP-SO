@@ -53,10 +53,13 @@ sleep 3; shot 04_inicio
 step "Biblioteca e player"
 $UI tap "Faixa de Teste 1" 20; sleep 4; shot 06_tocando
 # Deslizar para o lado troca de tela (Início -> Navegador -> Início)
-adb shell input swipe 950 1300 120 1300 250; sleep 2; shot 05_deslize_navegador
-adb shell input swipe 120 1300 950 1300 250; sleep 2; shot 05b_deslize_inicio
-$UI tapx "Cantores" 5; sleep 2; shot 05c_cantores
-$UI tapx "Áudios" 5; sleep 2; shot 05d_audios
+adb shell input swipe 950 1300 120 1300 250; sleep 3; shot 05_configurar_navegador
+$UI wait "Configurar seu navegador" 10
+adb shell input swipe 900 900 200 900 250; sleep 2; shot 05a_configurar_papel
+$UI tapx "Começar a navegar" 10; sleep 6; shot 05b_navegador_inicio
+adb shell input swipe 120 1300 950 1300 250; sleep 2; shot 05c_deslize_inicio
+$UI tapx "Cantores" 5; sleep 2; shot 05d_cantores
+$UI tapx "Áudios" 5; sleep 2; shot 05e_audios
 $UI tapx "Todas" 5; sleep 1
 launch --ez open_player true; sleep 3; shot 07_player
 adb shell input keyevent KEYCODE_HOME; sleep 2
@@ -64,34 +67,33 @@ adb shell cmd statusbar expand-notifications; sleep 3; shot 08_notificacao
 adb shell cmd statusbar collapse; sleep 1
 launch
 
-step "Download completo (servidor local)"
-launch; $UI tapx "Início" 5; sleep 1
-$UI tapx "Baixador" 10; sleep 2; shot 09_baixar
-launch --es download_url "http://10.0.2.2:8000/clipe_demo.mp4"
-$UI wait "Salvar em" 120; shot 10_opcoes
-$UI tapx "Música" 5
-$UI tapx "Galeria" 5
-shot 11_escolhas
-$UI tap "Baixar •" 5 || $UI tapx "Baixar" 5
-sleep 45
-$UI tap "Meus downloads" 10; sleep 3; shot 12_downloads
+step "Navegador (página inicial, notícias, privada e site)"
+launch; $UI tapx "Navegador" 10; sleep 6; shot 09_navegador_inicio
+adb shell input swipe 540 1700 540 600 400; sleep 3; shot 10_navegador_noticias
+adb shell input swipe 540 600 540 1700 400; sleep 1
+$UI tap "Privada" 10; sleep 8; shot 11_navegacao_privada
 adb shell input keyevent KEYCODE_BACK; sleep 1
+$UI tapx "Fechar navegação privada" 3 || adb shell input keyevent KEYCODE_BACK; sleep 2
+$UI tapx "YouTube" 10; sleep 12; shot 12_site_youtube
+adb shell input keyevent KEYCODE_BACK; sleep 1
+adb shell input keyevent KEYCODE_BACK; sleep 2
 
-step "Navegador interno"
-$UI tapx "Navegador" 10; sleep 2; shot 12a_navegador_inicio
-$UI tapx "YouTube" 10; sleep 15; shot 12b_navegador
+step "Papéis de parede e Pró"
+launch; $UI tapx "Mais" 10; sleep 2
+$UI tap "Papéis de parede" 10; sleep 4; shot 13_papeis_loja
+adb shell input swipe 540 1700 540 500 400; sleep 3; shot 13b_papeis_loja_rolada
+$UI tap "Supernova" 10; sleep 3; shot 14_papel_supernova
+$UI tap "Comprar" 5; sleep 3; shot 14b_comprar_sem_play
+$UI tap "Navegador" 5; sleep 2; shot 14c_previa_navegador
+adb shell input keyevent KEYCODE_BACK; sleep 2
+$UI tap "Névoa Verde" 10; sleep 3
+$UI tap "Usar no app" 5; sleep 2; shot 14d_usar_no_app
 adb shell input keyevent KEYCODE_BACK; sleep 1
+adb shell input keyevent KEYCODE_BACK; sleep 2
+$UI tapx "Início" 10; sleep 3; shot 14e_inicio_com_tema
+$UI tapx "Mais" 10; sleep 2
+$UI tap "MusiBox Pró" 10; sleep 3; shot 14f_pro
 adb shell input keyevent KEYCODE_BACK; sleep 1
-
-step "Download para o cofre pelo Compartilhar"
-adb shell am start -n "$PKG/com.musibox.app.share.DownloadShareAlias" -a android.intent.action.SEND -t text/plain \
-  --es android.intent.extra.TEXT "'Veja http://10.0.2.2:8000/clipe_demo.mp4'" >/dev/null 2>&1
-$UI wait "Salvar em" 90; sleep 2; shot 13_compartilhar
-$UI tapx "Vídeo" 5
-$UI tapx "Cofre" 5
-shot 14_compartilhar_cofre
-$UI tap "Baixar •" 10 || $UI tapx "Baixar" 5
-sleep 40
 
 step "Cofre: PIN, código de recuperação e recuperação"
 launch
@@ -112,6 +114,14 @@ shot 15_cofre_config
 $UI tap "Recuperação do PIN" 10; sleep 2; shot 15b_recuperacao
 adb shell input keyevent KEYCODE_BACK; sleep 1
 adb shell input keyevent KEYCODE_BACK; sleep 2
+# Guarda o vídeo de teste no cofre pelo menu Compartilhar
+VID=$(adb shell content query --uri content://media/external/video/media --projection _id 2>/dev/null | grep -o '_id=[0-9]*' | head -1 | cut -d= -f2)
+echo "video id: $VID"
+adb shell am start -n "$PKG/com.musibox.app.share.VaultShareAlias" -a android.intent.action.SEND -t video/mp4 \
+  --eu android.intent.extra.STREAM "content://media/external/video/media/$VID" >/dev/null 2>&1
+$UI wait "Salvar no cofre" 20; shot 15c_compartilhar_cofre
+$UI tap "Copiar para o cofre" 10; sleep 5
+launch; $UI tapx "Cofre" 10; sleep 2
 shot 16_cofre_fotos
 $UI tap "Vídeos" 5; sleep 2; shot 17_cofre_videos
 $UI tap "clipe_demo" 5; sleep 5; shot 18_cofre_player

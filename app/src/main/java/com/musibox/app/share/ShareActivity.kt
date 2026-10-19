@@ -53,26 +53,18 @@ import com.musibox.app.MainActivity
 import com.musibox.app.MusiBoxApp
 import com.musibox.app.core.Fmt
 import com.musibox.app.data.prefs.SaveDestination
-import com.musibox.app.download.LinkUtils
 import com.musibox.app.ui.components.GradientButton
 import com.musibox.app.ui.components.LocalAppContainer
 import com.musibox.app.ui.components.LocalSnackbar
 import com.musibox.app.ui.components.LogoMark
 import com.musibox.app.ui.components.appViewModel
-import com.musibox.app.ui.download.AnalyzeState
-import com.musibox.app.ui.download.DestinationPicker
-import com.musibox.app.ui.download.FormatList
-import com.musibox.app.ui.download.LinkDownloadViewModel
-import com.musibox.app.ui.download.DownloadSheetContent
-import com.musibox.app.ui.download.PreviewCard
 import com.musibox.app.ui.theme.Mb
 import com.musibox.app.ui.theme.MusiBoxTheme
 import kotlinx.coroutines.launch
 
 /**
  * Recebe o que o usuário compartilha de outros apps:
- * - link (YouTube, TikTok, Instagram...) → folha "Baixar como" igual à do app;
- * - fotos/vídeos/áudios → "Salvar no cofre".
+ * fotos/vídeos/áudios → "Salvar no cofre".
  */
 class ShareActivity : ComponentActivity() {
 
@@ -91,7 +83,6 @@ class ShareActivity : ComponentActivity() {
                     LocalSnackbar provides remember { androidx.compose.material3.SnackbarHostState() },
                 ) {
                     when (payload) {
-                        is SharePayload.Link -> LinkSheet(payload.url, onClose = { finish() })
                         is SharePayload.Media -> VaultSheet(payload.uris, onClose = { finish() })
                         SharePayload.Nothing -> ErrorSheet(onClose = { finish() })
                     }
@@ -101,7 +92,6 @@ class ShareActivity : ComponentActivity() {
     }
 
     private sealed interface SharePayload {
-        data class Link(val url: String) : SharePayload
         data class Media(val uris: List<Uri>) : SharePayload
         data object Nothing : SharePayload
     }
@@ -109,19 +99,6 @@ class ShareActivity : ComponentActivity() {
     private fun parse(intent: Intent?): SharePayload {
         intent ?: return SharePayload.Nothing
         val type = intent.type.orEmpty()
-        if (type.startsWith("text/")) {
-            // Alguns apps mandam o texto como CharSequence formatado, no assunto ou no ClipData.
-            val candidates = buildList {
-                add(intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString())
-                add(intent.getCharSequenceExtra(Intent.EXTRA_SUBJECT)?.toString())
-                intent.clipData?.let { clip ->
-                    for (i in 0 until clip.itemCount) add(clip.getItemAt(i).text?.toString() ?: clip.getItemAt(i).uri?.toString())
-                }
-                add(intent.dataString)
-            }
-            val url = candidates.firstNotNullOfOrNull { LinkUtils.extractUrl(it) }
-            return url?.let { SharePayload.Link(it) } ?: SharePayload.Nothing
-        }
         val uris = when (intent.action) {
             Intent.ACTION_SEND_MULTIPLE ->
                 IntentCompat.getParcelableArrayListExtra(intent, Intent.EXTRA_STREAM, Uri::class.java).orEmpty()
@@ -136,46 +113,6 @@ class ShareActivity : ComponentActivity() {
             LogoMark(26.dp)
             Spacer(Modifier.width(10.dp))
             Text(title, style = MaterialTheme.typography.titleLarge)
-        }
-    }
-
-    @Composable
-    private fun LinkSheet(url: String, onClose: () -> Unit) {
-        val vm = appViewModel { LinkDownloadViewModel(it) }
-        val state by vm.state.collectAsStateWithLifecycle()
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        LaunchedEffect(url) { if (vm.state.value is AnalyzeState.Idle) vm.analyze(url) }
-
-        ModalBottomSheet(onDismissRequest = onClose, sheetState = sheetState, containerColor = Mb.colors.cardHigh) {
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp)
-                    .navigationBarsPadding()
-                    .padding(bottom = 16.dp),
-            ) {
-                SheetHeader("Baixar com MusiBox")
-                DownloadSheetContent(
-                    vm,
-                    onEnqueued = { msg ->
-                        Toast.makeText(this@ShareActivity, msg, Toast.LENGTH_SHORT).show()
-                        onClose()
-                    },
-                    onError = { Toast.makeText(this@ShareActivity, it, Toast.LENGTH_SHORT).show() },
-                    errorActions = {
-                        TextButton(onClick = {
-                            startActivity(
-                                Intent(this@ShareActivity, MainActivity::class.java)
-                                    .putExtra(MainActivity.EXTRA_DOWNLOAD_URL, url)
-                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                            )
-                            onClose()
-                        }) { Text("Abrir no MusiBox") }
-                        TextButton(onClick = onClose) { Text("Fechar") }
-                    },
-                )
-            }
         }
     }
 
@@ -231,9 +168,6 @@ class ShareActivity : ComponentActivity() {
                                     progress = i
                                     try {
                                         val item = container.vault.importUri(uri, source = "share")
-                                        container.downloads.logImport(
-                                            item.name, item.mimeType, item.size, SaveDestination.VAULT, null, item.id, "share",
-                                        )
                                         ok++
                                     } catch (e: Exception) {
                                         error = e.message
@@ -266,7 +200,7 @@ class ShareActivity : ComponentActivity() {
                     .padding(bottom = 20.dp),
             ) {
                 SheetHeader("MusiBox")
-                Text("Nenhum link ou arquivo compatível foi encontrado no conteúdo compartilhado.", style = MaterialTheme.typography.bodyLarge)
+                Text("Nenhuma foto, vídeo ou áudio foi encontrado no conteúdo compartilhado.", style = MaterialTheme.typography.bodyLarge)
                 Spacer(Modifier.height(16.dp))
                 TextButton(onClick = onClose) { Text("Fechar", fontWeight = FontWeight.SemiBold) }
             }

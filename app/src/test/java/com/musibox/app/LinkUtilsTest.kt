@@ -1,7 +1,6 @@
 package com.musibox.app
 
-import com.musibox.app.download.LinkUtils
-import com.musibox.app.download.Platform
+import com.musibox.app.browser.LinkUtils
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -24,35 +23,9 @@ class LinkUtilsTest {
     }
 
     @Test
-    fun reconhecePlataformas() {
-        assertEquals(Platform.YOUTUBE, LinkUtils.platformOf("https://www.youtube.com/watch?v=1"))
-        assertEquals(Platform.YOUTUBE, LinkUtils.platformOf("https://m.youtube.com/shorts/1"))
-        assertEquals(Platform.YOUTUBE, LinkUtils.platformOf("https://youtu.be/1"))
-        assertEquals(Platform.TIKTOK, LinkUtils.platformOf("https://vm.tiktok.com/x"))
-        assertEquals(Platform.INSTAGRAM, LinkUtils.platformOf("https://www.instagram.com/reel/x/"))
-        assertEquals(Platform.TWITTER, LinkUtils.platformOf("https://x.com/a/status/1"))
-        assertEquals(Platform.OTHER, LinkUtils.platformOf("https://exemplo.com/musica.mp3"))
-        assertEquals(Platform.TIKTOK, LinkUtils.platformOf("https://exemplo.com", "TikTok"))
-    }
-
-    @Test
-    fun mediaPages() {
-        assertTrue(LinkUtils.isMediaPage("https://m.youtube.com/watch?v=abc123"))
-        assertTrue(LinkUtils.isMediaPage("https://music.youtube.com/watch?v=iXSbnL56SWs&si=x"))
-        assertTrue(LinkUtils.isMediaPage("https://www.youtube.com/shorts/abc"))
-        assertTrue(LinkUtils.isMediaPage("https://youtu.be/abc"))
-        assertFalse(LinkUtils.isMediaPage("https://m.youtube.com/"))
-        assertFalse(LinkUtils.isMediaPage("https://m.youtube.com/results?search_query=x"))
-        assertTrue(LinkUtils.isMediaPage("https://www.tiktok.com/@user/video/123"))
-        assertFalse(LinkUtils.isMediaPage("https://www.tiktok.com/foryou"))
-        assertTrue(LinkUtils.isMediaPage("https://www.instagram.com/reel/Cxyz/"))
-        assertFalse(LinkUtils.isMediaPage("https://www.instagram.com/"))
-        assertTrue(LinkUtils.isMediaPage("https://x.com/user/status/123"))
-        assertTrue(LinkUtils.isMediaPage("https://vimeo.com/123456"))
-        assertFalse(LinkUtils.isMediaPage("https://vimeo.com/"))
-        assertTrue(LinkUtils.isMediaPage("https://m.soundcloud.com/artist/track"))
-        assertFalse(LinkUtils.isMediaPage("https://m.soundcloud.com/discover/x"))
-        assertFalse(LinkUtils.isMediaPage(null))
+    fun hosts() {
+        assertEquals("youtube.com", LinkUtils.hostOf("https://m.youtube.com/watch?v=1"))
+        assertEquals("shopee.com.br", LinkUtils.hostOf("https://www.shopee.com.br/"))
     }
 
     @Test

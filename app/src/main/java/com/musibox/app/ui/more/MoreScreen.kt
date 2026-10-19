@@ -1,6 +1,9 @@
 package com.musibox.app.ui.more
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -70,7 +73,8 @@ fun MoreScreen(nav: NavController) {
         com.musibox.app.ui.components.PageTitle("Mais", "Conta, biblioteca e ajustes")
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
             item(key = "pro") {
-                val pro by com.musibox.app.billing.ProManager.state.collectAsStateWithLifecycle()
+                val proState by com.musibox.app.billing.PlayBilling.pro.collectAsStateWithLifecycle()
+                val proActive = proState.subscription || proState.passUntil > System.currentTimeMillis()
                 Row(
                     Modifier
                         .intro("pro", 0, intro)
@@ -85,15 +89,18 @@ fun MoreScreen(nav: NavController) {
                     Icon(Icons.Rounded.WorkspacePremium, null, tint = Mb.colors.onAccent, modifier = Modifier.size(34.dp))
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(if (pro.active) "Você é Pró ✓" else "MusiBox Pró", color = Mb.colors.onAccent, style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                        Text(if (proActive) "Você é Pró ✓" else "MusiBox Pró", color = Mb.colors.onAccent, style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                         Text(
-                            if (pro.active) "Downloads sem anúncios" else "Baixe sem anúncios • a partir de R$ 4,99",
+                            if (proActive) "Recursos Pró liberados" else "Sem anúncios nos sites, equalizador e mais • a partir de R$ 4,99",
                             color = Mb.colors.onAccent.copy(alpha = 0.8f),
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }
                     Icon(Icons.Rounded.ChevronRight, null, tint = Mb.colors.onAccent)
                 }
+            }
+            item(key = "walls") {
+                WallpaperPromo(Modifier.intro("walls", 0, intro)) { nav.navigate(Routes.WALLPAPERS) }
             }
             item { Box(Modifier.intro("more0", 0, intro)) {
                 MbCard(
@@ -135,13 +142,11 @@ fun MoreScreen(nav: NavController) {
                     SettingDivider()
                     SettingItem(Icons.AutoMirrored.Rounded.QueueMusic, "Playlists", onClick = { nav.navigateTopLevel(Routes.library(4), restore = false) })
                     SettingDivider()
-                    SettingItem(Icons.Rounded.Favorite, "Favoritos", onClick = { nav.navigateTopLevel(Routes.library(5), restore = false) }, tint = androidx.compose.ui.graphics.Color(0xFF1FDF67))
+                    SettingItem(Icons.Rounded.Favorite, "Favoritos", onClick = { nav.navigateTopLevel(Routes.library(5), restore = false) }, tint = com.musibox.app.ui.components.Neo.Green)
                     SettingDivider()
                     SettingItem(Icons.AutoMirrored.Rounded.TrendingUp, "Mais tocadas", onClick = { nav.navigateTopLevel(Routes.library(7), restore = false) })
                     SettingDivider()
-                    SettingItem(Icons.Rounded.History, "Histórico", "Reproduções, downloads e importações", onClick = { nav.navigate(Routes.history()) })
-                    SettingDivider()
-                    SettingItem(Icons.Rounded.DownloadDone, "Gerenciador de downloads", onClick = { nav.navigate(Routes.DOWNLOADS) })
+                    SettingItem(Icons.Rounded.History, "Histórico", "Músicas que você tocou", onClick = { nav.navigate(Routes.history()) })
                 }
             } }
             item { Box(Modifier.intro("more2", 2, intro)) {
@@ -162,15 +167,56 @@ fun MoreScreen(nav: NavController) {
             title = { Text("MusiBox ${BuildConfig.VERSION_NAME}") },
             text = {
                 Text(
-                    "Player de músicas locais, downloads e cofre privado.\n\n" +
+                    "Player de músicas locais, navegador e cofre privado.\n\n" +
                         "• Suas músicas tocam direto do aparelho, sem internet.\n" +
                         "• O cofre é criptografado (AES-256) com chave protegida pelo Android Keystore.\n" +
-                        "• A Conta Google sincroniza apenas playlists, favoritos, configurações e histórico (se ativado).\n\n" +
-                        "Baixe somente conteúdo que você tem direito de salvar. Conteúdo protegido por DRM não é baixado.",
+                        "• A Conta Google sincroniza apenas playlists, favoritos, configurações e histórico (se ativado).\n" +
+                        "• Os papéis de parede são criações originais do MusiBox.",
                 )
             },
             confirmButton = { TextButton(onClick = { about = false }) { Text("Fechar") } },
             containerColor = Mb.colors.cardHigh,
         )
+    }
+}
+
+/** Cartão "Papéis de parede": três miniaturas e o convite para a loja. */
+@Composable
+private fun WallpaperPromo(modifier: Modifier, onClick: () -> Unit) {
+    val picks = remember { listOf("supernova", "aurora_lago", "synthwave").mapNotNull { com.musibox.app.themes.Wallpapers.get(it) } }
+    Row(
+        modifier
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(Mb.colors.card)
+            .border(1.dp, Mb.colors.border, RoundedCornerShape(20.dp))
+            .clickable(onClick = onClick)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy((-14).dp)) {
+            picks.forEachIndexed { i, w ->
+                com.musibox.app.ui.components.WallpaperImage(
+                    w,
+                    Modifier
+                        .size(width = 38.dp, height = 70.dp)
+                        .graphicsLayer { rotationZ = (i - 1) * 8f }
+                        .clip(RoundedCornerShape(9.dp))
+                        .border(1.5.dp, androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f), RoundedCornerShape(9.dp)),
+                    thumbnail = true,
+                )
+            }
+        }
+        Spacer(Modifier.width(18.dp))
+        Column(Modifier.weight(1f)) {
+            Text("Papéis de parede", style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+            Text(
+                "60 temas para o app e o navegador • a partir de R$ 0,20",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Icon(Icons.Rounded.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

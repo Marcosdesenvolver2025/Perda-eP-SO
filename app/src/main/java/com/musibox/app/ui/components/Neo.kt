@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -44,6 +45,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.Color
@@ -64,24 +66,25 @@ import com.musibox.app.R
 
 /** Paleta do visual MusiBox: fundo preto, cartões cinza-escuro e verde de destaque. */
 object Neo {
-    val Green = Color(0xFF1FDF67)
-    val Cyan = Green
-    val Blue = Green
+    /** Cor de destaque: verde padrão ou a cor do tema (papel de parede) escolhido. */
+    val Green: Color get() = com.musibox.app.themes.AppTheme.accent
+    val Cyan: Color get() = Green
+    val Blue: Color get() = Green
     val BlueDeep = Color(0xFF14A84A)
     val Purple = Color(0xFF8B3DFF)
     val Magenta = Color(0xFFE03DFF)
-    val Link = Green
+    val Link: Color get() = Green
     val Artist = Color(0xFF9A9A9A)
     val Text2 = Color(0xFFB3B3B3)
-    val OnGreen = Color(0xFF0A0A0A)
+    val OnGreen: Color get() = if (Green.luminance() > 0.45f) Color(0xFF0A0A0A) else Color.White
     val Card = Color(0xFF1E1E1E)
     val Line = Color(0xFF2A2A2A)
     val GlassTop = Card
     val GlassBottom = Card
     val Glass: Brush = SolidColor(Card)
     val Edge: Brush = SolidColor(Line)
-    val EdgeBright: Brush = SolidColor(Green)
-    val Accent: Brush = SolidColor(Green)
+    val EdgeBright: Brush get() = SolidColor(Green)
+    val Accent: Brush get() = SolidColor(Green)
 }
 
 /** Cartão cinza-escuro com borda fina (estilo do novo visual). */
@@ -118,7 +121,7 @@ fun GlassCircleButton(icon: ImageVector, description: String, onClick: () -> Uni
 
 /** Topo das telas principais: logo 3D, nome e os botões de busca, avisos e configurações. */
 @Composable
-fun BrandHeader(onSearch: () -> Unit, onBell: () -> Unit, bellDot: Boolean, onSettings: () -> Unit) {
+fun BrandHeader(onSearch: () -> Unit, onThemes: () -> Unit, onSettings: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -171,7 +174,7 @@ fun BrandHeader(onSearch: () -> Unit, onBell: () -> Unit, bellDot: Boolean, onSe
         }
         Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
             GlassCircleButton(Icons.Outlined.Search, "Pesquisar", onSearch)
-            GlassCircleButton(Icons.Outlined.Notifications, "Avisos e downloads", onBell, dot = bellDot)
+            GlassCircleButton(Icons.Outlined.Palette, "Papéis de parede", onThemes)
             GlassCircleButton(Icons.Outlined.Settings, "Configurações", onSettings)
         }
     }

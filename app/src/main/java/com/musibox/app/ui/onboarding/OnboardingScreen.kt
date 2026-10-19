@@ -38,6 +38,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.Download
@@ -125,11 +126,11 @@ private fun IntroStep(onNext: () -> Unit) {
     val slides = listOf(
         Slide(Icons.Rounded.Headphones, Brush.linearGradient(listOf(MbPalette.BlueBright, MbPalette.BlueDeep)),
             "Suas músicas em um só lugar", "Toque as músicas do aparelho num player completo, em segundo plano e sem internet."),
-        Slide(Icons.Rounded.Download, Brush.linearGradient(listOf(Color(0xFFFF5A4E), Color(0xFFE0201C))),
-            "Baixe de qualquer site", "YouTube, TikTok, Instagram, Kwai e outros: compartilhe o link ou use o navegador do app e toque em Baixar."),
+        Slide(Icons.Rounded.Language, Brush.linearGradient(listOf(Color(0xFFFF5A4E), Color(0xFFE0201C))),
+            "Navegador completo", "Pesquise, use o Modo IA, navegue em modo privado e leia as notícias do dia."),
         Slide(Icons.Rounded.Lock, Brush.linearGradient(listOf(MbPalette.Purple, Color(0xFF4F5BFF))),
             "Cofre privado", "Fotos, vídeos e arquivos criptografados, protegidos por PIN, digital e código de recuperação."),
-        Slide(Icons.Rounded.CloudSync, Brush.linearGradient(listOf(Color(0xFF2ECC71), Color(0xFF1FDF67))),
+        Slide(Icons.Rounded.CloudSync, Brush.linearGradient(listOf(Color(0xFF2ECC71), com.musibox.app.ui.components.Neo.Green)),
             "Sua conta guarda tudo", "Entre com o Google e suas playlists, favoritos e configurações voltam até depois de reinstalar."),
     )
     val pager = rememberPagerState { slides.size }
@@ -279,7 +280,7 @@ private fun PermissionStep(onGranted: () -> Unit, onSkip: () -> Unit) {
         if (permission.permanentlyDenied) {
             Spacer(Modifier.height(12.dp))
             Text(
-                "A permissão foi negada. Sem ela a aba Músicas fica indisponível, mas downloads e cofre funcionam normalmente.",
+                "A permissão foi negada. Sem ela a aba Músicas fica indisponível, mas o navegador e o cofre funcionam normalmente.",
                 color = Mb.colors.warning,
                 textAlign = TextAlign.Center,
             )
@@ -321,7 +322,7 @@ private fun IndexingStep(onDone: () -> Unit) {
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                if (count == 0) "Você pode baixar músicas ou copiar arquivos para o aparelho a qualquer momento."
+                if (count == 0) "Você pode copiar arquivos de música para o aparelho a qualquer momento."
                 else "Tudo pronto para tocar.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,

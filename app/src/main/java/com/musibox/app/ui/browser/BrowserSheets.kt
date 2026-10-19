@@ -38,28 +38,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.musibox.app.download.BrowserStore
+import com.musibox.app.browser.BrowserStore
 import com.musibox.app.ui.components.Neo
 import com.musibox.app.ui.components.bounceClick
 import com.musibox.app.ui.components.neoGlass
-import com.musibox.app.ui.download.DownloadSites
-import com.musibox.app.ui.download.SiteIcon
 
-/** Ícone do site: o do app quando é um site conhecido, senão um globo. */
+/** Ícone do site (favicon) num quadradinho escuro. */
 @Composable
 fun SiteBadge(url: String, size: androidx.compose.ui.unit.Dp) {
-    val host = BrowserStore.hostOf(url)
-    val site = DownloadSites.firstOrNull { s -> BrowserStore.hostOf(s.url).let { h -> host == h || host.endsWith(".$h") } }
-    if (site != null) {
-        SiteIcon(site, size)
-    } else {
-        Box(
-            Modifier
-                .size(size)
-                .neoGlass(RoundedCornerShape(size * 0.28f)),
-            contentAlignment = Alignment.Center,
-        ) { Icon(Icons.Rounded.Public, null, tint = Neo.Link, modifier = Modifier.size(size * 0.55f)) }
-    }
+    Box(
+        Modifier
+            .size(size)
+            .neoGlass(RoundedCornerShape(size * 0.28f)),
+        contentAlignment = Alignment.Center,
+    ) { Favicon(url, size * 0.62f) }
 }
 
 /** Abas abertas, em cartões (como o Chrome). */

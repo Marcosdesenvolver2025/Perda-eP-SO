@@ -44,8 +44,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.musibox.app.core.Fmt
 import com.musibox.app.core.SongKeys
-import com.musibox.app.data.db.DownloadEntity
-import com.musibox.app.data.db.DownloadStatus
 import com.musibox.app.data.db.Song
 import com.musibox.app.data.repo.contentUri
 import com.musibox.app.media.AudioCover
@@ -61,31 +59,24 @@ import com.musibox.app.ui.components.StateMessage
 import com.musibox.app.ui.components.TrackRow
 import com.musibox.app.ui.components.appViewModel
 import com.musibox.app.ui.components.rememberSnack
-import com.musibox.app.ui.download.DownloadCenterViewModel
-import com.musibox.app.ui.download.DownloadRow
-import com.musibox.app.ui.download.rememberDownloadActions
 import com.musibox.app.ui.theme.Mb
 import kotlinx.coroutines.launch
 
 private enum class PlayFilter(val label: String, val days: Int) { ALL("Tudo", 0), TODAY("Hoje", 1), WEEK("7 dias", 7), MONTH("30 dias", 30) }
-private enum class DlFilter(val label: String) { ALL("Todos"), DONE("Concluídos"), FAILED("Falhas"), AUDIO("Áudio"), VIDEO("Vídeo"), IMPORTS("Importações") }
 
 @Composable
 fun HistoryScreen(nav: NavController, initialTab: Int) {
     val container = LocalAppContainer.current
-    val center = appViewModel { DownloadCenterViewModel(it) }
     val plays by container.history.recentPlays(1000).collectAsStateWithLifecycle(initialValue = null)
-    val downloads by center.downloads.collectAsStateWithLifecycle()
     val player by container.player.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val snack = rememberSnack()
-    var tab by rememberSaveable { mutableIntStateOf(initialTab.coerceIn(0, 1)) }
+    @Suppress("UNUSED_VARIABLE") val unusedTab = initialTab
+    val tab = 0
     var query by rememberSaveable { mutableStateOf("") }
     var playFilter by rememberSaveable { mutableStateOf(PlayFilter.ALL) }
-    var dlFilter by rememberSaveable { mutableStateOf(DlFilter.ALL) }
     var clearDialog by remember { mutableStateOf(false) }
     var playlistSong by remember { mutableStateOf<Song?>(null) }
-    val actions = rememberDownloadActions(center, nav)
 
     Column(
         Modifier
@@ -94,16 +85,6 @@ fun HistoryScreen(nav: NavController, initialTab: Int) {
     ) {
         MbTopBar("Histórico", onBack = { nav.popBackStack() }) {
             IconButton(onClick = { clearDialog = true }) { Icon(Icons.Rounded.DeleteSweep, "Limpar histórico") }
-        }
-        TabRow(selectedTabIndex = tab, containerColor = Color.Transparent, divider = {}) {
-            listOf("Reproduções", "Downloads/Importações").forEachIndexed { i, label ->
-                Tab(
-                    selected = tab == i,
-                    onClick = { tab = i },
-                    text = { Text(label, fontWeight = if (tab == i) FontWeight.Bold else FontWeight.Normal) },
-                    unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
         }
         TextField(
             value = query,
@@ -124,11 +105,7 @@ fun HistoryScreen(nav: NavController, initialTab: Int) {
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         )
         LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (tab == 0) {
-                items(PlayFilter.entries) { f -> FilterChip(selected = playFilter == f, onClick = { playFilter = f }, label = { Text(f.label) }) }
-            } else {
-                items(DlFilter.entries) { f -> FilterChip(selected = dlFilter == f, onClick = { dlFilter = f }, label = { Text(f.label) }) }
-            }
+            items(PlayFilter.entries) { f -> FilterChip(selected = playFilter == f, onClick = { playFilter = f }, label = { Text(f.label) }) }
         }
 
         val q = SongKeys.normalize(query)
@@ -177,16 +154,6 @@ fun HistoryScreen(nav: NavController, initialTab: Int) {
                     }
                 }
             }
-        } else {
-            val list = downloads
-            val filtered = list?.filter { d -> matches(d, dlFilter) && (q.isBlank() || SongKeys.normalize(d.title).contains(q)) }
-            when {
-                filtered == null -> LoadingState("Carregando…")
-                filtered.isEmpty() -> StateMessage(Icons.Rounded.DownloadDone, "Nenhum download ou importação encontrado")
-                else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 16.dp)) {
-                    items(filtered, key = { it.id }) { d -> DownloadRow(d, actions.actions, Modifier.padding(horizontal = 4.dp)) }
-                }
-            }
         }
     }
 
@@ -205,35 +172,7 @@ fun HistoryScreen(nav: NavController, initialTab: Int) {
                 },
                 onDismiss = { clearDialog = false },
             )
-        } else {
-            ConfirmWithOptionDialog(
-                title = "Limpar histórico de downloads?",
-                message = "Os registros de downloads concluídos, com falha ou cancelados serão removidos. Downloads em andamento são mantidos.",
-                optionText = "Também apagar os arquivos baixados",
-                confirmText = "Limpar",
-                onConfirm = { deleteFiles ->
-                    clearDialog = false
-                    scope.launch {
-                        when (val r = container.downloads.clearHistory(deleteFiles)) {
-                            DeleteResult.Deleted -> snack(if (deleteFiles) "Histórico e arquivos apagados." else "Histórico limpo. Os arquivos foram mantidos.")
-                            is DeleteResult.NeedsUserConfirmation -> snack("Para apagar arquivos de versões anteriores do app, exclua-os um a um pelo menu.")
-                            is DeleteResult.Failed -> snack(r.message)
-                        }
-                    }
-                },
-                onDismiss = { clearDialog = false },
-            )
         }
     }
-    actions.Dialogs()
     playlistSong?.let { AddToPlaylistDialog(listOf(it)) { playlistSong = null } }
-}
-
-private fun matches(d: DownloadEntity, f: DlFilter): Boolean = when (f) {
-    DlFilter.ALL -> true
-    DlFilter.DONE -> d.status == DownloadStatus.COMPLETED
-    DlFilter.FAILED -> d.status == DownloadStatus.FAILED || d.status == DownloadStatus.CANCELED
-    DlFilter.AUDIO -> d.isAudio
-    DlFilter.VIDEO -> !d.isAudio
-    DlFilter.IMPORTS -> d.kind == com.musibox.app.data.db.DownloadKind.IMPORT
 }

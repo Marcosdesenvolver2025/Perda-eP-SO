@@ -155,7 +155,7 @@ fun MiniPlayer(
                     Icon(
                         if (isFav) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                         if (isFav) "Remover dos favoritos" else "Favoritar",
-                        tint = if (isFav) Color(0xFF1FDF67) else Color(0xFFFFFFFF),
+                        tint = if (isFav) com.musibox.app.ui.components.Neo.Green else Color(0xFFFFFFFF),
                         modifier = Modifier.size(26.dp),
                     )
                 }
@@ -196,7 +196,7 @@ fun MiniPlayer(
                         .fillMaxWidth(progress)
                         .fillMaxHeight()
                         .clip(RoundedCornerShape(2.dp))
-                        .background(Color(0xFF1FDF67)),
+                        .background(com.musibox.app.ui.components.Neo.Green),
                 )
             }
         }

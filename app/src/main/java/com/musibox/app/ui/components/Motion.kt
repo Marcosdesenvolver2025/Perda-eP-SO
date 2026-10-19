@@ -114,7 +114,7 @@ fun Equalizer(playing: Boolean, modifier: Modifier = Modifier, color: Color = Ne
             val h = if (playing) 0.3f + 0.7f * abs(sin(phase + i * 1.3f)) else 0.35f + 0.2f * i
             val bh = this.size.height * h
             drawRoundRect(
-                Brush.verticalGradient(listOf(color, Color(0xFF1FDF67))),
+                Brush.verticalGradient(listOf(color, com.musibox.app.ui.components.Neo.Green)),
                 topLeft = Offset(i * gap * 2, this.size.height - bh),
                 size = Size(gap, bh),
                 cornerRadius = CornerRadius(gap / 2),

@@ -1,17 +1,11 @@
 package com.musibox.app.ui.pro
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
-import android.webkit.WebResourceRequest
-import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,33 +16,31 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.OpenInNew
+import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Download
-import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.Equalizer
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.material.icons.rounded.Speed
+import androidx.compose.material.icons.rounded.TheaterComedy
+import androidx.compose.material.icons.rounded.Wallpaper
 import androidx.compose.material.icons.rounded.WorkspacePremium
+import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -60,26 +52,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.musibox.app.MainActivity
-import com.musibox.app.ads.DownloadQuota
-import com.musibox.app.billing.ProManager
+import com.musibox.app.billing.PlayBilling
 import com.musibox.app.billing.ProPlan
+import com.musibox.app.core.findActivity
 import com.musibox.app.ui.components.GradientButton
 import com.musibox.app.ui.components.MbTopBar
 import com.musibox.app.ui.components.Neo
 import com.musibox.app.ui.components.bounceClick
 import com.musibox.app.ui.components.rememberSnack
-import com.musibox.app.ui.navigation.Routes
-import com.musibox.app.ui.theme.Mb
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/** Abre a tela do Pró (de qualquer lugar, inclusive do "Compartilhar"). */
+/** Abre a tela do Pró (de qualquer lugar). */
 object ProLauncher {
     fun open(context: Context) {
         val intent = Intent(context, MainActivity::class.java)
@@ -92,18 +80,30 @@ object ProLauncher {
 
 private fun fmtDate(ms: Long): String = SimpleDateFormat("dd/MM 'às' HH:mm", Locale("pt", "BR")).format(Date(ms))
 
-/** Tela "MusiBox Pró": benefícios, planos e assinatura pela Stripe. */
+/** Benefícios do Pró. ready=false aparece como "chegando". */
+private data class Perk(val icon: androidx.compose.ui.graphics.vector.ImageVector, val title: String, val text: String, val ready: Boolean)
+
+private val perks = listOf(
+    Perk(Icons.Rounded.Block, "Bloqueador de anúncios", "Navegue sem propagandas e rastreadores nos sites.", false),
+    Perk(Icons.Rounded.Equalizer, "Equalizador no player", "Graves, presets (pop, rock, funk…) e ajuste por faixa.", false),
+    Perk(Icons.Rounded.Wallpaper, "8 papéis de parede exclusivos", "Eclipse, Aurora Suprema, Planeta Rubi e outros.", true),
+    Perk(Icons.Rounded.TheaterComedy, "Ícone disfarçado do cofre", "O MusiBox aparece como Calculadora, Notas ou Relógio.", false),
+    Perk(Icons.Rounded.Bedtime, "Timer de sono", "A música para sozinha na hora que você escolher.", false),
+    Perk(Icons.Rounded.Speed, "Velocidade e pular silêncio", "Ouça áudios mais rápido ou mais devagar.", false),
+    Perk(Icons.Rounded.DarkMode, "Modo escuro em todos os sites", "Sites claros ficam escuros no navegador.", false),
+    Perk(Icons.Rounded.Lock, "Abas privadas com senha", "A navegação privada só abre com o PIN do cofre.", false),
+    Perk(Icons.Rounded.Shield, "Alerta de invasão no cofre", "Veja quando alguém errou a senha do cofre.", false),
+)
+
+/** Tela "MusiBox Pró": benefícios e planos (pagamento pela Google Play). */
 @Composable
 fun ProScreen(nav: NavController) {
     val context = LocalContext.current
-    val state by ProManager.state.collectAsStateWithLifecycle()
-    val credits by DownloadQuota.credits.collectAsStateWithLifecycle()
-    val scope = rememberCoroutineScope()
+    val state by PlayBilling.pro.collectAsStateWithLifecycle()
+    val prices by PlayBilling.prices.collectAsStateWithLifecycle()
     val snack = rememberSnack()
     var selected by rememberSaveable { mutableStateOf(ProPlan.MONTHLY) }
-    var busy by remember { mutableStateOf(false) }
-    val signedIn = com.google.firebase.FirebaseApp.getApps(context).isNotEmpty() &&
-        runCatching { com.google.firebase.auth.FirebaseAuth.getInstance().currentUser != null }.getOrDefault(false)
+    val active = state.subscription || state.passUntil > System.currentTimeMillis()
 
     Column(Modifier.fillMaxSize()) {
         MbTopBar("MusiBox Pró", onBack = { nav.popBackStack() })
@@ -122,63 +122,46 @@ fun ProScreen(nav: NavController) {
                 contentAlignment = Alignment.Center,
             ) { Icon(Icons.Rounded.WorkspacePremium, null, tint = Neo.OnGreen, modifier = Modifier.size(50.dp)) }
             Spacer(Modifier.height(14.dp))
-            Text("Baixe sem anúncios", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, textAlign = TextAlign.Center)
+            Text("Seja Pró", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, textAlign = TextAlign.Center)
             Text(
-                "Com o Pró você baixa quantos vídeos e músicas quiser, sem assistir anúncios.",
+                "Mais recursos no player, no navegador e no cofre.",
                 color = Neo.Text2,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 6.dp),
             )
 
-            // Situação atual
             Spacer(Modifier.height(18.dp))
-            if (state.active) {
+            if (active) {
                 StatusCard(
                     Icons.Rounded.CheckCircle,
                     "Você é Pró ✓",
                     when {
-                        state.renews -> "Assinatura ativa • renova em ${fmtDate(state.until)}"
-                        state.until > 0 -> "Vale até ${fmtDate(state.until)}"
-                        else -> "Ativo"
+                        state.subscription && state.renews -> "Assinatura ativa • renova sozinha"
+                        state.subscription -> "Assinatura cancelada • vale até o fim do período"
+                        else -> "Passe de 3 dias • vale até ${fmtDate(state.passUntil)}"
                     },
                     highlight = true,
                 )
-                if (state.fromSubscription) {
-                    TextButton(onClick = {
-                        busy = true
-                        scope.launch {
-                            runCatching { ProManager.portalUrl() }
-                                .onSuccess { openExternal(context, it) }
-                                .onFailure { snack(it.message ?: "Não foi possível abrir.") }
-                            busy = false
-                        }
-                    }) { Text("Gerenciar ou cancelar assinatura", color = Neo.Green) }
+                if (state.subscription) {
+                    TextButton(onClick = { runCatching { context.startActivity(PlayBilling.manageSubscriptionIntent(context)) } }) {
+                        Text("Gerenciar ou cancelar assinatura", color = Neo.Green)
+                    }
                 }
-            } else {
-                StatusCard(
-                    Icons.Rounded.Download,
-                    "Plano grátis",
-                    if (credits > 0) "Você ainda tem ${if (credits == 1) "1 download grátis" else "$credits downloads grátis"} antes do próximo anúncio."
-                    else "Próximo download: assista a 1 anúncio e libere mais ${DownloadQuota.PER_CYCLE}.",
-                )
             }
 
-            // Benefícios
-            Spacer(Modifier.height(18.dp))
-            Benefit(Icons.Rounded.Block, "Sem anúncios", "Nenhum anúncio para baixar.")
-            Benefit(Icons.Rounded.Download, "Downloads sem parar", "Sem o limite de ${DownloadQuota.PER_CYCLE} por vez.")
-            Benefit(Icons.Rounded.Favorite, "Apoie o MusiBox", "Ajuda a manter o app sempre atualizado.")
+            Spacer(Modifier.height(10.dp))
+            perks.forEach { Benefit(it) }
 
-            // Planos
             Spacer(Modifier.height(18.dp))
             Text("Escolha seu plano", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp, modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(10.dp))
             ProPlan.entries.forEach { plan ->
                 PlanCard(
                     plan = plan,
+                    price = prices[plan.priceKey] ?: plan.fallbackPrice,
                     selected = plan == selected,
                     badge = when (plan) {
-                        ProPlan.MONTHLY -> "Economize 13%"
+                        ProPlan.MONTHLY -> "Mais vantajoso"
                         ProPlan.THREE_DAYS -> "Para testar"
                         else -> null
                     },
@@ -187,8 +170,8 @@ fun ProScreen(nav: NavController) {
             }
             Spacer(Modifier.height(4.dp))
             Text(
-                "Pagamento seguro pela Stripe (cartão e outros meios disponíveis). Assinaturas renovam sozinhas até você cancelar. " +
-                    "É preciso estar com a conta Google conectada para o Pró valer em qualquer aparelho.",
+                "Pagamento seguro pela Google Play (cartão, Pix ou saldo do Google Play). Assinaturas renovam sozinhas até você " +
+                    "cancelar na Play Store. O Pró fica ligado à sua conta Google.",
                 color = Neo.Artist,
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
@@ -202,26 +185,20 @@ fun ProScreen(nav: NavController) {
                 .navigationBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 12.dp),
         ) {
-            when {
-                !ProManager.paymentsConfigured -> GradientButton("Pagamentos em configuração", onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth())
-                !signedIn -> GradientButton("Entrar com Google para assinar", onClick = { nav.navigate(Routes.LOGIN) }, modifier = Modifier.fillMaxWidth())
-                else -> GradientButton(
-                    if (selected.oneTime) "Comprar ${selected.title} • ${selected.price}" else "Assinar • ${selected.price}${selected.period}",
-                    onClick = {
-                        busy = true
-                        scope.launch {
-                            runCatching { ProManager.createCheckout(selected) }
-                                .onSuccess { url -> nav.navigate(Routes.proCheckout(url)) }
-                                .onFailure { snack(it.message ?: "Não foi possível iniciar o pagamento.") }
-                            busy = false
-                        }
-                    },
-                    enabled = !busy && selected.priceId.isNotBlank(),
-                    loading = busy,
-                    icon = Icons.Rounded.Lock,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
+            val price = prices[selected.priceKey] ?: selected.fallbackPrice
+            GradientButton(
+                if (selected.basePlanId == null) "Comprar ${selected.title} • $price" else "Assinar • $price${selected.period}",
+                onClick = {
+                    val activity = context.findActivity()
+                    if (activity == null) {
+                        snack("Não foi possível abrir a Google Play.")
+                    } else {
+                        PlayBilling.buyPro(activity, selected) { snack(it) }
+                    }
+                },
+                icon = Icons.Rounded.Lock,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }
@@ -232,7 +209,7 @@ private fun StatusCard(icon: androidx.compose.ui.graphics.vector.ImageVector, ti
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
-            .background(if (highlight) Color(0xFF12301E) else Color(0xFF1E1E1E))
+            .background(if (highlight) Neo.Green.copy(alpha = 0.14f) else Color(0xFF1E1E1E))
             .border(1.dp, if (highlight) Neo.Green else Color(0xFF2A2A2A), RoundedCornerShape(18.dp))
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -247,7 +224,7 @@ private fun StatusCard(icon: androidx.compose.ui.graphics.vector.ImageVector, ti
 }
 
 @Composable
-private fun Benefit(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, text: String) {
+private fun Benefit(p: Perk) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -260,24 +237,39 @@ private fun Benefit(icon: androidx.compose.ui.graphics.vector.ImageVector, title
                 .clip(CircleShape)
                 .background(Color(0xFF1E1E1E)),
             contentAlignment = Alignment.Center,
-        ) { Icon(icon, null, tint = Neo.Green, modifier = Modifier.size(22.dp)) }
+        ) { Icon(p.icon, null, tint = Neo.Green, modifier = Modifier.size(22.dp)) }
         Spacer(Modifier.width(12.dp))
-        Column {
-            Text(title, color = Color.White, fontWeight = FontWeight.SemiBold)
-            Text(text, color = Neo.Text2, style = MaterialTheme.typography.bodySmall)
+        Column(Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(p.title, color = Color.White, fontWeight = FontWeight.SemiBold)
+                if (!p.ready) {
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        "chegando",
+                        color = Neo.Green,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .border(1.dp, Neo.Green, RoundedCornerShape(6.dp))
+                            .padding(horizontal = 5.dp, vertical = 1.dp),
+                    )
+                }
+            }
+            Text(p.text, color = Neo.Text2, style = MaterialTheme.typography.bodySmall)
         }
     }
 }
 
 @Composable
-private fun PlanCard(plan: ProPlan, selected: Boolean, badge: String?, onClick: () -> Unit) {
+private fun PlanCard(plan: ProPlan, price: String, selected: Boolean, badge: String?, onClick: () -> Unit) {
     val border by animateColorAsState(if (selected) Neo.Green else Color(0xFF2A2A2A), label = "planBorder")
     val shape = RoundedCornerShape(18.dp)
     Row(
         Modifier
             .fillMaxWidth()
             .bounceClick(pressed = 0.97f, shape = shape, onClick = onClick)
-            .background(if (selected) Color(0xFF16261C) else Color(0xFF1E1E1E))
+            .background(if (selected) Neo.Green.copy(alpha = 0.10f) else Color(0xFF1E1E1E))
             .border(if (selected) 2.dp else 1.dp, border, shape)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -308,93 +300,8 @@ private fun PlanCard(plan: ProPlan, selected: Boolean, badge: String?, onClick: 
             Text(plan.detail, color = Neo.Text2, style = MaterialTheme.typography.bodySmall)
         }
         Column(horizontalAlignment = Alignment.End) {
-            Text(plan.price, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+            Text(price, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
             if (plan.period.isNotBlank()) Text(plan.period, color = Neo.Text2, style = MaterialTheme.typography.bodySmall)
         }
-    }
-}
-
-private fun openExternal(context: Context, url: String) {
-    runCatching {
-        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-    }
-}
-
-/**
- * Página de pagamento da Stripe dentro do app. Quando a Stripe volta para o endereço de
- * sucesso/cancelamento, a tela fecha sozinha (o Pró é ativado pelo Firestore).
- */
-@SuppressLint("SetJavaScriptEnabled")
-@Composable
-fun ProCheckoutScreen(nav: NavController, url: String) {
-    val context = LocalContext.current
-    val snack = rememberSnack()
-    var progress by remember { mutableIntStateOf(0) }
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-    ) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(horizontal = 8.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.Rounded.Close, "Fechar", tint = Color.White) }
-            Icon(Icons.Rounded.Lock, null, tint = Neo.Green, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(6.dp))
-            Text("Pagamento seguro • Stripe", color = Color.White, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-            IconButton(onClick = { openExternal(context, url) }) {
-                Icon(Icons.AutoMirrored.Rounded.OpenInNew, "Abrir no navegador", tint = Color.White)
-            }
-        }
-        if (progress in 1..99) {
-            LinearProgressIndicator(
-                progress = { progress / 100f },
-                modifier = Modifier.fillMaxWidth().height(2.dp),
-                color = Neo.Green,
-                trackColor = Color.Transparent,
-            )
-        }
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = { ctx ->
-                WebView(ctx).apply {
-                    settings.javaScriptEnabled = true
-                    settings.domStorageEnabled = true
-                    webChromeClient = object : android.webkit.WebChromeClient() {
-                        override fun onProgressChanged(view: WebView, newProgress: Int) {
-                            progress = newProgress
-                        }
-                    }
-                    webViewClient = object : WebViewClient() {
-                        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                            val target = request.url.toString()
-                            return when {
-                                target.startsWith(ProManager.successUrl) -> {
-                                    snack("Pagamento recebido! Ativando o Pró…")
-                                    nav.popBackStack()
-                                    true
-                                }
-                                target.startsWith(ProManager.cancelUrl) -> {
-                                    nav.popBackStack()
-                                    true
-                                }
-                                request.url.scheme == "http" || request.url.scheme == "https" -> false
-                                else -> {
-                                    // Apps de banco / Pix
-                                    runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, request.url).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-                                    true
-                                }
-                            }
-                        }
-                    }
-                    loadUrl(url)
-                }
-            },
-            onRelease = { it.destroy() },
-        )
     }
 }

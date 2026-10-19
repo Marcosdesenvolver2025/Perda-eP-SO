@@ -7,41 +7,28 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * As cinco telas principais ficam lado a lado (deslize para trocar, como no Telegram).
+ * As telas principais ficam lado a lado (deslize para trocar, como no Telegram).
  * Qualquer parte do app pede para abrir uma delas por aqui.
  */
 object MainTabs {
     const val HOME = 0
     const val BROWSER = 1
-    const val DOWNLOAD = 2
-    const val VAULT = 3
-    const val MORE = 4
-    const val COUNT = 5
-
-    data class DownloadRequest(val tab: Int, val url: String?, val id: Long = System.nanoTime())
+    const val VAULT = 2
+    const val MORE = 3
+    const val COUNT = 4
 
     private val _pendingPage = MutableStateFlow<Int?>(null)
     val pendingPage: StateFlow<Int?> = _pendingPage.asStateFlow()
 
-    private val _download = MutableStateFlow<DownloadRequest?>(null)
-    val downloadRequest: StateFlow<DownloadRequest?> = _download.asStateFlow()
-
-    /** Abre a tela principal correspondente a uma rota antiga ("home", "vault", "download?url=…"). */
+    /** Abre a tela principal correspondente a uma rota ("home", "browser_home", "vault", "more"). */
     fun open(route: String) {
         val uri = Uri.parse("musibox://$route")
-        val page = when (uri.host) {
+        _pendingPage.value = when (uri.host) {
             "browser_home" -> BROWSER
-            "download" -> DOWNLOAD
             "vault" -> VAULT
             "more" -> MORE
             else -> HOME
         }
-        if (page == DOWNLOAD) {
-            val tab = uri.getQueryParameter("tab")?.toIntOrNull() ?: 0
-            val url = uri.getQueryParameter("url")
-            if (tab != 0 || !url.isNullOrBlank()) _download.value = DownloadRequest(tab, url)
-        }
-        _pendingPage.value = page
     }
 
     fun go(page: Int) {
@@ -50,10 +37,6 @@ object MainTabs {
 
     fun consumePage() {
         _pendingPage.value = null
-    }
-
-    fun consumeDownload() {
-        _download.value = null
     }
 }
 

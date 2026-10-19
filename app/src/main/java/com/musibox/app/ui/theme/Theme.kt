@@ -11,6 +11,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -198,9 +201,43 @@ fun MusiBoxTheme(themeMode: ThemeMode, content: @Composable () -> Unit) {
             controller.isAppearanceLightNavigationBars = !dark
         }
     }
-    CompositionLocalProvider(LocalMbColors provides if (dark) DarkExtras else LightExtras) {
+    // Cor de destaque do tema escolhido (papel de parede do app); verde é o padrão.
+    val accent = com.musibox.app.themes.AppTheme.accent
+    val extras = remember(dark, accent) {
+        if (!dark) {
+            LightExtras
+        } else {
+            val onAccent = if (accent.luminance() > 0.45f) Color(0xFF0A0A0A) else Color.White
+            DarkExtras.copy(
+                vault = accent,
+                vaultSoft = accent.copy(alpha = 0.16f).compositeOver(MbPalette.Bg),
+                success = accent,
+                accentGradient = Brush.horizontalGradient(listOf(accent, accent)),
+                vaultGradient = Brush.horizontalGradient(listOf(accent, accent)),
+                onAccent = onAccent,
+                heroGradient = Brush.linearGradient(listOf(Color(0xFF1E1E1E), accent.copy(alpha = 0.22f).compositeOver(MbPalette.Card))),
+            )
+        }
+    }
+    val scheme = remember(dark, accent) {
+        if (!dark) {
+            LightScheme
+        } else {
+            val on = if (accent.luminance() > 0.45f) Color(0xFF0A0A0A) else Color.White
+            val container = accent.copy(alpha = 0.24f).compositeOver(MbPalette.Bg)
+            DarkScheme.copy(
+                primary = accent,
+                onPrimary = on,
+                primaryContainer = container,
+                secondary = accent,
+                onSecondary = on,
+                secondaryContainer = container,
+            )
+        }
+    }
+    CompositionLocalProvider(LocalMbColors provides extras) {
         MaterialTheme(
-            colorScheme = if (dark) DarkScheme else LightScheme,
+            colorScheme = scheme,
             typography = MbTypography,
             shapes = MbShapes,
             content = content,

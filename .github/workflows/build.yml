@@ -65,7 +65,7 @@ jobs:
           cp unit-tests.log out/ 2>/dev/null || true
           cp rules-tests.log out/ 2>/dev/null || true
           find app/build/test-results -name '*.xml' -exec cp {} out/ \; 2>/dev/null || true
-          for f in app/build/outputs/apk/release/*arm*.apk; do
+          for f in app/build/outputs/apk/release/*.apk; do
             [ -f "$f" ] || continue
             b=$(basename "$f")
             sha256sum "$f" | cut -d' ' -f1 > "out/$b.sha256"
@@ -149,7 +149,8 @@ jobs:
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
           keytool -genkeypair -keystore /tmp/ci.jks -storepass android -keypass android -alias ci \
             -keyalg RSA -keysize 2048 -validity 1000 -dname "CN=MusiBox CI" > /dev/null 2>&1
-          "$BT/apksigner" sign --ks /tmp/ci.jks --ks-pass pass:android --out apk/teste.apk apk/*x86_64*.apk
+          SRC=$(ls apk/*.apk | head -1)
+          "$BT/apksigner" sign --ks /tmp/ci.jks --ks-pass pass:android --out apk/teste.apk "$SRC"
           ls -la apk
 
       - name: Teste no emulador (Android 14)

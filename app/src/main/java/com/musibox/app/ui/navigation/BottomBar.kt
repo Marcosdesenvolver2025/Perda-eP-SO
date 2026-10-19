@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Language
@@ -57,7 +56,7 @@ import com.musibox.app.ui.main.MainTabs
  * escolhida em verde com um tracinho embaixo. Acompanha a página do deslize.
  */
 @Composable
-fun BottomBar(selectedPage: Int, downloading: Boolean = false, onSelect: (Int) -> Unit) {
+fun BottomBar(selectedPage: Int, onSelect: (Int) -> Unit) {
     // Sem faixa cinza: os ícones ficam direto sobre o fundo do app
     Column(Modifier.fillMaxWidth()) {
         Row(
@@ -69,13 +68,6 @@ fun BottomBar(selectedPage: Int, downloading: Boolean = false, onSelect: (Int) -
         ) {
             NavItem(rememberVectorPainter(Icons.Outlined.Home), "Início", selectedPage == MainTabs.HOME, Modifier.weight(1f)) { onSelect(MainTabs.HOME) }
             NavItem(rememberVectorPainter(Icons.Outlined.Language), "Navegador", selectedPage == MainTabs.BROWSER, Modifier.weight(1f)) { onSelect(MainTabs.BROWSER) }
-            NavItem(
-                rememberVectorPainter(Icons.Outlined.FileDownload),
-                "Baixador",
-                selectedPage == MainTabs.DOWNLOAD,
-                Modifier.weight(1f),
-                busy = downloading,
-            ) { onSelect(MainTabs.DOWNLOAD) }
             NavItem(painterResource(R.drawable.ic_nav_vault), "Cofre", selectedPage == MainTabs.VAULT, Modifier.weight(1f)) { onSelect(MainTabs.VAULT) }
             NavItem(rememberVectorPainter(Icons.Outlined.GridView), "Mais", selectedPage == MainTabs.MORE, Modifier.weight(1f)) { onSelect(MainTabs.MORE) }
         }

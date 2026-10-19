@@ -6,12 +6,11 @@ import com.musibox.app.ui.main.MainTabs
 
 object Routes {
     const val ONBOARDING = "onboarding"
-    /** Tela com as abas principais lado a lado (Início, Navegador, Baixar, Cofre, Mais). */
+    /** Tela com as abas principais lado a lado (Início, Navegador, Cofre, Mais). */
     const val MAIN = "main"
     const val HOME = "home"
     const val BROWSER_HOME = "browser_home"
     const val LIBRARY = "library?tab={tab}"
-    const val DOWNLOAD = "download?tab={tab}&url={url}"
     const val VAULT = "vault"
     const val MORE = "more"
     const val PLAYER = "player"
@@ -29,22 +28,21 @@ object Routes {
     const val VAULT_BACKUP = "vault_backup"
     const val VAULT_CHANGE_PIN = "vault_change_pin"
     const val VAULT_RECOVER = "vault_recover"
-    const val DOWNLOADS = "downloads"
     const val LOGIN = "login"
-    const val BROWSER = "browser?url={url}"
+    const val BROWSER = "browser?url={url}&private={private}"
+    const val BROWSER_SETUP = "browser_setup"
+    const val WALLPAPERS = "wallpapers"
+    const val WALLPAPER = "wallpaper/{id}"
     const val PICK_SONGS = "pick_songs/{id}"
     const val PRO = "pro"
-    const val PRO_CHECKOUT = "pro_checkout?url={url}"
 
     fun library(tab: Int = 0) = "library?tab=$tab"
-    fun download(tab: Int = 0, url: String? = null) =
-        "download?tab=$tab" + (url?.let { "&url=${Uri.encode(it)}" } ?: "")
     fun history(tab: Int = 0) = "history?tab=$tab"
-    fun browser(url: String) = "browser?url=${Uri.encode(url)}"
+    fun browser(url: String, private: Boolean = false) = "browser?url=${Uri.encode(url)}&private=$private"
+    fun wallpaper(id: String) = "wallpaper/$id"
     fun songs(type: String, value: String) = "songs/$type/${Uri.encode(value)}"
     fun playlist(id: String) = "playlist/$id"
     fun pickSongs(playlistId: String) = "pick_songs/$playlistId"
-    fun proCheckout(url: String) = "pro_checkout?url=${Uri.encode(url)}"
     fun vaultViewer(id: String) = "vault_view/$id"
     fun vaultPlayer(id: String) = "vault_play/$id"
 

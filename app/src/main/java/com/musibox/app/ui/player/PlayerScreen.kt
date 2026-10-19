@@ -196,7 +196,7 @@ fun PlayerScreen(nav: NavController) {
                     Icon(
                         if (isFav) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                         if (isFav) "Remover dos favoritos" else "Favoritar",
-                        tint = if (isFav) Color(0xFF1FDF67) else MaterialTheme.colorScheme.onSurface,
+                        tint = if (isFav) com.musibox.app.ui.components.Neo.Green else MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(30.dp),
                     )
                 }

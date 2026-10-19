@@ -2,17 +2,6 @@
 -dontobfuscate
 -keepattributes Signature,InnerClasses,EnclosingMethod,*Annotation*,SourceFile,LineNumberTable
 
-# Motor de download (yt-dlp/ffmpeg): usa reflexão/JSON internamente
--keep class com.yausername.** { *; }
--keep class com.fasterxml.jackson.** { *; }
--dontwarn com.fasterxml.jackson.**
--keep class org.apache.commons.compress.** { *; }
--dontwarn org.apache.commons.compress.**
--dontwarn org.tukaani.xz.**
--dontwarn org.brotli.**
--dontwarn com.github.luben.zstd.**
--dontwarn org.objectweb.asm.**
-
 # Tink (criptografia do cofre)
 -keep class com.google.crypto.tink.** { *; }
 -dontwarn com.google.crypto.tink.**
@@ -32,11 +21,3 @@
 
 # Room / WorkManager
 -keep class * extends androidx.work.ListenableWorker { <init>(android.content.Context, androidx.work.WorkerParameters); }
-
-# Start.io (anúncios)
--keep class com.startapp.** { *; }
--keep class com.truenet.** { *; }
--keepattributes Exceptions, InnerClasses, Signature, Deprecated, SourceFile, LineNumberTable, *Annotation*, EnclosingMethod
--dontwarn android.webkit.JavascriptInterface
--dontwarn com.startapp.**
--dontwarn org.jetbrains.annotations.**

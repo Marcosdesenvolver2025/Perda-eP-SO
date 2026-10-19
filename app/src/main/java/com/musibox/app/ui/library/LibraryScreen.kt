@@ -165,11 +165,9 @@ fun LibraryScreen(nav: NavController, initialTab: Int) {
                     else -> StateMessage(
                         Icons.Rounded.MusicOff,
                         "Nenhuma música encontrada.",
-                        "Baixe músicas pelo MusiBox ou copie arquivos de áudio para o aparelho.",
+                        "Copie arquivos de áudio para o aparelho (pasta Música ou Download) e eles aparecem aqui.",
                         actionText = "Procurar novamente",
                         onAction = { vm.rescan() },
-                        secondaryText = "Ir para Baixar",
-                        onSecondary = { nav.navigateTopLevel(Routes.download()) },
                     )
                 }
                 else -> when (page) {
@@ -195,7 +193,7 @@ fun PermissionNeeded(permanentlyDenied: Boolean, onRequest: () -> Unit, onSettin
     StateMessage(
         Icons.Rounded.LibraryMusic,
         "Permissão necessária para acessar suas músicas.",
-        if (permanentlyDenied) "O acesso foi negado. Ative \"Músicas e áudio\" nas configurações do Android para ver sua biblioteca. O cofre e os downloads continuam funcionando."
+        if (permanentlyDenied) "O acesso foi negado. Ative \"Músicas e áudio\" nas configurações do Android para ver sua biblioteca. O cofre e o navegador continuam funcionando."
         else "O MusiBox lê somente os arquivos de áudio do aparelho para montar sua biblioteca. Nada é enviado para a internet.",
         actionText = if (permanentlyDenied) "Abrir configurações" else "Permitir acesso",
         onAction = if (permanentlyDenied) onSettings else onRequest,

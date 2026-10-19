@@ -39,7 +39,6 @@ class VaultViewModel(private val c: AppContainer) : ViewModel() {
                 progress = Progress(i, uris.size, "Salvando no cofre…")
                 try {
                     val item = c.vault.importUri(uri, source = "import", folder = folder)
-                    c.downloads.logImport(item.name, item.mimeType, item.size, SaveDestination.VAULT, null, item.id, null)
                     ok += uri
                 } catch (e: Exception) {
                     lastError = e.message ?: "Formato não suportado."

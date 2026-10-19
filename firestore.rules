@@ -17,34 +17,6 @@ service cloud.firestore {
       }
     }
 
-    // MusiBox Pró (extensão "Run Payments with Stripe"): cada pessoa vê só os próprios
-    // pagamentos/assinaturas e pode pedir uma sessão de pagamento. Quem grava o resultado
-    // é a extensão (no servidor), nunca o app.
-    match /customers/{uid} {
-      allow read: if request.auth != null && request.auth.uid == uid;
-
-      match /checkout_sessions/{id} {
-        allow read, write: if request.auth != null && request.auth.uid == uid;
-      }
-      match /subscriptions/{id} {
-        allow read: if request.auth != null && request.auth.uid == uid;
-      }
-      match /payments/{id} {
-        allow read: if request.auth != null && request.auth.uid == uid;
-      }
-    }
-
-    match /products/{id} {
-      allow read: if true;
-
-      match /prices/{id} {
-        allow read: if true;
-      }
-      match /tax_rates/{id} {
-        allow read: if true;
-      }
-    }
-
     // Qualquer outro caminho é bloqueado.
     match /{document=**} {
       allow read, write: if false;

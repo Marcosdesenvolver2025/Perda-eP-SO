@@ -68,7 +68,11 @@ fun WallpaperPreviewScreen(nav: NavController, id: String) {
     val owned by PlayBilling.owned.collectAsStateWithLifecycle()
     val pro by PlayBilling.pro.collectAsStateWithLifecycle()
     val prices by PlayBilling.prices.collectAsStateWithLifecycle()
-    val list = Wallpapers.all
+    // Deslizar passa pelos papéis da mesma coleção (Heróis & Vilões fica junto)
+    val list = remember(id) {
+        val col = Wallpapers.get(id)?.collection.orEmpty()
+        Wallpapers.all.filter { it.collection == col }.ifEmpty { Wallpapers.all }
+    }
     val start = remember(id) { list.indexOfFirst { it.id == id }.coerceAtLeast(0) }
     val pager = rememberPagerState(initialPage = start) { list.size }
     var mode by rememberSaveable { mutableStateOf("app") }

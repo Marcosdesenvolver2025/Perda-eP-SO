@@ -186,7 +186,7 @@ fun MoreScreen(nav: NavController) {
 /** Cartão "Papéis de parede": três miniaturas e o convite para a loja. */
 @Composable
 private fun WallpaperPromo(modifier: Modifier, onClick: () -> Unit) {
-    val picks = remember { listOf("supernova", "aurora_lago", "synthwave").mapNotNull { com.musibox.app.themes.Wallpapers.get(it) } }
+    val picks = remember { listOf("hv_furia_tempestade", "supernova", "hv_fenda_dimensional").mapNotNull { com.musibox.app.themes.Wallpapers.get(it) } }
     Row(
         modifier
             .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -215,7 +215,7 @@ private fun WallpaperPromo(modifier: Modifier, onClick: () -> Unit) {
         Column(Modifier.weight(1f)) {
             Text("Papéis de parede", style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
             Text(
-                "60 temas para o app e o navegador • a partir de R$ 0,20",
+                "110 temas, com a nova coleção Heróis & Vilões • a partir de R$ 0,20",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

@@ -54,9 +54,11 @@ import com.musibox.app.ui.components.WallpaperImage
 import com.musibox.app.ui.components.bounceClick
 import com.musibox.app.ui.navigation.Routes
 
-private enum class WallFilter(val label: String) { ALL("Todos"), MINE("Meus"), CHEAP("Até R$ 1"), PREMIUM("Premium"), PRO("Pró") }
+private enum class WallFilter(val label: String) {
+    ALL("Todos"), HEROES("Heróis & Vilões"), MINE("Meus"), CHEAP("Até R$ 1"), PREMIUM("Premium"), PRO("Pró")
+}
 
-/** Loja de papéis de parede: 60 temas para o fundo do app e do navegador. */
+/** Loja de papéis de parede: 110 temas para o fundo do app e do navegador (inclui a coleção Heróis & Vilões). */
 @Composable
 fun WallpaperStoreScreen(nav: NavController) {
     val owned by PlayBilling.owned.collectAsStateWithLifecycle()
@@ -69,13 +71,21 @@ fun WallpaperStoreScreen(nav: NavController) {
 
     fun usable(w: Wallpaper) = w.free || (w.pro && isPro) || (!w.pro && w.id in owned)
 
+    val heroes = Wallpapers.all.filter { it.collection == Wallpapers.HEROES }.sortedByDescending { it.price }
+    val main = Wallpapers.all.filter { it.collection.isEmpty() }
     val sections: List<Pair<String, List<Wallpaper>>> = when (filter) {
         WallFilter.ALL -> listOf(
-            "Grátis" to Wallpapers.all.filter { it.free },
-            "Destaques" to Wallpapers.all.filter { !it.pro && it.price >= 499 }.sortedByDescending { it.price },
-            "Populares" to Wallpapers.all.filter { !it.pro && it.price in 99..299 }.sortedByDescending { it.price },
-            "Baratinhos" to Wallpapers.all.filter { !it.pro && it.price in 1..50 }.sortedByDescending { it.price },
-            "Exclusivos do Pró" to Wallpapers.all.filter { it.pro },
+            "Grátis" to main.filter { it.free },
+            "Nova coleção: Heróis & Vilões" to heroes,
+            "Destaques" to main.filter { !it.pro && it.price >= 499 }.sortedByDescending { it.price },
+            "Populares" to main.filter { !it.pro && it.price in 99..299 }.sortedByDescending { it.price },
+            "Baratinhos" to main.filter { !it.pro && it.price in 1..50 }.sortedByDescending { it.price },
+            "Exclusivos do Pró" to main.filter { it.pro },
+        )
+        WallFilter.HEROES -> listOf(
+            "Lendários" to heroes.filter { it.price >= 1499 },
+            "Épicos" to heroes.filter { it.price in 499..999 },
+            "Clássicos" to heroes.filter { it.price < 499 },
         )
         WallFilter.MINE -> listOf("Seus papéis" to Wallpapers.all.filter { usable(it) })
         WallFilter.CHEAP -> listOf("Até R$ 1" to Wallpapers.all.filter { !it.pro && it.price in 1..100 }.sortedBy { it.price })

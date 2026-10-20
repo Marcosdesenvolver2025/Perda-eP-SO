@@ -50,7 +50,22 @@ import com.musibox.app.ui.library.LibraryScreen
 import com.musibox.app.ui.library.PlaylistScreen
 import com.musibox.app.ui.library.SearchScreen
 import com.musibox.app.ui.library.SongListScreen
-import com.musibox.app.ui.navigation.BottomBar
+import com.musibox.app.ui.navigation.BottomFadeBlur
+import com.musibox.app.ui.navigation.FloatingBar
+import com.musibox.app.ui.navigation.FloatingNavBar
+import com.musibox.app.ui.navigation.LocalBottomBarSpace
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import com.musibox.app.ui.main.MainScreen
 import com.musibox.app.ui.main.MainTabs
 import androidx.compose.foundation.pager.rememberPagerState
@@ -111,8 +126,23 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
         }
     }
 
-    CompositionLocalProvider(LocalSnackbar provides snackbar) {
+    // Vidro fosco da cápsula e desfoque do rodapé: o conteúdo das telas é a "fonte" do desfoque
+    val hazeState = rememberHazeState()
+    val density = LocalDensity.current
+    var overlayHeight by remember { mutableStateOf(0.dp) }
+    val miniPlayer: @Composable () -> Unit = {
+        MiniPlayer(
+            state = playerState,
+            onOpen = { navController.navigate(Routes.PLAYER) { launchSingleTop = true } },
+            onPlayPause = { container.player.togglePlayPause() },
+            onNext = { container.player.next() },
+            onClose = { container.player.clearQueue() },
+        )
+    }
+
+    CompositionLocalProvider(LocalSnackbar provides snackbar, LocalBottomBarSpace provides (if (showBottom) overlayHeight else 0.dp)) {
         Box(Modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize().then(if (showBottom) Modifier.hazeSource(hazeState) else Modifier)) {
         // Na página do navegador, o fundo vira o papel de parede do navegador (troca durante o deslize)
         SpaceBackdrop(browserAmount = {
             if (navController.currentDestination?.route != Routes.MAIN) {
@@ -127,22 +157,15 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
             // Fundo transparente (para o espaço aparecer), mas texto sempre claro e visível.
             contentColor = MaterialTheme.colorScheme.onBackground,
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
-            snackbarHost = { SnackbarHost(snackbar) },
+            snackbarHost = { SnackbarHost(snackbar, Modifier.padding(bottom = if (showBottom) overlayHeight else 0.dp)) },
             bottomBar = {
-                Column {
-                    AnimatedVisibility(showMini, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut()) {
-                        MiniPlayer(
-                            state = playerState,
-                            onOpen = { navController.navigate(Routes.PLAYER) { launchSingleTop = true } },
-                            onPlayPause = { container.player.togglePlayPause() },
-                            onNext = { container.player.next() },
-                            onClose = { container.player.clearQueue() },
-                        )
-                    }
-                    if (showBottom) {
-                        BottomBar(pagerState.targetPage) { page -> rootScope.launch { pagerState.animateScrollToPage(page) } }
-                    } else if (!fullScreen) {
-                        Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
+                // Nas telas principais a cápsula flutua por cima (veja abaixo); nas outras, o mini player fica no rodapé
+                if (!showBottom) {
+                    Column {
+                        AnimatedVisibility(showMini, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut()) {
+                            miniPlayer()
+                        }
+                        if (!fullScreen) Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
                     }
                 }
             },
@@ -229,6 +252,35 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
                 composable(Routes.VAULT_BACKUP) { VaultBackupScreen(navController) }
                 composable(Routes.VAULT_CHANGE_PIN) { VaultChangePinScreen(navController) }
                 composable(Routes.VAULT_RECOVER) { VaultRecoverScreen(navController) }
+            }
+        }
+        }
+
+        if (showBottom) {
+            // Quanto a página Música está na tela (some durante o deslize para outra aba)
+            val musicAmount = {
+                val off = (pagerState.currentPage - MainTabs.HOME) + pagerState.currentPageOffsetFraction
+                (1f - kotlin.math.abs(off)).coerceIn(0f, 1f)
+            }
+            val showBlur by remember { derivedStateOf { musicAmount() > 0.01f } }
+            if (showBlur) {
+                BottomFadeBlur(hazeState, height = overlayHeight + 34.dp, alpha = musicAmount, modifier = Modifier.align(Alignment.BottomCenter))
+            }
+            Column(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .onSizeChanged { overlayHeight = with(density) { it.height.toDp() } },
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                AnimatedVisibility(showMini, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut()) {
+                    Column {
+                        miniPlayer()
+                        Spacer(Modifier.height(6.dp))
+                    }
+                }
+                FloatingNavBar(pagerState.targetPage, hazeState, onSelect = { page -> rootScope.launch { pagerState.animateScrollToPage(page) } })
+                Spacer(Modifier.navigationBarsPadding().height(FloatingBar.BottomGap))
             }
         }
         }

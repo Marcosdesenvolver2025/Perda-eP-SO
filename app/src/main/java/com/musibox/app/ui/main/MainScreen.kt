@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import com.musibox.app.ui.navigation.LocalBottomBarSpace
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
@@ -79,7 +81,7 @@ fun MainScreen(nav: NavController, pager: PagerState) {
                         Box(Modifier.weight(1f).consumeWindowInsets(WindowInsets.statusBars)) {
                             when (page) {
                                 MainTabs.HOME -> HomeScreen(nav)
-                                MainTabs.VAULT -> VaultScreen(nav)
+                                MainTabs.VAULT -> Box(Modifier.padding(bottom = LocalBottomBarSpace.current)) { VaultScreen(nav) }
                                 else -> MoreScreen(nav)
                             }
                         }

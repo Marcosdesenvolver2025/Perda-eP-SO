@@ -93,7 +93,7 @@ $UI tap "Névoa Verde" 10; sleep 3
 $UI tap "Usar no app" 5; sleep 2; shot 14d_usar_no_app
 adb shell input keyevent KEYCODE_BACK; sleep 1
 adb shell input keyevent KEYCODE_BACK; sleep 2
-$UI tapx "Início" 10; sleep 3; shot 14e_inicio_com_tema
+$UI tapx "Música" 10; sleep 3; shot 14e_inicio_com_tema
 $UI tapx "Mais" 10; sleep 2
 $UI tap "MusiBox Pró" 10; sleep 3; shot 14f_pro
 adb shell input keyevent KEYCODE_BACK; sleep 1
@@ -136,7 +136,7 @@ $UI tap "Vídeos" 5; sleep 2; shot 17_cofre_videos
 $UI tap "clipe_demo" 5; sleep 5; shot 18_cofre_player
 adb shell input keyevent KEYCODE_BACK; sleep 2
 # Sai do cofre (bloqueia) e recupera o acesso com o código
-$UI tapx "Início" 10; sleep 2
+$UI tapx "Música" 10; sleep 2
 $UI tapx "Cofre" 10; sleep 2; shot 18a_cofre_bloqueado
 $UI tap "Esqueci o PIN" 10; sleep 1; shot 18b_esqueci_pin
 $UI tap "Usar código de recuperação" 10; sleep 2

@@ -75,8 +75,8 @@ android {
         applicationId = appId
         minSdk = 29
         targetSdk = 35
-        versionCode = 16
-        versionName = "2.1.0"
+        versionCode = 17
+        versionName = "2.2.0"
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${readWebClientId()}\"")
         buildConfigField("boolean", "FIREBASE_CONFIGURED", (firebaseClient != null).toString())
         buildConfigField("boolean", "FIREBASE_MANUAL_INIT", (firebaseClient != null && !usePluginConfig).toString())
@@ -149,6 +149,7 @@ kotlin {
             "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
             "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
             "-opt-in=androidx.compose.foundation.layout.ExperimentalLayoutApi",
+            "-opt-in=dev.chrisbanes.haze.ExperimentalHazeApi",
         )
     }
 }
@@ -215,6 +216,9 @@ dependencies {
 
     // Navegador: perfil separado para a navegação privada
     implementation("androidx.webkit:webkit:1.12.1")
+
+    // Vidro fosco da barra em cápsula e desfoque do rodapé
+    implementation("dev.chrisbanes.haze:haze:1.6.10")
 
     // Leitor de QR Code do Google (sem pedir permissão de câmera)
     implementation("com.google.android.gms:play-services-code-scanner:16.1.0")

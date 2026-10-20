@@ -1,38 +1,40 @@
 package com.musibox.app.ui.navigation
 
-import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.GridView
-import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Language
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
@@ -44,105 +46,144 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.musibox.app.R
 import com.musibox.app.ui.components.Neo
 import com.musibox.app.ui.components.pressScale
 import com.musibox.app.ui.main.MainTabs
+import dev.chrisbanes.haze.HazeProgressive
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeEffect
+
+/** Altura da cápsula e o espaço até a barra de gestos. */
+object FloatingBar {
+    val Height = 64.dp
+    val BottomGap = 10.dp
+}
 
 /**
- * Barra de baixo no estilo do novo visual: sem fundo próprio, ícones de contorno e a aba
- * escolhida em verde com um tracinho embaixo. Acompanha a página do deslize.
+ * Espaço que a cápsula (e o mini player, quando aparece) ocupa no rodapé das telas principais.
+ * As listas usam isso no fim para o último item não ficar escondido atrás da barra.
+ */
+val LocalBottomBarSpace = compositionLocalOf { 0.dp }
+
+/**
+ * Barra de navegação flutuante em formato de cápsula: fundo escuro de vidro fosco,
+ * borda fina, e a aba escolhida com um destaque verde que desliza até ela.
  */
 @Composable
-fun BottomBar(selectedPage: Int, onSelect: (Int) -> Unit) {
-    // Sem faixa cinza: os ícones ficam direto sobre o fundo do app
-    Column(Modifier.fillMaxWidth()) {
-        Row(
+fun FloatingNavBar(selectedPage: Int, hazeState: HazeState?, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
+    val shape = RoundedCornerShape(percent = 50)
+    BoxWithConstraints(
+        modifier
+            .fillMaxWidth(0.84f)
+            .widthIn(max = 440.dp)
+            .height(FloatingBar.Height)
+            .shadow(20.dp, shape, ambientColor = Color.Black, spotColor = Color.Black)
+            .clip(shape)
+            .then(
+                if (hazeState != null) {
+                    Modifier.hazeEffect(hazeState) {
+                        backgroundColor = Color(0xFF0E1012)
+                        tints = listOf(HazeTint(Color(0xE0171A1D)))
+                        blurRadius = 22.dp
+                        noiseFactor = 0f
+                    }
+                } else {
+                    Modifier.background(Color(0xF2171A1D))
+                },
+            )
+            .border(1.dp, Color.White.copy(alpha = 0.11f), shape)
+            .padding(horizontal = 6.dp, vertical = 5.dp),
+    ) {
+        val slot: Dp = maxWidth / MainTabs.COUNT
+        val x by animateDpAsState(slot * selectedPage, spring(dampingRatio = 0.75f, stiffness = 420f), label = "navPill")
+        // Destaque verde atrás da aba escolhida
+        Box(
             Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .height(72.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            NavItem(rememberVectorPainter(Icons.Outlined.Home), "Início", selectedPage == MainTabs.HOME, Modifier.weight(1f)) { onSelect(MainTabs.HOME) }
+                .offset(x = x + 2.dp)
+                .width(slot - 4.dp)
+                .fillMaxHeight()
+                .clip(shape)
+                .background(Neo.Green.copy(alpha = 0.17f)),
+        )
+        Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+            NavItem(painterResource(R.drawable.ic_brand_note), "Música", selectedPage == MainTabs.HOME, Modifier.weight(1f)) { onSelect(MainTabs.HOME) }
             NavItem(rememberVectorPainter(Icons.Outlined.Language), "Navegador", selectedPage == MainTabs.BROWSER, Modifier.weight(1f)) { onSelect(MainTabs.BROWSER) }
             NavItem(painterResource(R.drawable.ic_nav_vault), "Cofre", selectedPage == MainTabs.VAULT, Modifier.weight(1f)) { onSelect(MainTabs.VAULT) }
-            NavItem(rememberVectorPainter(Icons.Outlined.GridView), "Mais", selectedPage == MainTabs.MORE, Modifier.weight(1f)) { onSelect(MainTabs.MORE) }
+            NavItem(painterResource(R.drawable.ic_nav_more), "Mais", selectedPage == MainTabs.MORE, Modifier.weight(1f)) { onSelect(MainTabs.MORE) }
         }
     }
 }
 
 @Composable
-private fun NavItem(
-    icon: Painter,
-    label: String,
-    selected: Boolean,
-    modifier: Modifier,
-    busy: Boolean = false,
-    onClick: () -> Unit,
-) {
-    val scale by animateFloatAsState(if (selected) 1.1f else 1f, spring(dampingRatio = 0.4f, stiffness = 450f), label = "navScale")
-    val lineWidth by animateDpAsState(if (selected) 26.dp else 0.dp, spring(dampingRatio = 0.6f), label = "navLine")
+private fun NavItem(icon: Painter, label: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    val tint by animateColorAsState(if (selected) Neo.Green else Color.White, label = "navTint")
+    val scale by animateFloatAsState(if (selected) 1.06f else 1f, spring(dampingRatio = 0.45f, stiffness = 500f), label = "navScale")
     val interaction = remember { MutableInteractionSource() }
-    // Enquanto baixa, o ícone de download "pulsa" de leve
-    val bob = if (busy) {
-        val t = rememberInfiniteTransition(label = "busy")
-        t.animateFloat(0f, 1f, infiniteRepeatable(tween(900, easing = LinearEasing)), label = "bob").value
-    } else {
-        0f
-    }
     Column(
         modifier
-            .padding(horizontal = 2.dp, vertical = 4.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .fillMaxHeight()
+            .clip(RoundedCornerShape(percent = 50))
             .pressScale(interaction, 0.88f)
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .semantics {
                 contentDescription = label
                 role = Role.Tab
                 this.selected = selected
-            }
-            .padding(vertical = 4.dp),
+            },
         horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
     ) {
-        Box(contentAlignment = Alignment.TopEnd) {
-            Icon(
-                icon,
-                null,
-                tint = if (selected) Color.White else Color(0xFFB3B3B3),
-                modifier = Modifier
-                    .size(30.dp)
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                        translationY = if (busy) (kotlin.math.sin(bob * 6.2832f) * 2.dp.toPx()) else 0f
-                    },
-            )
-            if (busy) {
-                Box(
-                    Modifier
-                        .size(8.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(Neo.Green),
-                )
-            }
-        }
+        Icon(
+            icon,
+            null,
+            tint = tint,
+            modifier = Modifier
+                .size(25.dp)
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                },
+        )
         Text(
             label,
-            color = if (selected) Neo.Green else Color(0xFFB3B3B3),
-            fontSize = 12.5.sp,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            color = tint,
+            fontSize = 12.sp,
+            lineHeight = 14.sp,
+            fontWeight = FontWeight.Medium,
             maxLines = 1,
-            modifier = Modifier.padding(top = 4.dp),
-        )
-        Box(
-            Modifier
-                .padding(top = 4.dp)
-                .size(width = lineWidth, height = 3.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(Neo.Green),
+            modifier = Modifier.padding(top = 3.dp),
         )
     }
+}
+
+/**
+ * Desfoque suave no rodapé (só na página Música): o conteúdo que passa por trás da cápsula
+ * fica levemente embaçado, mais forte embaixo e sumindo para cima.
+ */
+@Composable
+fun BottomFadeBlur(hazeState: HazeState?, height: Dp, alpha: () -> Float, modifier: Modifier = Modifier) {
+    Box(
+        modifier
+            .fillMaxWidth()
+            .height(height)
+            .graphicsLayer { this.alpha = alpha() }
+            .then(
+                if (hazeState != null) {
+                    Modifier.hazeEffect(hazeState) {
+                        backgroundColor = Color.Black
+                        tints = listOf(HazeTint(Color.Black.copy(alpha = 0.22f)))
+                        blurRadius = 9.dp
+                        noiseFactor = 0f
+                        progressive = HazeProgressive.verticalGradient(startIntensity = 0f, endIntensity = 1f)
+                    }
+                } else {
+                    Modifier.background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.55f))))
+                },
+            ),
+    )
 }

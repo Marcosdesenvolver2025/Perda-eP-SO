@@ -72,7 +72,7 @@ fun MoreScreen(nav: NavController) {
 
     Column(Modifier.fillMaxSize()) {
         com.musibox.app.ui.components.PageTitle("Mais", "Conta, biblioteca e ajustes")
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp + com.musibox.app.ui.navigation.LocalBottomBarSpace.current)) {
             item(key = "pro") {
                 val proState by com.musibox.app.billing.PlayBilling.pro.collectAsStateWithLifecycle()
                 val proActive = proState.subscription || proState.passUntil > System.currentTimeMillis()

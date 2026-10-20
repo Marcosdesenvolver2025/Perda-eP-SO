@@ -6,7 +6,7 @@ import com.musibox.app.ui.main.MainTabs
 
 object Routes {
     const val ONBOARDING = "onboarding"
-    /** Tela com as abas principais lado a lado (Início, Navegador, Cofre, Mais). */
+    /** Tela com as abas principais lado a lado (Música, Navegador, Cofre, Mais). */
     const val MAIN = "main"
     const val HOME = "home"
     const val BROWSER_HOME = "browser_home"

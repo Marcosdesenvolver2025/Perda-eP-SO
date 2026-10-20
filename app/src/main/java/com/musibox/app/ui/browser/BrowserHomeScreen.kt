@@ -280,7 +280,7 @@ fun BrowserHomeScreen(nav: NavController) {
             // Notícias
             Spacer(Modifier.height(18.dp))
             NewsPanel(active = active, interests = interests, accent = accent, onOpen = { open(it) }, onSettings = { sheet = "interests" })
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(24.dp + com.musibox.app.ui.navigation.LocalBottomBarSpace.current))
         }
     }
 

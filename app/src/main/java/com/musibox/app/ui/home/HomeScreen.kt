@@ -198,7 +198,7 @@ fun HomeScreen(nav: NavController) {
             Modifier
                 .widthIn(max = 760.dp)
                 .fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 24.dp),
+            contentPadding = PaddingValues(bottom = 24.dp + com.musibox.app.ui.navigation.LocalBottomBarSpace.current),
         ) {
             item(key = "search") {
                 NeoSearchPill(

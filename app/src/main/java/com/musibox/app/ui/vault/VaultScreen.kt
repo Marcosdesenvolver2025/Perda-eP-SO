@@ -38,6 +38,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.InsertDriveFile
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Add
@@ -129,14 +130,14 @@ private val vaultTabs = listOf(
 const val EXPORT_WARNING = "Este arquivo ficará visível fora do cofre. Deseja continuar?"
 
 @Composable
-fun VaultScreen(nav: NavController) {
+fun VaultScreen(nav: NavController, onBack: (() -> Unit)? = null) {
     VaultGate {
-        VaultContent(nav)
+        VaultContent(nav, onBack)
         IntrusionAlert(nav)
     }
 }
 
-/** Alerta de invasão: mostra quem errou o PIN enquanto o cofre estava trancado (detalhes no Pró). */
+/** Alerta de invasão: mostra quem errou o PIN enquanto o cofre estava trancado (detalhes no Pro). */
 @Composable
 private fun IntrusionAlert(nav: NavController) {
     val container = com.musibox.app.ui.components.LocalAppContainer.current
@@ -162,7 +163,7 @@ private fun IntrusionAlert(nav: NavController) {
                     }
                 } else {
                     Spacer(Modifier.height(10.dp))
-                    Text("Veja o dia e a hora de cada tentativa com o MusiBox Pró.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Veja o dia e a hora de cada tentativa com o MusiBox Pro.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         },
@@ -170,7 +171,7 @@ private fun IntrusionAlert(nav: NavController) {
             if (isPro) {
                 androidx.compose.material3.TextButton(onClick = { alerts = emptyList() }) { Text("Entendi") }
             } else {
-                androidx.compose.material3.TextButton(onClick = { alerts = emptyList(); nav.navigate(Routes.PRO) }) { Text("Ver com o Pró") }
+                androidx.compose.material3.TextButton(onClick = { alerts = emptyList(); nav.navigate(Routes.PRO) }) { Text("Ver com o Pro") }
             }
         },
         dismissButton = if (isPro) null else ({ androidx.compose.material3.TextButton(onClick = { alerts = emptyList() }) { Text("Agora não") } }),
@@ -188,7 +189,7 @@ private sealed interface VaultDialog {
 }
 
 @Composable
-private fun VaultContent(nav: NavController) {
+private fun VaultContent(nav: NavController, onBack: (() -> Unit)? = null) {
     val vm = appViewModel { VaultViewModel(it) }
     val items by vm.items.collectAsStateWithLifecycle()
     val settings by vm.settings.collectAsStateWithLifecycle()
@@ -319,9 +320,12 @@ private fun VaultContent(nav: NavController) {
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .padding(start = 18.dp, end = 12.dp, top = 4.dp, bottom = 6.dp),
+                        .padding(start = if (onBack != null) 4.dp else 18.dp, end = 12.dp, top = 4.dp, bottom = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Voltar") }
+                    }
                     Column(Modifier.weight(1f)) {
                         Text("Cofre", fontSize = 30.sp, fontWeight = FontWeight.ExtraBold)
                         Text(

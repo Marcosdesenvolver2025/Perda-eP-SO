@@ -29,7 +29,7 @@ class MusiBoxApp : Application(), ImageLoaderFactory {
         com.musibox.app.themes.ThemeStore.get(this)
         com.musibox.app.billing.PlayBilling.start(this)
         com.musibox.app.media.AudioFx.init(this)
-        // Quando a Play confirma as compras: sem Pró, desfaz o ícone disfarçado; papel não comprado volta ao padrão
+        // Quando a Play confirma as compras: sem Pro, desfaz o ícone disfarçado; papel não comprado volta ao padrão
         container.appScope.launch {
             kotlinx.coroutines.flow.combine(
                 com.musibox.app.billing.PlayBilling.synced,

@@ -87,7 +87,7 @@ class PinManager(context: Context) {
         }
     }
 
-    // ---------------- Alerta de invasão (Pró) ----------------
+    // ---------------- Alerta de invasão (Pro) ----------------
 
     private fun recordIntrusion() {
         val list = intrusions() + System.currentTimeMillis()

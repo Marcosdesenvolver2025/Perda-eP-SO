@@ -52,7 +52,7 @@ import com.musibox.app.ui.components.bounceClick
 import com.musibox.app.ui.navigation.Routes
 import kotlin.math.roundToInt
 
-/** Equalizador do player (Pró): presets, faixas, reforço de graves e som 3D. */
+/** Equalizador do player (Pro): presets, faixas, reforço de graves e som 3D. */
 @Composable
 fun EqualizerScreen(nav: NavController) {
     val info by AudioFx.info.collectAsStateWithLifecycle()
@@ -85,8 +85,8 @@ fun EqualizerScreen(nav: NavController) {
                     Icon(Icons.Rounded.WorkspacePremium, null, tint = Neo.Green, modifier = Modifier.size(30.dp))
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("Recurso do MusiBox Pró", color = Color.White, fontWeight = FontWeight.Bold)
-                        Text("Experimente os ajustes; o som muda quando você for Pró.", color = Neo.Text2, fontSize = 13.sp)
+                        Text("Recurso do MusiBox Pro", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text("Experimente os ajustes; o som muda quando você for Pro.", color = Neo.Text2, fontSize = 13.sp)
                     }
                 }
                 Spacer(Modifier.height(16.dp))

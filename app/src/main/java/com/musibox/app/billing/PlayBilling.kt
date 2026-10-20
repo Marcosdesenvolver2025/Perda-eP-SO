@@ -26,7 +26,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-/** Planos do MusiBox Pró (cobrados pela Google Play). */
+/** Nível do plano ativo (do menor para o maior). Todos liberam os recursos extras; mudam os temas exclusivos. */
+enum class Plan(val label: String, val key: String) {
+    NONE("", ""),
+    GO("Go", "go"),
+    PLUS("Plus", "plus"),
+    PRO("Pro", "pro"),
+}
+
+/** Planos do MusiBox (cobrados pela Google Play): Go (3 dias), Plus (semanal) e Pro (mensal). */
 enum class ProPlan(
     val title: String,
     val fallbackPrice: String,
@@ -34,10 +42,11 @@ enum class ProPlan(
     val detail: String,
     val productId: String,
     val basePlanId: String?,
+    val tier: Plan,
 ) {
-    THREE_DAYS("3 dias", "R$ 4,99", "", "Pagamento único • não renova sozinho", PlayBilling.PASS_3D, null),
-    WEEKLY("Semanal", "R$ 9,60", "/semana", "Renova toda semana • cancele quando quiser", PlayBilling.SUB_PRO, PlayBilling.PLAN_WEEK),
-    MONTHLY("Mensal", "R$ 35,99", "/mês", "Renova todo mês • cancele quando quiser", PlayBilling.SUB_PRO, PlayBilling.PLAN_MONTH),
+    GO("Go", "R$ 4,99", "/3 dias", "Pagamento único • vale 3 dias • não renova", PlayBilling.PASS_3D, null, Plan.GO),
+    PLUS("Plus", "R$ 9,60", "/semana", "Renova toda semana • cancele quando quiser", PlayBilling.SUB_PLUS, PlayBilling.PLAN_WEEK, Plan.PLUS),
+    PRO("Pro", "R$ 35,99", "/mês", "Renova todo mês • cancele quando quiser", PlayBilling.SUB_PRO, PlayBilling.PLAN_MONTH, Plan.PRO),
     ;
 
     val priceKey: String get() = if (basePlanId != null) "$productId:$basePlanId" else productId
@@ -45,25 +54,38 @@ enum class ProPlan(
 
 data class ProState(
     val active: Boolean = false,
-    /** Assinatura semanal/mensal ativa. */
+    /** Alguma assinatura (Plus ou Pro) ativa. */
     val subscription: Boolean = false,
     /** Assinatura renova sozinha (false = cancelada, vale até o fim do período). */
     val renews: Boolean = false,
-    /** Até quando vale o passe de 3 dias (ms). */
+    /** Até quando vale o Go, o passe de 3 dias (ms). */
     val passUntil: Long = 0L,
-)
+    val subPro: Boolean = false,
+    val subPlus: Boolean = false,
+) {
+    /** Maior plano ativo agora. */
+    val plan: Plan
+        get() = when {
+            subPro -> Plan.PRO
+            subPlus -> Plan.PLUS
+            passUntil > System.currentTimeMillis() -> Plan.GO
+            else -> Plan.NONE
+        }
+}
 
 /**
  * Compras pela Google Play: papéis de parede (compra única, ficam para sempre na conta Google)
- * e o MusiBox Pró (assinatura semanal/mensal ou passe de 3 dias).
+ * e os planos Go (3 dias), Plus (semanal) e Pro (mensal).
  * Nenhuma chave secreta fica no app; a Google cuida do pagamento.
  */
 object PlayBilling : PurchasesUpdatedListener {
     private const val TAG = "MusiBoxBilling"
     const val SUB_PRO = "musibox_pro"
+    const val SUB_PLUS = "musibox_plus"
     const val PLAN_WEEK = "semanal"
     const val PLAN_MONTH = "mensal"
     const val PASS_3D = "pro_3dias"
+    private val SUBS = setOf(SUB_PRO, SUB_PLUS)
     private const val THREE_DAYS_MS = 3L * 24 * 60 * 60 * 1000
     private const val PREFS = "billing_cache"
 
@@ -101,11 +123,15 @@ object PlayBilling : PurchasesUpdatedListener {
         val prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         // Último estado conhecido (funciona sem internet)
         _owned.value = prefs.getStringSet("owned", emptySet())!!.toSet()
+        val subPro = prefs.getBoolean("sub_pro", prefs.getBoolean("sub", false))
+        val subPlus = prefs.getBoolean("sub_plus", false)
         _pro.value = ProState(
-            active = prefs.getBoolean("sub", false) || prefs.getLong("pass_until", 0L) > System.currentTimeMillis(),
-            subscription = prefs.getBoolean("sub", false),
+            active = subPro || subPlus || prefs.getLong("pass_until", 0L) > System.currentTimeMillis(),
+            subscription = subPro || subPlus,
             renews = prefs.getBoolean("renews", false),
             passUntil = prefs.getLong("pass_until", 0L),
+            subPro = subPro,
+            subPlus = subPlus,
         )
         if (firebaseReady()) {
             runCatching {
@@ -150,10 +176,20 @@ object PlayBilling : PurchasesUpdatedListener {
         return p.subscription || p.passUntil > System.currentTimeMillis()
     }
 
-    /** O papel pode ser usado? (grátis, comprado, ou exclusivo do Pró com Pró ativo) */
+    fun currentPlan(): Plan = _pro.value.plan
+
+    /** O plano libera este tema exclusivo? O Pro libera todos; Plus e Go só os da sua lista. */
+    fun planUnlocks(plan: Plan, w: Wallpaper): Boolean = when (plan) {
+        Plan.PRO -> w.pro
+        Plan.PLUS -> "plus" in w.plans
+        Plan.GO -> "go" in w.plans
+        Plan.NONE -> false
+    }
+
+    /** O papel pode ser usado? (grátis, comprado, ou exclusivo de um plano que a pessoa tem) */
     fun canUse(w: Wallpaper): Boolean = when {
         w.free -> true
-        w.pro -> isProNow()
+        w.pro -> planUnlocks(currentPlan(), w)
         else -> w.id in _owned.value
     }
 
@@ -167,7 +203,7 @@ object PlayBilling : PurchasesUpdatedListener {
         val c = client ?: return
         val inapp = Wallpapers.tierProducts + PASS_3D
         queryDetails(c, inapp, ProductType.INAPP)
-        queryDetails(c, listOf(SUB_PRO), ProductType.SUBS)
+        queryDetails(c, SUBS.toList(), ProductType.SUBS)
     }
 
     private fun queryDetails(c: BillingClient, ids: List<String>, type: String) {
@@ -202,7 +238,7 @@ object PlayBilling : PurchasesUpdatedListener {
         }
         c.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(ProductType.SUBS).build()) { result, purchases ->
             if (result.responseCode == BillingResponseCode.OK) {
-                handleSubs(purchases)
+                handleSubs(purchases, full = true)
                 subsOk = true
                 _synced.value = inappOk && subsOk
             }
@@ -276,9 +312,9 @@ object PlayBilling : PurchasesUpdatedListener {
         when (result.responseCode) {
             BillingResponseCode.OK -> {
                 val list = purchases.orEmpty()
-                handleInapp(list.filter { p -> p.products.none { it == SUB_PRO } }, fullList = false)
-                val subs = list.filter { p -> p.products.any { it == SUB_PRO } }
-                if (subs.isNotEmpty()) handleSubs(subs)
+                handleInapp(list.filter { p -> p.products.none { it in SUBS } }, fullList = false)
+                val subs = list.filter { p -> p.products.any { it in SUBS } }
+                if (subs.isNotEmpty()) handleSubs(subs, full = false)
                 val pending = list.any { it.purchaseState == Purchase.PurchaseState.PENDING }
                 callback?.invoke(if (pending) "Pagamento pendente. Assim que for aprovado, a compra é liberada." else "Compra concluída! Obrigado.")
             }
@@ -398,17 +434,25 @@ object PlayBilling : PurchasesUpdatedListener {
         _pro.update { it.copy(passUntil = until, active = true) }
     }
 
-    private fun handleSubs(purchases: List<Purchase>) {
+    /** full = lista completa da Play (ao abrir); senão, só as compras novas (soma ao que já havia). */
+    private fun handleSubs(purchases: List<Purchase>, full: Boolean) {
         val c = client ?: return
-        val sub = purchases.firstOrNull { it.purchaseState == Purchase.PurchaseState.PURCHASED && it.products.contains(SUB_PRO) }
-        sub?.takeIf { !it.isAcknowledged }?.let {
+        val ok = purchases.filter { it.purchaseState == Purchase.PurchaseState.PURCHASED && it.products.any { p -> p in SUBS } }
+        ok.filter { !it.isAcknowledged }.forEach {
             c.acknowledgePurchase(AcknowledgePurchaseParams.newBuilder().setPurchaseToken(it.purchaseToken).build()) { }
         }
+        val pro = ok.firstOrNull { it.products.contains(SUB_PRO) }
+        val plus = ok.firstOrNull { it.products.contains(SUB_PLUS) }
         _pro.update {
+            val subPro = pro != null || (!full && it.subPro)
+            val subPlus = plus != null || (!full && it.subPlus)
+            val top = pro ?: plus
             it.copy(
-                subscription = sub != null,
-                renews = sub?.isAutoRenewing == true,
-                active = sub != null || it.passUntil > System.currentTimeMillis(),
+                subPro = subPro,
+                subPlus = subPlus,
+                subscription = subPro || subPlus,
+                renews = top?.isAutoRenewing ?: (!full && it.renews),
+                active = subPro || subPlus || it.passUntil > System.currentTimeMillis(),
             )
         }
         save()
@@ -419,6 +463,8 @@ object PlayBilling : PurchasesUpdatedListener {
         appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()
             ?.putStringSet("owned", _owned.value)
             ?.putBoolean("sub", p.subscription)
+            ?.putBoolean("sub_pro", p.subPro)
+            ?.putBoolean("sub_plus", p.subPlus)
             ?.putBoolean("renews", p.renews)
             ?.apply()
     }
@@ -427,6 +473,6 @@ object PlayBilling : PurchasesUpdatedListener {
     fun manageSubscriptionIntent(context: Context): Intent =
         Intent(
             Intent.ACTION_VIEW,
-            Uri.parse("https://play.google.com/store/account/subscriptions?sku=$SUB_PRO&package=${context.packageName}"),
+            Uri.parse("https://play.google.com/store/account/subscriptions?sku=${if (_pro.value.subPro) SUB_PRO else SUB_PLUS}&package=${context.packageName}"),
         ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 }

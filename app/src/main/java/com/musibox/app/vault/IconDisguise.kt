@@ -6,7 +6,7 @@ import android.content.pm.PackageManager
 import com.musibox.app.R
 
 /**
- * Ícone disfarçado (recurso do Pró): troca o ícone e o nome do MusiBox na tela inicial
+ * Ícone disfarçado (recurso do Pro): troca o ícone e o nome do MusiBox na tela inicial
  * por Calculadora, Notas, Relógio ou Clima. Ao tocar, o MusiBox abre normalmente.
  */
 object IconDisguise {
@@ -45,7 +45,7 @@ object IconDisguise {
         }
     }
 
-    /** Sem Pró, volta ao ícone normal. */
+    /** Sem Pro, volta ao ícone normal. */
     fun resetIfNeeded(context: Context) {
         if (current(context) != Option.DEFAULT) apply(context, Option.DEFAULT)
     }

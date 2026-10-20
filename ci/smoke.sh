@@ -81,7 +81,7 @@ $UI tapx "YouTube" 10; sleep 12; shot 12_site_youtube
 adb shell input keyevent KEYCODE_BACK; sleep 1
 adb shell input keyevent KEYCODE_BACK; sleep 2
 
-step "Papéis de parede e Pró"
+step "Papéis de parede e Pro"
 launch; $UI tapx "Mais" 10; sleep 2
 $UI tap "Papéis de parede" 10; sleep 4; shot 13_papeis_loja
 adb shell input swipe 540 1700 540 500 400; sleep 3; shot 13b_papeis_loja_rolada
@@ -95,7 +95,7 @@ adb shell input keyevent KEYCODE_BACK; sleep 1
 adb shell input keyevent KEYCODE_BACK; sleep 2
 $UI tapx "Música" 10; sleep 3; shot 14e_inicio_com_tema
 $UI tapx "Mais" 10; sleep 2
-$UI tap "MusiBox Pró" 10; sleep 3; shot 14f_pro
+$UI tap "MusiBox Pro" 10; sleep 3; shot 14f_pro
 adb shell input keyevent KEYCODE_BACK; sleep 1
 $UI tap "Equalizador" 10; sleep 3; shot 14g_equalizador
 adb shell input keyevent KEYCODE_BACK; sleep 1

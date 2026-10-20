@@ -76,7 +76,6 @@ fun WallpaperPreviewScreen(nav: NavController, id: String) {
     val start = remember(id) { list.indexOfFirst { it.id == id }.coerceAtLeast(0) }
     val pager = rememberPagerState(initialPage = start) { list.size }
     var mode by rememberSaveable { mutableStateOf("app") }
-    val isPro = pro.subscription || pro.passUntil > System.currentTimeMillis()
 
     fun toast(msg: String) = Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
 
@@ -89,7 +88,8 @@ fun WallpaperPreviewScreen(nav: NavController, id: String) {
             }
         }
         val w = list[pager.currentPage]
-        val usable = w.free || (w.pro && isPro) || (!w.pro && w.id in owned)
+        val plan = pro.plan
+        val usable = w.free || (w.pro && PlayBilling.planUnlocks(plan, w)) || (!w.pro && w.id in owned)
         val price = prices[w.productId] ?: w.priceLabel
 
         // topo
@@ -130,7 +130,8 @@ fun WallpaperPreviewScreen(nav: NavController, id: String) {
                     Text(
                         when {
                             w.free -> "Grátis"
-                            w.pro -> if (isPro) "Exclusivo do Pró • liberado" else "Exclusivo do MusiBox Pró"
+                            w.pro && usable -> "Liberado no seu plano ${plan.label}"
+                            w.pro -> "Não se compra • incluso no ${w.plansText}"
                             usable -> "Comprado • fica na sua conta Google"
                             else -> "Compra única • fica para sempre na sua conta Google"
                         },
@@ -162,7 +163,7 @@ fun WallpaperPreviewScreen(nav: NavController, id: String) {
                         }
                     }
                 }
-                w.pro -> BigButton("Liberar com o Pró", w.accent, onAccent, Modifier.fillMaxWidth(), Icons.Rounded.WorkspacePremium) {
+                w.pro -> BigButton("Liberar com o ${w.planLabel}", w.accent, onAccent, Modifier.fillMaxWidth(), Icons.Rounded.WorkspacePremium) {
                     nav.navigate(Routes.PRO)
                 }
                 else -> BigButton("Comprar • $price", w.accent, onAccent, Modifier.fillMaxWidth(), Icons.Rounded.Lock) {

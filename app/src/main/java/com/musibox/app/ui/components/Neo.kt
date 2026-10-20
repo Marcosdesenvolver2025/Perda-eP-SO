@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
@@ -121,7 +122,7 @@ fun GlassCircleButton(icon: ImageVector, description: String, onClick: () -> Uni
 
 /** Topo das telas principais: logo 3D, nome e os botões de busca, avisos e configurações. */
 @Composable
-fun BrandHeader(onSearch: () -> Unit, onThemes: () -> Unit, onSettings: () -> Unit) {
+fun BrandHeader(onSearch: () -> Unit, onVault: () -> Unit, onSettings: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -174,7 +175,7 @@ fun BrandHeader(onSearch: () -> Unit, onThemes: () -> Unit, onSettings: () -> Un
         }
         Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
             GlassCircleButton(Icons.Outlined.Search, "Pesquisar", onSearch)
-            GlassCircleButton(Icons.Outlined.Palette, "Papéis de parede", onThemes)
+            GlassCircleButton(androidx.compose.ui.graphics.vector.ImageVector.vectorResource(R.drawable.ic_nav_vault), "Cofre", onVault)
             GlassCircleButton(Icons.Outlined.Settings, "Configurações", onSettings)
         }
     }

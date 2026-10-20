@@ -105,7 +105,7 @@ class PlaybackService : MediaSessionService() {
             .setWakeMode(C.WAKE_MODE_LOCAL)
             .build()
 
-        // Equalizador / graves / som 3D (Pró) presos à sessão de áudio do player
+        // Equalizador / graves / som 3D (Pro) presos à sessão de áudio do player
         runCatching {
             val sid = (getSystemService(AUDIO_SERVICE) as android.media.AudioManager).generateAudioSessionId()
             player.audioSessionId = sid
@@ -114,7 +114,7 @@ class PlaybackService : MediaSessionService() {
         scope.launch {
             com.musibox.app.billing.PlayBilling.pro.collect { AudioFx.allowed = com.musibox.app.billing.PlayBilling.isProNow() }
         }
-        // Timer de sono (Pró)
+        // Timer de sono (Pro)
         scope.launch {
             SleepTimer.state.collectLatest { t ->
                 player.pauseAtEndOfMediaItems = t.endOfTrack || !autoPlayNext

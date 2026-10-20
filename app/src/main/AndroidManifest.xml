@@ -55,7 +55,7 @@
             android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- Ícone na tela inicial. Os outros são o "ícone disfarçado" do cofre (recurso do Pró). -->
+        <!-- Ícone na tela inicial. Os outros são o "ícone disfarçado" do cofre (recurso do Pro). -->
         <activity-alias
             android:name=".LauncherDefault"
             android:enabled="true"

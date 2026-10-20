@@ -294,7 +294,7 @@ fun BrowserHomeScreen(nav: NavController) {
                 MenuRow(Icons.Rounded.History, "Histórico", "${history.size} páginas") { menu = false; sheet = "history" }
                 MenuRow(Icons.Rounded.Tab, "Abas abertas", "${tabs.size} abas") { menu = false; nav.navigate(Routes.browser(BrowserStore.TABS_URL)) }
                 MenuRow(Icons.Rounded.Add, "Adicionar atalho", "Coloque um site na página inicial") { menu = false; addDialog = true }
-                Text("Recursos Pró", color = Color(0xFF9A9A9A), fontSize = 13.sp, modifier = Modifier.padding(start = 10.dp, top = 12.dp, bottom = 2.dp))
+                Text("Recursos Pro", color = Color(0xFF9A9A9A), fontSize = 13.sp, modifier = Modifier.padding(start = 10.dp, top = 12.dp, bottom = 2.dp))
                 ProToggle("Bloquear anúncios e rastreadores", isPro, isPro && adblockOn, onPro = { menu = false; nav.navigate(Routes.PRO) }) {
                     adblockOn = it
                     com.musibox.app.browser.AdBlocker.setEnabled(context, it)
@@ -768,7 +768,7 @@ private fun ProToggle(label: String, isPro: Boolean, checked: Boolean, onPro: ()
             androidx.compose.material3.Switch(checked = checked, onCheckedChange = onChange)
         } else {
             Text(
-                "Pró",
+                "Pro",
                 color = Color(0xFF0A0A0A),
                 fontWeight = FontWeight.Bold,
                 fontSize = 12.sp,

@@ -26,7 +26,7 @@ data class EqSettings(
 )
 
 /**
- * Equalizador, reforço de graves e som 3D (recurso do Pró), ligados à sessão de áudio do player.
+ * Equalizador, reforço de graves e som 3D (recurso do Pro), ligados à sessão de áudio do player.
  * O serviço de música chama attach(); a tela do equalizador só muda as configurações.
  */
 object AudioFx {
@@ -61,7 +61,7 @@ object AudioFx {
     private val _settings = MutableStateFlow(EqSettings())
     val settings: StateFlow<EqSettings> = _settings.asStateFlow()
 
-    /** Quando false (sem Pró), os efeitos ficam desligados mesmo se "ativados". */
+    /** Quando false (sem Pro), os efeitos ficam desligados mesmo se "ativados". */
     @Volatile var allowed: Boolean = false
         set(value) {
             field = value

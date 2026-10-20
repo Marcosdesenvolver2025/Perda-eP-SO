@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -113,7 +114,7 @@ fun FloatingNavBar(selectedPage: Int, hazeState: HazeState?, onSelect: (Int) -> 
         Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
             NavItem(painterResource(R.drawable.ic_brand_note), "Música", selectedPage == MainTabs.HOME, Modifier.weight(1f)) { onSelect(MainTabs.HOME) }
             NavItem(rememberVectorPainter(Icons.Outlined.Language), "Navegador", selectedPage == MainTabs.BROWSER, Modifier.weight(1f)) { onSelect(MainTabs.BROWSER) }
-            NavItem(painterResource(R.drawable.ic_nav_vault), "Cofre", selectedPage == MainTabs.VAULT, Modifier.weight(1f)) { onSelect(MainTabs.VAULT) }
+            NavItem(rememberVectorPainter(Icons.Outlined.Palette), "Temas", selectedPage == MainTabs.THEMES, Modifier.weight(1f)) { onSelect(MainTabs.THEMES) }
             NavItem(painterResource(R.drawable.ic_nav_more), "Mais", selectedPage == MainTabs.MORE, Modifier.weight(1f)) { onSelect(MainTabs.MORE) }
         }
     }

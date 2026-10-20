@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Timer de sono (recurso do Pró): a música para sozinha no horário escolhido
+ * Timer de sono (recurso do Pro): a música para sozinha no horário escolhido
  * ou no fim da música atual. Quem pausa de fato é o serviço de música.
  */
 object SleepTimer {

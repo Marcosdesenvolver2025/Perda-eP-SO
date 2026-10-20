@@ -118,7 +118,10 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
     LaunchedEffect(navRequests) {
         navRequests.collect { target ->
             if (navController.currentDestination?.route == Routes.ONBOARDING) return@collect
-            if (target == Routes.VAULT || target == Routes.HOME || target == Routes.BROWSER_HOME) {
+            if (target == Routes.VAULT) {
+                // Cofre agora é uma tela própria, aberta por cima das abas
+                if (navController.currentDestination?.route != Routes.VAULT) navController.navigate(Routes.VAULT) { launchSingleTop = true }
+            } else if (target == Routes.HOME || target == Routes.BROWSER_HOME) {
                 navController.navigateTopLevel(target)
             } else {
                 navController.navigate(target) { launchSingleTop = true }
@@ -245,6 +248,11 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
                 composable(Routes.EQUALIZER) { com.musibox.app.ui.player.EqualizerScreen(navController) }
                 composable(Routes.PICK_SONGS) { entry ->
                     com.musibox.app.ui.library.SongPickerScreen(navController, entry.arguments?.getString("id").orEmpty())
+                }
+                composable(Routes.VAULT) {
+                    Box(Modifier.fillMaxSize().statusBarsPadding()) {
+                        com.musibox.app.ui.vault.VaultScreen(navController, onBack = { navController.popBackStack() })
+                    }
                 }
                 composable(Routes.VAULT_SETTINGS) { VaultSettingsScreen(navController) }
                 composable(Routes.VAULT_VIEWER) { entry -> VaultViewerScreen(navController, entry.arguments?.getString("id").orEmpty()) }

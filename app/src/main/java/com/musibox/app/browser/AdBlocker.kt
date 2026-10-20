@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.io.ByteArrayInputStream
 
 /**
- * Bloqueador de anúncios e rastreadores do navegador (recurso do Pró).
+ * Bloqueador de anúncios e rastreadores do navegador (recurso do Pro).
  * Bloqueia pedidos para domínios conhecidos de propaganda/rastreamento e esconde
  * os espaços vazios que sobram na página. Só atua dentro do navegador do MusiBox.
  */

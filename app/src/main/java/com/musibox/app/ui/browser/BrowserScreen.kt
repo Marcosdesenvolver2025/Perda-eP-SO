@@ -139,7 +139,7 @@ fun BrowserScreen(nav: NavController, startUrl: String, private: Boolean = false
     val store = remember { BrowserStore.get(ctx) }
     val bookmarks by store.bookmarks.collectAsStateWithLifecycle()
     val bookmarked = bookmarks.any { it.url.trimEnd('/') == currentUrl.trimEnd('/') }
-    // Pró: bloqueador de anúncios e modo escuro nos sites
+    // Pro: bloqueador de anúncios e modo escuro nos sites
     val proState by com.musibox.app.billing.PlayBilling.pro.collectAsStateWithLifecycle()
     val isPro = proState.subscription || proState.passUntil > System.currentTimeMillis()
     var adblockPref by remember { mutableStateOf(com.musibox.app.browser.AdBlocker.isEnabled(ctx)) }
@@ -557,7 +557,7 @@ private class BrowserFlags {
     @Volatile var adblock: Boolean = false
 }
 
-/** Modo escuro nos sites (Pró): o próprio WebView escurece páginas claras. */
+/** Modo escuro nos sites (Pro): o próprio WebView escurece páginas claras. */
 private fun applyDark(view: WebView, on: Boolean) {
     runCatching {
         if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.ALGORITHMIC_DARKENING)) {

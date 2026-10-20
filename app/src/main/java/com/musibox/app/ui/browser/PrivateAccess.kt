@@ -23,7 +23,7 @@ import com.musibox.app.vault.PinManager
 import kotlinx.coroutines.launch
 
 /**
- * Abre a navegação privada. Com o Pró e a opção "Senha nas abas privadas" ligada,
+ * Abre a navegação privada. Com o Pro e a opção "Senha nas abas privadas" ligada,
  * pede o PIN do cofre antes.
  */
 @Composable

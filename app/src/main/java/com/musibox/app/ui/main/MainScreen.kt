@@ -25,7 +25,8 @@ import com.musibox.app.ui.components.BrandHeader
 import com.musibox.app.ui.home.HomeScreen
 import com.musibox.app.ui.more.MoreScreen
 import com.musibox.app.ui.navigation.Routes
-import com.musibox.app.ui.vault.VaultScreen
+import com.musibox.app.ui.themes.WallpaperStoreContent
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -75,13 +76,13 @@ fun MainScreen(nav: NavController, pager: PagerState) {
                     Column(Modifier.fillMaxSize()) {
                         BrandHeader(
                             onSearch = { nav.navigate(Routes.SEARCH) },
-                            onThemes = { nav.navigate(Routes.WALLPAPERS) },
+                            onVault = { nav.navigate(Routes.VAULT) { launchSingleTop = true } },
                             onSettings = { nav.navigate(Routes.SETTINGS) },
                         )
                         Box(Modifier.weight(1f).consumeWindowInsets(WindowInsets.statusBars)) {
                             when (page) {
                                 MainTabs.HOME -> HomeScreen(nav)
-                                MainTabs.VAULT -> Box(Modifier.padding(bottom = LocalBottomBarSpace.current)) { VaultScreen(nav) }
+                                MainTabs.THEMES -> WallpaperStoreContent(nav, bottomPadding = 24.dp + LocalBottomBarSpace.current, title = true)
                                 else -> MoreScreen(nav)
                             }
                         }

@@ -6,6 +6,7 @@ import android.content.Intent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -56,7 +57,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.musibox.app.MainActivity
 import com.musibox.app.billing.PlayBilling
+import com.musibox.app.billing.Plan
 import com.musibox.app.billing.ProPlan
+import com.musibox.app.themes.Wallpapers
+import com.musibox.app.ui.navigation.Routes
 import com.musibox.app.core.findActivity
 import com.musibox.app.ui.components.GradientButton
 import com.musibox.app.ui.components.MbTopBar
@@ -67,7 +71,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/** Abre a tela do Pró (de qualquer lugar). */
+/** Abre a tela dos planos (de qualquer lugar). */
 object ProLauncher {
     fun open(context: Context) {
         val intent = Intent(context, MainActivity::class.java)
@@ -80,13 +84,13 @@ object ProLauncher {
 
 private fun fmtDate(ms: Long): String = SimpleDateFormat("dd/MM 'às' HH:mm", Locale("pt", "BR")).format(Date(ms))
 
-/** Benefícios do Pró. ready=false aparece como "chegando". */
+/** Benefícios dos planos. ready=false aparece como "chegando". */
 private data class Perk(val icon: androidx.compose.ui.graphics.vector.ImageVector, val title: String, val text: String, val ready: Boolean)
 
 private val perks = listOf(
     Perk(Icons.Rounded.Block, "Bloqueador de anúncios", "Navegue sem propagandas e rastreadores nos sites.", true),
     Perk(Icons.Rounded.Equalizer, "Equalizador no player", "Estilos (pop, rock, funk…), graves e som 3D.", true),
-    Perk(Icons.Rounded.Wallpaper, "8 papéis de parede exclusivos", "Eclipse, Aurora Suprema, Planeta Rubi e outros.", true),
+    Perk(Icons.Rounded.Wallpaper, "Temas exclusivos que não se compram", "Paisagens de jogos e clássicos só para assinantes.", true),
     Perk(Icons.Rounded.TheaterComedy, "Ícone disfarçado do cofre", "O MusiBox aparece como Calculadora, Notas, Relógio ou Clima.", true),
     Perk(Icons.Rounded.Bedtime, "Timer de sono", "A música para sozinha na hora que você escolher.", true),
     Perk(Icons.Rounded.DarkMode, "Modo escuro em todos os sites", "Sites claros ficam escuros no navegador.", true),
@@ -94,18 +98,22 @@ private val perks = listOf(
     Perk(Icons.Rounded.Shield, "Alerta de invasão no cofre", "Veja dia e hora de cada vez que alguém errou o PIN.", true),
 )
 
-/** Tela "MusiBox Pró": benefícios e planos (pagamento pela Google Play). */
+/** Quantos temas exclusivos cada plano libera. */
+private fun themesOf(plan: Plan) = Wallpapers.all.filter { PlayBilling.planUnlocks(plan, it) }
+
+/** Tela dos planos MusiBox Go, Plus e Pro (pagamento pela Google Play). */
 @Composable
 fun ProScreen(nav: NavController) {
     val context = LocalContext.current
     val state by PlayBilling.pro.collectAsStateWithLifecycle()
     val prices by PlayBilling.prices.collectAsStateWithLifecycle()
     val snack = rememberSnack()
-    var selected by rememberSaveable { mutableStateOf(ProPlan.MONTHLY) }
-    val active = state.subscription || state.passUntil > System.currentTimeMillis()
+    var selected by rememberSaveable { mutableStateOf(ProPlan.PRO) }
+    val current = state.plan
+    val active = current != Plan.NONE
 
     Column(Modifier.fillMaxSize()) {
-        MbTopBar("MusiBox Pró", onBack = { nav.popBackStack() })
+        MbTopBar("Planos MusiBox", onBack = { nav.popBackStack() })
         Column(
             Modifier
                 .weight(1f)
@@ -121,9 +129,9 @@ fun ProScreen(nav: NavController) {
                 contentAlignment = Alignment.Center,
             ) { Icon(Icons.Rounded.WorkspacePremium, null, tint = Neo.OnGreen, modifier = Modifier.size(50.dp)) }
             Spacer(Modifier.height(14.dp))
-            Text("Seja Pró", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, textAlign = TextAlign.Center)
+            Text("Go, Plus ou Pro", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, textAlign = TextAlign.Center)
             Text(
-                "Mais recursos no player, no navegador e no cofre.",
+                "Todos liberam os recursos extras. A diferença está nos temas exclusivos, que não podem ser comprados.",
                 color = Neo.Text2,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 6.dp),
@@ -133,11 +141,11 @@ fun ProScreen(nav: NavController) {
             if (active) {
                 StatusCard(
                     Icons.Rounded.CheckCircle,
-                    "Você é Pró ✓",
+                    "Seu plano: ${current.label} ✓",
                     when {
                         state.subscription && state.renews -> "Assinatura ativa • renova sozinha"
                         state.subscription -> "Assinatura cancelada • vale até o fim do período"
-                        else -> "Passe de 3 dias • vale até ${fmtDate(state.passUntil)}"
+                        else -> "Go • vale até ${fmtDate(state.passUntil)}"
                     },
                     highlight = true,
                 )
@@ -146,31 +154,57 @@ fun ProScreen(nav: NavController) {
                         Text("Gerenciar ou cancelar assinatura", color = Neo.Green)
                     }
                 }
+                Spacer(Modifier.height(8.dp))
             }
 
-            Spacer(Modifier.height(10.dp))
-            perks.forEach { Benefit(it) }
-
-            Spacer(Modifier.height(18.dp))
             Text("Escolha seu plano", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp, modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(10.dp))
-            ProPlan.entries.forEach { plan ->
+            ProPlan.entries.reversed().forEach { plan ->
                 PlanCard(
                     plan = plan,
                     price = prices[plan.priceKey] ?: plan.fallbackPrice,
                     selected = plan == selected,
+                    themes = themesOf(plan.tier).size,
                     badge = when (plan) {
-                        ProPlan.MONTHLY -> "Mais vantajoso"
-                        ProPlan.THREE_DAYS -> "Para testar"
+                        ProPlan.PRO -> "Todos os temas"
+                        ProPlan.GO -> "Para testar"
                         else -> null
                     },
                 ) { selected = plan }
                 Spacer(Modifier.height(10.dp))
             }
-            Spacer(Modifier.height(4.dp))
+
+            // Temas que o plano escolhido libera
+            val list = themesOf(selected.tier)
             Text(
-                "Pagamento seguro pela Google Play (cartão, Pix ou saldo do Google Play). Assinaturas renovam sozinhas até você " +
-                    "cancelar na Play Store. O Pró fica ligado à sua conta Google.",
+                "Temas do ${selected.title} (${list.size})",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 17.sp,
+                modifier = Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 8.dp),
+            )
+            androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                items(list.size, key = { list[it].id }) { k ->
+                    val w = list[k]
+                    Box(
+                        Modifier
+                            .size(width = 76.dp, height = 150.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .bounceClick(pressed = 0.94f, shape = RoundedCornerShape(12.dp)) { nav.navigate(Routes.wallpaper(w.id)) },
+                    ) {
+                        com.musibox.app.ui.components.WallpaperImage(w, Modifier.fillMaxSize(), thumbnail = true)
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+            Text("Em todos os planos", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.fillMaxWidth())
+            perks.forEach { Benefit(it) }
+
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "Pagamento seguro pela Google Play (cartão, Pix ou saldo do Google Play). Plus e Pro renovam sozinhos até você " +
+                    "cancelar na Play Store; o Go vale 3 dias e não renova. O plano fica ligado à sua conta Google.",
                 color = Neo.Artist,
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
@@ -186,7 +220,7 @@ fun ProScreen(nav: NavController) {
         ) {
             val price = prices[selected.priceKey] ?: selected.fallbackPrice
             GradientButton(
-                if (selected.basePlanId == null) "Comprar ${selected.title} • $price" else "Assinar • $price${selected.period}",
+                if (selected.basePlanId == null) "Comprar ${selected.title} • $price" else "Assinar ${selected.title} • $price${selected.period}",
                 onClick = {
                     val activity = context.findActivity()
                     if (activity == null) {
@@ -261,7 +295,7 @@ private fun Benefit(p: Perk) {
 }
 
 @Composable
-private fun PlanCard(plan: ProPlan, price: String, selected: Boolean, badge: String?, onClick: () -> Unit) {
+private fun PlanCard(plan: ProPlan, price: String, selected: Boolean, themes: Int, badge: String?, onClick: () -> Unit) {
     val border by animateColorAsState(if (selected) Neo.Green else Color(0xFF2A2A2A), label = "planBorder")
     val shape = RoundedCornerShape(18.dp)
     Row(
@@ -296,6 +330,7 @@ private fun PlanCard(plan: ProPlan, price: String, selected: Boolean, badge: Str
                     ) { Text(badge, color = Neo.OnGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
                 }
             }
+            Text("$themes temas exclusivos", color = Neo.Green, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
             Text(plan.detail, color = Neo.Text2, style = MaterialTheme.typography.bodySmall)
         }
         Column(horizontalAlignment = Alignment.End) {

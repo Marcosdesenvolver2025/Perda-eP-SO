@@ -90,9 +90,9 @@ fun MoreScreen(nav: NavController) {
                     Icon(Icons.Rounded.WorkspacePremium, null, tint = Mb.colors.onAccent, modifier = Modifier.size(34.dp))
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(if (proActive) "Você é Pró ✓" else "MusiBox Pró", color = Mb.colors.onAccent, style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                        Text(if (proActive) "Seu plano: ${proState.plan.label} ✓" else "MusiBox Pro", color = Mb.colors.onAccent, style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                         Text(
-                            if (proActive) "Recursos Pró liberados" else "Sem anúncios nos sites, equalizador e mais • a partir de R$ 4,99",
+                            if (proActive) "Recursos extras e temas exclusivos liberados" else "Planos Go, Plus e Pro • temas exclusivos de jogos • a partir de R$ 4,99",
                             color = Mb.colors.onAccent.copy(alpha = 0.8f),
                             style = MaterialTheme.typography.bodySmall,
                         )
@@ -101,7 +101,7 @@ fun MoreScreen(nav: NavController) {
                 }
             }
             item(key = "walls") {
-                WallpaperPromo(Modifier.intro("walls", 0, intro)) { nav.navigate(Routes.WALLPAPERS) }
+                WallpaperPromo(Modifier.intro("walls", 0, intro)) { com.musibox.app.ui.main.MainTabs.go(com.musibox.app.ui.main.MainTabs.THEMES) }
             }
             item { Box(Modifier.intro("more0", 0, intro)) {
                 MbCard(
@@ -152,7 +152,7 @@ fun MoreScreen(nav: NavController) {
             } }
             item { Box(Modifier.intro("more2", 2, intro)) {
                 SettingsSection("Aplicativo") {
-                    SettingItem(androidx.compose.material.icons.Icons.Rounded.Equalizer, "Equalizador", "Graves, estilos e som 3D • Pró", onClick = { nav.navigate(Routes.EQUALIZER) })
+                    SettingItem(androidx.compose.material.icons.Icons.Rounded.Equalizer, "Equalizador", "Graves, estilos e som 3D • Pro", onClick = { nav.navigate(Routes.EQUALIZER) })
                     SettingDivider()
                     SettingItem(Icons.Rounded.Settings, "Configurações", onClick = { nav.navigate(Routes.SETTINGS) })
                     SettingDivider()
@@ -186,7 +186,7 @@ fun MoreScreen(nav: NavController) {
 /** Cartão "Papéis de parede": três miniaturas e o convite para a loja. */
 @Composable
 private fun WallpaperPromo(modifier: Modifier, onClick: () -> Unit) {
-    val picks = remember { listOf("hv_furia_tempestade", "supernova", "hv_fenda_dimensional").mapNotNull { com.musibox.app.themes.Wallpapers.get(it) } }
+    val picks = remember { listOf("jg_metropole_neon", "jg_castelo_estrelas", "jg_asfalto_neon").mapNotNull { com.musibox.app.themes.Wallpapers.get(it) } }
     Row(
         modifier
             .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -215,7 +215,7 @@ private fun WallpaperPromo(modifier: Modifier, onClick: () -> Unit) {
         Column(Modifier.weight(1f)) {
             Text("Papéis de parede", style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
             Text(
-                "110 temas, com a nova coleção Heróis & Vilões • a partir de R$ 0,20",
+                "185 temas • nova coleção Mundos de Jogo • a partir de R$ 0,50",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

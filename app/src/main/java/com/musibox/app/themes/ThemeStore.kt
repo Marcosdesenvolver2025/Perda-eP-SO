@@ -74,7 +74,7 @@ class ThemeStore private constructor(context: Context) {
         prefs.edit().putBoolean(KEY_SETUP, true).apply()
     }
 
-    /** Se a pessoa perdeu um papel pago (ex.: reembolso, fim do Pró), volta ao padrão. */
+    /** Se a pessoa perdeu um papel pago (ex.: reembolso, fim do Pro), volta ao padrão. */
     fun revalidate(isAllowed: (Wallpaper) -> Boolean) {
         val app = Wallpapers.get(appWallpaperId())
         if (app != null && !isAllowed(app)) setAppWallpaper(null)

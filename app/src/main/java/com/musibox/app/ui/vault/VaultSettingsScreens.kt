@@ -165,11 +165,11 @@ private fun VaultSettingsContent(nav: NavController) {
                 }
             }
             item {
-                SettingsSection("Recursos Pró") {
+                SettingsSection("Recursos Pro") {
                     SettingItem(
                         Icons.Rounded.TheaterComedy,
                         "Ícone disfarçado",
-                        if (!isPro) "O MusiBox aparece como Calculadora, Notas, Relógio ou Clima • Pró" else disguise.label,
+                        if (!isPro) "O MusiBox aparece como Calculadora, Notas, Relógio ou Clima • Pro" else disguise.label,
                         onClick = { if (isPro) disguiseDialog = true else nav.navigate(Routes.PRO) },
                         tint = vault,
                     )
@@ -177,7 +177,7 @@ private fun VaultSettingsContent(nav: NavController) {
                     SettingItem(
                         Icons.Rounded.Shield,
                         "Alerta de invasão",
-                        if (!isPro) "Veja quando alguém errou o PIN do cofre • Pró"
+                        if (!isPro) "Veja quando alguém errou o PIN do cofre • Pro"
                         else container.pin.intrusions().size.let { n -> if (n == 0) "Nenhuma tentativa errada" else "$n tentativas erradas registradas" },
                         onClick = { if (isPro) intrusionsDialog = true else nav.navigate(Routes.PRO) },
                         tint = vault,

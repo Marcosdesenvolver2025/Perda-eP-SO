@@ -63,6 +63,7 @@ private enum class WallFilter(val label: String, val range: IntRange? = null) {
     R10("R$ 6 a R$ 10", 601..1000),
     R20("R$ 10 a R$ 20", 1001..2000),
     PLANS("Go • Plus • Pro"),
+    INSPIRATIONS("Inspirações"),
     PREMIUM("Premium 3D"),
     GAMES("Mundos de Jogo"),
     HEROES("Heróis & Vilões"),
@@ -102,12 +103,13 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
     val sections: List<Pair<String, List<Wallpaper>>> = when (filter) {
         WallFilter.ALL -> listOf(
             "Grátis" to forSale.filter { it.free },
-            "Novos: Premium 3D" to coll(Wallpapers.PREMIUM),
-            "Só nos planos Go, Plus e Pro" to exclusive.filter { it.collection == Wallpapers.PREMIUM },
-            "Mundos de Jogo" to coll(Wallpapers.GAMES),
-            "Heróis & Vilões" to coll(Wallpapers.HEROES),
-            "Coleção clássica" to coll(""),
-            "Mais exclusivos dos planos" to exclusive.filter { it.collection != Wallpapers.PREMIUM },
+            "Baratinhos: R$ 0,10 a R$ 0,50" to forSale.filter { it.price in 1..50 },
+            "Novos: Inspirações" to coll(Wallpapers.INSPIRATIONS).filter { it.price > 50 },
+            "Só nos planos Go, Plus e Pro" to exclusive,
+            "Premium 3D" to coll(Wallpapers.PREMIUM).filter { it.price > 50 },
+            "Mundos de Jogo" to coll(Wallpapers.GAMES).filter { it.price > 50 },
+            "Heróis & Vilões" to coll(Wallpapers.HEROES).filter { it.price > 50 },
+            "Coleção clássica" to coll("").filter { it.price > 50 },
         )
         WallFilter.R1, WallFilter.R3, WallFilter.R6, WallFilter.R10, WallFilter.R20 ->
             listOf(filter.label to forSale.filter { it.price in filter.range!! })
@@ -116,6 +118,7 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
             "Inclusos no Plus (semanal)" to exclusive.filter { "plus" in it.plans },
             "Inclusos no Go (3 dias)" to exclusive.filter { "go" in it.plans },
         )
+        WallFilter.INSPIRATIONS -> listOf("Inspirações" to coll(Wallpapers.INSPIRATIONS))
         WallFilter.PREMIUM -> listOf("Premium 3D" to coll(Wallpapers.PREMIUM))
         WallFilter.GAMES -> listOf("Mundos de Jogo" to coll(Wallpapers.GAMES))
         WallFilter.HEROES -> listOf("Heróis & Vilões" to coll(Wallpapers.HEROES))
@@ -204,7 +207,7 @@ private fun PlansBanner(plan: com.musibox.app.billing.Plan, onClick: () -> Unit)
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                "Go: 6 temas • Plus: 9 temas • Pro: todos os exclusivos",
+                "Go: ${Wallpapers.all.count { "go" in it.plans }} temas • Plus: ${Wallpapers.all.count { "plus" in it.plans }} temas • Pro: ${Wallpapers.all.count { it.pro }} temas",
                 color = Neo.Text2,
                 fontSize = 12.sp,
             )

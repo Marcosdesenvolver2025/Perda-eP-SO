@@ -33,6 +33,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Deselect
+import androidx.compose.material.icons.rounded.SelectAll
+import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Add
@@ -193,6 +202,58 @@ fun HomeScreen(nav: NavController) {
     val introTop = rememberIntroState()
     val intro = rememberIntroState(filter)
 
+    // ---------- seleção múltipla (segurar uma música) ----------
+    var selection by remember { mutableStateOf(setOf<Long>()) }
+    val selecting = selection.isNotEmpty()
+    val toggleSelect: (Song) -> Unit = { s -> selection = if (s.id in selection) selection - s.id else selection + s.id }
+    androidx.activity.compose.BackHandler(enabled = selecting) { selection = emptySet() }
+    val favSongs = favorites.orEmpty().mapNotNull { it.song }
+    val visibleSongs: List<Song> = when (filter) {
+        HomeFilter.ALL -> allSongs
+        HomeFilter.AUDIOS -> audioSongs
+        HomeFilter.FAVORITES -> favSongs
+        HomeFilter.RECENT -> recentSongs
+        else -> emptyList()
+    }
+    val selectedSongs = (allSongs + audioSongs + favSongs + recentSongs).distinctBy { it.id }.filter { it.id in selection }
+    LaunchedEffect(filter) { selection = emptySet() }
+    var confirmDelete by remember { mutableStateOf(false) }
+    var pendingDelete by remember { mutableStateOf<List<android.net.Uri>>(emptyList()) }
+    fun runDelete(uris: List<android.net.Uri>, launch: (android.content.IntentSender) -> Unit) {
+        when (val r = com.musibox.app.storage.MediaStoreSaver.delete(context, uris)) {
+            com.musibox.app.storage.DeleteResult.Deleted -> {
+                snack(if (uris.size == 1) "Música apagada." else "${uris.size} músicas apagadas.")
+                selection = emptySet()
+                pendingDelete = emptyList()
+                vm.rescan()
+            }
+            is com.musibox.app.storage.DeleteResult.NeedsUserConfirmation -> {
+                pendingDelete = uris
+                launch(r.intentSender)
+            }
+            is com.musibox.app.storage.DeleteResult.Failed -> snack(r.message)
+        }
+    }
+    lateinit var launchConfirm: (android.content.IntentSender) -> Unit
+    val deleteLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartIntentSenderForResult(),
+    ) { res ->
+        if (res.resultCode == android.app.Activity.RESULT_OK) {
+            // Android 11+: o próprio sistema apagou. No Android 10, tenta de novo os que faltam.
+            if (android.os.Build.VERSION.SDK_INT >= 30) {
+                snack(if (pendingDelete.size == 1) "Música apagada." else "${pendingDelete.size} músicas apagadas.")
+                selection = emptySet()
+                pendingDelete = emptyList()
+                vm.rescan()
+            } else {
+                runDelete(pendingDelete, launchConfirm)
+            }
+        } else {
+            pendingDelete = emptyList()
+        }
+    }
+    launchConfirm = { sender -> deleteLauncher.launch(androidx.activity.result.IntentSenderRequest.Builder(sender).build()) }
+
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         LazyColumn(
             Modifier
@@ -251,7 +312,7 @@ fun HomeScreen(nav: NavController) {
                         }
                         else -> itemsIndexed(allSongs, key = { _, it -> "s" + it.id }) { i, song ->
                             Box(Modifier.animateItem().intro("s" + song.id, i + 1, intro)) {
-                                SongItem(song, allSongs, player, song.contentKey in favoriteKeys, nav, { playlistSongs = listOf(it) })
+                                SongItem(song, allSongs, player, song.contentKey in favoriteKeys, nav, { playlistSongs = listOf(it) }, selected = if (selecting) song.id in selection else null, onToggleSelect = toggleSelect)
                             }
                         }
                     }
@@ -312,7 +373,7 @@ fun HomeScreen(nav: NavController) {
                     } else {
                         itemsIndexed(audioSongs, key = { _, it -> "a" + it.id }) { i, song ->
                             Box(Modifier.animateItem().intro("a" + song.id, i + 1, intro)) {
-                                SongItem(song, audioSongs, player, song.contentKey in favoriteKeys, nav, { playlistSongs = listOf(it) })
+                                SongItem(song, audioSongs, player, song.contentKey in favoriteKeys, nav, { playlistSongs = listOf(it) }, selected = if (selecting) song.id in selection else null, onToggleSelect = toggleSelect)
                             }
                         }
                     }
@@ -341,7 +402,7 @@ fun HomeScreen(nav: NavController) {
                             val song = t.song
                             Box(Modifier.animateItem().intro("f" + t.songKey, i + 1, intro)) {
                             if (song != null) {
-                                SongItem(song, available, player, true, nav, { playlistSongs = listOf(it) })
+                                SongItem(song, available, player, true, nav, { playlistSongs = listOf(it) }, selected = if (selecting) song.id in selection else null, onToggleSelect = toggleSelect)
                             } else {
                                 TrackRow(
                                     title = t.title,
@@ -393,16 +454,58 @@ fun HomeScreen(nav: NavController) {
                     } else {
                         itemsIndexed(recentSongs, key = { _, it -> "h" + it.id }) { i, song ->
                             Box(Modifier.animateItem().intro("h" + song.id, i + 1, intro)) {
-                                SongItem(song, recentSongs, player, song.contentKey in favoriteKeys, nav, { playlistSongs = listOf(it) })
+                                SongItem(song, recentSongs, player, song.contentKey in favoriteKeys, nav, { playlistSongs = listOf(it) }, selected = if (selecting) song.id in selection else null, onToggleSelect = toggleSelect)
                             }
                         }
                     }
                 }
             }
         }
+
+        // barra de ações da seleção
+        androidx.compose.animation.AnimatedVisibility(
+            selecting,
+            enter = androidx.compose.animation.slideInVertically { -it } + androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.slideOutVertically { -it } + androidx.compose.animation.fadeOut(),
+            modifier = Modifier.align(Alignment.TopCenter),
+        ) {
+            SelectionBar(
+                count = selection.size,
+                allSelected = visibleSongs.isNotEmpty() && visibleSongs.all { it.id in selection },
+                onClose = { selection = emptySet() },
+                onSelectAll = {
+                    selection = if (visibleSongs.all { it.id in selection }) emptySet() else visibleSongs.mapTo(HashSet()) { it.id }
+                },
+                onPlaylist = { if (selectedSongs.isNotEmpty()) playlistSongs = selectedSongs },
+                onShare = {
+                    val uris = selectedSongs.map { it.contentUri() }
+                    if (uris.isEmpty() || !com.musibox.app.ui.components.ExternalActions.shareContent(context, uris, "audio/*")) {
+                        snack("Não foi possível compartilhar.")
+                    }
+                },
+                onDelete = { if (selectedSongs.isNotEmpty()) confirmDelete = true },
+            )
+        }
     }
 
-    playlistSongs?.let { AddToPlaylistDialog(it) { playlistSongs = null } }
+    if (confirmDelete) {
+        val n = selectedSongs.size
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text(if (n == 1) "Apagar 1 música?" else "Apagar $n músicas?") },
+            text = { Text("Os arquivos serão apagados deste aparelho. Isso não pode ser desfeito.") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    confirmDelete = false
+                    runDelete(selectedSongs.map { it.contentUri() }, launchConfirm)
+                }) { Text("Apagar", color = Color(0xFFFF5A5A)) }
+            },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { confirmDelete = false }) { Text("Cancelar") } },
+            containerColor = Color(0xFF1E1E1E),
+        )
+    }
+
+    playlistSongs?.let { AddToPlaylistDialog(it) { playlistSongs = null; selection = emptySet() } }
     if (creatingPlaylist) {
         TextInputDialog(
             title = "Nova playlist",
@@ -614,3 +717,53 @@ private fun SingerFolderCard(folder: SingerFolder, index: Int, modifier: Modifie
     }
 }
 
+
+
+/** Barra que aparece ao segurar uma música: contador, selecionar tudo e ações em lote. */
+@Composable
+private fun SelectionBar(
+    count: Int,
+    allSelected: Boolean,
+    onClose: () -> Unit,
+    onSelectAll: () -> Unit,
+    onPlaylist: () -> Unit,
+    onShare: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Row(
+        Modifier
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .fillMaxWidth()
+            .widthIn(max = 760.dp)
+            .shadow(14.dp, RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(22.dp))
+            .background(Color(0xF21A1D20))
+            .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(22.dp))
+            .padding(horizontal = 6.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        SelAction(Icons.Rounded.Close, "Cancelar", onClose)
+        Text(
+            if (count == 1) "1 selecionada" else "$count selecionadas",
+            color = Color.White,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.weight(1f).padding(start = 4.dp),
+            maxLines = 1,
+        )
+        SelAction(if (allSelected) Icons.Rounded.Deselect else Icons.Rounded.SelectAll, if (allSelected) "Desmarcar tudo" else "Selecionar tudo", onSelectAll)
+        SelAction(Icons.AutoMirrored.Rounded.PlaylistAdd, "Adicionar à playlist", onPlaylist)
+        SelAction(Icons.Rounded.Share, "Compartilhar", onShare)
+        SelAction(Icons.Rounded.Delete, "Apagar", onDelete, tint = Color(0xFFFF6A6A))
+    }
+}
+
+@Composable
+private fun SelAction(icon: ImageVector, label: String, onClick: () -> Unit, tint: Color = Color.White) {
+    Box(
+        Modifier
+            .size(44.dp)
+            .bounceClick(pressed = 0.85f, shape = CircleShape, onClick = onClick)
+            .semantics { contentDescription = label },
+        contentAlignment = Alignment.Center,
+    ) { Icon(icon, null, tint = tint, modifier = Modifier.size(24.dp)) }
+}

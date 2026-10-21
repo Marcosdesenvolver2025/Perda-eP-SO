@@ -55,8 +55,18 @@ import com.musibox.app.ui.components.WallpaperImage
 import com.musibox.app.ui.components.bounceClick
 import com.musibox.app.ui.navigation.Routes
 
-private enum class WallFilter(val label: String) {
-    ALL("Todos"), GAMES("Mundos de Jogo"), PLANS("Go • Plus • Pro"), HEROES("Heróis & Vilões"), MINE("Meus"), CHEAP("Até R$ 1"), PREMIUM("Premium")
+private enum class WallFilter(val label: String, val range: IntRange? = null) {
+    ALL("Todos"),
+    R1("Até R$ 1", 1..100),
+    R3("R$ 1 a R$ 3", 101..300),
+    R6("R$ 3 a R$ 6", 301..600),
+    R10("R$ 6 a R$ 10", 601..1000),
+    R20("R$ 10 a R$ 20", 1001..2000),
+    PLANS("Go • Plus • Pro"),
+    PREMIUM("Premium 3D"),
+    GAMES("Mundos de Jogo"),
+    HEROES("Heróis & Vilões"),
+    MINE("Meus"),
 }
 
 /** Loja de temas como tela própria (aberta por cima, com botão voltar). */
@@ -85,36 +95,31 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
     fun usable(w: Wallpaper) = w.free || (w.pro && PlayBilling.planUnlocks(plan, w)) || (!w.pro && w.id in owned)
 
     val all = Wallpapers.all
-    val games = all.filter { it.collection == Wallpapers.GAMES && !it.pro }.sortedByDescending { it.price }
-    val heroes = all.filter { it.collection == Wallpapers.HEROES }.sortedByDescending { it.price }
-    val main = all.filter { it.collection.isEmpty() && !it.pro }
+    // Sempre do mais barato para o mais caro
+    val forSale = all.filter { !it.pro }.sortedWith(compareBy({ it.price }, { it.name }))
     val exclusive = all.filter { it.pro }
-    val byPlan = listOf(
-        "Pro (mensal): todos os exclusivos" to exclusive,
-        "Inclusos no Plus (semanal)" to exclusive.filter { "plus" in it.plans },
-        "Inclusos no Go (3 dias)" to exclusive.filter { "go" in it.plans },
-    )
+    fun coll(c: String) = forSale.filter { it.collection == c && !it.free }
     val sections: List<Pair<String, List<Wallpaper>>> = when (filter) {
         WallFilter.ALL -> listOf(
-            "Grátis" to main.filter { it.free },
-            "Nova coleção: Mundos de Jogo" to games,
-            "Só nos planos Go, Plus e Pro" to exclusive.filter { it.collection == Wallpapers.GAMES },
-            "Heróis & Vilões" to heroes,
-            "Destaques" to main.filter { !it.free && it.price >= 399 }.sortedByDescending { it.price },
-            "Populares" to main.filter { it.price in 99..299 }.sortedByDescending { it.price },
-            "Baratinhos" to main.filter { it.price in 1..50 }.sortedByDescending { it.price },
-            "Clássicos dos planos" to exclusive.filter { it.collection.isEmpty() },
+            "Grátis" to forSale.filter { it.free },
+            "Novos: Premium 3D" to coll(Wallpapers.PREMIUM),
+            "Só nos planos Go, Plus e Pro" to exclusive.filter { it.collection == Wallpapers.PREMIUM },
+            "Mundos de Jogo" to coll(Wallpapers.GAMES),
+            "Heróis & Vilões" to coll(Wallpapers.HEROES),
+            "Coleção clássica" to coll(""),
+            "Mais exclusivos dos planos" to exclusive.filter { it.collection != Wallpapers.PREMIUM },
         )
-        WallFilter.GAMES -> listOf(
-            "Lendários" to games.filter { it.price >= 1499 },
-            "Épicos" to games.filter { it.price in 799..999 },
-            "Raros" to games.filter { it.price < 799 },
+        WallFilter.R1, WallFilter.R3, WallFilter.R6, WallFilter.R10, WallFilter.R20 ->
+            listOf(filter.label to forSale.filter { it.price in filter.range!! })
+        WallFilter.PLANS -> listOf(
+            "Pro (mensal): todos os exclusivos" to exclusive,
+            "Inclusos no Plus (semanal)" to exclusive.filter { "plus" in it.plans },
+            "Inclusos no Go (3 dias)" to exclusive.filter { "go" in it.plans },
         )
-        WallFilter.PLANS -> byPlan
-        WallFilter.HEROES -> listOf("Heróis & Vilões" to heroes)
-        WallFilter.MINE -> listOf("Seus temas" to all.filter { usable(it) })
-        WallFilter.CHEAP -> listOf("Até R$ 1" to all.filter { !it.pro && it.price in 1..100 }.sortedBy { it.price })
-        WallFilter.PREMIUM -> listOf("Premium" to all.filter { !it.pro && it.price >= 499 }.sortedByDescending { it.price })
+        WallFilter.PREMIUM -> listOf("Premium 3D" to coll(Wallpapers.PREMIUM))
+        WallFilter.GAMES -> listOf("Mundos de Jogo" to coll(Wallpapers.GAMES))
+        WallFilter.HEROES -> listOf("Heróis & Vilões" to coll(Wallpapers.HEROES))
+        WallFilter.MINE -> listOf("Seus temas" to all.filter { usable(it) }.sortedBy { it.price })
     }
 
     Column(modifier.fillMaxSize()) {

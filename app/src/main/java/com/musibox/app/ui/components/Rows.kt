@@ -4,6 +4,8 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -107,13 +109,16 @@ fun TrackRow(
     onLongClick: (() -> Unit)? = null,
     trailingText: String? = null,
     divider: Boolean = true,
+    /** Modo de seleção: null = normal; true/false = marcada ou não (troca o play/menu por um círculo). */
+    selected: Boolean? = null,
 ) {
   Column(modifier.fillMaxWidth()) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
+            .background(if (selected == true) Neo.Green.copy(alpha = 0.14f) else Color.Transparent)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .padding(horizontal = 12.dp, vertical = 8.dp)
             .alpha(if (available) 1f else 0.55f),
         verticalAlignment = Alignment.CenterVertically,
@@ -121,6 +126,15 @@ fun TrackRow(
         Box {
             Artwork(artModel, Modifier.size(artSize + 4.dp), corner = 12.dp)
             if (badge != null) Box(Modifier.align(Alignment.BottomEnd)) { badge() }
+            if (selected == true) {
+                Box(
+                    Modifier
+                        .size(artSize + 4.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.Black.copy(alpha = 0.45f)),
+                    contentAlignment = Alignment.Center,
+                ) { Icon(Icons.Rounded.Check, "Selecionada", tint = Neo.Green, modifier = Modifier.size(30.dp)) }
+            }
         }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
@@ -148,7 +162,17 @@ fun TrackRow(
             Spacer(Modifier.width(8.dp))
             Text(trailingText, style = MaterialTheme.typography.bodySmall, color = Color(0xFFB3B3B3), maxLines = 1)
         }
-        if (onPlayPause != null) {
+        if (selected != null) {
+            Spacer(Modifier.width(10.dp))
+            Box(
+                Modifier
+                    .size(26.dp)
+                    .clip(CircleShape)
+                    .background(if (selected) Neo.Green else Color.Transparent)
+                    .border(2.dp, if (selected) Neo.Green else Color(0xFF6A6A6A), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) { if (selected) Icon(Icons.Rounded.Check, null, tint = Neo.OnGreen, modifier = Modifier.size(18.dp)) }
+        } else if (onPlayPause != null) {
             Spacer(Modifier.width(10.dp))
             Box(
                 Modifier
@@ -166,7 +190,7 @@ fun TrackRow(
                 )
             }
         }
-        OverflowMenu(menu)
+        if (selected == null) OverflowMenu(menu)
     }
     // Linha fina separando as músicas (como no novo visual)
     if (divider) {

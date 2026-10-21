@@ -289,6 +289,12 @@ fun BrowserHomeScreen(nav: NavController) {
             Column(Modifier.padding(horizontal = 12.dp).padding(bottom = 28.dp)) {
                 Text("Navegador", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp, modifier = Modifier.padding(start = 10.dp, bottom = 8.dp))
                 MenuRow(Icons.Rounded.Wallpaper, "Papel de parede", "Escolha o fundo da página inicial") { menu = false; nav.navigate(Routes.WALLPAPERS) }
+                if (com.musibox.app.themes.AppTheme.browserWallpaper.id != com.musibox.app.themes.Wallpapers.DEFAULT_BROWSER) {
+                    MenuRow(Icons.Rounded.Wallpaper, "Voltar ao tema padrão", "Tira o papel atual e usa o padrão (grátis)") {
+                        menu = false
+                        com.musibox.app.themes.ThemeStore.get(context).setBrowserWallpaper(com.musibox.app.themes.Wallpapers.DEFAULT_BROWSER)
+                    }
+                }
                 MenuRow(Icons.Outlined.Settings, "Seus interesses", "Notícias de \"Para você\"") { menu = false; sheet = "interests" }
                 MenuRow(Icons.Rounded.Star, "Favoritos", "${bookmarks.size} salvos") { menu = false; sheet = "bookmarks" }
                 MenuRow(Icons.Rounded.History, "Histórico", "${history.size} páginas") { menu = false; sheet = "history" }

@@ -42,6 +42,9 @@ fun SongItem(
     onAddToPlaylist: (Song) -> Unit,
     subtitle: String? = null,
     extraMenu: List<MenuAction> = emptyList(),
+    /** Seleção múltipla: null = normal. Com seleção ativa, tocar marca/desmarca. */
+    selected: Boolean? = null,
+    onToggleSelect: ((Song) -> Unit)? = null,
 ) {
     val container = LocalAppContainer.current
     val context = LocalContext.current
@@ -59,7 +62,9 @@ fun SongItem(
         isCurrent = isCurrent,
         isPlaying = player.isPlaying,
         modifier = Modifier.padding(horizontal = 6.dp),
-        onClick = play,
+        onClick = { if (selected != null && onToggleSelect != null) onToggleSelect(song) else play() },
+        onLongClick = onToggleSelect?.let { t -> { t(song) } },
+        selected = selected,
         onPlayPause = play,
         menu = buildList {
             add(MenuAction("Tocar a seguir", Icons.Rounded.SkipNext) {

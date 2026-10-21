@@ -162,6 +162,15 @@ fun WallpaperPreviewScreen(nav: NavController, id: String) {
                             Text("Tirar do app (voltar ao preto)", color = Color.White.copy(alpha = 0.8f))
                         }
                     }
+                    if (AppTheme.browserWallpaper.id == w.id && w.id != Wallpapers.DEFAULT_BROWSER) {
+                        TextButton(
+                            onClick = {
+                                themes.setBrowserWallpaper(Wallpapers.DEFAULT_BROWSER)
+                                toast("O navegador voltou ao tema padrão.")
+                            },
+                            modifier = Modifier.align(Alignment.CenterHorizontally),
+                        ) { Text("Tirar do navegador (voltar ao padrão)", color = Color.White.copy(alpha = 0.8f)) }
+                    }
                 }
                 w.pro -> BigButton("Liberar com o ${w.planLabel}", w.accent, onAccent, Modifier.fillMaxWidth(), Icons.Rounded.WorkspacePremium) {
                     nav.navigate(Routes.PRO)

@@ -143,12 +143,15 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
         )
     }
 
+    val onMain by androidx.compose.runtime.rememberUpdatedState(route == Routes.MAIN)
+
     CompositionLocalProvider(LocalSnackbar provides snackbar, LocalBottomBarSpace provides (if (showBottom) overlayHeight else 0.dp)) {
         Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().then(if (showBottom) Modifier.hazeSource(hazeState) else Modifier)) {
         // Na página do navegador, o fundo vira o papel de parede do navegador (troca durante o deslize)
         SpaceBackdrop(browserAmount = {
-            if (navController.currentDestination?.route != Routes.MAIN) {
+            // onMain é um estado: ao voltar de outra tela (ex.: escolher o tema), o fundo do navegador redesenha na hora
+            if (!onMain) {
                 0f
             } else {
                 val off = (pagerState.currentPage - MainTabs.BROWSER) + pagerState.currentPageOffsetFraction

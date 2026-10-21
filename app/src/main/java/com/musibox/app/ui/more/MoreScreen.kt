@@ -80,7 +80,30 @@ fun MoreScreen(nav: NavController) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp + com.musibox.app.ui.navigation.LocalBottomBarSpace.current)) {
             item(key = "pro") {
                 val proState by com.musibox.app.billing.PlayBilling.pro.collectAsStateWithLifecycle()
-                ProPromoCard(proState.plan, Modifier.intro("pro", 0, intro)) { nav.navigate(Routes.PRO) }
+                val proActive = proState.subscription || proState.passUntil > System.currentTimeMillis()
+                Row(
+                    Modifier
+                        .intro("pro", 0, intro)
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Mb.colors.accentGradient)
+                        .clickable { nav.navigate(Routes.PRO) }
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Rounded.WorkspacePremium, null, tint = Mb.colors.onAccent, modifier = Modifier.size(34.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(if (proActive) "Seu plano: ${proState.plan.label} ✓" else "MusiBox Pro", color = Mb.colors.onAccent, style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                        Text(
+                            if (proActive) "Recursos extras e temas exclusivos liberados" else "Planos Go, Plus e Pro • temas exclusivos • a partir de R$ 4,99",
+                            color = Mb.colors.onAccent.copy(alpha = 0.8f),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                    Icon(Icons.Rounded.ChevronRight, null, tint = Mb.colors.onAccent)
+                }
             }
             item(key = "walls") {
                 WallpaperPromo(Modifier.intro("walls", 0, intro)) { com.musibox.app.ui.main.MainTabs.go(com.musibox.app.ui.main.MainTabs.THEMES) }
@@ -238,104 +261,5 @@ private fun WallpaperPromo(modifier: Modifier, onClick: () -> Unit) {
             )
         }
         Icon(Icons.Rounded.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-
-/** Cartão do Pro na aba Mais: chama atenção com os três planos e prévias dos temas exclusivos. */
-@Composable
-private fun ProPromoCard(plan: com.musibox.app.billing.Plan, modifier: Modifier, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(24.dp)
-    val active = plan != com.musibox.app.billing.Plan.NONE
-    val previews = remember {
-        com.musibox.app.themes.Wallpapers.all.filter { it.pro && it.collection == com.musibox.app.themes.Wallpapers.PREMIUM }.take(4)
-    }
-    Column(
-        modifier
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .fillMaxWidth()
-            .shadow(16.dp, shape, ambientColor = androidx.compose.ui.graphics.Color(0xFFFFB02A), spotColor = androidx.compose.ui.graphics.Color(0xFFFFB02A))
-            .clip(shape)
-            .background(
-                androidx.compose.ui.graphics.Brush.linearGradient(
-                    listOf(androidx.compose.ui.graphics.Color(0xFF2A1A05), androidx.compose.ui.graphics.Color(0xFF3A1A4A), androidx.compose.ui.graphics.Color(0xFF0A1A3A)),
-                ),
-            )
-            .border(1.dp, androidx.compose.ui.graphics.Color(0x66FFC857), shape)
-            .clickable(onClick = onClick)
-            .padding(16.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier
-                    .size(46.dp)
-                    .clip(CircleShape)
-                    .background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(androidx.compose.ui.graphics.Color(0xFFFFD86A), androidx.compose.ui.graphics.Color(0xFFFF9A2A)))),
-                contentAlignment = Alignment.Center,
-            ) { Icon(Icons.Rounded.WorkspacePremium, null, tint = androidx.compose.ui.graphics.Color(0xFF2A1A05), modifier = Modifier.size(28.dp)) }
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    if (active) "Seu plano: ${plan.label} ✓" else "MusiBox Pro",
-                    color = androidx.compose.ui.graphics.Color.White,
-                    fontSize = 20.sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
-                )
-                Text(
-                    if (active) "Temas exclusivos e recursos extras liberados" else "Temas que não se compram + recursos extras",
-                    color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.75f),
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-            Icon(Icons.Rounded.ChevronRight, null, tint = androidx.compose.ui.graphics.Color.White)
-        }
-        Spacer(Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            previews.forEach { w ->
-                Box(
-                    Modifier
-                        .weight(1f)
-                        .aspectRatio(0.62f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .border(1.dp, androidx.compose.ui.graphics.Color.White.copy(alpha = 0.25f), RoundedCornerShape(12.dp)),
-                ) {
-                    com.musibox.app.ui.components.WallpaperImage(w, Modifier.fillMaxSize(), thumbnail = true)
-                }
-            }
-        }
-        Spacer(Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf(
-                Triple("Go", "3 dias", androidx.compose.ui.graphics.Color(0xFF2AD0FF)),
-                Triple("Plus", "semanal", androidx.compose.ui.graphics.Color(0xFFB07AFF)),
-                Triple("Pro", "mensal", androidx.compose.ui.graphics.Color(0xFFFFC857)),
-            ).forEach { (name, period, c) ->
-                Column(
-                    Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(c.copy(alpha = if (plan.label == name) 0.35f else 0.14f))
-                        .border(1.dp, c.copy(alpha = 0.7f), RoundedCornerShape(14.dp))
-                        .padding(vertical = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(name, color = c, fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold, fontSize = 16.sp)
-                    Text(period, color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.8f), fontSize = 11.sp)
-                }
-            }
-        }
-        if (!active) {
-            Spacer(Modifier.height(12.dp))
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(androidx.compose.ui.graphics.Color(0xFFFFD86A), androidx.compose.ui.graphics.Color(0xFFFF9A2A))))
-                    .padding(vertical = 11.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text("Ver planos • a partir de R$ 4,99", color = androidx.compose.ui.graphics.Color(0xFF2A1A05), fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-            }
-        }
     }
 }

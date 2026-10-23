@@ -98,7 +98,7 @@ private fun VaultSettingsContent(nav: NavController) {
     val biometricHardware = remember { Biometrics.isAvailable(context) }
     val vault = Mb.colors.vault
     val proState by com.musibox.app.billing.PlayBilling.pro.collectAsStateWithLifecycle()
-    val isPro = proState.subscription || proState.passUntil > System.currentTimeMillis()
+    val isPro = proState.isActive
     var disguise by remember { mutableStateOf(com.musibox.app.vault.IconDisguise.current(context)) }
     var disguiseDialog by remember { mutableStateOf(false) }
     var intrusionsDialog by remember { mutableStateOf(false) }

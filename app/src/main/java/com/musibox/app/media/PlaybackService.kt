@@ -57,6 +57,8 @@ class PlaybackService : MediaSessionService() {
     private var transitionToken = 0
     private var recordedToken = -1
     private var consecutiveErrors = 0
+    @Volatile private var sleepFading = false
+    @Volatile private var autoTransition = false
     private val currentKey = MutableStateFlow<String?>(null)
     @Volatile private var currentFav = false
 
@@ -112,7 +114,47 @@ class PlaybackService : MediaSessionService() {
             AudioFx.attach(this, sid)
         }
         scope.launch {
-            com.musibox.app.billing.PlayBilling.pro.collect { AudioFx.allowed = com.musibox.app.billing.PlayBilling.isProNow() }
+            com.musibox.app.billing.PlayBilling.pro.collect {
+                val billing = com.musibox.app.billing.PlayBilling
+                AudioFx.allowed = billing.isProNow()
+                AudioFx.plusAllowed = billing.hasPlan(com.musibox.app.billing.Plan.PLUS)
+                // Velocidade é recurso dos planos: sem plano volta ao normal
+                if (!billing.isProNow() && player.playbackParameters.speed != 1f) {
+                    player.playbackParameters = androidx.media3.common.PlaybackParameters(1f)
+                }
+                MusicWidget.refresh(this@PlaybackService)
+            }
+        }
+        // Transição suave entre músicas (Plus e Pro): abaixa no fim e sobe no começo da próxima
+        scope.launch {
+            var fadeInFrom = -1L
+            var lastIndex = -1
+            while (isActive) {
+                delay(80)
+                if (sleepFading) continue
+                if (!AudioFx.smoothActive()) {
+                    if (player.volume != 1f) player.volume = 1f
+                    fadeInFrom = -1L
+                    continue
+                }
+                if (player.currentMediaItemIndex != lastIndex) {
+                    if (lastIndex != -1 && autoTransition) fadeInFrom = 0L
+                    lastIndex = player.currentMediaItemIndex
+                    autoTransition = false
+                }
+                if (!player.isPlaying) continue
+                val dur = player.duration
+                val pos = player.currentPosition
+                var target = 1f
+                if (dur != C.TIME_UNSET && dur > SMOOTH_MS * 3) {
+                    val remaining = dur - pos
+                    if (remaining < SMOOTH_MS) target = (remaining.toFloat() / SMOOTH_MS).coerceIn(0.04f, 1f)
+                }
+                if (fadeInFrom >= 0L) {
+                    if (pos < SMOOTH_MS) target = minOf(target, (pos.toFloat() / SMOOTH_MS).coerceIn(0.04f, 1f)) else fadeInFrom = -1L
+                }
+                if (kotlin.math.abs(player.volume - target) > 0.005f) player.volume = target
+            }
         }
         // Timer de sono (Pro)
         scope.launch {
@@ -203,6 +245,7 @@ class PlaybackService : MediaSessionService() {
 
     /** Abaixa o volume aos poucos e pausa (timer de sono). */
     private suspend fun fadeOutAndPause() {
+        sleepFading = true
         val start = player.volume
         for (i in 1..20) {
             player.volume = start * (1f - i / 20f)
@@ -210,6 +253,7 @@ class PlaybackService : MediaSessionService() {
         }
         player.pause()
         player.volume = start
+        sleepFading = false
     }
 
     override fun onDestroy() {
@@ -229,6 +273,7 @@ class PlaybackService : MediaSessionService() {
 
     private val listener = object : Player.Listener {
         override fun onIsPlayingChanged(isPlaying: Boolean) {
+            updateWidget(newSong = false)
             if (isPlaying) {
                 consecutiveErrors = 0
                 recordIfNeeded()
@@ -238,6 +283,8 @@ class PlaybackService : MediaSessionService() {
         }
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) autoTransition = true
+            updateWidget(newSong = true)
             transitionToken++
             savePlaybackState(markForSync = true)
             if (player.isPlaying) recordIfNeeded()
@@ -255,6 +302,17 @@ class PlaybackService : MediaSessionService() {
                 player.prepare()
                 player.play()
             }
+        }
+    }
+
+    /** Atualiza o widget da tela inicial (se a pessoa tiver um). */
+    private fun updateWidget(newSong: Boolean) {
+        val app = applicationContext
+        if (!MusicWidget.hasWidgets(app)) return
+        val np = player.currentMediaItem?.toNowPlaying()
+        val playing = player.isPlaying || (player.playWhenReady && player.playbackState == Player.STATE_BUFFERING)
+        container.appScope.launch(Dispatchers.IO) {
+            runCatching { MusicWidget.update(app, np?.title, np?.displayArtist, playing, np?.uri, newSong) }
         }
     }
 
@@ -381,6 +439,8 @@ class PlaybackService : MediaSessionService() {
     }
 
     companion object {
+        /** Duração da transição suave. */
+        private const val SMOOTH_MS = 3500L
         private val CMD_FAVORITE = SessionCommand("musibox.FAVORITE", Bundle.EMPTY)
         private val CMD_CLOSE = SessionCommand("musibox.CLOSE", Bundle.EMPTY)
     }

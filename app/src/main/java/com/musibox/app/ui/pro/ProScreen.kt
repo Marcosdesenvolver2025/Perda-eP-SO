@@ -90,7 +90,6 @@ private data class Perk(val icon: androidx.compose.ui.graphics.vector.ImageVecto
 private val perks = listOf(
     Perk(Icons.Rounded.Block, "Bloqueador de anúncios", "Navegue sem propagandas e rastreadores nos sites.", true),
     Perk(Icons.Rounded.Equalizer, "Equalizador no player", "Estilos (pop, rock, funk…), graves e som 3D.", true),
-    Perk(Icons.Rounded.Wallpaper, "Temas exclusivos que não se compram", "Paisagens de jogos e clássicos só para assinantes.", true),
     Perk(Icons.Rounded.TheaterComedy, "Ícone disfarçado do cofre", "O MusiBox aparece como Calculadora, Notas, Relógio ou Clima.", true),
     Perk(Icons.Rounded.Bedtime, "Timer de sono", "A música para sozinha na hora que você escolher.", true),
     Perk(Icons.Rounded.DarkMode, "Modo escuro em todos os sites", "Sites claros ficam escuros no navegador.", true),
@@ -131,14 +130,17 @@ fun ProScreen(nav: NavController) {
             Spacer(Modifier.height(14.dp))
             Text("Go, Plus ou Pro", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, textAlign = TextAlign.Center)
             Text(
-                "Todos liberam os recursos extras. A diferença está nos temas exclusivos, que não podem ser comprados.",
+                "Todos liberam os recursos extras. O Plus traz mais recursos e o Pro tem tudo, com 35 temas exclusivos.",
                 color = Neo.Text2,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 6.dp),
             )
 
             Spacer(Modifier.height(18.dp))
-            if (active) {
+            if (state.owner) {
+                StatusCard(Icons.Rounded.CheckCircle, "Conta do dono ✓", "Acesso total: todos os temas e o Pro sem limite.", highlight = true)
+                Spacer(Modifier.height(8.dp))
+            } else if (active) {
                 StatusCard(
                     Icons.Rounded.CheckCircle,
                     "Seu plano: ${current.label} ✓",
@@ -166,7 +168,7 @@ fun ProScreen(nav: NavController) {
                     selected = plan == selected,
                     themes = themesOf(plan.tier).size,
                     badge = when (plan) {
-                        ProPlan.PRO -> "Todos os temas"
+                        ProPlan.PRO -> "Tem tudo"
                         ProPlan.GO -> "Para testar"
                         else -> null
                     },
@@ -197,8 +199,12 @@ fun ProScreen(nav: NavController) {
                 }
             }
 
+            Spacer(Modifier.height(18.dp))
+            Text("O que cada plano tem", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.fillMaxWidth())
+            Spacer(Modifier.height(8.dp))
+            PlanTable()
             Spacer(Modifier.height(16.dp))
-            Text("Em todos os planos", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.fillMaxWidth())
+            Text("Recursos extras (em todos os planos)", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.fillMaxWidth())
             perks.forEach { Benefit(it) }
 
             Spacer(Modifier.height(10.dp))
@@ -236,14 +242,72 @@ fun ProScreen(nav: NavController) {
     }
 }
 
+/** Linha da tabela: recurso e se Go, Plus e Pro têm (texto = quantidade). */
+private data class Row3(val title: String, val go: String, val plus: String, val pro: String)
+
+private val tableRows = listOf(
+    Row3("Recursos extras de hoje", "✓", "✓", "✓"),
+    Row3("Temas exclusivos", "5", "12", "35"),
+    Row3("Velocidade da música 0,5x a 2x", "✓", "✓", "✓"),
+    Row3("Transição suave entre músicas", "–", "✓", "✓"),
+    Row3("Widget bonito na tela inicial", "–", "✓", "✓"),
+    Row3("Volume mais alto que o máximo do celular", "–", "✓", "✓"),
+    Row3("Criar toque de celular com trecho da música", "–", "–", "✓"),
+    Row3("1 tema pago grátis por mês, à escolha", "–", "–", "✓"),
+    Row3("Temas novos 1 semana antes de todo mundo", "–", "–", "✓"),
+)
+
+@Composable
+private fun PlanTable() {
+    val shape = RoundedCornerShape(18.dp)
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(com.musibox.app.themes.AppTheme.card)
+            .border(1.dp, com.musibox.app.themes.AppTheme.line, shape)
+            .padding(vertical = 6.dp),
+    ) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("", modifier = Modifier.weight(1f))
+            listOf("Go", "Plus", "Pro").forEach {
+                Text(it, color = if (it == "Pro") Neo.Green else Color.White, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.width(48.dp))
+            }
+        }
+        tableRows.forEachIndexed { i, r ->
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .background(if (i % 2 == 0) Color.White.copy(alpha = 0.03f) else Color.Transparent)
+                    .padding(horizontal = 12.dp, vertical = 9.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(r.title, color = Color.White, fontSize = 13.sp, modifier = Modifier.weight(1f).padding(end = 6.dp))
+                listOf(r.go, r.plus, r.pro).forEach { v ->
+                    Text(
+                        v,
+                        color = when (v) {
+                            "–" -> Neo.Artist
+                            else -> Neo.Green
+                        },
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.width(48.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun StatusCard(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, text: String, highlight: Boolean = false) {
     Row(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
-            .background(if (highlight) Neo.Green.copy(alpha = 0.14f) else Color(0xFF1E1E1E))
-            .border(1.dp, if (highlight) Neo.Green else Color(0xFF2A2A2A), RoundedCornerShape(18.dp))
+            .background(if (highlight) Neo.Green.copy(alpha = 0.14f) else com.musibox.app.themes.AppTheme.card)
+            .border(1.dp, if (highlight) Neo.Green else com.musibox.app.themes.AppTheme.line, RoundedCornerShape(18.dp))
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -268,7 +332,7 @@ private fun Benefit(p: Perk) {
             Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(Color(0xFF1E1E1E)),
+                .background(com.musibox.app.themes.AppTheme.card),
             contentAlignment = Alignment.Center,
         ) { Icon(p.icon, null, tint = Neo.Green, modifier = Modifier.size(22.dp)) }
         Spacer(Modifier.width(12.dp))
@@ -296,13 +360,13 @@ private fun Benefit(p: Perk) {
 
 @Composable
 private fun PlanCard(plan: ProPlan, price: String, selected: Boolean, themes: Int, badge: String?, onClick: () -> Unit) {
-    val border by animateColorAsState(if (selected) Neo.Green else Color(0xFF2A2A2A), label = "planBorder")
+    val border by animateColorAsState(if (selected) Neo.Green else com.musibox.app.themes.AppTheme.line, label = "planBorder")
     val shape = RoundedCornerShape(18.dp)
     Row(
         Modifier
             .fillMaxWidth()
             .bounceClick(pressed = 0.97f, shape = shape, onClick = onClick)
-            .background(if (selected) Neo.Green.copy(alpha = 0.10f) else Color(0xFF1E1E1E))
+            .background(if (selected) Neo.Green.copy(alpha = 0.10f) else com.musibox.app.themes.AppTheme.card)
             .border(if (selected) 2.dp else 1.dp, border, shape)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,

@@ -3,6 +3,7 @@ package com.musibox.app.media
 import android.content.Context
 import android.media.audiofx.BassBoost
 import android.media.audiofx.Equalizer
+import android.media.audiofx.LoudnessEnhancer
 import android.media.audiofx.Virtualizer
 import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +24,10 @@ data class EqSettings(
     val bass: Int = 0,
     /** Som 3D (virtualizador) 0..1000. */
     val surround: Int = 0,
+    /** Volume extra acima do máximo do celular, em milibéis (0 = desligado). Plus e Pro. */
+    val boostMb: Int = 0,
+    /** Transição suave entre músicas (abaixa no fim e sobe no começo). Plus e Pro. */
+    val smooth: Boolean = false,
 )
 
 /**
@@ -54,6 +59,10 @@ object AudioFx {
     private var eq: Equalizer? = null
     private var bassBoost: BassBoost? = null
     private var virtualizer: Virtualizer? = null
+    private var loudness: LoudnessEnhancer? = null
+
+    /** Volume extra máximo (+15 dB). */
+    const val BOOST_MAX_MB = 1500
 
     private val _info = MutableStateFlow<EqInfo?>(null)
     val info: StateFlow<EqInfo?> = _info.asStateFlow()
@@ -68,6 +77,19 @@ object AudioFx {
             apply()
         }
 
+    /** Plus ou Pro ativo: libera o volume extra e a transição suave. */
+    @Volatile var plusAllowed: Boolean = false
+        set(value) {
+            field = value
+            apply()
+        }
+
+    fun smoothActive(): Boolean = plusAllowed && _settings.value.smooth
+
+    fun setBoost(mb: Int) = update { it.copy(boostMb = mb.coerceIn(0, BOOST_MAX_MB)) }
+
+    fun setSmooth(on: Boolean) = update { it.copy(smooth = on) }
+
     fun attach(context: Context, sessionId: Int) {
         appContext = context.applicationContext
         release()
@@ -80,6 +102,7 @@ object AudioFx {
         }.onFailure { Log.w(TAG, "Equalizador indisponível", it) }
         runCatching { bassBoost = BassBoost(0, sessionId) }
         runCatching { virtualizer = Virtualizer(0, sessionId) }
+        runCatching { loudness = LoudnessEnhancer(sessionId) }.onFailure { Log.w(TAG, "Volume extra indisponível", it) }
         load()
         apply()
     }
@@ -88,9 +111,11 @@ object AudioFx {
         runCatching { eq?.release() }
         runCatching { bassBoost?.release() }
         runCatching { virtualizer?.release() }
+        runCatching { loudness?.release() }
         eq = null
         bassBoost = null
         virtualizer = null
+        loudness = null
     }
 
     fun setEnabled(on: Boolean) = update { it.copy(enabled = on) }
@@ -112,7 +137,7 @@ object AudioFx {
 
     fun setSurround(v: Int) = update { it.copy(surround = v.coerceIn(0, 1000), enabled = true) }
 
-    fun reset() = update { EqSettings(enabled = it.enabled, gains = List(_info.value?.centersHz?.size ?: 0) { 0 }) }
+    fun reset() = update { EqSettings(enabled = it.enabled, gains = List(_info.value?.centersHz?.size ?: 0) { 0 }, boostMb = it.boostMb, smooth = it.smooth) }
 
     fun currentGains(s: EqSettings = _settings.value): List<Int> {
         val n = _info.value?.centersHz?.size ?: 0
@@ -161,6 +186,13 @@ object AudioFx {
                 v.setEnabled(on && s.surround > 0)
             }
         }
+        runCatching {
+            loudness?.let { l ->
+                val boost = if (plusAllowed) s.boostMb else 0
+                l.setTargetGain(boost)
+                l.setEnabled(boost > 0)
+            }
+        }
     }
 
     private fun save() {
@@ -171,6 +203,8 @@ object AudioFx {
             ?.putString("gains", s.gains.joinToString(","))
             ?.putInt("bass", s.bass)
             ?.putInt("surround", s.surround)
+            ?.putInt("boost", s.boostMb)
+            ?.putBoolean("smooth", s.smooth)
             ?.apply()
     }
 
@@ -183,6 +217,8 @@ object AudioFx {
             gains = gains,
             bass = p.getInt("bass", 0),
             surround = p.getInt("surround", 0),
+            boostMb = p.getInt("boost", 0),
+            smooth = p.getBoolean("smooth", false),
         )
     }
 

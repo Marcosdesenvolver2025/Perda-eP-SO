@@ -78,12 +78,12 @@ object Neo {
     val Artist = Color(0xFF9A9A9A)
     val Text2 = Color(0xFFB3B3B3)
     val OnGreen: Color get() = if (Green.luminance() > 0.45f) Color(0xFF0A0A0A) else Color.White
-    val Card = Color(0xFF1E1E1E)
-    val Line = Color(0xFF2A2A2A)
-    val GlassTop = Card
-    val GlassBottom = Card
-    val Glass: Brush = SolidColor(Card)
-    val Edge: Brush = SolidColor(Line)
+    val Card: Color get() = com.musibox.app.themes.AppTheme.card
+    val Line: Color get() = com.musibox.app.themes.AppTheme.line
+    val GlassTop: Color get() = Card
+    val GlassBottom: Color get() = Card
+    val Glass: Brush get() = SolidColor(Card)
+    val Edge: Brush get() = SolidColor(Line)
     val EdgeBright: Brush get() = SolidColor(Green)
     val Accent: Brush get() = SolidColor(Green)
 }
@@ -208,7 +208,7 @@ fun NeoChip(label: String, icon: ImageVector, selected: Boolean, onClick: () -> 
         modifier
             .height(44.dp)
             .bounceClick(pressed = 0.92f, shape = shape, onClick = onClick)
-            .background(Color(0xFF181818))
+            .background(com.musibox.app.themes.AppTheme.surface)
             .border(1.dp, Neo.Line, shape),
         contentAlignment = Alignment.Center,
     ) {

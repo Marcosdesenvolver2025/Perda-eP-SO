@@ -40,6 +40,9 @@ import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.Equalizer
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
+import androidx.compose.material.icons.automirrored.rounded.VolumeUp
+import androidx.compose.material.icons.rounded.NotificationsActive
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Close
@@ -280,7 +283,9 @@ fun PlayerScreen(nav: NavController) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box {
-                    BottomAction(Icons.Rounded.Speed, "${trimSpeed(state.speed)}x") { speedMenu = true }
+                    BottomAction(Icons.Rounded.Speed, "${trimSpeed(state.speed)}x") {
+                        if (com.musibox.app.billing.PlayBilling.isProNow()) speedMenu = true else nav.navigate(Routes.PRO)
+                    }
                     DropdownMenu(speedMenu, { speedMenu = false }, containerColor = Mb.colors.cardHigh) {
                         speeds.forEach { sp ->
                             DropdownMenuItem(
@@ -327,6 +332,40 @@ fun PlayerScreen(nav: NavController) {
                 }
                 BottomAction(Icons.AutoMirrored.Rounded.QueueMusic, "Fila") { nav.navigate(Routes.QUEUE) }
             }
+            // Recursos do Plus e do Pro
+            val fx by com.musibox.app.media.AudioFx.settings.collectAsStateWithLifecycle()
+            val proState by com.musibox.app.billing.PlayBilling.pro.collectAsStateWithLifecycle()
+            val plus = proState.plan.ordinal >= com.musibox.app.billing.Plan.PLUS.ordinal
+            val isProPlan = proState.plan == com.musibox.app.billing.Plan.PRO
+            var boostDialog by remember { mutableStateOf(false) }
+            Spacer(Modifier.height(8.dp))
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                BottomAction(
+                    Icons.AutoMirrored.Rounded.VolumeUp,
+                    if (plus && fx.boostMb > 0) "Volume +${fx.boostMb / 100} dB" else "Volume extra",
+                    highlight = plus && fx.boostMb > 0,
+                ) { if (plus) boostDialog = true else nav.navigate(Routes.PRO) }
+                BottomAction(
+                    Icons.Rounded.Tune,
+                    if (plus && fx.smooth) "Transição ✓" else "Transição suave",
+                    highlight = plus && fx.smooth,
+                ) {
+                    if (!plus) {
+                        nav.navigate(Routes.PRO)
+                    } else {
+                        com.musibox.app.media.AudioFx.setSmooth(!fx.smooth)
+                        snack(if (!fx.smooth) "Transição suave ligada: uma música entra devagar na outra." else "Transição suave desligada.")
+                    }
+                }
+                BottomAction(Icons.Rounded.NotificationsActive, "Criar toque") {
+                    nav.navigate(if (isProPlan) Routes.RINGTONE else Routes.PRO)
+                }
+            }
+            if (boostDialog) BoostDialog(fx.boostMb) { boostDialog = false }
             Spacer(Modifier.height(24.dp))
         }
     }
@@ -336,8 +375,64 @@ fun PlayerScreen(nav: NavController) {
 private fun trimSpeed(s: Float): String =
     if (s % 1f == 0f) s.toInt().toString() else s.toString().trimEnd('0').trimEnd('.').replace('.', ',')
 
+/** Volume acima do máximo do celular (Plus e Pro), só nas músicas do MusiBox. */
 @Composable
-private fun BottomAction(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
+private fun BoostDialog(current: Int, onDismiss: () -> Unit) {
+    var value by remember { mutableStateOf(current.toFloat()) }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Mb.colors.cardHigh,
+        icon = { Icon(Icons.AutoMirrored.Rounded.VolumeUp, null, tint = MaterialTheme.colorScheme.primary) },
+        title = { Text("Volume extra") },
+        text = {
+            Column {
+                Text(
+                    "Deixa a música mais alta que o máximo do celular. Funciona nas músicas tocadas no MusiBox.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(14.dp))
+                Text(
+                    if (value < 50f) "Desligado" else "+${"%.1f".format(value / 100f).replace('.', ',')} dB acima do máximo",
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Slider(
+                    value = value,
+                    onValueChange = {
+                        value = it
+                        com.musibox.app.media.AudioFx.setBoost(if (it < 50f) 0 else it.toInt())
+                    },
+                    valueRange = 0f..com.musibox.app.media.AudioFx.BOOST_MAX_MB.toFloat(),
+                    colors = SliderDefaults.colors(
+                        thumbColor = MaterialTheme.colorScheme.primary,
+                        activeTrackColor = MaterialTheme.colorScheme.primary,
+                        inactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f),
+                    ),
+                )
+                Text(
+                    "Cuidado: som muito alto por muito tempo pode prejudicar a audição e o alto-falante. Use com moderação.",
+                    color = Mb.colors.warning,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Pronto") } },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = {
+                com.musibox.app.media.AudioFx.setBoost(0)
+                onDismiss()
+            }) { Text("Desligar") }
+        },
+    )
+}
+
+@Composable
+private fun BottomAction(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    highlight: Boolean = false,
+    onClick: () -> Unit,
+) {
     Column(
         Modifier
             .clip(RoundedCornerShape(16.dp))
@@ -345,9 +440,9 @@ private fun BottomAction(icon: androidx.compose.ui.graphics.vector.ImageVector, 
             .padding(horizontal = 8.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Icon(icon, label, tint = MaterialTheme.colorScheme.onSurface)
+        Icon(icon, label, tint = if (highlight) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
         Spacer(Modifier.height(4.dp))
-        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(label, style = MaterialTheme.typography.labelMedium, color = if (highlight) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

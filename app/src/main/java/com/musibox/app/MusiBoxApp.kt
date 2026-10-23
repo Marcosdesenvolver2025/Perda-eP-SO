@@ -29,6 +29,15 @@ class MusiBoxApp : Application(), ImageLoaderFactory {
         com.musibox.app.themes.ThemeStore.get(this)
         com.musibox.app.billing.PlayBilling.start(this)
         com.musibox.app.media.AudioFx.init(this)
+        // Widget da tela inicial acompanha o plano (Plus e Pro) e a cor do tema
+        container.appScope.launch {
+            kotlinx.coroutines.flow.combine(
+                com.musibox.app.billing.PlayBilling.pro,
+                androidx.compose.runtime.snapshotFlow { com.musibox.app.themes.AppTheme.paletteKey },
+            ) { p, k -> p.plan to k }.collect {
+                runCatching { com.musibox.app.media.MusicWidget.refresh(this@MusiBoxApp) }
+            }
+        }
         // Quando a Play confirma as compras: sem Pro, desfaz o ícone disfarçado; papel não comprado volta ao padrão
         container.appScope.launch {
             kotlinx.coroutines.flow.combine(

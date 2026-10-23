@@ -140,7 +140,7 @@ fun BrowserSetupScreen(nav: NavController) {
                     Column(
                         Modifier
                             .fillMaxSize()
-                            .background(Color(0xFF1E1E1E))
+                            .background(com.musibox.app.themes.AppTheme.card)
                             .bounceClick(pressed = 0.95f) { nav.navigate(Routes.WALLPAPERS) },
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,

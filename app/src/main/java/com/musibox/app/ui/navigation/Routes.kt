@@ -36,6 +36,7 @@ object Routes {
     const val PICK_SONGS = "pick_songs/{id}"
     const val PRO = "pro"
     const val EQUALIZER = "equalizer"
+    const val RINGTONE = "ringtone"
 
     fun library(tab: Int = 0) = "library?tab=$tab"
     fun history(tab: Int = 0) = "history?tab=$tab"

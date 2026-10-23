@@ -501,7 +501,7 @@ fun HomeScreen(nav: NavController) {
                 }) { Text("Apagar", color = Color(0xFFFF5A5A)) }
             },
             dismissButton = { androidx.compose.material3.TextButton(onClick = { confirmDelete = false }) { Text("Cancelar") } },
-            containerColor = Color(0xFF1E1E1E),
+            containerColor = com.musibox.app.themes.AppTheme.card,
         )
     }
 

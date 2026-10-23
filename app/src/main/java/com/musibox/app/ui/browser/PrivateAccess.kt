@@ -71,7 +71,7 @@ fun rememberPrivateOpener(onOpen: () -> Unit): () -> Unit {
                 }, enabled = pin.length >= 4) { Text("Abrir") }
             },
             dismissButton = { TextButton(onClick = { asking = false }) { Text("Cancelar") } },
-            containerColor = Color(0xFF1E1E1E),
+            containerColor = com.musibox.app.themes.AppTheme.card,
         )
     }
 

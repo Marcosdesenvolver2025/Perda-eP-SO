@@ -201,30 +201,36 @@ fun MusiBoxTheme(themeMode: ThemeMode, content: @Composable () -> Unit) {
             controller.isAppearanceLightNavigationBars = !dark
         }
     }
-    // Cor de destaque do tema escolhido (papel de parede do app); verde é o padrão.
-    val accent = com.musibox.app.themes.AppTheme.accent
-    val extras = remember(dark, accent) {
+    // Cores do tema escolhido (papel de parede do app): destaque, segunda cor e fundos tingidos.
+    val t = com.musibox.app.themes.AppTheme
+    val accent = t.accent
+    val key = t.paletteKey
+    val extras = remember(dark, accent, key) {
         if (!dark) {
             LightExtras
         } else {
             val onAccent = if (accent.luminance() > 0.45f) Color(0xFF0A0A0A) else Color.White
             DarkExtras.copy(
+                card = t.card,
+                cardHigh = t.cardHigh,
+                border = t.line,
                 vault = accent,
-                vaultSoft = accent.copy(alpha = 0.16f).compositeOver(MbPalette.Bg),
+                vaultSoft = accent.copy(alpha = 0.16f).compositeOver(t.bg),
                 success = accent,
-                accentGradient = Brush.horizontalGradient(listOf(accent, accent)),
+                accentGradient = Brush.horizontalGradient(listOf(accent, if (key.isEmpty()) accent else t.accent2)),
                 vaultGradient = Brush.horizontalGradient(listOf(accent, accent)),
                 onAccent = onAccent,
-                heroGradient = Brush.linearGradient(listOf(Color(0xFF1E1E1E), accent.copy(alpha = 0.22f).compositeOver(MbPalette.Card))),
+                heroGradient = Brush.linearGradient(listOf(t.card, t.accent2.copy(alpha = 0.20f).compositeOver(t.card), accent.copy(alpha = 0.22f).compositeOver(t.card))),
             )
         }
     }
-    val scheme = remember(dark, accent) {
+    val scheme = remember(dark, accent, key) {
         if (!dark) {
             LightScheme
         } else {
             val on = if (accent.luminance() > 0.45f) Color(0xFF0A0A0A) else Color.White
-            val container = accent.copy(alpha = 0.24f).compositeOver(MbPalette.Bg)
+            val on2 = if (t.accent2.luminance() > 0.45f) Color(0xFF0A0A0A) else Color.White
+            val container = accent.copy(alpha = 0.24f).compositeOver(t.bg)
             DarkScheme.copy(
                 primary = accent,
                 onPrimary = on,
@@ -232,6 +238,19 @@ fun MusiBoxTheme(themeMode: ThemeMode, content: @Composable () -> Unit) {
                 secondary = accent,
                 onSecondary = on,
                 secondaryContainer = container,
+                tertiary = t.accent2,
+                onTertiary = on2,
+                tertiaryContainer = t.accent2.copy(alpha = 0.22f).compositeOver(t.bg),
+                background = t.bg,
+                surface = t.bg,
+                surfaceVariant = t.cardHigh,
+                surfaceContainerLowest = t.bg,
+                surfaceContainerLow = t.surface,
+                surfaceContainer = t.card,
+                surfaceContainerHigh = t.cardHigh,
+                surfaceContainerHighest = t.line,
+                outline = t.line,
+                outlineVariant = t.card,
             )
         }
     }

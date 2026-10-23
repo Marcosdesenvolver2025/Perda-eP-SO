@@ -89,8 +89,12 @@ fun WallpaperPreviewScreen(nav: NavController, id: String) {
         }
         val w = list[pager.currentPage]
         val plan = pro.plan
-        val usable = w.free || (w.pro && PlayBilling.planUnlocks(plan, w)) || (!w.pro && w.id in owned)
+        val claimTick by PlayBilling.claimTick.collectAsStateWithLifecycle()
+        val usable = PlayBilling.canUse(w) || (!w.pro && w.id in owned)
         val price = prices[w.productId] ?: w.priceLabel
+        val early = w.isEarly() && plan != com.musibox.app.billing.Plan.PRO && !pro.owner
+        val canClaim = remember(claimTick, plan, w.id) { !usable && !w.pro && !w.free && PlayBilling.freeClaimAvailable() }
+        val releaseDay = remember(w.id) { java.text.SimpleDateFormat("dd/MM", java.util.Locale("pt", "BR")).format(java.util.Date(w.releaseAt)) }
 
         // topo
         Row(
@@ -129,7 +133,9 @@ fun WallpaperPreviewScreen(nav: NavController, id: String) {
                     Text(w.name, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                     Text(
                         when {
+                            pro.owner -> "Liberado • conta do dono do app"
                             w.free -> "Grátis"
+                            early && !usable -> "Novo • chega para todos em $releaseDay • no Pro já está liberado"
                             w.pro && usable -> "Liberado no seu plano ${plan.label}"
                             w.pro -> "Não se compra • incluso no ${w.plansText}"
                             usable -> "Comprado • fica na sua conta Google"
@@ -150,7 +156,7 @@ fun WallpaperPreviewScreen(nav: NavController, id: String) {
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         BigButton("Usar no app", w.accent, onAccent, Modifier.weight(1f)) {
                             themes.setAppWallpaper(w.id)
-                            toast("Pronto! O app está com o tema ${w.name}.")
+                            toast("Pronto! O app inteiro ficou com as cores de ${w.name}.")
                         }
                         BigButton("Usar no navegador", Color.White.copy(alpha = 0.16f), Color.White, Modifier.weight(1f)) {
                             themes.setBrowserWallpaper(w.id)
@@ -174,6 +180,25 @@ fun WallpaperPreviewScreen(nav: NavController, id: String) {
                 }
                 w.pro -> BigButton("Liberar com o ${w.planLabel}", w.accent, onAccent, Modifier.fillMaxWidth(), Icons.Rounded.WorkspacePremium) {
                     nav.navigate(Routes.PRO)
+                }
+                early -> BigButton("Pro usa agora • todos em $releaseDay", w.accent, onAccent, Modifier.fillMaxWidth(), Icons.Rounded.WorkspacePremium) {
+                    nav.navigate(Routes.PRO)
+                }
+                canClaim -> Column {
+                    BigButton("Pegar grátis • 1 por mês no Pro", w.accent, onAccent, Modifier.fillMaxWidth(), Icons.Rounded.WorkspacePremium) {
+                        PlayBilling.claimFreeTheme(w) { msg ->
+                            toast(msg)
+                            if (msg == PlayBilling.LOGIN_MSG) nav.navigate(Routes.LOGIN)
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    BigButton("Comprar • $price", Color.White.copy(alpha = 0.16f), Color.White, Modifier.fillMaxWidth(), Icons.Rounded.Lock) {
+                        val activity = context.findActivity()
+                        if (activity == null) toast("Não foi possível abrir a Google Play.") else PlayBilling.buyWallpaper(activity, w) { msg ->
+                            toast(msg)
+                            if (msg == PlayBilling.LOGIN_MSG) nav.navigate(Routes.LOGIN)
+                        }
+                    }
                 }
                 else -> BigButton("Comprar • $price", w.accent, onAccent, Modifier.fillMaxWidth(), Icons.Rounded.Lock) {
                     val activity = context.findActivity()
@@ -236,7 +261,12 @@ private fun BigButton(
 /** Como o app fica com este fundo (cabeçalho e cartões por cima). */
 @Composable
 private fun AppMock(w: Wallpaper) {
-    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.55f), Color.Black.copy(alpha = 0.72f))))) {
+    val pal = remember(w.id) { com.musibox.app.themes.WallpaperPalettes[w.id] }
+    val bg = pal?.let { Color(it[1]) } ?: Color.Black
+    val card = pal?.let { Color(it[3]) } ?: com.musibox.app.themes.AppTheme.DefaultSurface
+    val line = pal?.let { Color(it[5]) } ?: com.musibox.app.themes.AppTheme.DefaultLine
+    val accent2 = pal?.let { Color(it[0]) } ?: w.accent
+    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(bg.copy(alpha = 0.55f), bg.copy(alpha = 0.78f))))) {
         Column(Modifier.statusBarsPadding().padding(top = 64.dp, start = 18.dp, end = 18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Musi", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold)
@@ -251,7 +281,7 @@ private fun AppMock(w: Wallpaper) {
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier
                             .clip(RoundedCornerShape(18.dp))
-                            .background(if (i == 0) w.accent else Color(0xFF181818))
+                            .background(if (i == 0) w.accent else card)
                             .padding(horizontal = 14.dp, vertical = 8.dp),
                     )
                 }
@@ -259,14 +289,14 @@ private fun AppMock(w: Wallpaper) {
             Spacer(Modifier.height(16.dp))
             repeat(4) { i ->
                 Row(Modifier.padding(vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(48.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFF2A2A2A)))
+                    Box(Modifier.size(48.dp).clip(RoundedCornerShape(10.dp)).background(if (i == 1) accent2.copy(alpha = 0.7f) else line))
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Box(Modifier.fillMaxWidth(0.7f - i * 0.08f).height(12.dp).clip(RoundedCornerShape(6.dp)).background(if (i == 0) w.accent else Color.White.copy(alpha = 0.85f)))
                         Spacer(Modifier.height(6.dp))
                         Box(Modifier.fillMaxWidth(0.4f).height(10.dp).clip(RoundedCornerShape(5.dp)).background(Color.White.copy(alpha = 0.4f)))
                     }
-                    Box(Modifier.size(34.dp).clip(CircleShape).background(if (i == 0) w.accent else Color(0xFF242424)))
+                    Box(Modifier.size(34.dp).clip(CircleShape).background(if (i == 0) w.accent else card))
                 }
             }
         }

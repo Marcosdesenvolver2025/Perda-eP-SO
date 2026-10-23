@@ -141,7 +141,7 @@ fun BrowserScreen(nav: NavController, startUrl: String, private: Boolean = false
     val bookmarked = bookmarks.any { it.url.trimEnd('/') == currentUrl.trimEnd('/') }
     // Pro: bloqueador de anúncios e modo escuro nos sites
     val proState by com.musibox.app.billing.PlayBilling.pro.collectAsStateWithLifecycle()
-    val isPro = proState.subscription || proState.passUntil > System.currentTimeMillis()
+    val isPro = proState.isActive
     var adblockPref by remember { mutableStateOf(com.musibox.app.browser.AdBlocker.isEnabled(ctx)) }
     var darkPref by remember { mutableStateOf(com.musibox.app.browser.AdBlocker.darkSites(ctx)) }
     val flags = remember { BrowserFlags() }
@@ -407,7 +407,7 @@ fun BrowserScreen(nav: NavController, startUrl: String, private: Boolean = false
         Row(
             Modifier
                 .fillMaxWidth()
-                .background(if (private) Color(0xFF1B1529) else Color(0xFF121212))
+                .background(if (private) Color(0xFF1B1529) else com.musibox.app.themes.AppTheme.bg)
                 .navigationBarsPadding()
                 .padding(horizontal = 12.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,

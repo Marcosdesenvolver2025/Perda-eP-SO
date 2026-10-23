@@ -58,19 +58,20 @@ import com.musibox.app.ui.navigation.Routes
 /** Marca o lugar da faixa dos planos na lista. */
 private const val PLANS_HEADER = "__planos__"
 
-private enum class WallFilter(val label: String, val range: IntRange? = null) {
-    ALL("Todos"),
+/** Faixas de preço (segunda linha de filtros). */
+private enum class PriceFilter(val label: String, val range: IntRange? = null) {
+    ALL("Todos os preços"),
+    FREE("Grátis e planos"),
     R1("R$ 0,99", 1..99),
     R3("R$ 1,49 a 1,99", 100..199),
     R6("R$ 2,49 a 2,99", 200..299),
     R10("R$ 3,99 a 4,99", 300..499),
-    PLANS("Go • Plus • Pro"),
-    INSPIRATIONS("Inspirações"),
-    PREMIUM("Premium 3D"),
-    GAMES("Mundos de Jogo"),
-    HEROES("Heróis & Vilões"),
-    MINE("Meus"),
 }
+
+/** Categorias: "Todos", as de conteúdo (Games, Natureza, Espaço…), "Meus" e "Planos". */
+private const val CAT_ALL = "todos"
+private const val CAT_MINE = "meus"
+private const val CAT_PLANS = "planos"
 
 /** Loja de temas como tela própria (aberta por cima, com botão voltar). */
 @Composable
@@ -82,70 +83,88 @@ fun WallpaperStoreScreen(nav: NavController) {
 }
 
 /**
- * Vitrine de temas (papéis de parede): coleção principal, Heróis & Vilões, Mundos de Jogo
- * e os exclusivos dos planos Go, Plus e Pro. Também é a aba "Temas" da barra de baixo.
+ * Vitrine de temas (papéis de parede). Em cima: o que a pessoa procura (Games, Natureza, Espaço…)
+ * e a faixa de preço. Os exclusivos dos planos Go, Plus e Pro ficam por último.
  */
 @Composable
 fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bottomPadding: Dp = 24.dp, title: Boolean = false) {
     val owned by PlayBilling.owned.collectAsStateWithLifecycle()
     val pro by PlayBilling.pro.collectAsStateWithLifecycle()
     val prices by PlayBilling.prices.collectAsStateWithLifecycle()
-    var filter by rememberSaveable { mutableStateOf(WallFilter.ALL) }
+    var category by rememberSaveable { mutableStateOf(CAT_ALL) }
+    var price by rememberSaveable { mutableStateOf(PriceFilter.ALL) }
     val plan = pro.plan
     val appId = AppTheme.appWallpaper?.id
     val browserId = AppTheme.browserWallpaper.id
 
-    fun usable(w: Wallpaper) = w.free || (w.pro && PlayBilling.planUnlocks(plan, w)) || (!w.pro && w.id in owned)
+    val ownedNow = owned
+    fun usable(w: Wallpaper) = PlayBilling.canUse(w) || (!w.pro && w.id in ownedNow)
 
     val all = Wallpapers.all
+    val inCategory = when (category) {
+        CAT_ALL, CAT_PLANS, CAT_MINE -> all
+        else -> all.filter { category in it.tags }
+    }
     // Sempre do mais barato para o mais caro
-    val forSale = all.filter { !it.pro }.sortedWith(compareBy({ it.price }, { it.name }))
-    val exclusive = all.filter { it.pro }
-    fun coll(c: String) = forSale.filter { it.collection == c && !it.free }
-    val planSections = listOf(
+    val forSale = inCategory.filter { !it.pro }.sortedWith(compareBy({ it.price }, { it.name }))
+    val exclusive = inCategory.filter { it.pro }
+    val planSections = if (exclusive.isEmpty()) emptyList() else listOf(
         PLANS_HEADER to emptyList<Wallpaper>(),
         "Go (3 dias): ${exclusive.count { "go" in it.plans }} temas" to exclusive.filter { "go" in it.plans },
         "Plus (semanal): ${exclusive.count { "plus" in it.plans }} temas" to exclusive.filter { "plus" in it.plans },
-        "Pro (mensal): todos os ${exclusive.size} exclusivos" to exclusive,
+        "Pro (mensal): ${exclusive.size} exclusivos" to exclusive,
     )
-    val sections: List<Pair<String, List<Wallpaper>>> = when (filter) {
-        // Grátis, depois cada preço do mais barato ao mais caro; os planos ficam por último
-        WallFilter.ALL -> listOf("Grátis" to forSale.filter { it.free }) +
-            forSale.filter { !it.free }.groupBy { it.price }.toSortedMap().map { (price, list) ->
-                Wallpapers.priceText(price) to list
-            } + planSections
-        WallFilter.R1, WallFilter.R3, WallFilter.R6, WallFilter.R10 ->
-            forSale.filter { it.price in filter.range!! }.groupBy { it.price }.toSortedMap().map { (price, list) ->
-                Wallpapers.priceText(price) to list
-            }
-        WallFilter.PLANS -> planSections
-        WallFilter.INSPIRATIONS -> listOf("Inspirações" to coll(Wallpapers.INSPIRATIONS))
-        WallFilter.PREMIUM -> listOf("Premium 3D" to coll(Wallpapers.PREMIUM))
-        WallFilter.GAMES -> listOf("Mundos de Jogo" to coll(Wallpapers.GAMES))
-        WallFilter.HEROES -> listOf("Heróis & Vilões" to coll(Wallpapers.HEROES))
-        WallFilter.MINE -> listOf("Seus temas" to all.filter { usable(it) }.sortedBy { it.price })
+
+    fun byPrice(list: List<Wallpaper>) = list.filter { !it.free }.groupBy { it.price }.toSortedMap().map { (p, l) ->
+        Wallpapers.priceText(p) to l
     }
 
+    val sections: List<Pair<String, List<Wallpaper>>> = when {
+        category == CAT_MINE -> listOf("Seus temas" to all.filter { usable(it) }.sortedBy { it.price })
+        category == CAT_PLANS -> planSections
+        price == PriceFilter.FREE -> listOf("Grátis" to forSale.filter { it.free }) + planSections
+        price.range != null -> byPrice(forSale.filter { it.price in price.range!! })
+        else -> {
+            val news = forSale.filter { it.isNew() }
+            (if (category == CAT_ALL && news.isNotEmpty()) listOf("Novos • Pro usa 1 semana antes" to news) else emptyList()) +
+                listOf("Grátis" to forSale.filter { it.free }) +
+                byPrice(if (category == CAT_ALL) forSale.filter { !it.isNew() } else forSale) + planSections
+        }
+    }
+    val count = sections.sumOf { it.second.size }
+
     Column(modifier.fillMaxSize()) {
-        if (title) com.musibox.app.ui.components.PageTitle("Temas", "${all.size} papéis para o app e o navegador")
+        if (title) com.musibox.app.ui.components.PageTitle("Temas", "${all.size} papéis • as cores do app seguem o tema")
+        Text(
+            "O que você procura?",
+            color = Neo.Text2,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(start = 18.dp, bottom = 6.dp),
+        )
+        val cats = listOf(CAT_ALL to "Todos") + Wallpapers.categories + listOf(CAT_MINE to "Meus", CAT_PLANS to "Go • Plus • Pro")
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(bottom = 8.dp),
         ) {
-            items(WallFilter.entries) { f ->
-                val sel = f == filter
-                Text(
-                    f.label,
-                    color = if (sel) Neo.OnGreen else Color.White,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(if (sel) Neo.Green else Color(0xFF1E1E1E))
-                        .border(1.dp, if (sel) Neo.Green else Color(0xFF2E2E2E), RoundedCornerShape(20.dp))
-                        .bounceClick(pressed = 0.92f, shape = RoundedCornerShape(20.dp)) { filter = f }
-                        .padding(horizontal = 16.dp, vertical = 9.dp),
-                )
+            items(cats, key = { it.first }) { (key, label) ->
+                val n = when (key) {
+                    CAT_ALL -> all.size
+                    CAT_MINE -> -1
+                    CAT_PLANS -> all.count { it.pro }
+                    else -> all.count { key in it.tags }
+                }
+                Chip(if (n >= 0) "$label $n" else label, key == category) { category = key }
+            }
+        }
+        if (category != CAT_MINE && category != CAT_PLANS) {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(bottom = 8.dp),
+            ) {
+                items(PriceFilter.entries) { f -> Chip(f.label, f == price, small = true) { price = f } }
             }
         }
         LazyVerticalGrid(
@@ -173,16 +192,33 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
                         usable = usable(w),
                         inApp = w.id == appId,
                         inBrowser = w.id == browserId,
+                        early = w.isEarly() && plan != com.musibox.app.billing.Plan.PRO && !pro.owner,
                     ) { nav.navigate(Routes.wallpaper(w.id)) }
                 }
             }
-            if (sections.none { it.second.isNotEmpty() }) {
+            if (count == 0) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    Text("Nenhum tema aqui ainda.", color = Neo.Text2, modifier = Modifier.padding(24.dp))
+                    Text("Nenhum tema com esse filtro. Tente outra faixa de preço.", color = Neo.Text2, modifier = Modifier.padding(24.dp))
                 }
             }
         }
     }
+}
+
+@Composable
+private fun Chip(label: String, selected: Boolean, small: Boolean = false, onClick: () -> Unit) {
+    Text(
+        label,
+        color = if (selected) Neo.OnGreen else Color.White,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = if (small) 13.sp else 14.sp,
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(if (selected) Neo.Green else if (small) Color.Transparent else com.musibox.app.themes.AppTheme.card)
+            .border(1.dp, if (selected) Neo.Green else com.musibox.app.themes.AppTheme.line, RoundedCornerShape(20.dp))
+            .bounceClick(pressed = 0.92f, shape = RoundedCornerShape(20.dp), onClick = onClick)
+            .padding(horizontal = if (small) 13.dp else 16.dp, vertical = if (small) 7.dp else 9.dp),
+    )
 }
 
 /** Faixa que explica os planos e leva para a tela de assinatura. */
@@ -218,7 +254,7 @@ private fun PlansBanner(plan: com.musibox.app.billing.Plan, modifier: Modifier =
 }
 
 @Composable
-private fun WallTile(w: Wallpaper, price: String, usable: Boolean, inApp: Boolean, inBrowser: Boolean, onClick: () -> Unit) {
+private fun WallTile(w: Wallpaper, price: String, usable: Boolean, inApp: Boolean, inBrowser: Boolean, early: Boolean = false, onClick: () -> Unit) {
     val shape = RoundedCornerShape(18.dp)
     Column {
         Box(
@@ -226,7 +262,7 @@ private fun WallTile(w: Wallpaper, price: String, usable: Boolean, inApp: Boolea
                 .fillMaxWidth()
                 .aspectRatio(9f / 18f)
                 .bounceClick(pressed = 0.94f, shape = shape, onClick = onClick)
-                .border(if (inApp || inBrowser) 2.dp else 1.dp, if (inApp || inBrowser) w.accent else Color(0xFF2E2E2E), shape),
+                .border(if (inApp || inBrowser) 2.dp else 1.dp, if (inApp || inBrowser) w.accent else com.musibox.app.themes.AppTheme.line, shape),
         ) {
             WallpaperImage(w, Modifier.fillMaxSize(), thumbnail = true)
             // selo de preço / dono
@@ -244,6 +280,11 @@ private fun WallTile(w: Wallpaper, price: String, usable: Boolean, inApp: Boolea
                         Spacer(Modifier.width(4.dp))
                         Text(if (w.free) "Grátis" else "Seu", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
+                    early -> {
+                        Icon(Icons.Rounded.WorkspacePremium, null, tint = Color(0xFFFFC857), modifier = Modifier.size(15.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Chega " + java.text.SimpleDateFormat("dd/MM", java.util.Locale("pt", "BR")).format(java.util.Date(w.releaseAt)), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                    }
                     w.pro -> {
                         Icon(Icons.Rounded.WorkspacePremium, null, tint = Color(0xFFFFC857), modifier = Modifier.size(15.dp))
                         Spacer(Modifier.width(4.dp))
@@ -255,6 +296,20 @@ private fun WallTile(w: Wallpaper, price: String, usable: Boolean, inApp: Boolea
                         Text(price, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                     }
                 }
+            }
+            if (w.isNew() && !(inApp || inBrowser)) {
+                Text(
+                    "NOVO",
+                    color = Color.Black,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(6.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFFFC857))
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                )
             }
             if (inApp || inBrowser) {
                 Text(

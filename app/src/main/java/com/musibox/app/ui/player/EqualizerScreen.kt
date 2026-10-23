@@ -58,7 +58,7 @@ fun EqualizerScreen(nav: NavController) {
     val info by AudioFx.info.collectAsStateWithLifecycle()
     val s by AudioFx.settings.collectAsStateWithLifecycle()
     val pro by PlayBilling.pro.collectAsStateWithLifecycle()
-    val isPro = pro.subscription || pro.passUntil > System.currentTimeMillis()
+    val isPro = pro.isActive
     val on = s.enabled && isPro
 
     Column(Modifier.fillMaxSize()) {
@@ -103,8 +103,8 @@ fun EqualizerScreen(nav: NavController) {
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier
                             .clip(RoundedCornerShape(18.dp))
-                            .background(if (sel) Neo.Green else Color(0xFF1E1E1E))
-                            .border(1.dp, if (sel) Neo.Green else Color(0xFF2E2E2E), RoundedCornerShape(18.dp))
+                            .background(if (sel) Neo.Green else com.musibox.app.themes.AppTheme.card)
+                            .border(1.dp, if (sel) Neo.Green else com.musibox.app.themes.AppTheme.line, RoundedCornerShape(18.dp))
                             .bounceClick(pressed = 0.92f, shape = RoundedCornerShape(18.dp)) { if (name != "Personalizado") AudioFx.setPreset(name) }
                             .padding(horizontal = 14.dp, vertical = 8.dp),
                     )
@@ -125,7 +125,7 @@ fun EqualizerScreen(nav: NavController) {
                     Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(22.dp))
-                        .background(Color(0xFF181818))
+                        .background(com.musibox.app.themes.AppTheme.surface)
                         .padding(vertical = 16.dp, horizontal = 6.dp)
                         .alpha(if (on) 1f else 0.6f),
                     horizontalArrangement = Arrangement.SpaceEvenly,

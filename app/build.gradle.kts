@@ -75,8 +75,8 @@ android {
         applicationId = appId
         minSdk = 29
         targetSdk = 35
-        versionCode = 22
-        versionName = "2.5.2"
+        versionCode = 23
+        versionName = "2.6.0"
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${readWebClientId()}\"")
         buildConfigField("boolean", "FIREBASE_CONFIGURED", (firebaseClient != null).toString())
         buildConfigField("boolean", "FIREBASE_MANUAL_INIT", (firebaseClient != null && !usePluginConfig).toString())

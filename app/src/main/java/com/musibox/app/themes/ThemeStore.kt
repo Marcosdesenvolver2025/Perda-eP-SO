@@ -19,6 +19,45 @@ object AppTheme {
     var accent by mutableStateOf(DefaultAccent)
         internal set
 
+    // Paleta do app inteiro (vem do papel de parede escolhido; sem papel = preto e verde padrão)
+    val DefaultBg = Color(0xFF121212)
+    val DefaultSurface = Color(0xFF181818)
+    val DefaultCard = Color(0xFF1E1E1E)
+    val DefaultCardHigh = Color(0xFF282828)
+    val DefaultLine = Color(0xFF2E2E2E)
+
+    var accent2 by mutableStateOf(Color(0xFF3BEA80))
+        internal set
+    var bg by mutableStateOf(DefaultBg)
+        internal set
+    var surface by mutableStateOf(DefaultSurface)
+        internal set
+    var card by mutableStateOf(DefaultCard)
+        internal set
+    var cardHigh by mutableStateOf(DefaultCardHigh)
+        internal set
+    var line by mutableStateOf(DefaultLine)
+        internal set
+
+    /** true quando as cores vêm de um tema (para o Compose recalcular o esquema). */
+    var paletteKey by mutableStateOf("")
+        internal set
+
+    internal fun applyPalette(w: Wallpaper?) {
+        val p = w?.let { WallpaperPalettes[it.id] }
+        if (w == null || p == null || p.size < 6) {
+            accent = w?.accent ?: DefaultAccent
+            accent2 = Color(0xFF3BEA80)
+            bg = DefaultBg; surface = DefaultSurface; card = DefaultCard; cardHigh = DefaultCardHigh; line = DefaultLine
+            paletteKey = w?.id.orEmpty()
+            return
+        }
+        accent = w.accent
+        accent2 = Color(p[0])
+        bg = Color(p[1]); surface = Color(p[2]); card = Color(p[3]); cardHigh = Color(p[4]); line = Color(p[5])
+        paletteKey = w.id
+    }
+
     /** Papel de parede de fundo do app (null = fundo preto padrão). */
     var appWallpaper by mutableStateOf<Wallpaper?>(null)
         internal set
@@ -45,7 +84,7 @@ class ThemeStore private constructor(context: Context) {
     private fun apply(appId: String?, browserId: String?) {
         val app = Wallpapers.get(appId)
         AppTheme.appWallpaper = app
-        AppTheme.accent = app?.accent ?: AppTheme.DefaultAccent
+        AppTheme.applyPalette(app)
         AppTheme.browserWallpaper = Wallpapers.get(browserId) ?: Wallpapers.get(Wallpapers.DEFAULT_BROWSER)!!
     }
 

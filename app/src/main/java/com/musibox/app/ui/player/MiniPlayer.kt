@@ -117,8 +117,8 @@ fun MiniPlayer(
                 .fillMaxWidth()
                 .shadow(10.dp, shape)
                 .clip(shape)
-                .background(Brush.verticalGradient(listOf(Color(0xFF1E1E1E), Color(0xFF1E1E1E))))
-                .border(1.dp, Color(0xFF2E2E2E), shape)
+                .background(Brush.verticalGradient(listOf(com.musibox.app.themes.AppTheme.card, com.musibox.app.themes.AppTheme.card)))
+                .border(1.dp, com.musibox.app.themes.AppTheme.line, shape)
                 .clickable(onClick = onOpen),
         ) {
             Row(

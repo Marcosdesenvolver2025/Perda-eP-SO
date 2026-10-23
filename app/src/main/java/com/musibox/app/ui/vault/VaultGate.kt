@@ -504,7 +504,7 @@ private fun VaultLockedChooser(
                 Modifier
                     .size(96.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF1E1E1E))
+                    .background(com.musibox.app.themes.AppTheme.card)
                     .border(2.dp, Mb.colors.vault, CircleShape)
                     .clickable(onClick = onFingerprint),
                 contentAlignment = Alignment.Center,

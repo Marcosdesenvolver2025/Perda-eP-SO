@@ -249,6 +249,7 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
                 composable(Routes.PLAYLIST) { entry -> PlaylistScreen(navController, entry.arguments?.getString("id").orEmpty()) }
                 composable(Routes.PRO) { com.musibox.app.ui.pro.ProScreen(navController) }
                 composable(Routes.EQUALIZER) { com.musibox.app.ui.player.EqualizerScreen(navController) }
+                composable(Routes.RINGTONE) { com.musibox.app.ui.player.RingtoneScreen(navController) }
                 composable(Routes.PICK_SONGS) { entry ->
                     com.musibox.app.ui.library.SongPickerScreen(navController, entry.arguments?.getString("id").orEmpty())
                 }

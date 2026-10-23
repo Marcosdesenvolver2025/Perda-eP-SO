@@ -66,7 +66,7 @@ fun TabsSheet(
     onCloseAll: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color(0xFF181818)) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = com.musibox.app.themes.AppTheme.surface) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("Abas", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
@@ -125,7 +125,7 @@ fun TabsSheet(
                             .fillMaxWidth()
                             .height(96.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Brush.linearGradient(listOf(Color(0xFF2A2A2A), Color(0xFF1F3A2A)))),
+                            .background(Brush.linearGradient(listOf(com.musibox.app.themes.AppTheme.line, Color(0xFF1F3A2A)))),
                         contentAlignment = Alignment.Center,
                     ) {
                         SiteBadge(tab.url, 44.dp)

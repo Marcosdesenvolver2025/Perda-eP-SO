@@ -147,7 +147,7 @@ fun BrowserHomeScreen(nav: NavController) {
 
     val openPrivate = rememberPrivateOpener { nav.navigate(Routes.browser(BrowserStore.HOME_URL, private = true)) }
     val proState by com.musibox.app.billing.PlayBilling.pro.collectAsStateWithLifecycle()
-    val isPro = proState.subscription || proState.passUntil > System.currentTimeMillis()
+    val isPro = proState.isActive
     var adblockOn by remember { mutableStateOf(com.musibox.app.browser.AdBlocker.isEnabled(context)) }
     var darkOn by remember { mutableStateOf(com.musibox.app.browser.AdBlocker.darkSites(context)) }
     var lockOn by remember { mutableStateOf(com.musibox.app.browser.AdBlocker.privateLock(context)) }
@@ -285,7 +285,7 @@ fun BrowserHomeScreen(nav: NavController) {
     }
 
     if (menu) {
-        ModalBottomSheet(onDismissRequest = { menu = false }, containerColor = Color(0xFF181818)) {
+        ModalBottomSheet(onDismissRequest = { menu = false }, containerColor = com.musibox.app.themes.AppTheme.surface) {
             Column(Modifier.padding(horizontal = 12.dp).padding(bottom = 28.dp)) {
                 Text("Navegador", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp, modifier = Modifier.padding(start = 10.dp, bottom = 8.dp))
                 MenuRow(Icons.Rounded.Wallpaper, "Papel de parede", "Escolha o fundo da página inicial") { menu = false; nav.navigate(Routes.WALLPAPERS) }
@@ -323,7 +323,7 @@ fun BrowserHomeScreen(nav: NavController) {
         "bookmarks" -> VisitsSheet("Favoritos", bookmarks, onOpen = { sheet = null; open(it) }, onClear = null, onDismiss = { sheet = null })
     }
     if (moreSites) {
-        ModalBottomSheet(onDismissRequest = { moreSites = false }, containerColor = Color(0xFF181818)) {
+        ModalBottomSheet(onDismissRequest = { moreSites = false }, containerColor = com.musibox.app.themes.AppTheme.surface) {
             Column(Modifier.padding(horizontal = 16.dp).padding(bottom = 28.dp)) {
                 Text("Mais sites", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp, modifier = Modifier.padding(bottom = 14.dp))
                 FlowRow(maxItemsInEachRow = 4, modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -348,7 +348,7 @@ fun BrowserHomeScreen(nav: NavController) {
             text = { Text("\"${e.title}\" sai da página inicial. Você pode adicionar de novo depois.") },
             confirmButton = { TextButton(onClick = { store.removeShortcut(e.url); removeTarget = null }) { Text("Remover") } },
             dismissButton = { TextButton(onClick = { removeTarget = null }) { Text("Cancelar") } },
-            containerColor = Color(0xFF1E1E1E),
+            containerColor = com.musibox.app.themes.AppTheme.card,
         )
     }
 }
@@ -789,7 +789,7 @@ private fun ProToggle(label: String, isPro: Boolean, checked: Boolean, onPro: ()
 
 @Composable
 fun InterestsSheet(selected: Set<String>, onChange: (Set<String>) -> Unit, onDismiss: () -> Unit) {
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color(0xFF181818)) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = com.musibox.app.themes.AppTheme.surface) {
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
             Text("Quais são os seus interesses?", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
             Text("As notícias de \"Para você\" seguem o que você escolher.", color = Color(0xFF9A9A9A), modifier = Modifier.padding(top = 4.dp, bottom = 14.dp))
@@ -830,7 +830,7 @@ private fun VisitsSheet(
     onClear: (() -> Unit)?,
     onDismiss: () -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color(0xFF181818)) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = com.musibox.app.themes.AppTheme.surface) {
         Column(Modifier.padding(horizontal = 16.dp).padding(bottom = 24.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp, modifier = Modifier.weight(1f))
@@ -891,6 +891,6 @@ private fun AddShortcutDialog(onAdd: (String, String) -> Unit, onDismiss: () -> 
             ) { Text("Adicionar") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },
-        containerColor = Color(0xFF1E1E1E),
+        containerColor = com.musibox.app.themes.AppTheme.card,
     )
 }

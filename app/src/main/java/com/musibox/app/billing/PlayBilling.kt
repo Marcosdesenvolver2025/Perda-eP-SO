@@ -46,7 +46,7 @@ enum class ProPlan(
 ) {
     GO("Go", "R$ 2,99", "/3 dias", "Pagamento único • vale 3 dias • não renova", PlayBilling.PASS_3D, null, Plan.GO),
     PLUS("Plus", "R$ 5,99", "/semana", "Renova toda semana • cancele quando quiser", PlayBilling.SUB_PLUS, PlayBilling.PLAN_WEEK, Plan.PLUS),
-    PRO("Pro", "R$ 14,99", "/mês", "Renova todo mês • cancele quando quiser", PlayBilling.SUB_PRO, PlayBilling.PLAN_MONTH, Plan.PRO),
+    PRO("Pro", "R$ 18,99", "/mês", "Renova todo mês • cancele quando quiser", PlayBilling.SUB_PRO, PlayBilling.PLAN_MONTH, Plan.PRO),
     ;
 
     val priceKey: String get() = if (basePlanId != null) "$productId:$basePlanId" else productId
@@ -62,11 +62,17 @@ data class ProState(
     val passUntil: Long = 0L,
     val subPro: Boolean = false,
     val subPlus: Boolean = false,
+    /** Conta do dono do app (acesso total, sem cobrança). */
+    val owner: Boolean = false,
 ) {
+    /** Algum plano ativo (Go, Plus, Pro ou conta do dono). */
+    val isActive: Boolean
+        get() = owner || subscription || passUntil > System.currentTimeMillis()
+
     /** Maior plano ativo agora. */
     val plan: Plan
         get() = when {
-            subPro -> Plan.PRO
+            owner || subPro -> Plan.PRO
             subPlus -> Plan.PLUS
             passUntil > System.currentTimeMillis() -> Plan.GO
             else -> Plan.NONE
@@ -135,7 +141,10 @@ object PlayBilling : PurchasesUpdatedListener {
         )
         if (firebaseReady()) {
             runCatching {
-                com.google.firebase.auth.FirebaseAuth.getInstance().addAuthStateListener { a -> a.currentUser?.uid?.let { loadOwnedFromCloud(it) } }
+                com.google.firebase.auth.FirebaseAuth.getInstance().addAuthStateListener { a ->
+                    checkOwner(a.currentUser)
+                    a.currentUser?.uid?.let { loadOwnedFromCloud(it) }
+                }
             }
         }
         client = runCatching {
@@ -171,12 +180,27 @@ object PlayBilling : PurchasesUpdatedListener {
         }.onFailure { _status.value = Status.UNAVAILABLE }
     }
 
-    fun isProNow(): Boolean {
-        val p = _pro.value
-        return p.subscription || p.passUntil > System.currentTimeMillis()
-    }
+    fun isProNow(): Boolean = _pro.value.isActive
 
     fun currentPlan(): Plan = _pro.value.plan
+
+    /** O plano atual é pelo menos [min]? (ex.: Plus e Pro para o volume extra) */
+    fun hasPlan(min: Plan): Boolean = currentPlan().ordinal >= min.ordinal
+
+    fun isOwner(): Boolean = _pro.value.owner
+
+    /** Conta do dono: guardamos só o SHA-256 do e-mail (o repositório é público). */
+    private const val OWNER_HASH = "15f6c06e3cc37a7c991f5fd7e67a65c34c65c01ed70595158bdc65b61547a9fd"
+
+    private fun checkOwner(user: com.google.firebase.auth.FirebaseUser?) {
+        val email = user?.email?.trim()?.lowercase()
+        val google = user?.providerData?.any { it.providerId == "google.com" } == true
+        val isOwner = email != null && google && sha256(email) == OWNER_HASH
+        if (_pro.value.owner != isOwner) _pro.update { it.copy(owner = isOwner) }
+    }
+
+    private fun sha256(text: String): String =
+        java.security.MessageDigest.getInstance("SHA-256").digest(text.toByteArray()).joinToString("") { "%02x".format(it) }
 
     /** O plano libera este tema exclusivo? O Pro libera todos; Plus e Go só os da sua lista. */
     fun planUnlocks(plan: Plan, w: Wallpaper): Boolean = when (plan) {
@@ -188,6 +212,7 @@ object PlayBilling : PurchasesUpdatedListener {
 
     /** O papel pode ser usado? (grátis, comprado, ou exclusivo de um plano que a pessoa tem) */
     fun canUse(w: Wallpaper): Boolean = when {
+        _pro.value.owner -> true
         w.free -> true
         w.pro -> planUnlocks(currentPlan(), w)
         else -> w.id in _owned.value
@@ -418,8 +443,66 @@ object PlayBilling : PurchasesUpdatedListener {
                 @Suppress("UNCHECKED_CAST")
                 val ids = (doc.get("owned") as? List<String>).orEmpty().filter { Wallpapers.get(it) != null }.toSet()
                 addOwned(ids)
+                (doc.get("freeClaims") as? Map<String, Any?>)?.keys?.let { months ->
+                    appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()?.apply {
+                        months.forEach { putBoolean("free_claim_$it", true) }
+                    }?.apply()
+                    _claimTick.update { it + 1 }
+                }
             }
         }
+    }
+
+    // ---------------------------------------------------------------- 1 tema pago grátis por mês (Pro)
+
+    private val _claimTick = MutableStateFlow(0)
+    /** Muda quando o tema grátis do mês é usado (para a tela atualizar). */
+    val claimTick: StateFlow<Int> = _claimTick.asStateFlow()
+
+    private fun monthKey(): String = java.text.SimpleDateFormat("yyyy-MM", java.util.Locale.US).format(java.util.Date())
+
+    /** O Pro ainda pode pegar o tema grátis deste mês? */
+    fun freeClaimAvailable(): Boolean {
+        if (currentPlan() != Plan.PRO || _pro.value.owner) return false
+        val prefs = appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE) ?: return false
+        return !prefs.getBoolean("free_claim_${monthKey()}", false)
+    }
+
+    /** Pega um tema pago de graça (1 por mês no Pro). Fica na conta Google para sempre. */
+    fun claimFreeTheme(w: Wallpaper, onResult: (String) -> Unit) {
+        if (!freeClaimAvailable()) {
+            onResult("O tema grátis deste mês já foi usado. Mês que vem tem outro!")
+            return
+        }
+        if (w.free || w.pro || w.id in _owned.value) {
+            onResult("Escolha um tema pago que você ainda não tem.")
+            return
+        }
+        val uid = currentUid()
+        if (uid == null) {
+            onResult(LOGIN_MSG)
+            return
+        }
+        val month = monthKey()
+        runCatching {
+            wallpapersDoc(uid).set(
+                mapOf(
+                    "owned" to com.google.firebase.firestore.FieldValue.arrayUnion(w.id),
+                    "freeClaims" to mapOf(month to w.id),
+                    "updatedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp(),
+                ),
+                com.google.firebase.firestore.SetOptions.merge(),
+            ).addOnCompleteListener { t ->
+                if (t.isSuccessful) {
+                    appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()?.putBoolean("free_claim_$month", true)?.apply()
+                    addOwned(setOf(w.id))
+                    _claimTick.update { it + 1 }
+                    onResult("Pronto! ${w.name} agora é seu, de graça.")
+                } else {
+                    onResult("Sem conexão. Tente de novo em instantes.")
+                }
+            }
+        }.onFailure { onResult("Não foi possível liberar agora.") }
     }
 
     /** Passe de 3 dias: soma 3 dias (uma vez por compra). */

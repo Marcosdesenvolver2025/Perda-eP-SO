@@ -44,9 +44,9 @@ enum class ProPlan(
     val basePlanId: String?,
     val tier: Plan,
 ) {
-    GO("Go", "R$ 4,99", "/3 dias", "Pagamento único • vale 3 dias • não renova", PlayBilling.PASS_3D, null, Plan.GO),
-    PLUS("Plus", "R$ 9,60", "/semana", "Renova toda semana • cancele quando quiser", PlayBilling.SUB_PLUS, PlayBilling.PLAN_WEEK, Plan.PLUS),
-    PRO("Pro", "R$ 35,99", "/mês", "Renova todo mês • cancele quando quiser", PlayBilling.SUB_PRO, PlayBilling.PLAN_MONTH, Plan.PRO),
+    GO("Go", "R$ 2,99", "/3 dias", "Pagamento único • vale 3 dias • não renova", PlayBilling.PASS_3D, null, Plan.GO),
+    PLUS("Plus", "R$ 5,99", "/semana", "Renova toda semana • cancele quando quiser", PlayBilling.SUB_PLUS, PlayBilling.PLAN_WEEK, Plan.PLUS),
+    PRO("Pro", "R$ 14,99", "/mês", "Renova todo mês • cancele quando quiser", PlayBilling.SUB_PRO, PlayBilling.PLAN_MONTH, Plan.PRO),
     ;
 
     val priceKey: String get() = if (basePlanId != null) "$productId:$basePlanId" else productId

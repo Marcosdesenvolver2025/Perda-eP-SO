@@ -55,13 +55,15 @@ import com.musibox.app.ui.components.WallpaperImage
 import com.musibox.app.ui.components.bounceClick
 import com.musibox.app.ui.navigation.Routes
 
+/** Marca o lugar da faixa dos planos na lista. */
+private const val PLANS_HEADER = "__planos__"
+
 private enum class WallFilter(val label: String, val range: IntRange? = null) {
     ALL("Todos"),
-    R1("Até R$ 1", 1..100),
-    R3("R$ 1 a R$ 3", 101..300),
-    R6("R$ 3 a R$ 6", 301..600),
-    R10("R$ 6 a R$ 10", 601..1000),
-    R20("R$ 10 a R$ 20", 1001..2000),
+    R1("R$ 0,10 a 0,50", 1..50),
+    R3("R$ 0,99 a 1,49", 51..149),
+    R6("R$ 1,99 a 2,49", 150..249),
+    R10("R$ 2,99 a 4,99", 250..499),
     PLANS("Go • Plus • Pro"),
     INSPIRATIONS("Inspirações"),
     PREMIUM("Premium 3D"),
@@ -100,24 +102,23 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
     val forSale = all.filter { !it.pro }.sortedWith(compareBy({ it.price }, { it.name }))
     val exclusive = all.filter { it.pro }
     fun coll(c: String) = forSale.filter { it.collection == c && !it.free }
+    val planSections = listOf(
+        PLANS_HEADER to emptyList<Wallpaper>(),
+        "Go (3 dias): ${exclusive.count { "go" in it.plans }} temas" to exclusive.filter { "go" in it.plans },
+        "Plus (semanal): ${exclusive.count { "plus" in it.plans }} temas" to exclusive.filter { "plus" in it.plans },
+        "Pro (mensal): todos os ${exclusive.size} exclusivos" to exclusive,
+    )
     val sections: List<Pair<String, List<Wallpaper>>> = when (filter) {
-        WallFilter.ALL -> listOf(
-            "Grátis" to forSale.filter { it.free },
-            "Baratinhos: R$ 0,10 a R$ 0,50" to forSale.filter { it.price in 1..50 },
-            "Novos: Inspirações" to coll(Wallpapers.INSPIRATIONS).filter { it.price > 50 },
-            "Só nos planos Go, Plus e Pro" to exclusive,
-            "Premium 3D" to coll(Wallpapers.PREMIUM).filter { it.price > 50 },
-            "Mundos de Jogo" to coll(Wallpapers.GAMES).filter { it.price > 50 },
-            "Heróis & Vilões" to coll(Wallpapers.HEROES).filter { it.price > 50 },
-            "Coleção clássica" to coll("").filter { it.price > 50 },
-        )
-        WallFilter.R1, WallFilter.R3, WallFilter.R6, WallFilter.R10, WallFilter.R20 ->
-            listOf(filter.label to forSale.filter { it.price in filter.range!! })
-        WallFilter.PLANS -> listOf(
-            "Pro (mensal): todos os exclusivos" to exclusive,
-            "Inclusos no Plus (semanal)" to exclusive.filter { "plus" in it.plans },
-            "Inclusos no Go (3 dias)" to exclusive.filter { "go" in it.plans },
-        )
+        // Grátis, depois cada preço do mais barato ao mais caro; os planos ficam por último
+        WallFilter.ALL -> listOf("Grátis" to forSale.filter { it.free }) +
+            forSale.filter { !it.free }.groupBy { it.price }.toSortedMap().map { (price, list) ->
+                Wallpapers.priceText(price) to list
+            } + planSections
+        WallFilter.R1, WallFilter.R3, WallFilter.R6, WallFilter.R10 ->
+            forSale.filter { it.price in filter.range!! }.groupBy { it.price }.toSortedMap().map { (price, list) ->
+                Wallpapers.priceText(price) to list
+            }
+        WallFilter.PLANS -> planSections
         WallFilter.INSPIRATIONS -> listOf("Inspirações" to coll(Wallpapers.INSPIRATIONS))
         WallFilter.PREMIUM -> listOf("Premium 3D" to coll(Wallpapers.PREMIUM))
         WallFilter.GAMES -> listOf("Mundos de Jogo" to coll(Wallpapers.GAMES))
@@ -154,12 +155,13 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.weight(1f),
         ) {
-            if (filter == WallFilter.PLANS || filter == WallFilter.ALL) {
-                item(key = "plans_banner", span = { GridItemSpan(maxLineSpan) }) {
-                    PlansBanner(plan) { nav.navigate(Routes.PRO) }
-                }
-            }
             sections.forEach { (title, list) ->
+                if (title == PLANS_HEADER) {
+                    item(key = "plans_banner", span = { GridItemSpan(maxLineSpan) }) {
+                        PlansBanner(plan, Modifier.padding(top = 18.dp)) { nav.navigate(Routes.PRO) }
+                    }
+                    return@forEach
+                }
                 if (list.isEmpty()) return@forEach
                 item(key = "h_$title", span = { GridItemSpan(maxLineSpan) }) {
                     Text(title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 19.sp, modifier = Modifier.padding(top = 10.dp, start = 4.dp))
@@ -174,7 +176,7 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
                     ) { nav.navigate(Routes.wallpaper(w.id)) }
                 }
             }
-            if (sections.all { it.second.isEmpty() }) {
+            if (sections.none { it.second.isNotEmpty() }) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Text("Nenhum tema aqui ainda.", color = Neo.Text2, modifier = Modifier.padding(24.dp))
                 }
@@ -185,10 +187,10 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
 
 /** Faixa que explica os planos e leva para a tela de assinatura. */
 @Composable
-private fun PlansBanner(plan: com.musibox.app.billing.Plan, onClick: () -> Unit) {
+private fun PlansBanner(plan: com.musibox.app.billing.Plan, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val shape = RoundedCornerShape(18.dp)
     Row(
-        Modifier
+        modifier
             .fillMaxWidth()
             .padding(top = 4.dp)
             .clip(shape)

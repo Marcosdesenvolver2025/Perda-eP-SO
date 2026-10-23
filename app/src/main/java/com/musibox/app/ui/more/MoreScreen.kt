@@ -97,7 +97,7 @@ fun MoreScreen(nav: NavController) {
                     Column(Modifier.weight(1f)) {
                         Text(if (proActive) "Seu plano: ${proState.plan.label} ✓" else "MusiBox Pro", color = Mb.colors.onAccent, style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                         Text(
-                            if (proActive) "Recursos extras e temas exclusivos liberados" else "Planos Go, Plus e Pro • temas exclusivos • a partir de R$ 4,99",
+                            if (proActive) "Recursos extras e temas exclusivos liberados" else "Planos Go, Plus e Pro • temas exclusivos • a partir de R$ 2,99",
                             color = Mb.colors.onAccent.copy(alpha = 0.8f),
                             style = MaterialTheme.typography.bodySmall,
                         )

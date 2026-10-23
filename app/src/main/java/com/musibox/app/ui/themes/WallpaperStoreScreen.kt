@@ -60,10 +60,10 @@ private const val PLANS_HEADER = "__planos__"
 
 private enum class WallFilter(val label: String, val range: IntRange? = null) {
     ALL("Todos"),
-    R1("R$ 0,10 a 0,50", 1..50),
-    R3("R$ 0,99 a 1,49", 51..149),
-    R6("R$ 1,99 a 2,49", 150..249),
-    R10("R$ 2,99 a 4,99", 250..499),
+    R1("R$ 0,99", 1..99),
+    R3("R$ 1,49 a 1,99", 100..199),
+    R6("R$ 2,49 a 2,99", 200..299),
+    R10("R$ 3,99 a 4,99", 300..499),
     PLANS("Go • Plus • Pro"),
     INSPIRATIONS("Inspirações"),
     PREMIUM("Premium 3D"),

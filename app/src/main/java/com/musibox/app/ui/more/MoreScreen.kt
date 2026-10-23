@@ -255,7 +255,7 @@ private fun WallpaperPromo(modifier: Modifier, onClick: () -> Unit) {
         Column(Modifier.weight(1f)) {
             Text("Papéis de parede", style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
             Text(
-                "${com.musibox.app.themes.Wallpapers.all.size} temas • nova coleção Inspirações • a partir de R$ 0,10",
+                "${com.musibox.app.themes.Wallpapers.all.size} temas • nova coleção Inspirações • a partir de R$ 0,99",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

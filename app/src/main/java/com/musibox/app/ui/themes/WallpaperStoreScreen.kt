@@ -25,6 +25,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.PhoneAndroid
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material.icons.rounded.RadioButtonChecked
 import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.Search
@@ -106,6 +109,9 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
     var price by rememberSaveable { mutableStateOf(PriceFilter.ALL) }
     var filterMenu by remember { mutableStateOf(false) }
     val focus = LocalFocusManager.current
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val themes = remember { com.musibox.app.themes.ThemeStore.get(context) }
+    val snack = com.musibox.app.ui.components.rememberSnack()
     val plan = pro.plan
     val appId = AppTheme.appWallpaper?.id
     val browserId = AppTheme.browserWallpaper.id
@@ -113,22 +119,36 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
     val ownedNow = owned
     fun usable(w: Wallpaper) = PlayBilling.canUse(w) || (!w.pro && w.id in ownedNow)
 
+    /** "Meus temas": grátis, comprados (ou ganhos no Pro) e os que o plano libera. */
+    fun mine(w: Wallpaper) = w.free || (!w.pro && w.id in ownedNow) || (w.pro && PlayBilling.planUnlocks(plan, w))
+
     val all = Wallpapers.all
     val found = remember(query) { all.filter { Wallpapers.matches(it, query) } }
     val free = found.filter { it.free }.sortedBy { it.name }
     val paid = found.filter { !it.free && !it.pro }.sortedWith(compareBy({ it.price }, { it.name }))
-    // Planos: primeiro os do Go, depois os do Plus e por fim os só do Pro (sem repetir)
-    val plans = found.filter { it.pro }.sortedWith(compareBy({ if ("go" in it.plans) 0 else if ("plus" in it.plans) 1 else 2 }, { it.name }))
+    // Assinaturas por último, na ordem Go → Plus → Pro (cada tema aparece uma vez, no plano mais barato que o libera)
+    val allGo = all.count { "go" in it.plans }
+    val allPlus = all.count { "plus" in it.plans }
+    val allPro = all.count { it.pro }
+    val goList = found.filter { "go" in it.plans }.sortedBy { it.name }
+    val plusList = found.filter { "plus" in it.plans && "go" !in it.plans }.sortedBy { it.name }
+    val proList = found.filter { it.pro && "plus" !in it.plans && "go" !in it.plans }.sortedBy { it.name }
+    val planSections = listOf(
+        "$GO_TITLE • $allGo temas" to goList,
+        "$PLUS_TITLE • +${allPlus - allGo} ($allPlus no total)" to plusList,
+        "$PRO_TITLE • +${allPro - allPlus} ($allPro no total)" to proList,
+    )
 
     fun byPrice(list: List<Wallpaper>) = list.groupBy { it.price }.toSortedMap().map { (p, l) -> Wallpapers.priceText(p) to l }
 
     val sections: List<Pair<String, List<Wallpaper>>> = when (price) {
-        PriceFilter.ALL -> listOf("Grátis" to free) + byPrice(paid) + listOf(PLANS_TITLE to plans)
+        PriceFilter.ALL -> listOf("Grátis" to free) + byPrice(paid) + planSections
         PriceFilter.FREE -> listOf("Grátis" to free)
-        PriceFilter.PLANS -> listOf(PLANS_TITLE to plans)
-        PriceFilter.MINE -> listOf("Meus temas" to found.filter { usable(it) }.sortedWith(compareBy({ it.pro }, { it.price }, { it.name })))
+        PriceFilter.PLANS -> planSections
+        PriceFilter.MINE -> listOf("Meus temas" to found.filter { mine(it) }.sortedWith(compareBy({ it.pro }, { it.price }, { it.name })))
         else -> byPrice(paid.filter { it.price in price.range!! })
     }
+    val firstPlanTitle = planSections.firstOrNull { it.second.isNotEmpty() }?.first
     val count = sections.sumOf { it.second.size }
 
     Column(modifier.fillMaxSize()) {
@@ -205,6 +225,36 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
                             onClick = { price = f; filterMenu = false },
                         )
                     }
+                    HorizontalDivider(color = AppTheme.line, modifier = Modifier.padding(vertical = 4.dp))
+                    Text(
+                        "Tema padrão",
+                        color = Neo.Text2,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                    val appDefault = AppTheme.appWallpaper == null
+                    val browserDefault = AppTheme.browserWallpaper.id == Wallpapers.DEFAULT_BROWSER
+                    DropdownMenuItem(
+                        text = { Text(if (appDefault) "App já está no padrão" else "Voltar o app ao padrão", color = if (appDefault) Neo.Text2 else Color.White) },
+                        leadingIcon = { Icon(Icons.Rounded.PhoneAndroid, null, tint = if (appDefault) Neo.Text2 else Neo.Green) },
+                        enabled = !appDefault,
+                        onClick = {
+                            filterMenu = false
+                            themes.setAppWallpaper(null)
+                            snack("O app voltou ao tema padrão.")
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(if (browserDefault) "Navegador já está no padrão" else "Voltar o navegador ao padrão", color = if (browserDefault) Neo.Text2 else Color.White) },
+                        leadingIcon = { Icon(Icons.Rounded.Language, null, tint = if (browserDefault) Neo.Text2 else Neo.Green) },
+                        enabled = !browserDefault,
+                        onClick = {
+                            filterMenu = false
+                            themes.setBrowserWallpaper(Wallpapers.DEFAULT_BROWSER)
+                            snack("O navegador voltou ao tema padrão.")
+                        },
+                    )
                 }
             }
         }
@@ -235,11 +285,13 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
                 item(key = "h_$title", span = { GridItemSpan(maxLineSpan) }) {
                     Column(Modifier.padding(top = 12.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 4.dp)) {
-                            Text(title, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
+                            val head = title.substringBefore(" • ")
+                            val detail = if (" • " in title) title.substringAfter(" • ") else "${list.size}"
+                            Text(head, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
                             Spacer(Modifier.width(8.dp))
-                            Text("${list.size}", color = Neo.Text2, fontSize = 14.sp)
+                            Text(detail, color = Neo.Text2, fontSize = 14.sp)
                         }
-                        if (title == PLANS_TITLE) PlansBanner(plan, Modifier.padding(top = 8.dp)) { nav.navigate(Routes.PRO) }
+                        if (title == firstPlanTitle) PlansBanner(plan, Modifier.padding(top = 8.dp)) { nav.navigate(Routes.PRO) }
                     }
                 }
                 items(list, key = { "${title}_${it.id}" }) { w ->
@@ -249,7 +301,6 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
                         usable = usable(w),
                         inApp = w.id == appId,
                         inBrowser = w.id == browserId,
-                        early = w.isEarly() && plan != com.musibox.app.billing.Plan.PRO && !pro.owner,
                     ) { nav.navigate(Routes.wallpaper(w.id)) }
                 }
             }
@@ -266,7 +317,9 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
     }
 }
 
-private const val PLANS_TITLE = "Planos Go, Plus e Pro"
+private const val GO_TITLE = "Assinatura Go"
+private const val PLUS_TITLE = "Assinatura Plus"
+private const val PRO_TITLE = "Assinatura Pro"
 
 /** Faixa que explica os planos e leva para a tela de assinatura. */
 @Composable
@@ -308,7 +361,7 @@ private fun PlansBanner(plan: com.musibox.app.billing.Plan, modifier: Modifier =
 }
 
 @Composable
-private fun WallTile(w: Wallpaper, price: String, usable: Boolean, inApp: Boolean, inBrowser: Boolean, early: Boolean = false, onClick: () -> Unit) {
+private fun WallTile(w: Wallpaper, price: String, usable: Boolean, inApp: Boolean, inBrowser: Boolean, onClick: () -> Unit) {
     val shape = RoundedCornerShape(18.dp)
     Column {
         Box(
@@ -333,11 +386,6 @@ private fun WallTile(w: Wallpaper, price: String, usable: Boolean, inApp: Boolea
                         Icon(Icons.Rounded.CheckCircle, null, tint = w.accent, modifier = Modifier.size(15.dp))
                         Spacer(Modifier.width(4.dp))
                         Text(if (w.free) "Grátis" else "Seu", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                    early -> {
-                        Icon(Icons.Rounded.WorkspacePremium, null, tint = Color(0xFFFFC857), modifier = Modifier.size(15.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("Chega " + java.text.SimpleDateFormat("dd/MM", java.util.Locale("pt", "BR")).format(java.util.Date(w.releaseAt)), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                     }
                     w.pro -> {
                         Icon(Icons.Rounded.WorkspacePremium, null, tint = Color(0xFFFFC857), modifier = Modifier.size(15.dp))

@@ -92,9 +92,7 @@ fun WallpaperPreviewScreen(nav: NavController, id: String) {
         val claimTick by PlayBilling.claimTick.collectAsStateWithLifecycle()
         val usable = PlayBilling.canUse(w) || (!w.pro && w.id in owned)
         val price = prices[w.productId] ?: w.priceLabel
-        val early = w.isEarly() && plan != com.musibox.app.billing.Plan.PRO && !pro.owner
         val canClaim = remember(claimTick, plan, w.id) { !usable && !w.pro && !w.free && PlayBilling.freeClaimAvailable() }
-        val releaseDay = remember(w.id) { java.text.SimpleDateFormat("dd/MM", java.util.Locale("pt", "BR")).format(java.util.Date(w.releaseAt)) }
 
         // topo
         Row(
@@ -135,7 +133,6 @@ fun WallpaperPreviewScreen(nav: NavController, id: String) {
                         when {
                             pro.owner -> "Liberado • conta do dono do app"
                             w.free -> "Grátis"
-                            early && !usable -> "Novo • chega para todos em $releaseDay • no Pro já está liberado"
                             w.pro && usable -> "Liberado no seu plano ${plan.label}"
                             w.pro -> "Não se compra • incluso no ${w.plansText}"
                             usable -> "Comprado • fica na sua conta Google"
@@ -179,9 +176,6 @@ fun WallpaperPreviewScreen(nav: NavController, id: String) {
                     }
                 }
                 w.pro -> BigButton("Liberar com o ${w.planLabel}", w.accent, onAccent, Modifier.fillMaxWidth(), Icons.Rounded.WorkspacePremium) {
-                    nav.navigate(Routes.PRO)
-                }
-                early -> BigButton("Pro usa agora • todos em $releaseDay", w.accent, onAccent, Modifier.fillMaxWidth(), Icons.Rounded.WorkspacePremium) {
                     nav.navigate(Routes.PRO)
                 }
                 canClaim -> Column {

@@ -47,7 +47,7 @@ object AppTheme {
     var neutral by mutableStateOf(false)
         private set
 
-    fun setNeutral(on: Boolean) {
+    fun useDefaultLook(on: Boolean) {
         if (neutral == on) return
         neutral = on
         applyPalette(appWallpaper)

@@ -71,8 +71,8 @@ import com.musibox.app.ui.theme.Mb
 fun MoreScreen(nav: NavController) {
     // A tela "Mais" fica sempre no visual padrão do MusiBox, mesmo com um tema aplicado
     androidx.compose.runtime.DisposableEffect(Unit) {
-        com.musibox.app.themes.AppTheme.setNeutral(true)
-        onDispose { com.musibox.app.themes.AppTheme.setNeutral(false) }
+        com.musibox.app.themes.AppTheme.useDefaultLook(true)
+        onDispose { com.musibox.app.themes.AppTheme.useDefaultLook(false) }
     }
     val container = LocalAppContainer.current
     val user by container.auth.user.collectAsStateWithLifecycle()

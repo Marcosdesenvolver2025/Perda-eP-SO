@@ -226,7 +226,7 @@ fun MoreScreen(nav: NavController) {
 /** Cartão "Papéis de parede": três miniaturas e o convite para a loja. */
 @Composable
 private fun WallpaperPromo(modifier: Modifier, onClick: () -> Unit) {
-    val picks = remember { listOf("gm_planeta_alienigena", "nt_por_do_sol_mar", "gm_cidade_cyberpunk").mapNotNull { com.musibox.app.themes.Wallpapers.get(it) } }
+    val picks = remember { listOf("ft_acampamento_estrelado", "ft_baloes_ao_amanhecer", "ft_lencois_maranhenses").mapNotNull { com.musibox.app.themes.Wallpapers.get(it) } }
     Row(
         modifier
             .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -255,7 +255,7 @@ private fun WallpaperPromo(modifier: Modifier, onClick: () -> Unit) {
         Column(Modifier.weight(1f)) {
             Text("Papéis de parede", style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
             Text(
-                "${com.musibox.app.themes.Wallpapers.all.size} temas • novos Natureza 3D e Games 3D • a partir de R$ 0,99",
+                "${com.musibox.app.themes.Wallpapers.all.size} temas • fotos novas, grátis e a partir de R$ 0,99",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

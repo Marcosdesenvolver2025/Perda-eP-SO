@@ -24,9 +24,26 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.RadioButtonChecked
+import androidx.compose.material.icons.rounded.RadioButtonUnchecked
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.WorkspacePremium
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -55,23 +72,17 @@ import com.musibox.app.ui.components.WallpaperImage
 import com.musibox.app.ui.components.bounceClick
 import com.musibox.app.ui.navigation.Routes
 
-/** Marca o lugar da faixa dos planos na lista. */
-private const val PLANS_HEADER = "__planos__"
-
-/** Faixas de preço (segunda linha de filtros). */
+/** Filtro de preço (botão ao lado da busca). */
 private enum class PriceFilter(val label: String, val range: IntRange? = null) {
     ALL("Todos os preços"),
-    FREE("Grátis e planos"),
+    FREE("Grátis"),
     R1("R$ 0,99", 1..99),
-    R3("R$ 1,49 a 1,99", 100..199),
-    R6("R$ 2,49 a 2,99", 200..299),
-    R10("R$ 3,99 a 4,99", 300..499),
+    R3("R$ 1,49 a R$ 1,99", 100..199),
+    R6("R$ 2,49 a R$ 2,99", 200..299),
+    R10("R$ 3,99 a R$ 4,99", 300..499),
+    PLANS("Planos Go, Plus e Pro"),
+    MINE("Meus temas"),
 }
-
-/** Categorias: "Todos", as de conteúdo (Games, Natureza, Espaço…), "Meus" e "Planos". */
-private const val CAT_ALL = "todos"
-private const val CAT_MINE = "meus"
-private const val CAT_PLANS = "planos"
 
 /** Loja de temas como tela própria (aberta por cima, com botão voltar). */
 @Composable
@@ -83,16 +94,18 @@ fun WallpaperStoreScreen(nav: NavController) {
 }
 
 /**
- * Vitrine de temas (papéis de parede). Em cima: o que a pessoa procura (Games, Natureza, Espaço…)
- * e a faixa de preço. Os exclusivos dos planos Go, Plus e Pro ficam por último.
+ * Vitrine de temas: busca pelo nome, filtro de preço ao lado e a lista organizada em
+ * Grátis → preços do mais barato ao mais caro → Planos Go, Plus e Pro.
  */
 @Composable
 fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bottomPadding: Dp = 24.dp, title: Boolean = false) {
     val owned by PlayBilling.owned.collectAsStateWithLifecycle()
     val pro by PlayBilling.pro.collectAsStateWithLifecycle()
     val prices by PlayBilling.prices.collectAsStateWithLifecycle()
-    var category by rememberSaveable { mutableStateOf(CAT_ALL) }
+    var query by rememberSaveable { mutableStateOf("") }
     var price by rememberSaveable { mutableStateOf(PriceFilter.ALL) }
+    var filterMenu by remember { mutableStateOf(false) }
+    val focus = LocalFocusManager.current
     val plan = pro.plan
     val appId = AppTheme.appWallpaper?.id
     val browserId = AppTheme.browserWallpaper.id
@@ -101,70 +114,113 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
     fun usable(w: Wallpaper) = PlayBilling.canUse(w) || (!w.pro && w.id in ownedNow)
 
     val all = Wallpapers.all
-    val inCategory = when (category) {
-        CAT_ALL, CAT_PLANS, CAT_MINE -> all
-        else -> all.filter { category in it.tags }
-    }
-    // Sempre do mais barato para o mais caro
-    val forSale = inCategory.filter { !it.pro }.sortedWith(compareBy({ it.price }, { it.name }))
-    val exclusive = inCategory.filter { it.pro }
-    val planSections = if (exclusive.isEmpty()) emptyList() else listOf(
-        PLANS_HEADER to emptyList<Wallpaper>(),
-        "Go (3 dias): ${exclusive.count { "go" in it.plans }} temas" to exclusive.filter { "go" in it.plans },
-        "Plus (semanal): ${exclusive.count { "plus" in it.plans }} temas" to exclusive.filter { "plus" in it.plans },
-        "Pro (mensal): ${exclusive.size} exclusivos" to exclusive,
-    )
+    val found = remember(query) { all.filter { Wallpapers.matches(it, query) } }
+    val free = found.filter { it.free }.sortedBy { it.name }
+    val paid = found.filter { !it.free && !it.pro }.sortedWith(compareBy({ it.price }, { it.name }))
+    // Planos: primeiro os do Go, depois os do Plus e por fim os só do Pro (sem repetir)
+    val plans = found.filter { it.pro }.sortedWith(compareBy({ if ("go" in it.plans) 0 else if ("plus" in it.plans) 1 else 2 }, { it.name }))
 
-    fun byPrice(list: List<Wallpaper>) = list.filter { !it.free }.groupBy { it.price }.toSortedMap().map { (p, l) ->
-        Wallpapers.priceText(p) to l
-    }
+    fun byPrice(list: List<Wallpaper>) = list.groupBy { it.price }.toSortedMap().map { (p, l) -> Wallpapers.priceText(p) to l }
 
-    val sections: List<Pair<String, List<Wallpaper>>> = when {
-        category == CAT_MINE -> listOf("Seus temas" to all.filter { usable(it) }.sortedBy { it.price })
-        category == CAT_PLANS -> planSections
-        price == PriceFilter.FREE -> listOf("Grátis" to forSale.filter { it.free }) + planSections
-        price.range != null -> byPrice(forSale.filter { it.price in price.range!! })
-        else -> {
-            val news = forSale.filter { it.isNew() }
-            (if (category == CAT_ALL && news.isNotEmpty()) listOf("Novos • Pro usa 1 semana antes" to news) else emptyList()) +
-                listOf("Grátis" to forSale.filter { it.free }) +
-                byPrice(if (category == CAT_ALL) forSale.filter { !it.isNew() } else forSale) + planSections
-        }
+    val sections: List<Pair<String, List<Wallpaper>>> = when (price) {
+        PriceFilter.ALL -> listOf("Grátis" to free) + byPrice(paid) + listOf(PLANS_TITLE to plans)
+        PriceFilter.FREE -> listOf("Grátis" to free)
+        PriceFilter.PLANS -> listOf(PLANS_TITLE to plans)
+        PriceFilter.MINE -> listOf("Meus temas" to found.filter { usable(it) }.sortedWith(compareBy({ it.pro }, { it.price }, { it.name })))
+        else -> byPrice(paid.filter { it.price in price.range!! })
     }
     val count = sections.sumOf { it.second.size }
 
     Column(modifier.fillMaxSize()) {
         if (title) com.musibox.app.ui.components.PageTitle("Temas", "${all.size} papéis • as cores do app seguem o tema")
-        Text(
-            "O que você procura?",
-            color = Neo.Text2,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(start = 18.dp, bottom = 6.dp),
-        )
-        val cats = listOf(CAT_ALL to "Todos") + Wallpapers.categories + listOf(CAT_MINE to "Meus", CAT_PLANS to "Go • Plus • Pro")
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(bottom = 8.dp),
+        // Busca + filtro de preço
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            items(cats, key = { it.first }) { (key, label) ->
-                val n = when (key) {
-                    CAT_ALL -> all.size
-                    CAT_MINE -> -1
-                    CAT_PLANS -> all.count { it.pro }
-                    else -> all.count { key in it.tags }
+            Row(
+                Modifier
+                    .weight(1f)
+                    .height(52.dp)
+                    .clip(RoundedCornerShape(26.dp))
+                    .background(AppTheme.card)
+                    .border(1.dp, AppTheme.line, RoundedCornerShape(26.dp))
+                    .padding(start = 16.dp, end = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(Icons.Rounded.Search, null, tint = Neo.Text2, modifier = Modifier.size(22.dp))
+                Spacer(Modifier.width(10.dp))
+                Box(Modifier.weight(1f)) {
+                    if (query.isEmpty()) Text("Pesquisar temas", color = Neo.Text2, fontSize = 16.sp)
+                    BasicTextField(
+                        value = query,
+                        onValueChange = { query = it },
+                        singleLine = true,
+                        textStyle = TextStyle(color = Color.White, fontSize = 16.sp),
+                        cursorBrush = SolidColor(Neo.Green),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = { focus.clearFocus() }),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
-                Chip(if (n >= 0) "$label $n" else label, key == category) { category = key }
+                if (query.isNotEmpty()) {
+                    Box(
+                        Modifier.size(40.dp).clip(CircleShape).bounceClick(pressed = 0.85f, shape = CircleShape) { query = "" },
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(Icons.Rounded.Close, "Limpar busca", tint = Neo.Text2, modifier = Modifier.size(20.dp)) }
+                }
+            }
+            Spacer(Modifier.width(10.dp))
+            Box {
+                val active = price != PriceFilter.ALL
+                Box(
+                    Modifier
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .background(if (active) Neo.Green else AppTheme.card)
+                        .border(1.dp, if (active) Neo.Green else AppTheme.line, CircleShape)
+                        .bounceClick(pressed = 0.9f, shape = CircleShape) { filterMenu = true },
+                    contentAlignment = Alignment.Center,
+                ) { Icon(Icons.Rounded.Tune, "Filtrar por preço", tint = if (active) Neo.OnGreen else Color.White) }
+                DropdownMenu(filterMenu, { filterMenu = false }, containerColor = AppTheme.cardHigh) {
+                    Text(
+                        "Filtrar por preço",
+                        color = Neo.Text2,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                    PriceFilter.entries.forEach { f ->
+                        DropdownMenuItem(
+                            text = { Text(f.label, color = if (f == price) Neo.Green else Color.White, fontWeight = if (f == price) FontWeight.Bold else FontWeight.Normal) },
+                            leadingIcon = {
+                                Icon(
+                                    if (f == price) Icons.Rounded.RadioButtonChecked else Icons.Rounded.RadioButtonUnchecked,
+                                    null,
+                                    tint = if (f == price) Neo.Green else Neo.Text2,
+                                )
+                            },
+                            onClick = { price = f; filterMenu = false },
+                        )
+                    }
+                }
             }
         }
-        if (category != CAT_MINE && category != CAT_PLANS) {
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(bottom = 8.dp),
+        if (price != PriceFilter.ALL) {
+            Row(
+                Modifier
+                    .padding(start = 16.dp, bottom = 8.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Neo.Green.copy(alpha = 0.16f))
+                    .bounceClick(pressed = 0.94f, shape = RoundedCornerShape(16.dp)) { price = PriceFilter.ALL }
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                items(PriceFilter.entries) { f -> Chip(f.label, f == price, small = true) { price = f } }
+                Text(price.label, color = Neo.Green, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.width(6.dp))
+                Icon(Icons.Rounded.Close, "Tirar filtro", tint = Neo.Green, modifier = Modifier.size(16.dp))
             }
         }
         LazyVerticalGrid(
@@ -175,15 +231,16 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
             modifier = Modifier.weight(1f),
         ) {
             sections.forEach { (title, list) ->
-                if (title == PLANS_HEADER) {
-                    item(key = "plans_banner", span = { GridItemSpan(maxLineSpan) }) {
-                        PlansBanner(plan, Modifier.padding(top = 18.dp)) { nav.navigate(Routes.PRO) }
-                    }
-                    return@forEach
-                }
                 if (list.isEmpty()) return@forEach
                 item(key = "h_$title", span = { GridItemSpan(maxLineSpan) }) {
-                    Text(title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 19.sp, modifier = Modifier.padding(top = 10.dp, start = 4.dp))
+                    Column(Modifier.padding(top = 12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 4.dp)) {
+                            Text(title, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
+                            Spacer(Modifier.width(8.dp))
+                            Text("${list.size}", color = Neo.Text2, fontSize = 14.sp)
+                        }
+                        if (title == PLANS_TITLE) PlansBanner(plan, Modifier.padding(top = 8.dp)) { nav.navigate(Routes.PRO) }
+                    }
                 }
                 items(list, key = { "${title}_${it.id}" }) { w ->
                     WallTile(
@@ -198,28 +255,18 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
             }
             if (count == 0) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    Text("Nenhum tema com esse filtro. Tente outra faixa de preço.", color = Neo.Text2, modifier = Modifier.padding(24.dp))
+                    Text(
+                        if (query.isNotBlank()) "Nenhum tema com \"$query\". Tente outra palavra." else "Nenhum tema com esse filtro.",
+                        color = Neo.Text2,
+                        modifier = Modifier.padding(24.dp),
+                    )
                 }
             }
         }
     }
 }
 
-@Composable
-private fun Chip(label: String, selected: Boolean, small: Boolean = false, onClick: () -> Unit) {
-    Text(
-        label,
-        color = if (selected) Neo.OnGreen else Color.White,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = if (small) 13.sp else 14.sp,
-        modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(if (selected) Neo.Green else if (small) Color.Transparent else com.musibox.app.themes.AppTheme.card)
-            .border(1.dp, if (selected) Neo.Green else com.musibox.app.themes.AppTheme.line, RoundedCornerShape(20.dp))
-            .bounceClick(pressed = 0.92f, shape = RoundedCornerShape(20.dp), onClick = onClick)
-            .padding(horizontal = if (small) 13.dp else 16.dp, vertical = if (small) 7.dp else 9.dp),
-    )
-}
+private const val PLANS_TITLE = "Planos Go, Plus e Pro"
 
 /** Faixa que explica os planos e leva para a tela de assinatura. */
 @Composable
@@ -230,7 +277,14 @@ private fun PlansBanner(plan: com.musibox.app.billing.Plan, modifier: Modifier =
             .fillMaxWidth()
             .padding(top = 4.dp)
             .clip(shape)
-            .background(Brush.horizontalGradient(listOf(Color(0xFF2A1A4A), Color(0xFF0E2A2A))))
+            .background(
+                Brush.horizontalGradient(
+                    listOf(
+                        Neo.Green.copy(alpha = 0.24f).compositeOver(AppTheme.card),
+                        AppTheme.accent2.copy(alpha = 0.18f).compositeOver(AppTheme.card),
+                    ),
+                ),
+            )
             .border(1.dp, Color.White.copy(alpha = 0.12f), shape)
             .bounceClick(pressed = 0.97f, shape = shape, onClick = onClick)
             .padding(14.dp),
@@ -296,20 +350,6 @@ private fun WallTile(w: Wallpaper, price: String, usable: Boolean, inApp: Boolea
                         Text(price, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                     }
                 }
-            }
-            if (w.isNew() && !(inApp || inBrowser)) {
-                Text(
-                    "NOVO",
-                    color = Color.Black,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(6.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFFFFC857))
-                        .padding(horizontal = 6.dp, vertical = 2.dp),
-                )
             }
             if (inApp || inBrowser) {
                 Text(

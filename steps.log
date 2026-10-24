@@ -1,0 +1,192 @@
+APK=apk/teste.apk PKG=br.com.musibox
+Serving...
+All files should be loaded. Notifying the device.
+Performing Incremental Install
+Success
+Install command complete in 4926 ms
+== Arquivos de teste
+/tmp/teste1.mp3: 1 file pushed, 0 skipped. 7.4 MB/s (641269 bytes in 0.083s)
+/tmp/teste2.mp3: 1 file pushed, 0 skipped. 170.1 MB/s (641269 bytes in 0.004s)
+/tmp/teste3.mp3: 1 file pushed, 0 skipped. 204.8 MB/s (641269 bytes in 0.003s)
+/tmp/teste4.m4a: 1 file pushed, 0 skipped. 265.7 MB/s (648646 bytes in 0.002s)
+/tmp/media/clipe_demo.mp4: 1 file pushed, 0 skipped. 159.9 MB/s (123704 bytes in 0.001s)
+== Primeira abertura
+print 01_apresentacao
+  mCurrentFocus=Window{cd9ba41 u0 br.com.musibox/com.musibox.app.LauncherDefault}
+  mFocusedApp=ActivityRecord{b666649 u0 br.com.musibox/com.musibox.app.LauncherDefault t8}
+tap 'Pular' em (540, 2211)
+print 02_conta
+tap 'Continuar sem conta' em (540, 1977)
+visível: 'músicas encontradas'
+print 03_indexacao
+tap 'Ir para o início' em (540, 1495)
+print 04_inicio
+== Biblioteca e player
+tap 'Faixa de Teste 1' em (397, 902)
+print 06_tocando
+print 05_configurar_navegador
+visível: 'Configurar seu navegador'
+print 05a_configurar_papel
+tap 'Começar a navegar' em (540, 2219)
+print 05b_navegador_inicio
+print 05c_deslize_inicio
+tap 'Cantores' em (541, 563)
+print 05d_cantores
+NÃO ENCONTRADO: 'Áudios'
+   pacotes=['br.com.musibox'] nós=69 textos=['MusiBox', 'Sua música, do seu jeito.', 'Pesquisar', 'Cofre', 'Configurações', 'Buscar músicas, artistas, playlists...', 'Todas', 'Cantores', 'Favoritas', 'Cantores', 'Uma pasta para cada cantor, criada sozinha • 4 pastas', '1', 'Artista Demo 1', '1 música']
+print 05e_audios
+tap 'Todas' em (218, 563)
+print 07_player
+print 08_notificacao
+== Navegador (página inicial, notícias, privada e site)
+NÃO ENCONTRADO: 'Navegador'
+   pacotes=['br.com.musibox'] nós=51 textos=['Fechar player', 'TOCANDO AGORA', 'Album Demo', 'Fila de reprodução', 'Faixa de Teste 3', 'Artista Demo 3', 'Favoritar', '00:24', '00:40', 'Aleatório desligado', 'Anterior', 'Pausar', 'Próxima', 'Repetir desligado']
+print 09_navegador_inicio
+print 10_navegador_noticias
+NÃO ENCONTRADO: 'Privada'
+   pacotes=['br.com.musibox'] nós=51 textos=['Fechar player', 'TOCANDO AGORA', 'Album Demo', 'Fila de reprodução', 'Faixa de Teste 4', 'Artista Demo 4', 'Favoritar', '00:15', '00:40', 'Aleatório desligado', 'Anterior', 'Pausar', 'Próxima', 'Repetir desligado']
+print 11_navegacao_privada
+NÃO ENCONTRADO: 'Fechar navegação privada'
+   pacotes=['br.com.musibox'] nós=93 textos=['MusiBox', 'Sua música, do seu jeito.', 'Pesquisar', 'Cofre', 'Configurações', 'Buscar músicas, artistas, playlists...', 'Todas', 'Cantores', 'Favoritas', 'Suas músicas', '4 músicas', 'Ver todas', 'Aleatório', 'Tocar tudo']
+tap 'YouTube' em (918, 1615)
+print 12_site_youtube
+== Papéis de parede e Pro
+tap 'Mais' em (868, 2227)
+tap 'Papéis de parede' em (515, 853)
+print 13_papeis_loja
+print 13b_papeis_loja_rolada
+NÃO ENCONTRADO: 'Supernova'
+   pacotes=['br.com.musibox'] nós=61 textos=['MusiBox', 'Sua música, do seu jeito.', 'Pesquisar', 'Cofre', 'Configurações', 'Temas', '313 papéis • as cores do app seguem o tema', 'Filtrar por preço', 'R$ 0,99', 'Bolotas de Carvalho', 'R$ 0,99', 'Broto de Samambaia', 'R$ 0,99', 'Cacto']
+print 14_papel_supernova
+NÃO ENCONTRADO: 'Comprar'
+   pacotes=['br.com.musibox'] nós=61 textos=['MusiBox', 'Sua música, do seu jeito.', 'Pesquisar', 'Cofre', 'Configurações', 'Temas', '313 papéis • as cores do app seguem o tema', 'Filtrar por preço', 'R$ 0,99', 'Bolotas de Carvalho', 'R$ 0,99', 'Broto de Samambaia', 'R$ 0,99', 'Cacto']
+print 14b_comprar_sem_play
+tap 'Navegador' em (430, 2227)
+print 14c_previa_navegador
+NÃO ENCONTRADO: 'Névoa Verde'
+   pacotes=['br.com.musibox'] nós=93 textos=['MusiBox', 'Sua música, do seu jeito.', 'Pesquisar', 'Cofre', 'Configurações', 'Buscar músicas, artistas, playlists...', 'Todas', 'Cantores', 'Favoritas', 'Suas músicas', '4 músicas', 'Ver todas', 'Aleatório', 'Tocar tudo']
+NÃO ENCONTRADO: 'Usar no app'
+   pacotes=['br.com.musibox'] nós=93 textos=['MusiBox', 'Sua música, do seu jeito.', 'Pesquisar', 'Cofre', 'Configurações', 'Buscar músicas, artistas, playlists...', 'Todas', 'Cantores', 'Favoritas', 'Suas músicas', '4 músicas', 'Ver todas', 'Aleatório', 'Tocar tudo']
+print 14d_usar_no_app
+NÃO ENCONTRADO: 'Música'
+   pacotes=['com.google.android.apps.nexuslauncher'] nós=17 textos=['Sat, Oct 24', 'Sat, Oct 24', 'Gmail', 'Gmail', 'Photos', 'Photos', 'YouTube', 'YouTube', 'Home', 'Phone', 'Phone', 'Messages', 'Messages', 'Chrome']
+print 14e_inicio_com_tema
+NÃO ENCONTRADO: 'Mais'
+   pacotes=['com.google.android.apps.nexuslauncher'] nós=17 textos=['Sat, Oct 24', 'Sat, Oct 24', 'Gmail', 'Gmail', 'Photos', 'Photos', 'YouTube', 'YouTube', 'Home', 'Phone', 'Phone', 'Messages', 'Messages', 'Chrome']
+NÃO ENCONTRADO: 'MusiBox Pro'
+   pacotes=['com.google.android.apps.nexuslauncher'] nós=17 textos=['Sat, Oct 24', 'Sat, Oct 24', 'Gmail', 'Gmail', 'Photos', 'Photos', 'YouTube', 'YouTube', 'Home', 'Phone', 'Phone', 'Messages', 'Messages', 'Chrome']
+print 14f_pro
+NÃO ENCONTRADO: 'Equalizador'
+   pacotes=['com.google.android.apps.nexuslauncher'] nós=17 textos=['Sat, Oct 24', 'Sat, Oct 24', 'Gmail', 'Gmail', 'Photos', 'Photos', 'YouTube', 'YouTube', 'Home', 'Phone', 'Phone', 'Messages', 'Messages', 'Chrome']
+print 14g_equalizador
+tap 'Navegador' em (430, 2227)
+tap 'Personalizar navegador' em (980, 202)
+print 14h_menu_navegador
+== Cofre: PIN, código de recuperação e recuperação
+NÃO ENCONTRADO: 'Cofre'
+   pacotes=['br.com.musibox'] nós=80 textos=['Personalizar navegador', 'MusiBox', 'Ler QR Code', 'Pesquisar por voz', 'Modo IA', 'Privada', 'Facebook', 'Google', 'Instagram', 'Shopee', 'Amazon', 'Mercado Livre', 'YouTube', 'TikTok']
+NÃO ENCONTRADO: 'Criar PIN'
+   pacotes=['br.com.musibox'] nós=80 textos=['Personalizar navegador', 'MusiBox', 'Ler QR Code', 'Pesquisar por voz', 'Modo IA', 'Privada', 'Facebook', 'Google', 'Instagram', 'Shopee', 'Amazon', 'Mercado Livre', 'YouTube', 'TikTok']
+NÃO ENCONTRADO: 'Criar código de recuperação'
+   pacotes=['br.com.musibox'] nós=80 textos=['Personalizar navegador', 'MusiBox', 'Ler QR Code', 'Pesquisar por voz', 'Modo IA', 'Privada', 'Facebook', 'Google', 'Instagram', 'Shopee', 'Amazon', 'Mercado Livre', 'YouTube', 'TikTok']
+codigo de recuperacao: 
+NÃO ENCONTRADO: 'Anotei o código'
+   pacotes=['br.com.musibox'] nós=80 textos=['Personalizar navegador', 'MusiBox', 'Ler QR Code', 'Pesquisar por voz', 'Modo IA', 'Privada', 'Facebook', 'Google', 'Instagram', 'Shopee', 'Amazon', 'Mercado Livre', 'YouTube', 'TikTok']
+NÃO ENCONTRADO: 'Concluir'
+   pacotes=['br.com.musibox'] nós=80 textos=['Personalizar navegador', 'MusiBox', 'Ler QR Code', 'Pesquisar por voz', 'Modo IA', 'Privada', 'Facebook', 'Google', 'Instagram', 'Shopee', 'Amazon', 'Mercado Livre', 'YouTube', 'TikTok']
+NÃO ENCONTRADO: 'Configurações do cofre'
+   pacotes=['br.com.musibox'] nós=80 textos=['Personalizar navegador', 'MusiBox', 'Ler QR Code', 'Pesquisar por voz', 'Modo IA', 'Privada', 'Facebook', 'Google', 'Instagram', 'Shopee', 'Amazon', 'Mercado Livre', 'YouTube', 'TikTok']
+NÃO ENCONTRADO: 'Bloquear capturas de tela'
+   pacotes=['br.com.musibox'] nós=80 textos=['Personalizar navegador', 'MusiBox', 'Ler QR Code', 'Pesquisar por voz', 'Modo IA', 'Privada', 'Facebook', 'Google', 'Instagram', 'Shopee', 'Amazon', 'Mercado Livre', 'YouTube', 'TikTok']
+print 15_cofre_config
+print 15a_cofre_config_pro
+NÃO ENCONTRADO: 'Recuperação do PIN'
+   pacotes=['br.com.musibox'] nós=84 textos=['Ler QR Code', 'Pesquisar por voz', 'Modo IA', 'Privada', 'Facebook', 'Google', 'Instagram', 'Shopee', 'Amazon', 'Mercado Livre', 'YouTube', 'TikTok', 'Mais', 'Adicionar atalho']
+print 15b_recuperacao
+video id: 1000000023
+visível: 'Salvar no cofre'
+print 15c_compartilhar_cofre
+NÃO ENCONTRADO: 'Copiar para o cofre'
+   pacotes=['br.com.musibox'] nós=13 textos=['Close sheet', 'Drag handle', 'Salvar no cofre', 'Crie o PIN do cofre no MusiBox antes de guardar arquivos nele.', 'Abrir o cofre']
+tap 'Cofre' em (857, 225)
+print 16_cofre_fotos
+tap 'Vídeos' em (540, 1227)
+print 17_cofre_videos
+NÃO ENCONTRADO: 'clipe_demo'
+   pacotes=['br.com.musibox'] nós=23 textos=['Cofre privado', 'Fotos, vídeos e músicas guardados aqui ficam criptografados e escondidos da galeria. Crie um PIN de 4 dígitos para começar.', 'Criar PIN', 'Faixa de Teste 4', 'Artista Demo 4', 'Favoritar', 'Tocar', 'Próxima', 'Fechar player']
+print 18_cofre_player
+tap 'Música' em (212, 2227)
+tap 'Cofre' em (857, 225)
+print 18a_cofre_bloqueado
+NÃO ENCONTRADO: 'Esqueci o PIN'
+   pacotes=['br.com.musibox'] nós=23 textos=['Cofre privado', 'Fotos, vídeos e músicas guardados aqui ficam criptografados e escondidos da galeria. Crie um PIN de 4 dígitos para começar.', 'Criar PIN', 'Faixa de Teste 4', 'Artista Demo 4', 'Favoritar', 'Tocar', 'Próxima', 'Fechar player']
+print 18b_esqueci_pin
+NÃO ENCONTRADO: 'Usar código de recuperação'
+   pacotes=['br.com.musibox'] nós=23 textos=['Cofre privado', 'Fotos, vídeos e músicas guardados aqui ficam criptografados e escondidos da galeria. Crie um PIN de 4 dígitos para começar.', 'Criar PIN', 'Faixa de Teste 4', 'Artista Demo 4', 'Favoritar', 'Tocar', 'Próxima', 'Fechar player']
+
+Exception occurred while executing 'text':
+java.lang.IllegalArgumentException: Argument expected after "text"
+	at com.android.modules.utils.BasicShellCommandHandler.getNextArgRequired(BasicShellCommandHandler.java:295)
+	at com.android.server.input.InputShellCommand.runText(InputShellCommand.java:291)
+	at com.android.server.input.InputShellCommand.onCommand(InputShellCommand.java:232)
+	at com.android.modules.utils.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:97)
+	at android.os.ShellCommand.exec(ShellCommand.java:38)
+	at com.android.server.input.InputManagerService.onShellCommand(InputManagerService.java:3297)
+	at android.os.Binder.shellCommand(Binder.java:1068)
+	at android.os.Binder.onTransact(Binder.java:888)
+	at android.hardware.input.IInputManager$Stub.onTransact(IInputManager.java:1339)
+	at android.os.Binder.execTransactInternal(Binder.java:1344)
+	at android.os.Binder.execTransact(Binder.java:1275)
+print 18b2_codigo_digitado
+NÃO ENCONTRADO: 'Confirmar'
+   pacotes=['br.com.musibox'] nós=23 textos=['Cofre privado', 'Fotos, vídeos e músicas guardados aqui ficam criptografados e escondidos da galeria. Crie um PIN de 4 dígitos para começar.', 'Criar PIN', 'Faixa de Teste 4', 'Artista Demo 4', 'Favoritar', 'Tocar', 'Próxima', 'Fechar player']
+print 18c_cofre_recuperado
+== Histórico, configurações e armazenamento
+NÃO ENCONTRADO: 'Mais'
+   pacotes=['br.com.musibox'] nós=23 textos=['Cofre privado', 'Fotos, vídeos e músicas guardados aqui ficam criptografados e escondidos da galeria. Crie um PIN de 4 dígitos para começar.', 'Criar PIN', 'Faixa de Teste 4', 'Artista Demo 4', 'Favoritar', 'Tocar', 'Próxima', 'Fechar player']
+print 19_mais
+NÃO ENCONTRADO: 'Histórico'
+   pacotes=['br.com.musibox'] nós=23 textos=['Cofre privado', 'Fotos, vídeos e músicas guardados aqui ficam criptografados e escondidos da galeria. Crie um PIN de 4 dígitos para começar.', 'Criar PIN', 'Faixa de Teste 4', 'Artista Demo 4', 'Favoritar', 'Tocar', 'Próxima', 'Fechar player']
+print 20_historico
+tap 'Configurações' em (983, 225)
+print 21_configuracoes
+NÃO ENCONTRADO: 'Armazenamento'
+   pacotes=['br.com.musibox'] nós=93 textos=['MusiBox', 'Sua música, do seu jeito.', 'Pesquisar', 'Cofre', 'Configurações', 'Buscar músicas, artistas, playlists...', 'Todas', 'Cantores', 'Favoritas', 'Suas músicas', '4 músicas', 'Ver todas', 'Aleatório', 'Tocar tudo']
+print 22_armazenamento
+NÃO ENCONTRADO: 'Biblioteca completa'
+   pacotes=['br.com.musibox'] nós=13 textos=['Close sheet', 'Drag handle', 'Salvar no cofre', 'Crie o PIN do cofre no MusiBox antes de guardar arquivos nele.', 'Abrir o cofre']
+print 23_biblioteca
+== Rotação
+print 24_paisagem
+Nenhum crash.
+--- avisos do app
+10-24 14:07:14.185  1030  1030 W AudioMediaPlayerWrapper: onQueueChanged(): br.com.musibox tried to update with no new data
+10-24 14:07:14.442  1030  1030 W AudioMediaPlayerWrapper: onQueueChanged(): br.com.musibox tried to update with no new data
+10-24 14:07:14.453  1030  1030 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+10-24 14:07:14.463  1030  1030 W AudioMediaPlayerWrapper: onQueueChanged(): br.com.musibox tried to update with no new data
+10-24 14:07:14.466  1030  1030 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+10-24 14:07:14.733  1030  1030 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+10-24 14:07:14.734  1030  1030 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+10-24 14:07:28.941   523   997 W InputManager-JNI: Input channel object '21c2bd6 br.com.musibox/com.musibox.app.MainActivity (client)' was disposed without first being removed with the input manager!
+10-24 14:10:16.389   523  2146 W InputManager-JNI: Input channel object '3692968 br.com.musibox/com.musibox.app.MainActivity (client)' was disposed without first being removed with the input manager!
+10-24 14:10:16.650  1030  1030 W MediaPlayerList: br.com.musibox is already the active player
+10-24 14:10:16.651  1030  1030 W MediaPlayerList: br.com.musibox is already the active player
+10-24 14:10:16.651  1030  1030 W AudioMediaPlayerWrapper: The session was destroyed br.com.musibox
+10-24 14:10:16.657  1030  1030 W AudioMediaPlayerWrapper: The session was destroyed br.com.musibox
+10-24 14:10:19.302   523   540 W ziparchive: Unable to open '/data/app/~~KgHbNpRdccXAx40h52WBiQ==/br.com.musibox-x_ffQ54_c3VNYuEmEaOwFA==/base.dm': No such file or directory
+10-24 14:10:45.059   523  1961 W InputManager-JNI: Input channel object 'a752579 Splash Screen br.com.musibox (client)' was disposed without first being removed with the input manager!
+10-24 14:10:45.345  1030  1030 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+10-24 14:10:45.346  1030  1030 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+10-24 14:10:45.437  1030  1030 W AudioMediaPlayerWrapper: onQueueChanged(): br.com.musibox tried to update with no new data
+10-24 14:10:45.437  1030  1030 W AudioMediaPlayerWrapper: onQueueChanged(): br.com.musibox tried to update with no new data
+10-24 14:10:45.590  1030  1030 W AudioMediaPlayerWrapper: onQueueChanged(): br.com.musibox tried to update with no new data
+10-24 14:10:45.623  1030  1030 W AudioMediaPlayerWrapper: onQueueChanged(): br.com.musibox tried to update with no new data
+10-24 14:10:45.626  1030  1030 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+10-24 14:10:45.629  1030  1030 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+10-24 14:10:45.629  1030  1030 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+10-24 14:10:45.630  1030  1030 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+10-24 14:14:39.869   523  2072 W InputManager-JNI: Input channel object '32a5958 br.com.musibox/com.musibox.app.MainActivity (client)' was disposed without first being removed with the input manager!
+10-24 14:14:39.983  1030  1030 W MediaPlayerList: br.com.musibox is already the active player
+10-24 14:14:39.983  1030  1030 W MediaPlayerList: br.com.musibox is already the active player
+10-24 14:14:39.984  1030  1030 W AudioMediaPlayerWrapper: The session was destroyed br.com.musibox
+10-24 14:14:40.031  1030  1030 W AudioMediaPlayerWrapper: The session was destroyed br.com.musibox

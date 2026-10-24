@@ -78,6 +78,9 @@ val LocalBottomBarSpace = compositionLocalOf { 0.dp }
 @Composable
 fun FloatingNavBar(selectedPage: Int, hazeState: HazeState?, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
     val shape = RoundedCornerShape(percent = 50)
+    // vidro da barra tingido com a cor do tema
+    val barBg = com.musibox.app.themes.AppTheme.bg
+    val barTint = com.musibox.app.themes.AppTheme.surface
     BoxWithConstraints(
         modifier
             .fillMaxWidth(0.84f)
@@ -88,13 +91,13 @@ fun FloatingNavBar(selectedPage: Int, hazeState: HazeState?, onSelect: (Int) -> 
             .then(
                 if (hazeState != null) {
                     Modifier.hazeEffect(hazeState) {
-                        backgroundColor = Color(0xFF0E1012)
-                        tints = listOf(HazeTint(Color(0xE0171A1D)))
+                        backgroundColor = barBg
+                        tints = listOf(HazeTint(barTint.copy(alpha = 0.86f)))
                         blurRadius = 22.dp
                         noiseFactor = 0f
                     }
                 } else {
-                    Modifier.background(Color(0xF2171A1D))
+                    Modifier.background(barTint.copy(alpha = 0.95f))
                 },
             )
             .border(1.dp, Color.White.copy(alpha = 0.11f), shape)

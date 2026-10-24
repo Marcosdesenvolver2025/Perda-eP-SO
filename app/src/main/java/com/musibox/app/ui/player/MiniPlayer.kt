@@ -52,6 +52,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -117,7 +118,15 @@ fun MiniPlayer(
                 .fillMaxWidth()
                 .shadow(10.dp, shape)
                 .clip(shape)
-                .background(Brush.verticalGradient(listOf(com.musibox.app.themes.AppTheme.card, com.musibox.app.themes.AppTheme.card)))
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(
+                            com.musibox.app.themes.AppTheme.accent.copy(alpha = 0.26f).compositeOver(com.musibox.app.themes.AppTheme.card),
+                            com.musibox.app.themes.AppTheme.card,
+                            com.musibox.app.themes.AppTheme.accent2.copy(alpha = 0.18f).compositeOver(com.musibox.app.themes.AppTheme.card),
+                        ),
+                    ),
+                )
                 .border(1.dp, com.musibox.app.themes.AppTheme.line, shape)
                 .clickable(onClick = onOpen),
         ) {
@@ -189,7 +198,7 @@ fun MiniPlayer(
                     .fillMaxWidth()
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(Color(0xFF3F3F3F)),
+                    .background(com.musibox.app.themes.AppTheme.line),
             ) {
                 Box(
                     Modifier

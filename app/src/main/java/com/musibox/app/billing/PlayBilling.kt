@@ -189,13 +189,17 @@ object PlayBilling : PurchasesUpdatedListener {
 
     fun isOwner(): Boolean = _pro.value.owner
 
-    /** Conta do dono: guardamos só o SHA-256 do e-mail (o repositório é público). */
-    private const val OWNER_HASH = "15f6c06e3cc37a7c991f5fd7e67a65c34c65c01ed70595158bdc65b61547a9fd"
+    /** Contas com acesso total (dono e família): guardamos só o SHA-256 do e-mail (o repositório é público). */
+    private val OWNER_HASHES = setOf(
+        "15f6c06e3cc37a7c991f5fd7e67a65c34c65c01ed70595158bdc65b61547a9fd",
+        "24014914448eafb094be73cbd28df89d4eca0ddb8290e04cf22fa5b9acdfbbbc",
+        "ef80e838206f73fcd7bedc8f2cb48ae60362970832b7c3a7aafd5c7a72974eb6",
+    )
 
     private fun checkOwner(user: com.google.firebase.auth.FirebaseUser?) {
         val email = user?.email?.trim()?.lowercase()
         val google = user?.providerData?.any { it.providerId == "google.com" } == true
-        val isOwner = email != null && google && sha256(email) == OWNER_HASH
+        val isOwner = email != null && google && sha256(email) in OWNER_HASHES
         if (_pro.value.owner != isOwner) _pro.update { it.copy(owner = isOwner) }
     }
 

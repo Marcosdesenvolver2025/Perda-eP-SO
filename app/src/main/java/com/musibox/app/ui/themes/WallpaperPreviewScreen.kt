@@ -260,7 +260,7 @@ private fun AppMock(w: Wallpaper) {
     val card = pal?.let { Color(it[3]) } ?: com.musibox.app.themes.AppTheme.DefaultSurface
     val line = pal?.let { Color(it[5]) } ?: com.musibox.app.themes.AppTheme.DefaultLine
     val accent2 = pal?.let { Color(it[0]) } ?: w.accent
-    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(bg.copy(alpha = 0.55f), bg.copy(alpha = 0.78f))))) {
+    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(bg.copy(alpha = 0.34f), bg.copy(alpha = 0.64f))))) {
         Column(Modifier.statusBarsPadding().padding(top = 64.dp, start = 18.dp, end = 18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Musi", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold)

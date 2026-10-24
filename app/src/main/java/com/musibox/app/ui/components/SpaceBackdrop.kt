@@ -35,7 +35,7 @@ fun SpaceBackdrop(modifier: Modifier = Modifier, browserAmount: () -> Float = { 
                         Modifier
                             .fillMaxSize()
                             // camada escura tingida com a cor do tema (o app inteiro combina com o papel)
-                            .background(Brush.verticalGradient(listOf(AppTheme.bg.copy(alpha = 0.52f), AppTheme.bg.copy(alpha = 0.64f), AppTheme.bg.copy(alpha = 0.82f)))),
+                            .background(Brush.verticalGradient(listOf(AppTheme.bg.copy(alpha = 0.34f), AppTheme.bg.copy(alpha = 0.42f), AppTheme.bg.copy(alpha = 0.64f)))),
                     )
                 }
             }

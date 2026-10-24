@@ -44,7 +44,8 @@ class MusiBoxApp : Application(), ImageLoaderFactory {
                 com.musibox.app.billing.PlayBilling.synced,
                 com.musibox.app.billing.PlayBilling.pro,
                 com.musibox.app.billing.PlayBilling.owned,
-            ) { synced, _, _ -> synced }.collect { synced ->
+                com.musibox.app.billing.PlayBilling.authKnown,
+            ) { synced, _, _, auth -> synced && auth }.collect { synced ->
                 if (!synced) return@collect
                 val app = this@MusiBoxApp
                 if (!com.musibox.app.billing.PlayBilling.isProNow()) {

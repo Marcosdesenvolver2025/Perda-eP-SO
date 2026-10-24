@@ -43,7 +43,18 @@ object AppTheme {
     var paletteKey by mutableStateOf("")
         internal set
 
-    internal fun applyPalette(w: Wallpaper?) {
+    /** true na tela "Mais": ela fica sempre no visual padrão (sem papel de parede e sem paleta do tema). */
+    var neutral by mutableStateOf(false)
+        private set
+
+    fun setNeutral(on: Boolean) {
+        if (neutral == on) return
+        neutral = on
+        applyPalette(appWallpaper)
+    }
+
+    internal fun applyPalette(themeWallpaper: Wallpaper?) {
+        val w = if (neutral) null else themeWallpaper
         val p = w?.let { WallpaperPalettes[it.id] }
         if (w == null || p == null || p.size < 6) {
             accent = w?.accent ?: DefaultAccent

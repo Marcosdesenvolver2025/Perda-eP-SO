@@ -27,7 +27,7 @@ import com.musibox.app.themes.Wallpaper
 @Composable
 fun SpaceBackdrop(modifier: Modifier = Modifier, browserAmount: () -> Float = { 0f }) {
     Box(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        Crossfade(AppTheme.appWallpaper, animationSpec = tween(450), label = "appWall") { w ->
+        Crossfade(if (AppTheme.neutral) null else AppTheme.appWallpaper, animationSpec = tween(450), label = "appWall") { w ->
             if (w != null) {
                 Box(Modifier.fillMaxSize()) {
                     WallpaperImage(w, Modifier.fillMaxSize())

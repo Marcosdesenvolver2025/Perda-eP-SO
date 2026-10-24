@@ -114,6 +114,10 @@ object PlayBilling : PurchasesUpdatedListener {
     /** true depois que a Play confirmou as compras (papéis e assinatura) nesta abertura do app. */
     private val _synced = MutableStateFlow(false)
     val synced: StateFlow<Boolean> = _synced.asStateFlow()
+
+    /** true depois que o login (Firebase) respondeu nesta abertura: antes disso não se sabe se é a conta do dono. */
+    private val _authKnown = MutableStateFlow(false)
+    val authKnown: StateFlow<Boolean> = _authKnown.asStateFlow()
     @Volatile private var inappOk = false
     @Volatile private var subsOk = false
 
@@ -138,14 +142,19 @@ object PlayBilling : PurchasesUpdatedListener {
             passUntil = prefs.getLong("pass_until", 0L),
             subPro = subPro,
             subPlus = subPlus,
+            owner = prefs.getBoolean("owner", false),
         )
         if (firebaseReady()) {
-            runCatching {
+            val ok = runCatching {
                 com.google.firebase.auth.FirebaseAuth.getInstance().addAuthStateListener { a ->
                     checkOwner(a.currentUser)
+                    _authKnown.value = true
                     a.currentUser?.uid?.let { loadOwnedFromCloud(it) }
                 }
-            }
+            }.isSuccess
+            if (!ok) _authKnown.value = true
+        } else {
+            _authKnown.value = true
         }
         client = runCatching {
             BillingClient.newBuilder(ctx)
@@ -201,6 +210,7 @@ object PlayBilling : PurchasesUpdatedListener {
         val google = user?.providerData?.any { it.providerId == "google.com" } == true
         val isOwner = email != null && google && sha256(email) in OWNER_HASHES
         if (_pro.value.owner != isOwner) _pro.update { it.copy(owner = isOwner) }
+        appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()?.putBoolean("owner", isOwner)?.apply()
     }
 
     private fun sha256(text: String): String =

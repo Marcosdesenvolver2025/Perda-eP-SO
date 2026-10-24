@@ -69,6 +69,11 @@ import com.musibox.app.ui.theme.Mb
 
 @Composable
 fun MoreScreen(nav: NavController) {
+    // A tela "Mais" fica sempre no visual padrão do MusiBox, mesmo com um tema aplicado
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        com.musibox.app.themes.AppTheme.setNeutral(true)
+        onDispose { com.musibox.app.themes.AppTheme.setNeutral(false) }
+    }
     val container = LocalAppContainer.current
     val user by container.auth.user.collectAsStateWithLifecycle()
     val sync by container.sync.state.collectAsStateWithLifecycle()
@@ -226,7 +231,7 @@ fun MoreScreen(nav: NavController) {
 /** Cartão "Papéis de parede": três miniaturas e o convite para a loja. */
 @Composable
 private fun WallpaperPromo(modifier: Modifier, onClick: () -> Unit) {
-    val picks = remember { listOf("ft_acampamento_estrelado", "ft_baloes_ao_amanhecer", "ft_lencois_maranhenses").mapNotNull { com.musibox.app.themes.Wallpapers.get(it) } }
+    val picks = remember { listOf("nt_via_lactea_montanhas", "pm_aguas_vivas", "ft_lencois_maranhenses").mapNotNull { com.musibox.app.themes.Wallpapers.get(it) } }
     Row(
         modifier
             .padding(horizontal = 16.dp, vertical = 8.dp)

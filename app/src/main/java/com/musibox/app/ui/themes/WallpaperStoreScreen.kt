@@ -90,6 +90,11 @@ private enum class PriceFilter(val label: String, val range: IntRange? = null) {
 /** Loja de temas como tela própria (aberta por cima, com botão voltar). */
 @Composable
 fun WallpaperStoreScreen(nav: NavController) {
+    // A vitrine de temas fica sempre no visual padrão (sem papel de parede e sem as cores do tema)
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        com.musibox.app.themes.AppTheme.useDefaultLook(true)
+        onDispose { com.musibox.app.themes.AppTheme.useDefaultLook(false) }
+    }
     Column(Modifier.fillMaxSize()) {
         MbTopBar("Temas", onBack = { nav.popBackStack() }, subtitle = "Para o app e para o navegador")
         WallpaperStoreContent(nav, Modifier.weight(1f))

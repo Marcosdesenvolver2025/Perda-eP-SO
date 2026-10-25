@@ -78,9 +78,9 @@ val LocalBottomBarSpace = compositionLocalOf { 0.dp }
 @Composable
 fun FloatingNavBar(selectedPage: Int, hazeState: HazeState?, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
     val shape = RoundedCornerShape(percent = 50)
-    // vidro da barra tingido com a cor do tema
-    val barBg = com.musibox.app.themes.AppTheme.bg
-    val barTint = com.musibox.app.themes.AppTheme.surface
+    // vidro da barra tingido com a cor do tema do app (igual em todas as abas, mesmo em Temas e Mais)
+    val barBg = com.musibox.app.themes.AppTheme.themeBg
+    val barTint = com.musibox.app.themes.AppTheme.themeSurface
     BoxWithConstraints(
         modifier
             .fillMaxWidth(0.84f)
@@ -112,7 +112,7 @@ fun FloatingNavBar(selectedPage: Int, hazeState: HazeState?, onSelect: (Int) -> 
                 .width(slot - 4.dp)
                 .fillMaxHeight()
                 .clip(shape)
-                .background(Neo.Green.copy(alpha = 0.17f)),
+                .background(com.musibox.app.themes.AppTheme.themeAccent.copy(alpha = 0.17f)),
         )
         Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
             NavItem(painterResource(R.drawable.ic_brand_note), "Música", selectedPage == MainTabs.HOME, Modifier.weight(1f)) { onSelect(MainTabs.HOME) }
@@ -125,7 +125,7 @@ fun FloatingNavBar(selectedPage: Int, hazeState: HazeState?, onSelect: (Int) -> 
 
 @Composable
 private fun NavItem(icon: Painter, label: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
-    val tint by animateColorAsState(if (selected) Neo.Green else Color.White, label = "navTint")
+    val tint by animateColorAsState(if (selected) com.musibox.app.themes.AppTheme.themeAccent else Color.White, label = "navTint")
     val scale by animateFloatAsState(if (selected) 1.06f else 1f, spring(dampingRatio = 0.45f, stiffness = 500f), label = "navScale")
     val interaction = remember { MutableInteractionSource() }
     Column(

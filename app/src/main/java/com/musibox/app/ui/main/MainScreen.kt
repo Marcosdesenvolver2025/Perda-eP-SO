@@ -13,6 +13,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -27,6 +28,7 @@ import com.musibox.app.ui.more.MoreScreen
 import com.musibox.app.ui.navigation.Routes
 import com.musibox.app.ui.themes.WallpaperStoreContent
 import androidx.compose.ui.unit.dp
+import com.musibox.app.themes.AppTheme
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -54,6 +56,14 @@ fun MainScreen(nav: NavController, pager: PagerState) {
         modifier = Modifier.fillMaxSize(),
         key = { it },
     ) { page ->
+        // Temas e Mais ficam sempre no visual padrão: liga quando a aba fica na frente (mais da metade na tela)
+        if (page == MainTabs.THEMES || page == MainTabs.MORE) {
+            val front = pager.currentPage == page
+            DisposableEffect(front) {
+                if (front) AppTheme.useDefaultLook(true)
+                onDispose { if (front) AppTheme.useDefaultLook(false) }
+            }
+        }
         CompositionLocalProvider(LocalPageActive provides (pager.settledPage == page && !pager.isScrollInProgress)) {
             // Transição 3D: a página que sai gira levemente, diminui e escurece.
             Box(

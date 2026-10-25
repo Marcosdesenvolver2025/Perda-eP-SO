@@ -50,11 +50,11 @@ object AppTheme {
     var paletteKey by mutableStateOf("")
         internal set
 
-    /** true nas telas "Mais" e "Planos": elas ficam sempre no visual padrão (sem papel de parede e sem paleta do tema). */
+    /** true nas telas "Temas", "Mais" e "Planos": elas ficam sempre no visual padrão (sem papel de parede e sem paleta do tema). */
     var neutral by mutableStateOf(false)
         private set
 
-    // Contador: telas "Mais" e "Planos" podem se sobrepor na troca de tela (uma entra antes da outra sair).
+    // Contador: telas de visual padrão podem se sobrepor na troca de tela (uma entra antes da outra sair).
     private var neutralRefs = 0
 
     fun useDefaultLook(on: Boolean) {
@@ -65,7 +65,28 @@ object AppTheme {
         applyPalette(appWallpaper)
     }
 
+    /**
+     * Cores do tema do app que NÃO mudam nas telas de visual padrão (Temas e Mais).
+     * A barra de navegação de baixo usa estas, para ficar igual em todas as abas.
+     */
+    var themeAccent by mutableStateOf(DefaultAccent)
+        private set
+    var themeBg by mutableStateOf(DefaultBg)
+        private set
+    var themeSurface by mutableStateOf(DefaultSurface)
+        private set
+
     internal fun applyPalette(themeWallpaper: Wallpaper?) {
+        val tp = themeWallpaper?.let { WallpaperPalettes[it.id] }
+        if (themeWallpaper == null || tp == null || tp.size < 6) {
+            themeAccent = themeWallpaper?.accent ?: DefaultAccent
+            themeBg = DefaultBg
+            themeSurface = DefaultSurface
+        } else {
+            themeAccent = themeWallpaper.accent
+            themeBg = Color(tp[1])
+            themeSurface = Color(tp[2])
+        }
         val w = if (neutral) null else themeWallpaper
         val p = w?.let { WallpaperPalettes[it.id] }
         if (w == null || p == null || p.size < 6) {

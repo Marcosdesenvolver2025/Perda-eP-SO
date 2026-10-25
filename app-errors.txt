@@ -1,0 +1,34 @@
+10-25 18:23:31.268  4195  4195 W Monkey  : args: [-p, br.com.musibox, -c, android.intent.category.LAUNCHER, 1]
+10-25 18:23:31.269  4195  4195 W Monkey  :  arg: "br.com.musibox"
+10-25 18:23:31.270  4195  4195 W Monkey  : data="br.com.musibox"
+10-25 18:23:31.436  4222  4222 W br.com.musibox: Unexpected CPU variant for x86: x86_64.
+10-25 18:23:31.436  4222  4222 W br.com.musibox: Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, tremont, kabylake, default
+10-25 18:23:31.442  4222  4222 E br.com.musibox: Not starting debugger since process cannot load the jdwp agent.
+10-25 18:23:32.202  4222  4222 W ziparchive: Unable to open '/data/app/~~ZIxUwfubgQFZ6_LOJgCblg==/br.com.musibox-iqK3FUYs8lSKpDSgmUQP9A==/base.dm': No such file or directory
+10-25 18:23:32.202  4222  4222 W ziparchive: Unable to open '/data/app/~~ZIxUwfubgQFZ6_LOJgCblg==/br.com.musibox-iqK3FUYs8lSKpDSgmUQP9A==/base.dm': No such file or directory
+10-25 18:23:33.531  4222  4222 W MusiBoxBilling: Play Billing indisponível: Billing service unavailable on device.
+10-25 18:23:33.564   517  1895 E JobScheduler.JobStatus: App br.com.musibox became active but still in NEVER bucket
+10-25 18:23:33.741   517   530 E JobScheduler.JobStatus: App br.com.musibox became active but still in NEVER bucket
+10-25 18:23:34.280   517   534 W ziparchive: Unable to open '/data/app/~~ZIxUwfubgQFZ6_LOJgCblg==/br.com.musibox-iqK3FUYs8lSKpDSgmUQP9A==/base.dm': No such file or directory
+10-25 18:23:34.342   517  2376 W InputManager-JNI: Input channel object '34a7225 Splash Screen br.com.musibox (client)' was disposed without first being removed with the input manager!
+10-25 18:23:34.808   517  2294 E JobScheduler.JobStatus: App br.com.musibox became active but still in NEVER bucket
+10-25 18:23:35.281   517   530 W JobScheduler: Job didn't exist in JobStore: 435d6e7 {androidx.work.systemjobscheduler} #u0a192/0 @androidx.work.systemjobscheduler@br.com.musibox/androidx.work.impl.background.systemjob.SystemJobService
+10-25 18:28:10.567   517   534 W ziparchive: Unable to open '/data/app/~~ZIxUwfubgQFZ6_LOJgCblg==/br.com.musibox-iqK3FUYs8lSKpDSgmUQP9A==/base.dm': No such file or directory
+10-25 18:29:12.016   517  2096 W InputManager-JNI: Input channel object '6b76ff0 br.com.musibox/com.musibox.app.LauncherDefault (client)' was disposed without first being removed with the input manager!
+10-25 18:29:40.565   517   534 W ziparchive: Unable to open '/data/app/~~ZIxUwfubgQFZ6_LOJgCblg==/br.com.musibox-iqK3FUYs8lSKpDSgmUQP9A==/base.dm': No such file or directory
+10-25 18:29:40.585   517   822 W InputManager-JNI: Input channel object 'bc0b862 Splash Screen br.com.musibox (client)' was disposed without first being removed with the input manager!
+10-25 18:31:11.178   517  2321 W InputManager-JNI: Input channel object 'c568047 br.com.musibox/com.musibox.app.MainActivity (client)' was disposed without first being removed with the input manager!
+10-25 18:33:04.368   517   534 W ziparchive: Unable to open '/data/app/~~ZIxUwfubgQFZ6_LOJgCblg==/br.com.musibox-iqK3FUYs8lSKpDSgmUQP9A==/base.dm': No such file or directory
+10-25 18:33:04.392   517   591 W InputManager-JNI: Input channel object '9a8d630 Splash Screen br.com.musibox (client)' was disposed without first being removed with the input manager!
+10-25 18:33:42.638   517  2506 W InputManager-JNI: Input channel object '45b21eb br.com.musibox/com.musibox.app.MainActivity (client)' was disposed without first being removed with the input manager!
+10-25 18:33:42.908  4222  4228 W br.com.musibox: Cleared Reference was only reachable from finalizer (only reported once)
+10-25 18:33:43.754   517   534 W ziparchive: Unable to open '/data/app/~~ZIxUwfubgQFZ6_LOJgCblg==/br.com.musibox-iqK3FUYs8lSKpDSgmUQP9A==/base.dm': No such file or directory
+10-25 18:33:43.788   517   905 W InputManager-JNI: Input channel object 'd2b907c Splash Screen br.com.musibox (client)' was disposed without first being removed with the input manager!
+10-25 18:36:40.451   517   822 W InputManager-JNI: Input channel object '52047bd br.com.musibox/com.musibox.app.MainActivity (client)' was disposed without first being removed with the input manager!
+10-25 18:36:44.524   517   534 W ziparchive: Unable to open '/data/app/~~ZIxUwfubgQFZ6_LOJgCblg==/br.com.musibox-iqK3FUYs8lSKpDSgmUQP9A==/base.dm': No such file or directory
+10-25 18:37:09.838   517  2506 W InputManager-JNI: Input channel object '452818f Splash Screen br.com.musibox (client)' was disposed without first being removed with the input manager!
+10-25 18:37:58.474   517   903 W InputManager-JNI: Input channel object '40f1387 br.com.musibox/com.musibox.app.MainActivity (client)' was disposed without first being removed with the input manager!
+10-25 18:40:33.658   517  2510 W InputManager-JNI: Input channel object 'a2bc65a Splash Screen br.com.musibox (client)' was disposed without first being removed with the input manager!
+10-25 18:41:10.849   517  2369 W InputManager-JNI: Input channel object '8d15bb9 br.com.musibox/com.musibox.app.MainActivity (client)' was disposed without first being removed with the input manager!
+10-25 18:41:28.364   517   903 W InputManager-JNI: Input channel object 'ef9b14c br.com.musibox/com.musibox.app.share.VaultShareAlias (client)' was disposed without first being removed with the input manager!
+10-25 18:41:28.435   517   903 W InputManager-JNI: Input channel object 'a58bdf0 br.com.musibox/com.musibox.app.share.VaultShareAlias (client)' was disposed without first being removed with the input manager!

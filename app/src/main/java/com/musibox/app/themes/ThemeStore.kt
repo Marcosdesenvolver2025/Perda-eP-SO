@@ -39,17 +39,29 @@ object AppTheme {
     var line by mutableStateOf(DefaultLine)
         internal set
 
+    /** Força da camada escura sobre o papel de parede (calculada pela claridade de cada imagem). */
+    var scrim by mutableStateOf(0.42f)
+        internal set
+
+    /** Há papel de parede no fundo agora (textos ganham sombra e ficam mais claros). */
+    val themed: Boolean get() = paletteKey.isNotEmpty()
+
     /** true quando as cores vêm de um tema (para o Compose recalcular o esquema). */
     var paletteKey by mutableStateOf("")
         internal set
 
-    /** true na tela "Mais": ela fica sempre no visual padrão (sem papel de parede e sem paleta do tema). */
+    /** true nas telas "Mais" e "Planos": elas ficam sempre no visual padrão (sem papel de parede e sem paleta do tema). */
     var neutral by mutableStateOf(false)
         private set
 
+    // Contador: telas "Mais" e "Planos" podem se sobrepor na troca de tela (uma entra antes da outra sair).
+    private var neutralRefs = 0
+
     fun useDefaultLook(on: Boolean) {
-        if (neutral == on) return
-        neutral = on
+        neutralRefs = (neutralRefs + if (on) 1 else -1).coerceAtLeast(0)
+        val n = neutralRefs > 0
+        if (neutral == n) return
+        neutral = n
         applyPalette(appWallpaper)
     }
 
@@ -60,12 +72,14 @@ object AppTheme {
             accent = w?.accent ?: DefaultAccent
             accent2 = Color(0xFF3BEA80)
             bg = DefaultBg; surface = DefaultSurface; card = DefaultCard; cardHigh = DefaultCardHigh; line = DefaultLine
+            scrim = 0.42f
             paletteKey = w?.id.orEmpty()
             return
         }
         accent = w.accent
         accent2 = Color(p[0])
         bg = Color(p[1]); surface = Color(p[2]); card = Color(p[3]); cardHigh = Color(p[4]); line = Color(p[5])
+        scrim = if (p.size >= 7) ((p[6] ushr 24) and 0xFF).toFloat() / 255f else 0.42f
         paletteKey = w.id
     }
 
@@ -87,6 +101,18 @@ class ThemeStore private constructor(context: Context) {
 
     private val _setupDone = MutableStateFlow(prefs.getBoolean(KEY_SETUP, false))
     val browserSetupDone: StateFlow<Boolean> = _setupDone.asStateFlow()
+
+    /** Widget de notícias na página inicial do navegador (a pessoa escolhe na primeira vez). */
+    private val _newsOn = MutableStateFlow(prefs.getBoolean(KEY_NEWS_ON, true))
+    val newsEnabled: StateFlow<Boolean> = _newsOn.asStateFlow()
+    private val _newsAsked = MutableStateFlow(prefs.getBoolean(KEY_NEWS_ASKED, false))
+    val newsAsked: StateFlow<Boolean> = _newsAsked.asStateFlow()
+
+    fun setNewsEnabled(on: Boolean) {
+        _newsOn.value = on
+        _newsAsked.value = true
+        prefs.edit().putBoolean(KEY_NEWS_ON, on).putBoolean(KEY_NEWS_ASKED, true).apply()
+    }
 
     init {
         apply(prefs.getString(KEY_APP, null), prefs.getString(KEY_BROWSER, Wallpapers.DEFAULT_BROWSER))
@@ -137,6 +163,8 @@ class ThemeStore private constructor(context: Context) {
         private const val KEY_BROWSER = "browser_wallpaper"
         private const val KEY_INTERESTS = "interests"
         private const val KEY_SETUP = "browser_setup_done"
+        private const val KEY_NEWS_ON = "news_enabled"
+        private const val KEY_NEWS_ASKED = "news_asked"
 
         val ALL_INTERESTS = listOf("Entretenimento", "IA", "Esportes", "Compras", "Viagens")
 

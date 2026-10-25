@@ -75,8 +75,9 @@ object Neo {
     val Purple = Color(0xFF8B3DFF)
     val Magenta = Color(0xFFE03DFF)
     val Link: Color get() = Green
-    val Artist = Color(0xFF9A9A9A)
-    val Text2 = Color(0xFFB3B3B3)
+    /** Textos secundários: mais claros quando há papel de parede no fundo (para ler bem em cima da imagem). */
+    val Artist: Color get() = if (com.musibox.app.themes.AppTheme.themed) Color(0xFFD6D6D6) else Color(0xFF9A9A9A)
+    val Text2: Color get() = if (com.musibox.app.themes.AppTheme.themed) Color(0xFFE6E6E6) else Color(0xFFB3B3B3)
     val OnGreen: Color get() = if (Green.luminance() > 0.45f) Color(0xFF0A0A0A) else Color.White
     val Card: Color get() = com.musibox.app.themes.AppTheme.card
     val Line: Color get() = com.musibox.app.themes.AppTheme.line
@@ -135,7 +136,9 @@ fun BrandHeader(onSearch: () -> Unit, onVault: () -> Unit, onSettings: () -> Uni
         Image(
             painterResource(R.drawable.ic_brand_note),
             null,
-            Modifier
+            // o ícone de música segue a cor do tema (verde no visual padrão)
+            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(Neo.Green),
+            modifier = Modifier
                 .size(52.dp)
                 .graphicsLayer {
                     val v = enter.value

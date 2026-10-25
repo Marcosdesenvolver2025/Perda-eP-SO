@@ -171,6 +171,22 @@ val MbTypography = Typography(
     labelSmall = base.labelSmall,
 )
 
+private val TextShadow = androidx.compose.ui.graphics.Shadow(
+    color = Color.Black.copy(alpha = 0.75f),
+    offset = androidx.compose.ui.geometry.Offset(0f, 1.5f),
+    blurRadius = 6f,
+)
+
+private fun TextStyle.shadowed() = copy(shadow = TextShadow)
+
+private fun Typography.withShadow() = Typography(
+    displayLarge = displayLarge.shadowed(), displayMedium = displayMedium.shadowed(), displaySmall = displaySmall.shadowed(),
+    headlineLarge = headlineLarge.shadowed(), headlineMedium = headlineMedium.shadowed(), headlineSmall = headlineSmall.shadowed(),
+    titleLarge = titleLarge.shadowed(), titleMedium = titleMedium.shadowed(), titleSmall = titleSmall.shadowed(),
+    bodyLarge = bodyLarge.shadowed(), bodyMedium = bodyMedium.shadowed(), bodySmall = bodySmall.shadowed(),
+    labelLarge = labelLarge.shadowed(), labelMedium = labelMedium.shadowed(), labelSmall = labelSmall.shadowed(),
+)
+
 val MbShapes = Shapes(
     extraSmall = RoundedCornerShape(8.dp),
     small = RoundedCornerShape(12.dp),
@@ -251,13 +267,16 @@ fun MusiBoxTheme(themeMode: ThemeMode, content: @Composable () -> Unit) {
                 surfaceContainerHighest = t.line,
                 outline = t.line,
                 outlineVariant = t.card,
+                onSurfaceVariant = if (key.isEmpty()) MbPalette.TextSecondary else Color(0xFFE6E6E6),
             )
         }
     }
+    // Com papel de parede no fundo, todo texto ganha uma sombra suave (lê bem em cima de qualquer imagem)
+    val typography = remember(dark, key) { if (dark && key.isNotEmpty()) MbTypography.withShadow() else MbTypography }
     CompositionLocalProvider(LocalMbColors provides extras) {
         MaterialTheme(
             colorScheme = scheme,
-            typography = MbTypography,
+            typography = typography,
             shapes = MbShapes,
             content = content,
         )

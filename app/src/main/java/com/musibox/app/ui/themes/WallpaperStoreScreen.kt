@@ -126,17 +126,17 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
     val found = remember(query) { all.filter { Wallpapers.matches(it, query) } }
     val free = found.filter { it.free }.sortedBy { it.name }
     val paid = found.filter { !it.free && !it.pro }.sortedWith(compareBy({ it.price }, { it.name }))
-    // Assinaturas por último, na ordem Go → Plus → Pro (cada tema aparece uma vez, no plano mais barato que o libera)
+    // Assinaturas por último, na ordem Go → Plus → Pro (cada plano tem os seus temas, diferentes dos outros)
     val allGo = all.count { "go" in it.plans }
     val allPlus = all.count { "plus" in it.plans }
-    val allPro = all.count { it.pro }
+    val allPro = all.count { "pro" in it.plans }
     val goList = found.filter { "go" in it.plans }.sortedBy { it.name }
-    val plusList = found.filter { "plus" in it.plans && "go" !in it.plans }.sortedBy { it.name }
-    val proList = found.filter { it.pro && "plus" !in it.plans && "go" !in it.plans }.sortedBy { it.name }
+    val plusList = found.filter { "plus" in it.plans }.sortedBy { it.name }
+    val proList = found.filter { "pro" in it.plans }.sortedBy { it.name }
     val planSections = listOf(
-        "$GO_TITLE • $allGo temas" to goList,
-        "$PLUS_TITLE • +${allPlus - allGo} ($allPlus no total)" to plusList,
-        "$PRO_TITLE • +${allPro - allPlus} ($allPro no total)" to proList,
+        "$GO_TITLE • $allGo temas só dele" to goList,
+        "$PLUS_TITLE • $allPlus temas só dele" to plusList,
+        "$PRO_TITLE • $allPro temas só dele" to proList,
     )
 
     fun byPrice(list: List<Wallpaper>) = list.groupBy { it.price }.toSortedMap().map { (p, l) -> Wallpapers.priceText(p) to l }
@@ -352,7 +352,7 @@ private fun PlansBanner(plan: com.musibox.app.billing.Plan, modifier: Modifier =
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                "Go: ${Wallpapers.all.count { "go" in it.plans }} temas • Plus: ${Wallpapers.all.count { "plus" in it.plans }} temas • Pro: ${Wallpapers.all.count { it.pro }} temas",
+                "Go: ${Wallpapers.all.count { "go" in it.plans }} • Plus: ${Wallpapers.all.count { "plus" in it.plans }} • Pro: ${Wallpapers.all.count { "pro" in it.plans }} temas • cada plano tem os seus",
                 color = Neo.Text2,
                 fontSize = 12.sp,
             )

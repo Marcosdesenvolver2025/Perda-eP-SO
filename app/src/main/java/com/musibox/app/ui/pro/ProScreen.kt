@@ -114,7 +114,7 @@ private val extras = listOf(
 /** O que cada plano oferece (só o que vem nele). */
 private fun perksOf(plan: ProPlan, themes: Int): List<Perk> {
     val list = mutableListOf(
-        Perk(Icons.Rounded.Wallpaper, "$themes temas exclusivos", "Temas que não se compram, só no plano."),
+        Perk(Icons.Rounded.Wallpaper, "$themes temas exclusivos", "Só deste plano: não se compram e não vêm nos outros planos."),
         Perk(Icons.Rounded.Speed, "Velocidade da música", "Toque de 0,5x a 2x."),
     )
     if (plan != ProPlan.GO) {
@@ -142,6 +142,11 @@ fun ProScreen(nav: NavController) {
     var selected by rememberSaveable { mutableStateOf(ProPlan.PRO) }
     val current = state.plan
     val active = current != Plan.NONE
+    // A tela dos planos fica sempre no visual padrão (sem papel de parede e sem as cores do tema)
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        AppTheme.useDefaultLook(true)
+        onDispose { AppTheme.useDefaultLook(false) }
+    }
 
     Column(Modifier.fillMaxSize()) {
         MbTopBar("Planos MusiBox", onBack = { nav.popBackStack() })
@@ -284,7 +289,7 @@ private fun PlanHero(plan: ProPlan, price: String) {
                     when (plan) {
                         ProPlan.GO -> "Para testar por 3 dias"
                         ProPlan.PLUS -> "Mais recursos, toda semana"
-                        ProPlan.PRO -> "Tem tudo do MusiBox"
+                        ProPlan.PRO -> "Todos os recursos do MusiBox"
                     },
                     color = Neo.Text2,
                     fontSize = 13.sp,

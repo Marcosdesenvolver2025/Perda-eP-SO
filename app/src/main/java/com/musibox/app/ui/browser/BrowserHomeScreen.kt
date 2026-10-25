@@ -50,6 +50,7 @@ import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Newspaper
 import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Star
@@ -133,6 +134,8 @@ fun BrowserHomeScreen(nav: NavController) {
     val tabs by store.tabs.collectAsStateWithLifecycle()
     val setupDone by themes.browserSetupDone.collectAsStateWithLifecycle()
     val interests by themes.interests.collectAsStateWithLifecycle()
+    val newsOn by themes.newsEnabled.collectAsStateWithLifecycle()
+    val newsAsked by themes.newsAsked.collectAsStateWithLifecycle()
     val active = LocalPageActive.current
     val focus = LocalFocusManager.current
     val accent = AppTheme.browserWallpaper.accent
@@ -277,9 +280,11 @@ fun BrowserHomeScreen(nav: NavController) {
                 onAdd = { addDialog = true },
             )
 
-            // Notícias
-            Spacer(Modifier.height(18.dp))
-            NewsPanel(active = active, interests = interests, accent = accent, onOpen = { open(it) }, onSettings = { sheet = "interests" })
+            // Notícias (a pessoa pode desligar no ⚙ do widget ou no menu lá em cima)
+            if (newsOn) {
+                Spacer(Modifier.height(18.dp))
+                NewsPanel(active = active, interests = interests, accent = accent, onOpen = { open(it) }, onSettings = { sheet = "interests" })
+            }
             Spacer(Modifier.height(24.dp + com.musibox.app.ui.navigation.LocalBottomBarSpace.current))
         }
     }
@@ -295,6 +300,7 @@ fun BrowserHomeScreen(nav: NavController) {
                         com.musibox.app.themes.ThemeStore.get(context).setBrowserWallpaper(com.musibox.app.themes.Wallpapers.DEFAULT_BROWSER)
                     }
                 }
+                SwitchRow(Icons.Rounded.Newspaper, "Notícias na página inicial", if (newsOn) "Ativado" else "Desativado", newsOn) { themes.setNewsEnabled(it) }
                 MenuRow(Icons.Outlined.Settings, "Seus interesses", "Notícias de \"Para você\"") { menu = false; sheet = "interests" }
                 MenuRow(Icons.Rounded.Star, "Favoritos", "${bookmarks.size} salvos") { menu = false; sheet = "bookmarks" }
                 MenuRow(Icons.Rounded.History, "Histórico", "${history.size} páginas") { menu = false; sheet = "history" }
@@ -318,7 +324,13 @@ fun BrowserHomeScreen(nav: NavController) {
     }
 
     when (sheet) {
-        "interests" -> InterestsSheet(interests, onChange = { themes.setInterests(it) }, onDismiss = { sheet = null })
+        "interests" -> InterestsSheet(
+            interests,
+            onChange = { themes.setInterests(it) },
+            onDismiss = { sheet = null },
+            newsOn = newsOn,
+            onNews = { themes.setNewsEnabled(it); if (!it) sheet = null },
+        )
         "history" -> VisitsSheet("Histórico", history, onOpen = { sheet = null; open(it) }, onClear = { store.clearHistory() }, onDismiss = { sheet = null })
         "bookmarks" -> VisitsSheet("Favoritos", bookmarks, onOpen = { sheet = null; open(it) }, onClear = null, onDismiss = { sheet = null })
     }
@@ -337,6 +349,22 @@ fun BrowserHomeScreen(nav: NavController) {
                 Text("Toque e segure para fixar na página inicial.", color = Color(0xFF9A9A9A), fontSize = 12.sp, modifier = Modifier.padding(top = 14.dp))
             }
         }
+    }
+    // Primeira vez na página inicial: perguntar se quer deixar as notícias ativadas
+    if (active && setupDone && !newsAsked) {
+        AlertDialog(
+            onDismissRequest = {},
+            icon = { Icon(Icons.Rounded.Newspaper, null, tint = accent) },
+            title = { Text("Notícias na página inicial") },
+            text = {
+                Text(
+                    "Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.",
+                )
+            },
+            confirmButton = { TextButton(onClick = { themes.setNewsEnabled(true) }) { Text("Deixar ativado") } },
+            dismissButton = { TextButton(onClick = { themes.setNewsEnabled(false) }) { Text("Desativar") } },
+            containerColor = com.musibox.app.themes.AppTheme.card,
+        )
     }
     if (addDialog) {
         AddShortcutDialog(onAdd = { name, url -> addDialog = false; store.addShortcut(name, url) }, onDismiss = { addDialog = false })
@@ -760,6 +788,26 @@ private fun MenuRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title
 }
 
 @Composable
+private fun SwitchRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, subtitle: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { onChange(!checked) }
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, null, tint = Color.White, modifier = Modifier.size(24.dp))
+        Spacer(Modifier.width(16.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, color = Color.White, fontSize = 16.sp)
+            Text(subtitle, color = Color(0xFF9A9A9A), fontSize = 12.sp)
+        }
+        androidx.compose.material3.Switch(checked = checked, onCheckedChange = onChange)
+    }
+}
+
+@Composable
 private fun ProToggle(label: String, isPro: Boolean, checked: Boolean, onPro: () -> Unit, onChange: (Boolean) -> Unit) {
     Row(
         Modifier
@@ -788,9 +836,34 @@ private fun ProToggle(label: String, isPro: Boolean, checked: Boolean, onPro: ()
 }
 
 @Composable
-fun InterestsSheet(selected: Set<String>, onChange: (Set<String>) -> Unit, onDismiss: () -> Unit) {
+fun InterestsSheet(
+    selected: Set<String>,
+    onChange: (Set<String>) -> Unit,
+    onDismiss: () -> Unit,
+    newsOn: Boolean? = null,
+    onNews: (Boolean) -> Unit = {},
+) {
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = com.musibox.app.themes.AppTheme.surface) {
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
+            if (newsOn != null) {
+                Text("Notícias", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                Spacer(Modifier.height(6.dp))
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable { onNews(!newsOn) }
+                        .padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Mostrar notícias na página inicial", color = Color.White, fontSize = 16.sp)
+                        Text(if (newsOn) "Ativado" else "Desativado", color = Color(0xFF9A9A9A), fontSize = 12.sp)
+                    }
+                    androidx.compose.material3.Switch(checked = newsOn, onCheckedChange = onNews)
+                }
+                Spacer(Modifier.height(16.dp))
+            }
             Text("Quais são os seus interesses?", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
             Text("As notícias de \"Para você\" seguem o que você escolher.", color = Color(0xFF9A9A9A), modifier = Modifier.padding(top = 4.dp, bottom = 14.dp))
             InterestChips(selected, onChange)

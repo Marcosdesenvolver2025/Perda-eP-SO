@@ -216,9 +216,9 @@ object PlayBilling : PurchasesUpdatedListener {
     private fun sha256(text: String): String =
         java.security.MessageDigest.getInstance("SHA-256").digest(text.toByteArray()).joinToString("") { "%02x".format(it) }
 
-    /** O plano libera este tema exclusivo? O Pro libera todos; Plus e Go só os da sua lista. */
+    /** O plano libera este tema exclusivo? Cada plano tem a sua própria lista (Go, Plus e Pro não repetem temas). */
     fun planUnlocks(plan: Plan, w: Wallpaper): Boolean = when (plan) {
-        Plan.PRO -> w.pro
+        Plan.PRO -> "pro" in w.plans
         Plan.PLUS -> "plus" in w.plans
         Plan.GO -> "go" in w.plans
         Plan.NONE -> false

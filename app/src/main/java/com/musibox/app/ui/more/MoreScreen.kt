@@ -227,7 +227,7 @@ fun MoreScreen(nav: NavController) {
 /** Cartão "Papéis de parede": três miniaturas e o convite para a loja. */
 @Composable
 private fun WallpaperPromo(modifier: Modifier, onClick: () -> Unit) {
-    val picks = remember { listOf("nt_via_lactea_montanhas", "pm_aguas_vivas", "ft_lencois_maranhenses").mapNotNull { com.musibox.app.themes.Wallpapers.get(it) } }
+    val picks = remember { listOf("hx_rio_entardecer", "hx_ceu_anime", "hx_santorini").mapNotNull { com.musibox.app.themes.Wallpapers.get(it) } }
     Row(
         modifier
             .padding(horizontal = 16.dp, vertical = 8.dp)

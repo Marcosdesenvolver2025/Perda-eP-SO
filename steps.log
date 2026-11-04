@@ -1,0 +1,233 @@
+APK=apk/teste.apk PKG=br.com.musibox
+Serving...
+All files should be loaded. Notifying the device.
+Performing Incremental Install
+Success
+Install command complete in 3770 ms
+== Arquivos de teste
+/tmp/teste1.mp3: 1 file pushed, 0 skipped. 9.1 MB/s (641268 bytes in 0.067s)
+/tmp/teste2.mp3: 1 file pushed, 0 skipped. 429.5 MB/s (641268 bytes in 0.001s)
+/tmp/teste3.mp3: 1 file pushed, 0 skipped. 554.5 MB/s (641268 bytes in 0.001s)
+/tmp/teste4.m4a: 1 file pushed, 0 skipped. 345.2 MB/s (648211 bytes in 0.002s)
+/tmp/media/clipe_demo.mp4: 1 file pushed, 0 skipped. 41.0 MB/s (123689 bytes in 0.003s)
+== Primeira abertura
+print 01_apresentacao
+  mCurrentFocus=Window{773b029 u0 br.com.musibox/com.musibox.app.LauncherDefault}
+  mFocusedApp=ActivityRecord{8c04f17 u0 br.com.musibox/com.musibox.app.LauncherDefault t8}
+tap 'Pular' em (540, 2211)
+print 02_conta
+tap 'Continuar sem conta' em (540, 1977)
+NÃO APARECEU: 'músicas encontradas'
+print 03_indexacao
+tap 'Ir para o início' em (540, 1527)
+error: closed
+print 04_inicio
+== Biblioteca e player
+NÃO ENCONTRADO: 'Faixa de Teste 1'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 06_tocando
+adb: device 'emulator-5554' not found
+error: device 'emulator-5554' not found
+print 05_configurar_navegador
+NÃO APARECEU: 'Configurar seu navegador'
+adb: device 'emulator-5554' not found
+error: device 'emulator-5554' not found
+print 05a_configurar_papel
+NÃO ENCONTRADO: 'Começar a navegar'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 05b_navegador_inicio
+adb: device 'emulator-5554' not found
+error: device 'emulator-5554' not found
+print 05c_deslize_inicio
+NÃO ENCONTRADO: 'Cantores'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 05d_cantores
+NÃO ENCONTRADO: 'Áudios'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 05e_audios
+NÃO ENCONTRADO: 'Todas'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 07_player
+adb: device 'emulator-5554' not found
+adb: device 'emulator-5554' not found
+error: device 'emulator-5554' not found
+print 08_notificacao
+adb: device 'emulator-5554' not found
+== Navegador (página inicial, notícias, privada e site)
+NÃO ENCONTRADO: 'Navegador'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 09_navegador_inicio
+adb: device 'emulator-5554' not found
+error: device 'emulator-5554' not found
+print 10_navegador_noticias
+adb: device 'emulator-5554' not found
+NÃO ENCONTRADO: 'Privada'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 11_navegacao_privada
+adb: device 'emulator-5554' not found
+NÃO ENCONTRADO: 'Fechar navegação privada'
+   (dump vazio)
+adb: device 'emulator-5554' not found
+NÃO ENCONTRADO: 'YouTube'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 12_site_youtube
+adb: device 'emulator-5554' not found
+adb: device 'emulator-5554' not found
+== Papéis de parede e Pro
+NÃO ENCONTRADO: 'Mais'
+   (dump vazio)
+NÃO ENCONTRADO: 'Papéis de parede'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 13_papeis_loja
+adb: device 'emulator-5554' not found
+error: device 'emulator-5554' not found
+print 13b_papeis_loja_rolada
+NÃO ENCONTRADO: 'Supernova'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 14_papel_supernova
+NÃO ENCONTRADO: 'Comprar'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 14b_comprar_sem_play
+NÃO ENCONTRADO: 'Navegador'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 14c_previa_navegador
+adb: device 'emulator-5554' not found
+NÃO ENCONTRADO: 'Névoa Verde'
+   (dump vazio)
+NÃO ENCONTRADO: 'Usar no app'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 14d_usar_no_app
+adb: device 'emulator-5554' not found
+adb: device 'emulator-5554' not found
+NÃO ENCONTRADO: 'Música'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 14e_inicio_com_tema
+NÃO ENCONTRADO: 'Mais'
+   (dump vazio)
+NÃO ENCONTRADO: 'MusiBox Pro'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 14f_pro
+adb: device 'emulator-5554' not found
+NÃO ENCONTRADO: 'Equalizador'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 14g_equalizador
+adb: device 'emulator-5554' not found
+NÃO ENCONTRADO: 'Navegador'
+   (dump vazio)
+NÃO ENCONTRADO: 'Personalizar navegador'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 14h_menu_navegador
+adb: device 'emulator-5554' not found
+== Cofre: PIN, código de recuperação e recuperação
+NÃO ENCONTRADO: 'Cofre'
+   (dump vazio)
+NÃO ENCONTRADO: 'Criar PIN'
+   (dump vazio)
+NÃO ENCONTRADO: 'Criar código de recuperação'
+   (dump vazio)
+codigo de recuperacao: 
+NÃO ENCONTRADO: 'Anotei o código'
+   (dump vazio)
+NÃO ENCONTRADO: 'Concluir'
+   (dump vazio)
+NÃO ENCONTRADO: 'Configurações do cofre'
+   (dump vazio)
+NÃO ENCONTRADO: 'Bloquear capturas de tela'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 15_cofre_config
+adb: device 'emulator-5554' not found
+error: device 'emulator-5554' not found
+print 15a_cofre_config_pro
+NÃO ENCONTRADO: 'Recuperação do PIN'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 15b_recuperacao
+adb: device 'emulator-5554' not found
+adb: device 'emulator-5554' not found
+video id: 
+NÃO APARECEU: 'Salvar no cofre'
+error: device 'emulator-5554' not found
+print 15c_compartilhar_cofre
+NÃO ENCONTRADO: 'Copiar para o cofre'
+   (dump vazio)
+NÃO ENCONTRADO: 'Cofre'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 16_cofre_fotos
+NÃO ENCONTRADO: 'Vídeos'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 17_cofre_videos
+NÃO ENCONTRADO: 'clipe_demo'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 18_cofre_player
+adb: device 'emulator-5554' not found
+NÃO ENCONTRADO: 'Música'
+   (dump vazio)
+NÃO ENCONTRADO: 'Cofre'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 18a_cofre_bloqueado
+NÃO ENCONTRADO: 'Esqueci o PIN'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 18b_esqueci_pin
+NÃO ENCONTRADO: 'Usar código de recuperação'
+   (dump vazio)
+adb: device 'emulator-5554' not found
+error: device 'emulator-5554' not found
+print 18b2_codigo_digitado
+NÃO ENCONTRADO: 'Confirmar'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 18c_cofre_recuperado
+== Histórico, configurações e armazenamento
+NÃO ENCONTRADO: 'Mais'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 19_mais
+NÃO ENCONTRADO: 'Histórico'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 20_historico
+adb: device 'emulator-5554' not found
+NÃO ENCONTRADO: 'Configurações'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 21_configuracoes
+adb: device 'emulator-5554' not found
+NÃO ENCONTRADO: 'Armazenamento'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 22_armazenamento
+adb: device 'emulator-5554' not found
+NÃO ENCONTRADO: 'Biblioteca completa'
+   (dump vazio)
+error: device 'emulator-5554' not found
+print 23_biblioteca
+== Rotação
+adb: device 'emulator-5554' not found
+adb: device 'emulator-5554' not found
+error: device 'emulator-5554' not found
+print 24_paisagem
+adb: device 'emulator-5554' not found
+- waiting for device -

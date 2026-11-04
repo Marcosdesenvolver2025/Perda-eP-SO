@@ -89,10 +89,8 @@ fun WallpaperPreviewScreen(nav: NavController, id: String) {
         }
         val w = list[pager.currentPage]
         val plan = pro.plan
-        val claimTick by PlayBilling.claimTick.collectAsStateWithLifecycle()
         val usable = PlayBilling.canUse(w) || (!w.pro && w.id in owned)
         val price = prices[w.productId] ?: w.priceLabel
-        val canClaim = remember(claimTick, plan, w.id) { !usable && !w.pro && !w.free && PlayBilling.freeClaimAvailable() }
 
         // topo
         Row(
@@ -177,22 +175,6 @@ fun WallpaperPreviewScreen(nav: NavController, id: String) {
                 }
                 w.pro -> BigButton("Liberar com o ${w.planLabel}", w.accent, onAccent, Modifier.fillMaxWidth(), Icons.Rounded.WorkspacePremium) {
                     nav.navigate(Routes.PRO)
-                }
-                canClaim -> Column {
-                    BigButton("Pegar grátis • 1 por mês no Pro", w.accent, onAccent, Modifier.fillMaxWidth(), Icons.Rounded.WorkspacePremium) {
-                        PlayBilling.claimFreeTheme(w) { msg ->
-                            toast(msg)
-                            if (msg == PlayBilling.LOGIN_MSG) nav.navigate(Routes.LOGIN)
-                        }
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    BigButton("Comprar • $price", Color.White.copy(alpha = 0.16f), Color.White, Modifier.fillMaxWidth(), Icons.Rounded.Lock) {
-                        val activity = context.findActivity()
-                        if (activity == null) toast("Não foi possível abrir a Google Play.") else PlayBilling.buyWallpaper(activity, w) { msg ->
-                            toast(msg)
-                            if (msg == PlayBilling.LOGIN_MSG) nav.navigate(Routes.LOGIN)
-                        }
-                    }
                 }
                 else -> BigButton("Comprar • $price", w.accent, onAccent, Modifier.fillMaxWidth(), Icons.Rounded.Lock) {
                     val activity = context.findActivity()

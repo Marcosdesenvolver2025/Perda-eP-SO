@@ -3,6 +3,7 @@ name: Build APK
 on:
   push:
     branches: [ musibox ]
+    paths-ignore: [ 'hf/**', '.github/workflows/hf-fetch.yml' ]
   workflow_dispatch:
 
 permissions:

@@ -136,8 +136,8 @@ fun BrandHeader(onSearch: () -> Unit, onVault: () -> Unit, onSettings: () -> Uni
         Image(
             painterResource(R.drawable.ic_brand_note),
             null,
-            // o ícone de música segue a cor do tema (verde no visual padrão)
-            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(Neo.Green),
+            // o ícone de música segue a cor do tema aplicado (verde no padrão), também em Temas e Mais
+            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(com.musibox.app.themes.AppTheme.themeAccent),
             modifier = Modifier
                 .size(52.dp)
                 .graphicsLayer {
@@ -161,7 +161,7 @@ fun BrandHeader(onSearch: () -> Unit, onVault: () -> Unit, onSettings: () -> Uni
             Text(
                 buildAnnotatedString {
                     withStyle(SpanStyle(color = Color.White)) { append("Musi") }
-                    withStyle(SpanStyle(color = Neo.Green)) { append("Box") }
+                    withStyle(SpanStyle(color = com.musibox.app.themes.AppTheme.themeAccent)) { append("Box") }
                 },
                 fontSize = 28.sp,
                 fontWeight = FontWeight.ExtraBold,

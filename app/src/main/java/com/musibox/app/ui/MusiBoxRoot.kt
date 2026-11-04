@@ -278,6 +278,23 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
             if (showBlur) {
                 BottomFadeBlur(hazeState, height = overlayHeight + 34.dp, alpha = musicAmount, modifier = Modifier.align(Alignment.BottomCenter))
             }
+            // Com o mini player aberto, o rodapé ganha um fundo na cor do tema: nada da lista aparece entre o player e a barra
+            if (showMini) {
+                val tb = com.musibox.app.themes.AppTheme.themeBg
+                Box(
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(overlayHeight + 28.dp)
+                        .background(
+                            androidx.compose.ui.graphics.Brush.verticalGradient(
+                                0f to androidx.compose.ui.graphics.Color.Transparent,
+                                0.24f to tb.copy(alpha = 0.92f),
+                                1f to tb.copy(alpha = 0.98f),
+                            ),
+                        ),
+                )
+            }
             Column(
                 Modifier
                     .align(Alignment.BottomCenter)

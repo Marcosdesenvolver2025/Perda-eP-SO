@@ -64,7 +64,10 @@ import com.musibox.app.ui.components.LocalAppContainer
 import com.musibox.app.ui.components.Neo
 import kotlinx.coroutines.launch
 
-/** Mini player em vidro: capa, música, favoritar, play/pause, próxima e barra de progresso. */
+/** Fundo escuro opaco do mini player (a cor do tema vai por cima). */
+private val MiniBase = Color(0xFF101012)
+
+/** Mini player: capa, música, favoritar, play/pause, próxima e barra de progresso, sempre na cor do tema aplicado. */
 @Composable
 fun MiniPlayer(
     state: PlayerState,
@@ -118,16 +121,16 @@ fun MiniPlayer(
                 .fillMaxWidth()
                 .shadow(10.dp, shape)
                 .clip(shape)
+                // Cor cheia do tema aplicado (verde no padrão): não fica cinza nem transparente em nenhuma tela
                 .background(
                     Brush.horizontalGradient(
                         listOf(
-                            com.musibox.app.themes.AppTheme.accent.copy(alpha = 0.26f).compositeOver(com.musibox.app.themes.AppTheme.card),
-                            com.musibox.app.themes.AppTheme.card,
-                            com.musibox.app.themes.AppTheme.accent2.copy(alpha = 0.18f).compositeOver(com.musibox.app.themes.AppTheme.card),
+                            com.musibox.app.themes.AppTheme.themeAccent.copy(alpha = 0.40f).compositeOver(MiniBase),
+                            com.musibox.app.themes.AppTheme.themeAccent.copy(alpha = 0.28f).compositeOver(MiniBase),
                         ),
                     ),
                 )
-                .border(1.dp, com.musibox.app.themes.AppTheme.line, shape)
+                .border(1.dp, com.musibox.app.themes.AppTheme.themeAccent.copy(alpha = 0.38f), shape)
                 .clickable(onClick = onOpen),
         ) {
             Row(
@@ -148,7 +151,7 @@ fun MiniPlayer(
                     Text(
                         current.displayArtist,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Neo.Artist,
+                        color = Color.White.copy(alpha = 0.72f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -164,7 +167,7 @@ fun MiniPlayer(
                     Icon(
                         if (isFav) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                         if (isFav) "Remover dos favoritos" else "Favoritar",
-                        tint = if (isFav) com.musibox.app.ui.components.Neo.Green else Color(0xFFFFFFFF),
+                        tint = if (isFav) com.musibox.app.themes.AppTheme.themeAccent else Color(0xFFFFFFFF),
                         modifier = Modifier.size(26.dp),
                     )
                 }
@@ -198,14 +201,14 @@ fun MiniPlayer(
                     .fillMaxWidth()
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(com.musibox.app.themes.AppTheme.line),
+                    .background(Color.White.copy(alpha = 0.16f)),
             ) {
                 Box(
                     Modifier
                         .fillMaxWidth(progress)
                         .fillMaxHeight()
                         .clip(RoundedCornerShape(2.dp))
-                        .background(com.musibox.app.ui.components.Neo.Green),
+                        .background(com.musibox.app.themes.AppTheme.themeAccent),
                 )
             }
         }

@@ -31,7 +31,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.Block
-import androidx.compose.material.icons.rounded.CardGiftcard
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.Equalizer
@@ -124,7 +123,6 @@ private fun perksOf(plan: ProPlan, themes: Int): List<Perk> {
     }
     if (plan == ProPlan.PRO) {
         list += Perk(Icons.Rounded.NotificationsActive, "Criar toque de celular", "Escolha um trecho da música e use como toque.")
-        list += Perk(Icons.Rounded.CardGiftcard, "1 tema pago grátis por mês", "Você escolhe qual tema quer ganhar.")
     }
     return list
 }

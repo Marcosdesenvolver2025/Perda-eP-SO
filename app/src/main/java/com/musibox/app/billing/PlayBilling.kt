@@ -457,66 +457,8 @@ object PlayBilling : PurchasesUpdatedListener {
                 @Suppress("UNCHECKED_CAST")
                 val ids = (doc.get("owned") as? List<String>).orEmpty().filter { Wallpapers.get(it) != null }.toSet()
                 addOwned(ids)
-                (doc.get("freeClaims") as? Map<String, Any?>)?.keys?.let { months ->
-                    appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()?.apply {
-                        months.forEach { putBoolean("free_claim_$it", true) }
-                    }?.apply()
-                    _claimTick.update { it + 1 }
-                }
             }
         }
-    }
-
-    // ---------------------------------------------------------------- 1 tema pago grátis por mês (Pro)
-
-    private val _claimTick = MutableStateFlow(0)
-    /** Muda quando o tema grátis do mês é usado (para a tela atualizar). */
-    val claimTick: StateFlow<Int> = _claimTick.asStateFlow()
-
-    private fun monthKey(): String = java.text.SimpleDateFormat("yyyy-MM", java.util.Locale.US).format(java.util.Date())
-
-    /** O Pro ainda pode pegar o tema grátis deste mês? */
-    fun freeClaimAvailable(): Boolean {
-        if (currentPlan() != Plan.PRO || _pro.value.owner) return false
-        val prefs = appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE) ?: return false
-        return !prefs.getBoolean("free_claim_${monthKey()}", false)
-    }
-
-    /** Pega um tema pago de graça (1 por mês no Pro). Fica na conta Google para sempre. */
-    fun claimFreeTheme(w: Wallpaper, onResult: (String) -> Unit) {
-        if (!freeClaimAvailable()) {
-            onResult("O tema grátis deste mês já foi usado. Mês que vem tem outro!")
-            return
-        }
-        if (w.free || w.pro || w.id in _owned.value) {
-            onResult("Escolha um tema pago que você ainda não tem.")
-            return
-        }
-        val uid = currentUid()
-        if (uid == null) {
-            onResult(LOGIN_MSG)
-            return
-        }
-        val month = monthKey()
-        runCatching {
-            wallpapersDoc(uid).set(
-                mapOf(
-                    "owned" to com.google.firebase.firestore.FieldValue.arrayUnion(w.id),
-                    "freeClaims" to mapOf(month to w.id),
-                    "updatedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp(),
-                ),
-                com.google.firebase.firestore.SetOptions.merge(),
-            ).addOnCompleteListener { t ->
-                if (t.isSuccessful) {
-                    appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()?.putBoolean("free_claim_$month", true)?.apply()
-                    addOwned(setOf(w.id))
-                    _claimTick.update { it + 1 }
-                    onResult("Pronto! ${w.name} agora é seu, de graça.")
-                } else {
-                    onResult("Sem conexão. Tente de novo em instantes.")
-                }
-            }
-        }.onFailure { onResult("Não foi possível liberar agora.") }
     }
 
     /** Passe de 3 dias: soma 3 dias (uma vez por compra). */

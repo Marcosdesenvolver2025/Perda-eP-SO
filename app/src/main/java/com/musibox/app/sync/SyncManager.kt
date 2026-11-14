@@ -48,6 +48,7 @@ import java.util.concurrent.TimeUnit
 
 enum class SyncStatus(val label: String) {
     SIGNED_OUT("Sem conta conectada"),
+    NEEDS_PLAN("Backup na nuvem: recurso dos planos Go, Plus e Pro"),
     NEEDS_SETUP("Escolha como sincronizar"),
     SYNCED("Sincronizado"),
     SYNCING("Sincronizando..."),
@@ -117,12 +118,19 @@ class SyncManager(
         f + p + (if (s.historySync) h else 0) + (if (s.settingsDirty) 1 else 0) + (if (s.lastPlaybackDirty) 1 else 0)
     }
 
-    private val base = combine(auth.user, settings.settings, connectivity.online) { u, s, online -> Triple(u, s, online) }
+    /** Backup na nuvem é recurso dos planos (Go, Plus e Pro). Sem plano, os dados ficam só no aparelho. */
+    private val planOk: Boolean get() = com.musibox.app.billing.PlayBilling.isProNow()
+
+    private val base = combine(auth.user, settings.settings, connectivity.online, com.musibox.app.billing.PlayBilling.pro) { u, s, online, pro ->
+        Triple(u, s, online && pro.isActive) to pro.isActive
+    }
     private val work = combine(running, lastError, pendingCount) { r, e, p -> Triple(r, e, p) }
 
-    val state: StateFlow<SyncUiState> = combine(base, work) { (user, s, online), (isRunning, error, pending) ->
+    val state: StateFlow<SyncUiState> = combine(base, work) { (b, hasPlan), (isRunning, error, pending) ->
+        val (user, s, online) = b
         val status = when {
             user == null -> SyncStatus.SIGNED_OUT
+            !hasPlan -> SyncStatus.NEEDS_PLAN
             s.ownerUid != user.uid -> SyncStatus.NEEDS_SETUP
             isRunning -> SyncStatus.SYNCING
             !online -> SyncStatus.OFFLINE
@@ -139,7 +147,7 @@ class SyncManager(
     // Agendamento
 
     fun requestSync(delaySeconds: Long = 5) {
-        if (auth.currentUser == null) return
+        if (auth.currentUser == null || !planOk) return
         val request = OneTimeWorkRequestBuilder<SyncWorker>()
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             .setInitialDelay(delaySeconds, TimeUnit.SECONDS)
@@ -160,6 +168,11 @@ class SyncManager(
 
     /** Decide o que fazer depois do login. Pode abrir um diálogo de escolha. */
     suspend fun onSignedIn(user: AccountUser) {
+        // sem plano não envia nem restaura nada da nuvem (a conta continua conectada para as compras)
+        if (!planOk) {
+            _resolution.value = null
+            return
+        }
         val s = settings.snapshot()
         when {
             s.ownerUid == user.uid -> {
@@ -258,6 +271,7 @@ class SyncManager(
     /** Devolve true quando a conta já está pronta para sincronizar. */
     suspend fun checkPendingSetup(): Boolean {
         val user = auth.currentUser ?: return true
+        if (!planOk) return true
         val s = settings.snapshot()
         if (s.ownerUid != user.uid && _resolution.value == null) onSignedIn(user)
         else if (s.ownerUid == user.uid) requestSync(2)
@@ -353,6 +367,7 @@ class SyncManager(
     /** Envia pendências e recebe alterações. Retorna true se não sobrou nada pendente. */
     suspend fun performSync(): Boolean {
         val user = auth.currentUser ?: return true
+        if (!planOk) return true
         val s = settings.snapshot()
         if (s.ownerUid != user.uid) return true
         if (!connectivity.isOnlineNow()) return false

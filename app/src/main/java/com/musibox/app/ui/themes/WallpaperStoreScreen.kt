@@ -80,9 +80,9 @@ private enum class PriceFilter(val label: String, val range: IntRange? = null) {
     ALL("Todos os preços"),
     FREE("Grátis"),
     R1("R$ 0,99", 1..99),
-    R3("R$ 1,49 a R$ 1,99", 100..199),
-    R6("R$ 2,49 a R$ 2,99", 200..299),
-    R10("R$ 3,99 a R$ 4,99", 300..499),
+    R3("R$ 1,99", 100..199),
+    R6("R$ 2,99", 200..299),
+    R10("R$ 3,99", 300..499),
     PLANS("Planos Go, Plus e Pro"),
     MINE("Meus temas"),
 }
@@ -122,10 +122,10 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
     val browserId = AppTheme.browserWallpaper.id
 
     val ownedNow = owned
-    fun usable(w: Wallpaper) = PlayBilling.canUse(w) || (!w.pro && w.id in ownedNow)
+    fun usable(w: Wallpaper) = PlayBilling.canUse(w) || w.id in ownedNow
 
     /** "Meus temas": grátis, comprados (ou ganhos no Pro) e os que o plano libera. */
-    fun mine(w: Wallpaper) = w.free || (!w.pro && w.id in ownedNow) || (w.pro && PlayBilling.planUnlocks(plan, w))
+    fun mine(w: Wallpaper) = w.free || w.id in ownedNow || (w.pro && PlayBilling.planUnlocks(plan, w))
 
     val all = Wallpapers.all
     val found = remember(query) { all.filter { Wallpapers.matches(it, query) } }

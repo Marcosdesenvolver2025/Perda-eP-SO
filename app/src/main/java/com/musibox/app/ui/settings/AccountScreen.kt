@@ -284,6 +284,7 @@ private fun SyncStatusCard(status: SyncStatus, lastSyncAt: Long, error: String?,
         SyncStatus.ERROR -> Icons.Rounded.ErrorOutline to Mb.colors.danger
         SyncStatus.NEEDS_SETUP -> Icons.Rounded.SyncProblem to Mb.colors.warning
         SyncStatus.SIGNED_OUT -> Icons.Rounded.CloudOff to MaterialTheme.colorScheme.onSurfaceVariant
+        SyncStatus.NEEDS_PLAN -> Icons.Rounded.CloudOff to MaterialTheme.colorScheme.onSurfaceVariant
     }
     MbCard(
         Modifier

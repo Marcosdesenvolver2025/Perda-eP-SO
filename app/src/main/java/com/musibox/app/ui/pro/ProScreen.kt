@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CloudDone
 import androidx.compose.material.icons.rounded.DirectionsCar
 import androidx.compose.material.icons.rounded.AppShortcut
 import androidx.compose.material.icons.rounded.GraphicEq
@@ -120,6 +121,7 @@ private fun perksOf(plan: ProPlan, themes: Int): List<Perk> {
         Perk(Icons.Rounded.Palette, "Cor do app", "Escolha qualquer cor na roda de cores para o app inteiro."),
         Perk(Icons.Rounded.Bedtime, "Timer de sono", "A música para sozinha na hora que você escolher."),
         Perk(Icons.Rounded.Speed, "Velocidade da música", "Toque de 0,5x a 2x."),
+        Perk(Icons.Rounded.CloudDone, "Backup na nuvem", "Playlists e favoritas salvas na sua conta: voltam ao trocar de celular."),
     )
     if (plan != ProPlan.GO) {
         list += Perk(Icons.Rounded.Equalizer, "Estilos de equalizador", "Funk, Sertanejo, Grave forte, Rock, Pop e outros prontos.")

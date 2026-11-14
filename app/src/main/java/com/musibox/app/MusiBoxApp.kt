@@ -53,6 +53,10 @@ class MusiBoxApp : Application(), ImageLoaderFactory {
                 } else if (com.musibox.app.billing.PlayBilling.currentPlan() != com.musibox.app.billing.Plan.PRO) {
                     runCatching { com.musibox.app.vault.IconDisguise.resetStyleIfNeeded(app) }
                 }
+                // backup na nuvem (Go, Plus e Pro): quando o plano está ativo, prepara/envia
+                if (com.musibox.app.billing.PlayBilling.isProNow()) {
+                    runCatching { container.sync.checkPendingSetup() }
+                }
                 com.musibox.app.themes.ThemeStore.get(app).revalidate(
                     canPickColor = com.musibox.app.billing.PlayBilling.hasPlan(com.musibox.app.billing.Plan.GO),
                 ) { com.musibox.app.billing.PlayBilling.canUse(it) }

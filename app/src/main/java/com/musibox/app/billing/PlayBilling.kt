@@ -228,6 +228,8 @@ object PlayBilling : PurchasesUpdatedListener {
     fun canUse(w: Wallpaper): Boolean = when {
         _pro.value.owner -> true
         w.free -> true
+        // quem comprou o tema continua com ele, mesmo que hoje ele seja de um plano
+        w.id in _owned.value -> true
         w.pro -> planUnlocks(currentPlan(), w)
         else -> w.id in _owned.value
     }

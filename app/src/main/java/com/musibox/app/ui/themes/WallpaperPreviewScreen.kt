@@ -94,7 +94,7 @@ fun WallpaperPreviewScreen(nav: NavController, id: String) {
         }
         val w = list[pager.currentPage]
         val plan = pro.plan
-        val usable = PlayBilling.canUse(w) || (!w.pro && w.id in owned)
+        val usable = PlayBilling.canUse(w) || w.id in owned
         val price = prices[w.productId] ?: w.priceLabel
 
         // topo

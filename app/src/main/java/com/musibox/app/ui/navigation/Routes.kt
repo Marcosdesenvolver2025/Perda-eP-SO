@@ -37,6 +37,7 @@ object Routes {
     const val PRO = "pro"
     const val EQUALIZER = "equalizer"
     const val RINGTONE = "ringtone"
+    const val CAR_MODE = "car_mode"
 
     fun library(tab: Int = 0) = "library?tab=$tab"
     fun history(tab: Int = 0) = "history?tab=$tab"

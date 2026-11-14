@@ -54,7 +54,6 @@ import com.musibox.app.R
 import com.musibox.app.ui.components.Neo
 import com.musibox.app.ui.components.pressScale
 import com.musibox.app.ui.main.MainTabs
-import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
@@ -176,18 +175,7 @@ fun BottomFadeBlur(hazeState: HazeState?, height: Dp, alpha: () -> Float, modifi
             .fillMaxWidth()
             .height(height)
             .graphicsLayer { this.alpha = alpha() }
-            .then(
-                if (hazeState != null) {
-                    Modifier.hazeEffect(hazeState) {
-                        backgroundColor = Color.Black
-                        tints = listOf(HazeTint(Color.Black.copy(alpha = 0.22f)))
-                        blurRadius = 9.dp
-                        noiseFactor = 0f
-                        progressive = HazeProgressive.verticalGradient(startIntensity = 0f, endIntensity = 1f)
-                    }
-                } else {
-                    Modifier.background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.55f))))
-                },
-            ),
+            // sem desfoque (borrava o que passa por trás): só um degradê escuro limpo
+            .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.55f)))),
     )
 }

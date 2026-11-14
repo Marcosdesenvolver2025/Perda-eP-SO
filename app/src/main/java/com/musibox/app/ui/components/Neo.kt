@@ -122,6 +122,11 @@ fun GlassCircleButton(icon: ImageVector, description: String, onClick: () -> Uni
 }
 
 /** Topo das telas principais: logo 3D, nome e os botões de busca, avisos e configurações. */
+/** Cor do logo: verde padrão nas telas de visual padrão (Temas e Mais), cor do tema nas outras. */
+private fun brandColor(): Color =
+    if (com.musibox.app.themes.AppTheme.neutral) com.musibox.app.themes.AppTheme.DefaultAccent
+    else com.musibox.app.themes.AppTheme.themeAccent
+
 @Composable
 fun BrandHeader(onSearch: () -> Unit, onVault: () -> Unit, onSettings: () -> Unit) {
     Row(
@@ -136,8 +141,8 @@ fun BrandHeader(onSearch: () -> Unit, onVault: () -> Unit, onSettings: () -> Uni
         Image(
             painterResource(R.drawable.ic_brand_note),
             null,
-            // o ícone de música segue a cor do tema aplicado (verde no padrão), também em Temas e Mais
-            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(com.musibox.app.themes.AppTheme.themeAccent),
+            // em Temas e Mais o ícone fica sempre verde; nas outras abas segue a cor do tema aplicado
+            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(brandColor()),
             modifier = Modifier
                 .size(52.dp)
                 .graphicsLayer {
@@ -161,7 +166,7 @@ fun BrandHeader(onSearch: () -> Unit, onVault: () -> Unit, onSettings: () -> Uni
             Text(
                 buildAnnotatedString {
                     withStyle(SpanStyle(color = Color.White)) { append("Musi") }
-                    withStyle(SpanStyle(color = com.musibox.app.themes.AppTheme.themeAccent)) { append("Box") }
+                    withStyle(SpanStyle(color = brandColor())) { append("Box") }
                 },
                 fontSize = 28.sp,
                 fontWeight = FontWeight.ExtraBold,

@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "889909025455-da7a8ecu749tddaa3qcpd1sqpkcuur1r.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "br.com.musibox",
+            "certificate_hash": "6d45e9bfd6069bd81d3433698e21c1f11948b5ca"
+          }
+        },
+        {
           "client_id": "889909025455-7dq3ppiqb8i9lsaaali647j50afto099.apps.googleusercontent.com",
           "client_type": 3
         }

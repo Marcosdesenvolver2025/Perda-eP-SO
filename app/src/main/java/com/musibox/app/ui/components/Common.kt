@@ -186,7 +186,7 @@ fun GradientButton(
             .height(height)
             .then(
                 if (enabled) {
-                    Modifier.shadow(14.dp, RoundedCornerShape(height / 2), ambientColor = MaterialTheme.colorScheme.primary, spotColor = MaterialTheme.colorScheme.primary)
+                    Modifier.shadow(6.dp, RoundedCornerShape(height / 2))
                 } else {
                     Modifier
                 },

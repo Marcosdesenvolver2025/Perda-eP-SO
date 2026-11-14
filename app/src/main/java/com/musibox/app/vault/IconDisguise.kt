@@ -10,13 +10,22 @@ import com.musibox.app.R
  * por Calculadora, Notas, Relógio ou Clima. Ao tocar, o MusiBox abre normalmente.
  */
 object IconDisguise {
-    enum class Option(val alias: String, val label: String, val icon: Int) {
+    /** [style] = ícone alternativo do próprio MusiBox (Pro); os outros são disfarces do cofre. */
+    enum class Option(val alias: String, val label: String, val icon: Int, val style: Boolean = false) {
         DEFAULT("LauncherDefault", "MusiBox (padrão)", R.mipmap.ic_launcher),
         CALC("LauncherCalc", "Calculadora", R.mipmap.ic_disguise_calc),
         NOTES("LauncherNotes", "Notas", R.mipmap.ic_disguise_notes),
         CLOCK("LauncherClock", "Relógio", R.mipmap.ic_disguise_clock),
         WEATHER("LauncherWeather", "Clima", R.mipmap.ic_disguise_weather),
+        ALT_GREEN("LauncherAltGreen", "MusiBox Verde", R.mipmap.ic_alt_green, style = true),
+        ALT_GOLD("LauncherAltGold", "MusiBox Dourado", R.mipmap.ic_alt_gold, style = true),
+        ALT_NEON("LauncherAltNeon", "MusiBox Neon", R.mipmap.ic_alt_neon, style = true),
+        ALT_OCEAN("LauncherAltOcean", "MusiBox Oceano", R.mipmap.ic_alt_ocean, style = true),
+        ALT_ICE("LauncherAltIce", "MusiBox Gelo", R.mipmap.ic_alt_ice, style = true),
     }
+
+    val disguises: List<Option> get() = Option.entries.filter { !it.style }
+    val styles: List<Option> get() = listOf(Option.DEFAULT) + Option.entries.filter { it.style }
 
     private fun component(context: Context, o: Option) = ComponentName(context.packageName, "com.musibox.app.${o.alias}")
 
@@ -45,8 +54,13 @@ object IconDisguise {
         }
     }
 
-    /** Sem Pro, volta ao ícone normal. */
+    /** Sem plano, volta ao ícone normal. */
     fun resetIfNeeded(context: Context) {
         if (current(context) != Option.DEFAULT) apply(context, Option.DEFAULT)
+    }
+
+    /** Os ícones alternativos são do Pro: em outro plano, volta ao ícone normal. */
+    fun resetStyleIfNeeded(context: Context) {
+        if (current(context).style) apply(context, Option.DEFAULT)
     }
 }

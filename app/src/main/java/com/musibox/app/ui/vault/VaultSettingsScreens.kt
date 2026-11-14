@@ -253,7 +253,7 @@ private fun VaultSettingsContent(nav: NavController) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(10.dp))
-                    com.musibox.app.vault.IconDisguise.Option.entries.forEach { o ->
+                    com.musibox.app.vault.IconDisguise.disguises.forEach { o ->
                         Row(
                             Modifier
                                 .fillMaxWidth()

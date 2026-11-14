@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -76,29 +77,45 @@ object AppTheme {
     var themeSurface by mutableStateOf(DefaultSurface)
         private set
 
+    /**
+     * Cor escolhida na roda de cores (Go, Plus e Pro). Quando existe, ela manda no destaque do app
+     * (botões, barra, mini player) por cima da cor do papel de parede. null = cor do tema.
+     */
+    var customAccent by mutableStateOf<Color?>(null)
+        internal set
+
+    /** Versão um pouco mais clara da cor, para degradês. */
+    private fun lighter(c: Color): Color = Color(
+        red = c.red + (1f - c.red) * 0.25f,
+        green = c.green + (1f - c.green) * 0.25f,
+        blue = c.blue + (1f - c.blue) * 0.25f,
+    )
+
     internal fun applyPalette(themeWallpaper: Wallpaper?) {
+        val custom = customAccent
         val tp = themeWallpaper?.let { WallpaperPalettes[it.id] }
         if (themeWallpaper == null || tp == null || tp.size < 6) {
-            themeAccent = themeWallpaper?.accent ?: DefaultAccent
+            themeAccent = custom ?: themeWallpaper?.accent ?: DefaultAccent
             themeBg = DefaultBg
             themeSurface = DefaultSurface
         } else {
-            themeAccent = themeWallpaper.accent
+            themeAccent = custom ?: themeWallpaper.accent
             themeBg = Color(tp[1])
             themeSurface = Color(tp[2])
         }
         val w = if (neutral) null else themeWallpaper
         val p = w?.let { WallpaperPalettes[it.id] }
         if (w == null || p == null || p.size < 6) {
-            accent = w?.accent ?: DefaultAccent
-            accent2 = Color(0xFF3BEA80)
+            // Temas e Mais (visual padrão) ficam sempre no verde do app
+            accent = if (neutral) DefaultAccent else custom ?: w?.accent ?: DefaultAccent
+            accent2 = if (!neutral && custom != null) lighter(custom) else Color(0xFF3BEA80)
             bg = DefaultBg; surface = DefaultSurface; card = DefaultCard; cardHigh = DefaultCardHigh; line = DefaultLine
             scrim = 0.42f
             paletteKey = w?.id.orEmpty()
             return
         }
-        accent = w.accent
-        accent2 = Color(p[0])
+        accent = custom ?: w.accent
+        accent2 = if (custom != null) lighter(custom) else Color(p[0])
         bg = Color(p[1]); surface = Color(p[2]); card = Color(p[3]); cardHigh = Color(p[4]); line = Color(p[5])
         scrim = if (p.size >= 7) ((p[6] ushr 24) and 0xFF).toFloat() / 255f else 0.42f
         paletteKey = w.id
@@ -136,7 +153,16 @@ class ThemeStore private constructor(context: Context) {
     }
 
     init {
+        AppTheme.customAccent = if (prefs.contains(KEY_ACCENT)) Color(prefs.getInt(KEY_ACCENT, 0)) else null
         apply(prefs.getString(KEY_APP, null), prefs.getString(KEY_BROWSER, Wallpapers.DEFAULT_BROWSER))
+    }
+
+    /** Cor própria do app escolhida na roda de cores (null volta à cor do tema). */
+    fun setCustomAccent(color: Color?) {
+        if (color == null) prefs.edit().remove(KEY_ACCENT).apply()
+        else prefs.edit().putInt(KEY_ACCENT, color.toArgb()).apply()
+        AppTheme.customAccent = color
+        AppTheme.applyPalette(AppTheme.appWallpaper)
     }
 
     private fun apply(appId: String?, browserId: String?) {
@@ -172,7 +198,9 @@ class ThemeStore private constructor(context: Context) {
     }
 
     /** Se a pessoa perdeu um papel pago (ex.: reembolso, fim do Pro), volta ao padrão. */
-    fun revalidate(isAllowed: (Wallpaper) -> Boolean) {
+    fun revalidate(canPickColor: Boolean = true, isAllowed: (Wallpaper) -> Boolean) {
+        // a roda de cores é dos planos: sem plano, volta à cor do tema
+        if (!canPickColor && AppTheme.customAccent != null) setCustomAccent(null)
         val app = Wallpapers.get(appWallpaperId())
         if (app != null && !isAllowed(app)) setAppWallpaper(null)
         val browser = Wallpapers.get(browserWallpaperId())
@@ -186,6 +214,7 @@ class ThemeStore private constructor(context: Context) {
         private const val KEY_SETUP = "browser_setup_done"
         private const val KEY_NEWS_ON = "news_enabled"
         private const val KEY_NEWS_ASKED = "news_asked"
+        private const val KEY_ACCENT = "custom_accent"
 
         val ALL_INTERESTS = listOf("Entretenimento", "IA", "Esportes", "Compras", "Viagens")
 

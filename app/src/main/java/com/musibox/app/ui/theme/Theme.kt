@@ -272,7 +272,8 @@ fun MusiBoxTheme(themeMode: ThemeMode, content: @Composable () -> Unit) {
         }
     }
     // Com papel de parede no fundo, todo texto ganha uma sombra suave (lê bem em cima de qualquer imagem)
-    val typography = remember(dark, key) { if (dark && key.isNotEmpty()) MbTypography.withShadow() else MbTypography }
+    // sem sombra nas letras: a leitura sobre o papel de parede vem da camada escura (scrim), sem borrar
+    val typography = MbTypography
     CompositionLocalProvider(LocalMbColors provides extras) {
         MaterialTheme(
             colorScheme = scheme,

@@ -125,12 +125,12 @@ fun MiniPlayer(
                 .background(
                     Brush.horizontalGradient(
                         listOf(
-                            com.musibox.app.themes.AppTheme.themeAccent.copy(alpha = 0.40f).compositeOver(MiniBase),
-                            com.musibox.app.themes.AppTheme.themeAccent.copy(alpha = 0.28f).compositeOver(MiniBase),
+                            com.musibox.app.themes.AppTheme.themeAccent.copy(alpha = 0.62f).compositeOver(MiniBase),
+                            com.musibox.app.themes.AppTheme.themeAccent.copy(alpha = 0.50f).compositeOver(MiniBase),
                         ),
                     ),
                 )
-                .border(1.dp, com.musibox.app.themes.AppTheme.themeAccent.copy(alpha = 0.38f), shape)
+                .border(1.dp, com.musibox.app.themes.AppTheme.themeAccent.copy(alpha = 0.75f), shape)
                 .clickable(onClick = onOpen),
         ) {
             Row(
@@ -167,7 +167,7 @@ fun MiniPlayer(
                     Icon(
                         if (isFav) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                         if (isFav) "Remover dos favoritos" else "Favoritar",
-                        tint = if (isFav) com.musibox.app.themes.AppTheme.themeAccent else Color(0xFFFFFFFF),
+                        tint = Color(0xFFFFFFFF),
                         modifier = Modifier.size(26.dp),
                     )
                 }
@@ -201,14 +201,14 @@ fun MiniPlayer(
                     .fillMaxWidth()
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(Color.White.copy(alpha = 0.16f)),
+                    .background(Color.White.copy(alpha = 0.22f)),
             ) {
                 Box(
                     Modifier
                         .fillMaxWidth(progress)
                         .fillMaxHeight()
                         .clip(RoundedCornerShape(2.dp))
-                        .background(com.musibox.app.themes.AppTheme.themeAccent),
+                        .background(Color.White),
                 )
             }
         }

@@ -85,14 +85,24 @@ fun EqualizerScreen(nav: NavController) {
                     Icon(Icons.Rounded.WorkspacePremium, null, tint = Neo.Green, modifier = Modifier.size(30.dp))
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("Recurso do MusiBox Pro", color = Color.White, fontWeight = FontWeight.Bold)
-                        Text("Experimente os ajustes; o som muda quando você for Pro.", color = Neo.Text2, fontSize = 13.sp)
+                        Text("Recurso dos planos Go, Plus e Pro", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text("Experimente os ajustes; o som muda quando você tiver um plano.", color = Neo.Text2, fontSize = 13.sp)
                     }
                 }
                 Spacer(Modifier.height(16.dp))
             }
 
-            Text("Estilos", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            // Estilos prontos (Funk, Sertanejo, Grave forte…) são do Plus e do Pro; as faixas manuais ficam para todos os planos
+            val stylesOk = pro.plan.ordinal >= com.musibox.app.billing.Plan.PLUS.ordinal
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Estilos", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                if (!stylesOk) {
+                    Spacer(Modifier.width(8.dp))
+                    Icon(Icons.Rounded.WorkspacePremium, null, tint = Color(0xFFFFC857), modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Plus e Pro", color = Neo.Text2, fontSize = 13.sp)
+                }
+            }
             Spacer(Modifier.height(10.dp))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 (AudioFx.PRESETS.map { it.first } + if (s.preset == "Personalizado") listOf("Personalizado") else emptyList()).forEach { name ->
@@ -105,7 +115,13 @@ fun EqualizerScreen(nav: NavController) {
                             .clip(RoundedCornerShape(18.dp))
                             .background(if (sel) Neo.Green else com.musibox.app.themes.AppTheme.card)
                             .border(1.dp, if (sel) Neo.Green else com.musibox.app.themes.AppTheme.line, RoundedCornerShape(18.dp))
-                            .bounceClick(pressed = 0.92f, shape = RoundedCornerShape(18.dp)) { if (name != "Personalizado") AudioFx.setPreset(name) }
+                            .bounceClick(pressed = 0.92f, shape = RoundedCornerShape(18.dp)) {
+                                when {
+                                    name == "Personalizado" -> Unit
+                                    !stylesOk && name != "Normal" -> nav.navigate(Routes.PRO)
+                                    else -> AudioFx.setPreset(name)
+                                }
+                            }
                             .padding(horizontal = 14.dp, vertical = 8.dp),
                     )
                 }

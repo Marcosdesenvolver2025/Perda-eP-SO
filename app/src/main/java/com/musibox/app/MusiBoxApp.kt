@@ -50,8 +50,12 @@ class MusiBoxApp : Application(), ImageLoaderFactory {
                 val app = this@MusiBoxApp
                 if (!com.musibox.app.billing.PlayBilling.isProNow()) {
                     runCatching { com.musibox.app.vault.IconDisguise.resetIfNeeded(app) }
+                } else if (com.musibox.app.billing.PlayBilling.currentPlan() != com.musibox.app.billing.Plan.PRO) {
+                    runCatching { com.musibox.app.vault.IconDisguise.resetStyleIfNeeded(app) }
                 }
-                com.musibox.app.themes.ThemeStore.get(app).revalidate { com.musibox.app.billing.PlayBilling.canUse(it) }
+                com.musibox.app.themes.ThemeStore.get(app).revalidate(
+                    canPickColor = com.musibox.app.billing.PlayBilling.hasPlan(com.musibox.app.billing.Plan.GO),
+                ) { com.musibox.app.billing.PlayBilling.canUse(it) }
             }
         }
     }

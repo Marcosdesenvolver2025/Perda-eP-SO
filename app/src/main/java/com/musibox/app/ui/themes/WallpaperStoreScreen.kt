@@ -285,18 +285,48 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.weight(1f),
         ) {
+            // Primeiro: os papéis de parede que estão aplicados agora (app e navegador)
+            if (price == PriceFilter.ALL && query.isBlank()) {
+                item(key = "applied", span = { GridItemSpan(maxLineSpan) }) {
+                    Column(Modifier.padding(top = 4.dp)) {
+                        SectionHead("Aplicados", "agora")
+                        Spacer(Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            AppliedCard(
+                                label = "No app",
+                                icon = Icons.Rounded.PhoneAndroid,
+                                w = AppTheme.appWallpaper,
+                                modifier = Modifier.weight(1f),
+                            ) { AppTheme.appWallpaper?.let { nav.navigate(Routes.wallpaper(it.id)) } }
+                            AppliedCard(
+                                label = "No navegador",
+                                icon = Icons.Rounded.Language,
+                                w = AppTheme.browserWallpaper,
+                                modifier = Modifier.weight(1f),
+                            ) { nav.navigate(Routes.wallpaper(AppTheme.browserWallpaper.id)) }
+                        }
+                        Spacer(Modifier.height(10.dp))
+                        AccentPickerRow(
+                            canPick = plan != com.musibox.app.billing.Plan.NONE,
+                            onNeedPlan = { nav.navigate(Routes.PRO) },
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        AppIconRow(
+                            isPro = plan == com.musibox.app.billing.Plan.PRO,
+                            onNeedPlan = { nav.navigate(Routes.PRO) },
+                        )
+                    }
+                }
+            }
             sections.forEach { (title, list) ->
                 if (list.isEmpty()) return@forEach
                 item(key = "h_$title", span = { GridItemSpan(maxLineSpan) }) {
-                    Column(Modifier.padding(top = 12.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 4.dp)) {
-                            val head = title.substringBefore(" • ")
-                            val detail = if (" • " in title) title.substringAfter(" • ") else "${list.size}"
-                            Text(head, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
-                            Spacer(Modifier.width(8.dp))
-                            Text(detail, color = Neo.Text2, fontSize = 14.sp)
-                        }
-                        if (title == firstPlanTitle) PlansBanner(plan, Modifier.padding(top = 8.dp)) { nav.navigate(Routes.PRO) }
+                    Column(Modifier.padding(top = 14.dp)) {
+                        if (title == firstPlanTitle) PlansBanner(plan, Modifier.padding(bottom = 14.dp)) { nav.navigate(Routes.PRO) }
+                        SectionHead(
+                            title.substringBefore(" • "),
+                            if (" • " in title) title.substringAfter(" • ") else "${list.size} temas",
+                        )
                     }
                 }
                 items(list, key = { "${title}_${it.id}" }) { w ->
@@ -326,42 +356,120 @@ private const val GO_TITLE = "Assinatura Go"
 private const val PLUS_TITLE = "Assinatura Plus"
 private const val PRO_TITLE = "Assinatura Pro"
 
-/** Faixa que explica os planos e leva para a tela de assinatura. */
+/** Cabeçalho de seção alinhado: barrinha verde, título e detalhe. */
+@Composable
+private fun SectionHead(title: String, detail: String) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 2.dp)) {
+        Box(
+            Modifier
+                .size(width = 4.dp, height = 20.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(AppTheme.DefaultAccent),
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(title, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
+        Spacer(Modifier.weight(1f))
+        Text(detail, color = Neo.Text2, fontSize = 13.sp)
+    }
+}
+
+/** Cartão de um papel de parede aplicado (no app ou no navegador). */
+@Composable
+private fun AppliedCard(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, w: Wallpaper?, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(20.dp)
+    Box(
+        modifier
+            .height(190.dp)
+            .bounceClick(pressed = 0.96f, shape = shape, onClick = onClick)
+            .border(2.dp, AppTheme.DefaultAccent, shape),
+    ) {
+        if (w != null) {
+            WallpaperImage(w, Modifier.fillMaxSize(), thumbnail = true)
+        } else {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(Brush.verticalGradient(listOf(Color(0xFF1B2A20), Color(0xFF0B0D0C)))),
+            )
+        }
+        Row(
+            Modifier
+                .align(Alignment.TopStart)
+                .padding(8.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(AppTheme.DefaultAccent)
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(icon, null, tint = Color(0xFF06140B), modifier = Modifier.size(14.dp))
+            Spacer(Modifier.width(4.dp))
+            Text(label, color = Color(0xFF06140B), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        }
+        Text(
+            w?.name ?: "Tema padrão",
+            color = Color.White,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .fillMaxWidth()
+                .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))))
+                .padding(horizontal = 10.dp, vertical = 10.dp),
+        )
+    }
+}
+
+/** Cartão "Seu plano", no verde do app, que leva para a tela de assinatura. */
 @Composable
 private fun PlansBanner(plan: com.musibox.app.billing.Plan, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(18.dp)
+    val shape = RoundedCornerShape(22.dp)
+    val green = AppTheme.DefaultAccent
+    val dark = Color(0xFF06140B)
     Row(
         modifier
             .fillMaxWidth()
-            .padding(top = 4.dp)
             .clip(shape)
-            .background(
-                Brush.horizontalGradient(
-                    listOf(
-                        Neo.Green.copy(alpha = 0.24f).compositeOver(AppTheme.card),
-                        AppTheme.accent2.copy(alpha = 0.18f).compositeOver(AppTheme.card),
-                    ),
-                ),
-            )
-            .border(1.dp, Color.White.copy(alpha = 0.12f), shape)
+            .background(Brush.linearGradient(listOf(Color(0xFF2BF07A), green, Color(0xFF12A84B))))
             .bounceClick(pressed = 0.97f, shape = shape, onClick = onClick)
-            .padding(14.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Rounded.WorkspacePremium, null, tint = Color(0xFFFFC857), modifier = Modifier.size(30.dp))
+        Box(
+            Modifier
+                .size(46.dp)
+                .clip(CircleShape)
+                .background(dark.copy(alpha = 0.88f)),
+            contentAlignment = Alignment.Center,
+        ) { Icon(Icons.Rounded.WorkspacePremium, null, tint = green, modifier = Modifier.size(26.dp)) }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                if (plan == com.musibox.app.billing.Plan.NONE) "Temas que não se compram" else "Seu plano: ${plan.label}",
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
+                if (plan == com.musibox.app.billing.Plan.NONE) "Assine e libere temas" else "Seu plano: ${plan.label}",
+                color = dark,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 17.sp,
             )
+            Spacer(Modifier.height(2.dp))
             Text(
-                "Go: ${Wallpapers.all.count { "go" in it.plans }} • Plus: ${Wallpapers.all.count { "plus" in it.plans }} • Pro: ${Wallpapers.all.count { "pro" in it.plans }} temas • cada plano tem os seus",
-                color = Neo.Text2,
+                "Go ${Wallpapers.all.count { "go" in it.plans }} • Plus ${Wallpapers.all.count { "plus" in it.plans }} • Pro ${Wallpapers.all.count { "pro" in it.plans }} temas exclusivos",
+                color = dark.copy(alpha = 0.78f),
                 fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
             )
         }
+        Spacer(Modifier.width(8.dp))
+        Text(
+            if (plan == com.musibox.app.billing.Plan.NONE) "Ver planos" else "Ver",
+            color = green,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .clip(RoundedCornerShape(14.dp))
+                .background(dark)
+                .padding(horizontal = 12.dp, vertical = 7.dp),
+        )
     }
 }
 

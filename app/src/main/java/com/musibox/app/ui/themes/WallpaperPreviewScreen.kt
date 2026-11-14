@@ -21,6 +21,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Wallpaper
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Lock
@@ -56,6 +57,7 @@ import com.musibox.app.themes.Wallpapers
 import com.musibox.app.ui.components.WallpaperImage
 import com.musibox.app.ui.components.bounceClick
 import com.musibox.app.ui.navigation.Routes
+import kotlinx.coroutines.launch
 
 /**
  * Prévia em tela cheia (deslize para ver os outros). Mostra como fica no app ou no navegador,
@@ -78,6 +80,9 @@ fun WallpaperPreviewScreen(nav: NavController, id: String) {
     var mode by rememberSaveable { mutableStateOf("app") }
 
     fun toast(msg: String) = Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+    var deviceMenu by remember { mutableStateOf(false) }
+    var settingDevice by remember { mutableStateOf(false) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         HorizontalPager(state = pager, modifier = Modifier.fillMaxSize(), key = { list[it].id }) { page ->
@@ -157,6 +162,45 @@ fun WallpaperPreviewScreen(nav: NavController, id: String) {
                             themes.setBrowserWallpaper(w.id)
                             toast("Papel do navegador trocado.")
                         }
+                    }
+                    // Colocar no próprio celular (tela inicial / bloqueio): liberado para quem tem o tema
+                    Spacer(Modifier.height(10.dp))
+                    BigButton(
+                        if (settingDevice) "Aplicando no celular…" else "Colocar no celular",
+                        Color.White.copy(alpha = 0.16f),
+                        Color.White,
+                        Modifier.fillMaxWidth(),
+                        Icons.Rounded.Wallpaper,
+                    ) { if (!settingDevice) deviceMenu = true }
+                    if (deviceMenu) {
+                        androidx.compose.material3.AlertDialog(
+                            onDismissRequest = { deviceMenu = false },
+                            containerColor = AppTheme.cardHigh,
+                            icon = { Icon(Icons.Rounded.Wallpaper, null, tint = w.accent) },
+                            title = { Text("Colocar no celular", color = Color.White, fontWeight = FontWeight.Bold) },
+                            text = {
+                                Column {
+                                    Text("Onde você quer usar \"${w.name}\"?", color = Color.White.copy(alpha = 0.8f))
+                                    Spacer(Modifier.height(10.dp))
+                                    com.musibox.app.themes.DeviceWallpaper.Target.entries.forEach { t ->
+                                        TextButton(
+                                            onClick = {
+                                                deviceMenu = false
+                                                settingDevice = true
+                                                scope.launch {
+                                                    val ok = com.musibox.app.themes.DeviceWallpaper.apply(context, w, t)
+                                                    settingDevice = false
+                                                    toast(if (ok) "Pronto! ${t.label} do celular com ${w.name}." else "Este celular não deixou trocar o papel de parede.")
+                                                }
+                                            },
+                                            modifier = Modifier.fillMaxWidth(),
+                                        ) { Text(t.label, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp) }
+                                    }
+                                }
+                            },
+                            confirmButton = {},
+                            dismissButton = { TextButton(onClick = { deviceMenu = false }) { Text("Cancelar", color = Color.White.copy(alpha = 0.7f)) } },
+                        )
                     }
                     if (AppTheme.appWallpaper?.id == w.id) {
                         TextButton(onClick = { themes.setAppWallpaper(null); toast("O app voltou ao fundo preto.") }, modifier = Modifier.align(Alignment.CenterHorizontally)) {

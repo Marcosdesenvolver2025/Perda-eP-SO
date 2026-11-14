@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.SET_WALLPAPER" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <!-- Leitura de músicas (Android 13+ granular; antigo apenas até o 12) -->
@@ -66,6 +67,72 @@
             android:exported="true"
             android:icon="@mipmap/ic_launcher"
             android:roundIcon="@mipmap/ic_launcher_round"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <!-- Ícones alternativos do MusiBox (recurso do Pro) -->
+        <activity-alias
+            android:name=".LauncherAltGreen"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_alt_green"
+            android:roundIcon="@mipmap/ic_alt_green"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".LauncherAltGold"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_alt_gold"
+            android:roundIcon="@mipmap/ic_alt_gold"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".LauncherAltNeon"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_alt_neon"
+            android:roundIcon="@mipmap/ic_alt_neon"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".LauncherAltOcean"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_alt_ocean"
+            android:roundIcon="@mipmap/ic_alt_ocean"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".LauncherAltIce"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_alt_ice"
+            android:roundIcon="@mipmap/ic_alt_ice"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <intent-filter>

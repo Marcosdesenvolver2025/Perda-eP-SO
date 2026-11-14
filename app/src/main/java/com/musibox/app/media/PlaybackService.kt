@@ -95,7 +95,20 @@ class PlaybackService : MediaSessionService() {
 
     override fun onCreate() {
         super.onCreate()
-        player = ExoPlayer.Builder(this)
+        // O visualizador (Plus) lê o som por um "grampo" no próprio player: sem microfone, sem permissão
+        val renderers = object : androidx.media3.exoplayer.DefaultRenderersFactory(this) {
+            override fun buildAudioSink(
+                context: android.content.Context,
+                enableFloatOutput: Boolean,
+                enableAudioTrackPlaybackParams: Boolean,
+            ): androidx.media3.exoplayer.audio.AudioSink =
+                androidx.media3.exoplayer.audio.DefaultAudioSink.Builder(context)
+                    .setEnableFloatOutput(enableFloatOutput)
+                    .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
+                    .setAudioProcessors(arrayOf(LevelTapProcessor()))
+                    .build()
+        }
+        player = ExoPlayer.Builder(this, renderers)
             .setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(C.USAGE_MEDIA)
@@ -118,6 +131,9 @@ class PlaybackService : MediaSessionService() {
                 val billing = com.musibox.app.billing.PlayBilling
                 AudioFx.allowed = billing.isProNow()
                 AudioFx.plusAllowed = billing.hasPlan(com.musibox.app.billing.Plan.PLUS)
+                // estilos prontos do equalizador são do Plus e do Pro
+                val pre = AudioFx.settings.value.preset
+                if (!AudioFx.plusAllowed && billing.synced.value && pre != "Normal" && pre != "Personalizado") AudioFx.setPreset("Normal")
                 // Velocidade é recurso dos planos: sem plano volta ao normal
                 if (!billing.isProNow() && player.playbackParameters.speed != 1f) {
                     player.playbackParameters = androidx.media3.common.PlaybackParameters(1f)

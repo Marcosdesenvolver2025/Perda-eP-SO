@@ -28,6 +28,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.DirectionsCar
+import androidx.compose.material.icons.rounded.AppShortcut
+import androidx.compose.material.icons.rounded.GraphicEq
+import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.Block
@@ -102,26 +106,31 @@ private data class Perk(val icon: ImageVector, val title: String, val text: Stri
 /** Recursos extras que todos os planos têm. */
 private val extras = listOf(
     Perk(Icons.Rounded.Block, "Bloqueador de anúncios", "Navegue sem propagandas e rastreadores."),
-    Perk(Icons.Rounded.Equalizer, "Equalizador", "Estilos (pop, rock, funk…), graves e som 3D."),
-    Perk(Icons.Rounded.Bedtime, "Timer de sono", "A música para sozinha na hora que você escolher."),
+    Perk(Icons.Rounded.Equalizer, "Equalizador", "Ajuste as faixas de graves e agudos, reforço de graves e som 3D."),
     Perk(Icons.Rounded.DarkMode, "Sites escuros", "Sites claros ficam escuros no navegador."),
     Perk(Icons.Rounded.Lock, "Abas privadas com PIN", "A navegação privada só abre com o PIN do cofre."),
     Perk(Icons.Rounded.TheaterComedy, "Ícone disfarçado", "O MusiBox aparece como Calculadora, Notas, Relógio ou Clima."),
     Perk(Icons.Rounded.Shield, "Alerta de invasão", "Veja quando alguém errou o PIN do cofre."),
 )
 
-/** O que cada plano oferece (só o que vem nele). */
+/** O que cada plano oferece (cada plano tem tudo do anterior e mais um pouco). */
 private fun perksOf(plan: ProPlan, themes: Int): List<Perk> {
     val list = mutableListOf(
         Perk(Icons.Rounded.Wallpaper, "$themes temas exclusivos", "Só deste plano: não se compram e não vêm nos outros planos."),
+        Perk(Icons.Rounded.Palette, "Cor do app", "Escolha qualquer cor na roda de cores para o app inteiro."),
+        Perk(Icons.Rounded.Bedtime, "Timer de sono", "A música para sozinha na hora que você escolher."),
         Perk(Icons.Rounded.Speed, "Velocidade da música", "Toque de 0,5x a 2x."),
     )
     if (plan != ProPlan.GO) {
+        list += Perk(Icons.Rounded.Equalizer, "Estilos de equalizador", "Funk, Sertanejo, Grave forte, Rock, Pop e outros prontos.")
+        list += Perk(Icons.Rounded.GraphicEq, "Visualizador", "Barras que pulsam com a música no player.")
         list += Perk(Icons.Rounded.Tune, "Transição suave", "Uma música entra devagar na outra.")
         list += Perk(Icons.Rounded.Widgets, "Widget na tela inicial", "Capa, música e botões direto na tela do celular.")
         list += Perk(Icons.AutoMirrored.Rounded.VolumeUp, "Volume extra", "Mais alto que o máximo do celular.")
     }
     if (plan == ProPlan.PRO) {
+        list += Perk(Icons.Rounded.AppShortcut, "Ícones do app", "Troque o ícone: Verde, Dourado, Neon, Oceano ou Gelo.")
+        list += Perk(Icons.Rounded.DirectionsCar, "Modo carro", "Botões enormes e letras grandes para usar dirigindo.")
         list += Perk(Icons.Rounded.NotificationsActive, "Criar toque de celular", "Escolha um trecho da música e use como toque.")
     }
     return list

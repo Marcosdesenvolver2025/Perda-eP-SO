@@ -36,6 +36,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.DirectionsCar
+import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.Equalizer
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
@@ -117,6 +119,11 @@ fun PlayerScreen(nav: NavController) {
     var dragging by remember { mutableStateOf<Float?>(null) }
     var speedMenu by remember { mutableStateOf(false) }
     var playlistSong by remember { mutableStateOf<Song?>(null) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val vizState by com.musibox.app.billing.PlayBilling.pro.collectAsStateWithLifecycle()
+    val vizAllowed = vizState.plan.ordinal >= com.musibox.app.billing.Plan.PLUS.ordinal
+    val vizPrefs = remember { context.getSharedPreferences("player", android.content.Context.MODE_PRIVATE) }
+    var vizOn by remember { mutableStateOf(vizPrefs.getBoolean("visualizer", true)) }
 
     val current = state.current
     val tilt = rememberDeviceTilt()
@@ -168,7 +175,14 @@ fun PlayerScreen(nav: NavController) {
 
             Spacer(Modifier.height(24.dp))
             HoloArtwork(AudioCover(current.uri ?: android.net.Uri.EMPTY), tilt)
-            Spacer(Modifier.height(12.dp))
+            // Visualizador (Plus e Pro): barras que pulsam com a música
+            if (vizAllowed && vizOn) {
+                Spacer(Modifier.height(10.dp))
+                MusicVisualizer(state.isPlaying, MaterialTheme.colorScheme.primary, Modifier.widthIn(max = 420.dp))
+                Spacer(Modifier.height(6.dp))
+            } else {
+                Spacer(Modifier.height(12.dp))
+            }
 
             val isFav = current.songKey in favorites
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -361,8 +375,30 @@ fun PlayerScreen(nav: NavController) {
                         snack(if (!fx.smooth) "Transição suave ligada: uma música entra devagar na outra." else "Transição suave desligada.")
                     }
                 }
+                BottomAction(
+                    Icons.Rounded.GraphicEq,
+                    if (plus && vizOn) "Visualizador ✓" else "Visualizador",
+                    highlight = plus && vizOn,
+                ) {
+                    if (!plus) {
+                        nav.navigate(Routes.PRO)
+                    } else {
+                        vizOn = !vizOn
+                        vizPrefs.edit().putBoolean("visualizer", vizOn).apply()
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 BottomAction(Icons.Rounded.NotificationsActive, "Criar toque") {
                     nav.navigate(if (isProPlan) Routes.RINGTONE else Routes.PRO)
+                }
+                BottomAction(Icons.Rounded.DirectionsCar, "Modo carro") {
+                    nav.navigate(if (isProPlan) Routes.CAR_MODE else Routes.PRO)
                 }
             }
             if (boostDialog) BoostDialog(fx.boostMb) { boostDialog = false }

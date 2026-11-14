@@ -42,6 +42,7 @@ object AudioFx {
     val PRESETS: List<Pair<String, List<Float>>> = listOf(
         "Normal" to listOf(0f, 0f, 0f, 0f, 0f),
         "Graves+" to listOf(7f, 4.5f, 0f, 0f, 0.5f),
+        "Grave forte" to listOf(10f, 7f, 1f, 0f, 1f),
         "Pop" to listOf(-1f, 2f, 4f, 2f, -1f),
         "Rock" to listOf(5f, 3f, -1f, 3f, 5f),
         "Funk" to listOf(6.5f, 3.5f, -0.5f, 2f, 4f),

@@ -69,25 +69,7 @@ import kotlinx.coroutines.launch
 /** Fundo escuro opaco do mini player (a cor do tema vai por cima). */
 private val MiniBase = Color(0xFF101012)
 
-/** A cor do tema, só um pouco mais escura quando é clara demais (para o texto branco continuar legível). */
-private fun capLight(c: Color, maxLum: Float): Color {
-    val hsv = FloatArray(3)
-    android.graphics.Color.colorToHSV(c.toArgb(), hsv)
-    var out = c
-    var v = hsv[2]
-    while (out.luminance() > maxLum && v > 0.3f) {
-        v -= 0.03f
-        out = Color(android.graphics.Color.HSVToColor(floatArrayOf(hsv[0], hsv[1], v)))
-    }
-    return out
-}
 
-/** Quase preto, com um toque da cor do tema (fim do degradê). */
-private fun nearBlackOf(c: Color): Color {
-    val hsv = FloatArray(3)
-    android.graphics.Color.colorToHSV(c.toArgb(), hsv)
-    return Color(android.graphics.Color.HSVToColor(floatArrayOf(hsv[0], minOf(hsv[1], 0.7f), 0.08f)))
-}
 
 /** Mini player: capa, música, favoritar, play/pause, próxima e barra de progresso, sempre na cor do tema aplicado. */
 @Composable
@@ -145,18 +127,13 @@ fun MiniPlayer(
                 .clip(shape)
                 // Cor do tema (a mesma de cima) sumindo no preto, ou cor única (escolha em Temas > Cor do app)
                 .background(
-                    if (com.musibox.app.themes.AppTheme.miniGradient) {
-                        Brush.horizontalGradient(
-                            listOf(
-                                capLight(com.musibox.app.themes.AppTheme.themeAccent, 0.62f),
-                                nearBlackOf(com.musibox.app.themes.AppTheme.themeAccent),
-                            ),
-                        )
-                    } else {
-                        androidx.compose.ui.graphics.SolidColor(capLight(com.musibox.app.themes.AppTheme.themeAccent, 0.45f))
-                    },
+                    com.musibox.app.themes.MiniColors.brush(
+                        com.musibox.app.themes.AppTheme.themeAccent,
+                        com.musibox.app.themes.AppTheme.miniGradient,
+                        com.musibox.app.themes.AppTheme.miniFade,
+                    ),
                 )
-                .border(1.dp, capLight(com.musibox.app.themes.AppTheme.themeAccent, 0.62f), shape)
+                .border(1.dp, com.musibox.app.themes.MiniColors.start(com.musibox.app.themes.AppTheme.themeAccent), shape)
                 .clickable(onClick = onOpen),
         ) {
             Row(

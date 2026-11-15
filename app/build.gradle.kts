@@ -69,14 +69,14 @@ val keystoreProps = Properties().apply {
 
 android {
     namespace = "com.musibox.app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = appId
         minSdk = 29
-        targetSdk = 35
-        versionCode = 36
-        versionName = "3.2.3"
+        targetSdk = 36
+        versionCode = 37
+        versionName = "3.3.0"
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${readWebClientId()}\"")
         buildConfigField("boolean", "FIREBASE_CONFIGURED", (firebaseClient != null).toString())
         buildConfigField("boolean", "FIREBASE_MANUAL_INIT", (firebaseClient != null && !usePluginConfig).toString())

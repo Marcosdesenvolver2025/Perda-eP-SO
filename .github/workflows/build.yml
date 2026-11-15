@@ -32,7 +32,7 @@ jobs:
         run: |
           set -o pipefail
           chmod +x gradlew
-          ./gradlew assembleRelease --stacktrace 2>&1 | tee build.log
+          ./gradlew assembleRelease bundleRelease --stacktrace 2>&1 | tee build.log
 
       - name: Testes unitários
         id: unit
@@ -66,13 +66,13 @@ jobs:
           cp unit-tests.log out/ 2>/dev/null || true
           cp rules-tests.log out/ 2>/dev/null || true
           find app/build/test-results -name '*.xml' -exec cp {} out/ \; 2>/dev/null || true
-          for f in app/build/outputs/apk/release/*.apk; do
+          for f in app/build/outputs/apk/release/*.apk app/build/outputs/bundle/release/*.aab; do
             [ -f "$f" ] || continue
             b=$(basename "$f")
             sha256sum "$f" | cut -d' ' -f1 > "out/$b.sha256"
             split -b 45m -d "$f" "out/$b.part"
           done
-          ls -la app/build/outputs/apk/release/ > out/sizes.txt 2>/dev/null || true
+          ls -la app/build/outputs/apk/release/ app/build/outputs/bundle/release/ > out/sizes.txt 2>/dev/null || true
           {
             echo "commit=${GITHUB_SHA}"
             echo "build=${{ steps.build.outcome }}"

@@ -53,6 +53,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -66,6 +67,14 @@ import kotlinx.coroutines.launch
 
 /** Fundo escuro opaco do mini player (a cor do tema vai por cima). */
 private val MiniBase = Color(0xFF101012)
+
+/** Mesma cor, bem saturada e com o brilho pedido (fica forte e o texto branco lê bem). */
+private fun deepOf(c: Color, value: Float): Color {
+    val hsv = FloatArray(3)
+    android.graphics.Color.colorToHSV(c.toArgb(), hsv)
+    val sat = if (hsv[1] > 0.12f) maxOf(hsv[1], 0.85f) else hsv[1]
+    return Color(android.graphics.Color.HSVToColor(floatArrayOf(hsv[0], sat, value)))
+}
 
 /** Mini player: capa, música, favoritar, play/pause, próxima e barra de progresso, sempre na cor do tema aplicado. */
 @Composable
@@ -121,16 +130,16 @@ fun MiniPlayer(
                 .fillMaxWidth()
                 .shadow(10.dp, shape)
                 .clip(shape)
-                // Cor cheia do tema aplicado (verde no padrão): não fica cinza nem transparente em nenhuma tela
+                // Cor forte e intensa do tema aplicado (verde no padrão), escolhida pelo Marcos (opção B)
                 .background(
                     Brush.horizontalGradient(
                         listOf(
-                            com.musibox.app.themes.AppTheme.themeAccent.copy(alpha = 0.62f).compositeOver(MiniBase),
-                            com.musibox.app.themes.AppTheme.themeAccent.copy(alpha = 0.50f).compositeOver(MiniBase),
+                            deepOf(com.musibox.app.themes.AppTheme.themeAccent, 0.50f),
+                            deepOf(com.musibox.app.themes.AppTheme.themeAccent, 0.36f),
                         ),
                     ),
                 )
-                .border(1.dp, com.musibox.app.themes.AppTheme.themeAccent.copy(alpha = 0.75f), shape)
+                .border(1.dp, deepOf(com.musibox.app.themes.AppTheme.themeAccent, 0.72f), shape)
                 .clickable(onClick = onOpen),
         ) {
             Row(

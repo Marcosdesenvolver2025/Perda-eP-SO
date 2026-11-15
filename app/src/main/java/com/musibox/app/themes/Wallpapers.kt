@@ -58,7 +58,7 @@ data class Wallpaper(
 }
 
 /**
- * Catálogo dos temas (301): temas novos em alta qualidade, exclusivos do Pro e as melhores coleções antigas.
+ * Catálogo dos temas (298): temas novos em alta qualidade, exclusivos do Pro e as melhores coleções antigas.
  * Preços populares (tabela A): R$ 0,99 a R$ 4,99. Exclusivos dos planos têm "plans" e não se compram.
  */
 object Wallpapers {
@@ -98,8 +98,24 @@ object Wallpapers {
     /** Coleção "Populares": abstratos de luxo, fé, futebol, música e clima aconchegante. */
     const val POPULAR = "populares"
 
+    /** Assunto do tema, para mostrar os parecidos juntos em cada seção (ex.: os de fé lado a lado). */
+    fun topicOf(w: Wallpaper): Int {
+        val k = " " + w.keywords + " " + w.name.lowercase() + " "
+        fun has(vararg t: String) = t.any { k.contains(" $it") }
+        return when {
+            w.collection == PLACES -> 0
+            w.collection == ANIME -> 1
+            w.collection == CARS -> 2
+            has("fe ", "jesus", "deus", "cruz", "oracao", "oração", "biblia", "bíblia", "anjo", "igreja", "capela", "nossa senhora", "fe,") -> 4
+            w.collection == NATURE -> 3
+            has("futebol", "estadio", "estádio", "goleiro", "torcida") -> 5
+            has("musica", "música", "dj ", "guitarra", "violao", "violão", "piano", "fones", "vinil", "bateria", "saxofone", "violino", "show") -> 6
+            else -> 7
+        }
+    }
+
     val all: List<Wallpaper> = listOf(
-        // ---- Novos da versão 3.2.0 (183): realistas, em alta qualidade
+        // ---- Novos da versão 3.2.0: realistas, em alta qualidade
         Wallpaper("hy_rosa_orvalho", "Rosa com Orvalho", 399, 0xFFFF4557, style = "ai", collection = NATURE, keywords = "rosa vermelha flor orvalho romantico"),
         Wallpaper("hy_cara_de_raiva", "Cara de Raiva", 99, 0xFFFF986A, style = "ai", collection = POPULAR, keywords = "cara raiva bravo olhos emoji fofo"),
         Wallpaper("hy_olhos_chorando", "Olhos Chorando", 99, 0xFFC09EFF, style = "ai", collection = POPULAR, keywords = "olhos chorando triste lagrimas fofo emoji"),
@@ -158,7 +174,6 @@ object Wallpapers {
         Wallpaper("hy_dragao_oriental", "Dragão Oriental", 0, 0xFFFFCA78, plans = setOf("pro"), style = "ai", collection = ANIME, keywords = "dragao oriental chines nuvens ouro"),
         Wallpaper("hy_grau", "Grau ao Pôr do Sol", 0, 0xFFFFC05F, plans = setOf("pro"), style = "ai", collection = CARS, keywords = "moto grau empinando rua por do sol"),
         Wallpaper("hy_motocross", "Motocross", 299, 0xFFFF9D44, style = "ai", collection = CARS, keywords = "motocross moto salto terra trilha"),
-        Wallpaper("hy_chopper", "Moto na Estrada Deserta", 299, 0xFFFF8A4C, style = "ai", collection = CARS, keywords = "moto custom estrada deserto viagem"),
         Wallpaper("hy_cafe_racer", "Moto Café Racer", 299, 0xFFFF9838, style = "ai", collection = CARS, keywords = "moto classica cafe racer garagem"),
         Wallpaper("hy_moto_chuva", "Moto na Chuva", 299, 0xFFFF5E3A, style = "ai", collection = CARS, keywords = "moto noite chuva neon rua"),
         Wallpaper("hy_superbike", "Superbike na Pista", 99, 0xFFFFC179, style = "ai", collection = CARS, keywords = "moto pista corrida velocidade"),
@@ -240,7 +255,6 @@ object Wallpapers {
         Wallpaper("hy_lobo_pb", "Lobo Preto e Branco", 199, 0xFFCCD6E6, style = "ai", collection = POPULAR, keywords = "lobo preto branco olhar dark"),
         Wallpaper("hy_leao_dourado", "Leão de Ouro", 99, 0xFFFFC05F, style = "ai", collection = POPULAR, keywords = "leao ouro escultura luxo dark"),
         Wallpaper("hy_geometria", "Geometria Dourada", 99, 0xFFFFC87F, style = "ai", collection = POPULAR, keywords = "abstrato geometria dourado preto luxo"),
-        Wallpaper("hy_fumaca", "Fumaça Colorida", 99, 0xFFFFA13A, style = "ai", collection = POPULAR, keywords = "fumaca colorida abstrato dark"),
         Wallpaper("hy_fibra", "Fibra de Carbono", 99, 0xFFCCD6E6, style = "ai", collection = POPULAR, keywords = "fibra carbono textura dark"),
         Wallpaper("hy_baleia_ceu", "Baleia no Céu", 0, 0xFFFF9159, plans = setOf("go"), style = "ai", collection = POPULAR, keywords = "surreal baleia ceu nuvens"),
         Wallpaper("hy_escada_nuvens", "Escada para as Nuvens", 199, 0xFFFFB77A, style = "ai", collection = POPULAR, keywords = "surreal escada nuvens ceu"),
@@ -298,7 +312,6 @@ object Wallpapers {
         Wallpaper("px_floresta_de_algas", "Floresta de Algas", 99, 0xFFFFE147, style = "kelp", collection = POPULAR, keywords = "algas floresta fundo mar oceano peixes"),
         Wallpaper("px_floresta_encantada", "Floresta Encantada", 99, 0xFF79FFD2, style = "mushrooms", collection = POPULAR, keywords = "cogumelos encantada floresta magica noite vagalumes"),
         Wallpaper("px_fogos_de_artificio", "Fogos de Artifício", 99, 0xFF785FFF, style = "fireworks", collection = POPULAR, keywords = "ano artificio cidade festa fogos noite novo"),
-        Wallpaper("px_geodo_de_ametista", "Geodo de Ametista", 99, 0xFFA856FF, style = "geode", collection = POPULAR, keywords = "ametista cristal geodo mineral pedra roxo"),
         Wallpaper("px_globo_de_plasma", "Globo de Plasma", 99, 0xFFCF44FF, style = "plasma", collection = POPULAR, keywords = "eletrico energia globo neon plasma raios"),
         Wallpaper("px_globo_espelhado", "Globo Espelhado", 99, 0xFFE36CFF, style = "discoball", collection = POPULAR, keywords = "balada disco espelhado espelho festa globo luzes"),
         Wallpaper("px_gota_de_mercurio", "Gota de Mercúrio", 99, 0xFF9555FF, style = "mercury", collection = POPULAR, keywords = "3d abstrato cromo gota liquido mercurio metal"),

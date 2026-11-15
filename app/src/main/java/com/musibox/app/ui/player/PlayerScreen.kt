@@ -173,8 +173,11 @@ fun PlayerScreen(nav: NavController) {
                 return@Column
             }
 
-            Spacer(Modifier.height(24.dp))
-            HoloArtwork(AudioCover(current.uri ?: android.net.Uri.EMPTY), tilt)
+            // capa um pouco menor, do tamanho que cabe: assim todos os botões aparecem sem precisar rolar a tela
+            val screenH = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp
+            val coverMax = (screenH - 650).coerceIn(190, 400).dp
+            Spacer(Modifier.height(16.dp))
+            HoloArtwork(AudioCover(current.uri ?: android.net.Uri.EMPTY), tilt, coverMax)
             // Visualizador (Plus e Pro): barras que pulsam com a música
             if (vizAllowed && vizOn) {
                 Spacer(Modifier.height(10.dp))
@@ -531,10 +534,10 @@ fun QueueScreen(nav: NavController) {
  * pela superfície e um reflexo espelhado no "chão" logo abaixo.
  */
 @Composable
-private fun HoloArtwork(model: Any, tilt: State<Offset>) {
+private fun HoloArtwork(model: Any, tilt: State<Offset>, maxSize: androidx.compose.ui.unit.Dp = 420.dp) {
     val shape = RoundedCornerShape(28.dp)
     val glow = MaterialTheme.colorScheme.primary
-    Column(Modifier.widthIn(max = 420.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(Modifier.widthIn(max = maxSize).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             Modifier
                 .fillMaxWidth()
@@ -568,7 +571,7 @@ private fun HoloArtwork(model: Any, tilt: State<Offset>) {
         Box(
             Modifier
                 .fillMaxWidth()
-                .height(54.dp)
+                .height(34.dp)
                 .padding(top = 4.dp)
                 .clipToBounds()
                 .graphicsLayer {

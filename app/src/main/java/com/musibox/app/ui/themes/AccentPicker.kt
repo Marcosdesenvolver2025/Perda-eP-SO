@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Palette
@@ -42,7 +41,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -217,98 +215,3 @@ private fun AccentWheelDialog(initial: Color, onDismiss: () -> Unit, onReset: ()
 }
 
 private fun Color.luminanceCompat(): Float = 0.2126f * red + 0.7152f * green + 0.0722f * blue
-
-/** Linha "Ícone do app" (Pro): troca o ícone do MusiBox na tela inicial por um dos estilos. */
-@Composable
-fun AppIconRow(isPro: Boolean, onNeedPlan: () -> Unit, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    var current by remember { mutableStateOf(com.musibox.app.vault.IconDisguise.current(context)) }
-    var open by remember { mutableStateOf(false) }
-    val shape = RoundedCornerShape(18.dp)
-    Row(
-        modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(AppTheme.card)
-            .border(1.dp, AppTheme.line, shape)
-            .bounceClick(pressed = 0.97f, shape = shape) { if (isPro) open = true else onNeedPlan() }
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        IconImage(if (current.style || current == com.musibox.app.vault.IconDisguise.Option.DEFAULT) current.icon else com.musibox.app.R.mipmap.ic_launcher, 40)
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text("Ícone do app", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            Text(
-                if (isPro) "Verde, Dourado, Neon, Oceano ou Gelo" else "Ícones alternativos no Pro",
-                color = Neo.Text2,
-                fontSize = 12.sp,
-            )
-        }
-        Icon(
-            if (isPro) Icons.Rounded.ChevronRight else Icons.Rounded.Lock,
-            null,
-            tint = if (isPro) Neo.Text2 else Color(0xFFFFC857),
-            modifier = Modifier.size(if (isPro) 24.dp else 18.dp),
-        )
-    }
-    if (open) {
-        AlertDialog(
-            onDismissRequest = { open = false },
-            containerColor = AppTheme.cardHigh,
-            title = { Text("Ícone do app", color = Color.White, fontWeight = FontWeight.Bold) },
-            text = {
-                Column {
-                    Text(
-                        "A troca pode levar alguns segundos e alguns celulares tiram o atalho da tela inicial (ele continua na lista de apps).",
-                        color = Neo.Text2,
-                        fontSize = 12.sp,
-                    )
-                    Spacer(Modifier.height(10.dp))
-                    com.musibox.app.vault.IconDisguise.styles.forEach { o ->
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
-                                .bounceClick(pressed = 0.97f, shape = RoundedCornerShape(14.dp)) {
-                                    open = false
-                                    runCatching { com.musibox.app.vault.IconDisguise.apply(context, o) }
-                                        .onSuccess {
-                                            current = o
-                                            android.widget.Toast.makeText(context, "Ícone trocado para ${o.label}.", android.widget.Toast.LENGTH_SHORT).show()
-                                        }
-                                }
-                                .padding(vertical = 8.dp, horizontal = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            IconImage(o.icon, 42)
-                            Spacer(Modifier.width(14.dp))
-                            Text(o.label, color = Color.White, modifier = Modifier.weight(1f))
-                            if (o == current) Icon(Icons.Rounded.Check, null, tint = AppTheme.DefaultAccent)
-                        }
-                    }
-                }
-            },
-            confirmButton = { TextButton(onClick = { open = false }) { Text("Fechar", color = Neo.Text2) } },
-        )
-    }
-}
-
-@Composable
-private fun IconImage(res: Int, sizeDp: Int) {
-    val context = LocalContext.current
-    val bmp = remember(res) {
-        androidx.core.content.ContextCompat.getDrawable(context, res)?.let { d ->
-            val b = android.graphics.Bitmap.createBitmap(128, 128, android.graphics.Bitmap.Config.ARGB_8888)
-            val c = android.graphics.Canvas(b)
-            d.setBounds(0, 0, 128, 128)
-            d.draw(c)
-            b.asImageBitmap()
-        }
-    }
-    if (bmp != null) {
-        androidx.compose.foundation.Image(bmp, null, Modifier.size(sizeDp.dp).clip(CircleShape))
-    } else {
-        Box(Modifier.size(sizeDp.dp).clip(CircleShape).background(AppTheme.DefaultAccent))
-    }
-}

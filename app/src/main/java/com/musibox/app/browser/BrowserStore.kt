@@ -111,8 +111,22 @@ class BrowserStore private constructor(context: Context, private val ephemeral: 
         prefs.edit().putString(KEY_TABS, arr.toString()).apply()
     }
 
+    private val _saveHistory = MutableStateFlow(prefs.getBoolean(KEY_SAVE_HISTORY, true))
+    /** Quando desligado, as pesquisas e páginas visitadas não ficam salvas. */
+    val saveHistory: StateFlow<Boolean> = _saveHistory.asStateFlow()
+
+    fun setSaveHistory(on: Boolean) {
+        _saveHistory.value = on
+        prefs.edit().putBoolean(KEY_SAVE_HISTORY, on).apply()
+    }
+
     fun recordVisit(url: String, title: String?) {
         if (ephemeral || !url.startsWith("http")) return
+        if (!_saveHistory.value) {
+            _lastUrl.value = url
+            prefs.edit().putString(KEY_LAST, url).apply()
+            return
+        }
         val clean = title?.trim().orEmpty().ifBlank { hostOf(url) }
         val now = System.currentTimeMillis()
         val list = _history.value.filterNot { same(it.url, url) }
@@ -192,6 +206,7 @@ class BrowserStore private constructor(context: Context, private val ephemeral: 
 
     companion object {
         private const val KEY_HISTORY = "history"
+        private const val KEY_SAVE_HISTORY = "save_history"
         private const val KEY_BOOKMARKS = "bookmarks"
         private const val KEY_SHORTCUTS = "shortcuts"
         private const val KEY_LAST = "last_url"

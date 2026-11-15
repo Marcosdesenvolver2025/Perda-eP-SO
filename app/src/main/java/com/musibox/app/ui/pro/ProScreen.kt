@@ -30,7 +30,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CloudDone
 import androidx.compose.material.icons.rounded.DirectionsCar
-import androidx.compose.material.icons.rounded.AppShortcut
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
@@ -131,7 +130,6 @@ private fun perksOf(plan: ProPlan, themes: Int): List<Perk> {
         list += Perk(Icons.AutoMirrored.Rounded.VolumeUp, "Volume extra", "Mais alto que o máximo do celular.")
     }
     if (plan == ProPlan.PRO) {
-        list += Perk(Icons.Rounded.AppShortcut, "Ícones do app", "Troque o ícone: Verde, Dourado, Neon, Oceano ou Gelo.")
         list += Perk(Icons.Rounded.DirectionsCar, "Modo carro", "Botões enormes e letras grandes para usar dirigindo.")
         list += Perk(Icons.Rounded.NotificationsActive, "Criar toque de celular", "Escolha um trecho da música e use como toque.")
     }

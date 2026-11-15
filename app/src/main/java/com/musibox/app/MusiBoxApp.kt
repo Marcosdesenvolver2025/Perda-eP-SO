@@ -48,10 +48,10 @@ class MusiBoxApp : Application(), ImageLoaderFactory {
             ) { synced, _, _, auth -> synced && auth }.collect { synced ->
                 if (!synced) return@collect
                 val app = this@MusiBoxApp
+                // os ícones alternativos saíram do app: quem estava com um volta ao ícone normal
+                runCatching { com.musibox.app.vault.IconDisguise.resetStyleIfNeeded(app) }
                 if (!com.musibox.app.billing.PlayBilling.isProNow()) {
                     runCatching { com.musibox.app.vault.IconDisguise.resetIfNeeded(app) }
-                } else if (com.musibox.app.billing.PlayBilling.currentPlan() != com.musibox.app.billing.Plan.PRO) {
-                    runCatching { com.musibox.app.vault.IconDisguise.resetStyleIfNeeded(app) }
                 }
                 // backup na nuvem (Go, Plus e Pro): quando o plano está ativo, prepara/envia
                 if (com.musibox.app.billing.PlayBilling.isProNow()) {

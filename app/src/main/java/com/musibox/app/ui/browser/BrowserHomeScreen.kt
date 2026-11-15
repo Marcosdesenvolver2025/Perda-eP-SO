@@ -130,6 +130,7 @@ fun BrowserHomeScreen(nav: NavController) {
     val themes = remember { ThemeStore.get(context) }
     val shortcuts by store.shortcuts.collectAsStateWithLifecycle()
     val history by store.history.collectAsStateWithLifecycle()
+    val saveHistory by store.saveHistory.collectAsStateWithLifecycle()
     val bookmarks by store.bookmarks.collectAsStateWithLifecycle()
     val tabs by store.tabs.collectAsStateWithLifecycle()
     val setupDone by themes.browserSetupDone.collectAsStateWithLifecycle()
@@ -300,6 +301,12 @@ fun BrowserHomeScreen(nav: NavController) {
                         com.musibox.app.themes.ThemeStore.get(context).setBrowserWallpaper(com.musibox.app.themes.Wallpapers.DEFAULT_BROWSER)
                     }
                 }
+                SwitchRow(
+                    Icons.Rounded.History,
+                    "Salvar pesquisas",
+                    if (saveHistory) "As pesquisas e sites ficam no histórico" else "Nada fica salvo no histórico",
+                    saveHistory,
+                ) { store.setSaveHistory(it) }
                 SwitchRow(Icons.Rounded.Newspaper, "Notícias na página inicial", if (newsOn) "Ativado" else "Desativado", newsOn) { themes.setNewsEnabled(it) }
                 MenuRow(Icons.Outlined.Settings, "Seus interesses", "Notícias de \"Para você\"") { menu = false; sheet = "interests" }
                 MenuRow(Icons.Rounded.Star, "Favoritos", "${bookmarks.size} salvos") { menu = false; sheet = "bookmarks" }

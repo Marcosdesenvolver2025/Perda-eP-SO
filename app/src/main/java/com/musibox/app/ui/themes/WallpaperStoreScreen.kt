@@ -130,14 +130,14 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
     val all = Wallpapers.all
     val found = remember(query) { all.filter { Wallpapers.matches(it, query) } }
     val free = found.filter { it.free }.sortedBy { it.name }
-    val paid = found.filter { !it.free && !it.pro }.sortedWith(compareBy({ it.price }, { it.name }))
+    val paid = found.filter { !it.free && !it.pro }.sortedWith(compareBy({ it.price }, { Wallpapers.topicOf(it) }, { it.name }))
     // Assinaturas por último, na ordem Go → Plus → Pro (cada plano tem os seus temas, diferentes dos outros)
     val allGo = all.count { "go" in it.plans }
     val allPlus = all.count { "plus" in it.plans }
     val allPro = all.count { "pro" in it.plans }
-    val goList = found.filter { "go" in it.plans }.sortedBy { it.name }
-    val plusList = found.filter { "plus" in it.plans }.sortedBy { it.name }
-    val proList = found.filter { "pro" in it.plans }.sortedBy { it.name }
+    val goList = found.filter { "go" in it.plans }.sortedWith(compareBy({ Wallpapers.topicOf(it) }, { it.name }))
+    val plusList = found.filter { "plus" in it.plans }.sortedWith(compareBy({ Wallpapers.topicOf(it) }, { it.name }))
+    val proList = found.filter { "pro" in it.plans }.sortedWith(compareBy({ Wallpapers.topicOf(it) }, { it.name }))
     val planSections = listOf(
         "$GO_TITLE • $allGo temas só dele" to goList,
         "$PLUS_TITLE • $allPlus temas só dele" to plusList,
@@ -310,11 +310,7 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
                             canPick = plan != com.musibox.app.billing.Plan.NONE,
                             onNeedPlan = { nav.navigate(Routes.PRO) },
                         )
-                        Spacer(Modifier.height(8.dp))
-                        AppIconRow(
-                            isPro = plan == com.musibox.app.billing.Plan.PRO,
-                            onNeedPlan = { nav.navigate(Routes.PRO) },
-                        )
+
                     }
                 }
             }

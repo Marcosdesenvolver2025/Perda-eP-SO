@@ -130,6 +130,7 @@ private val WheelHues = listOf(
 /** Roda de cores livre (matiz + intensidade) com controle de brilho. */
 @Composable
 private fun AccentWheelDialog(initial: Color, onDismiss: () -> Unit, onReset: () -> Unit, onPick: (Color) -> Unit) {
+    val store = ThemeStore.get(LocalContext.current)
     val hsv = remember {
         FloatArray(3).also { android.graphics.Color.colorToHSV(android.graphics.Color.argb(255, (initial.red * 255).toInt(), (initial.green * 255).toInt(), (initial.blue * 255).toInt()), it) }
     }
@@ -148,7 +149,7 @@ private fun AccentWheelDialog(initial: Color, onDismiss: () -> Unit, onReset: ()
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(
                     Modifier
-                        .fillMaxWidth(0.86f)
+                        .fillMaxWidth(0.78f)
                         .aspectRatio(1f),
                 ) {
                     fun pick(pos: Offset, w: Float, h: Float) {
@@ -191,6 +192,13 @@ private fun AccentWheelDialog(initial: Color, onDismiss: () -> Unit, onReset: ()
                     valueRange = 0.45f..1f,
                     colors = SliderDefaults.colors(thumbColor = color, activeTrackColor = color),
                 )
+                Text("Mini player", color = Neo.Text2, fontSize = 13.sp, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(6.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    GradientChip("Com degradê", AppTheme.miniGradient, color, Modifier.weight(1f)) { store.setMiniGradient(true) }
+                    GradientChip("Sem degradê", !AppTheme.miniGradient, color, Modifier.weight(1f)) { store.setMiniGradient(false) }
+                }
+                Spacer(Modifier.height(14.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
                     Box(
                         Modifier
@@ -215,3 +223,21 @@ private fun AccentWheelDialog(initial: Color, onDismiss: () -> Unit, onReset: ()
 }
 
 private fun Color.luminanceCompat(): Float = 0.2126f * red + 0.7152f * green + 0.0722f * blue
+
+/** Botão de escolha do mini player: mostra a amostra (degradê ou cor única). */
+@Composable
+private fun GradientChip(label: String, selected: Boolean, color: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(14.dp)
+    val dark = Color(android.graphics.Color.HSVToColor(FloatArray(3).also { android.graphics.Color.colorToHSV(android.graphics.Color.argb(255, (color.red * 255).toInt(), (color.green * 255).toInt(), (color.blue * 255).toInt()), it); it[1] = minOf(it[1], 0.7f); it[2] = 0.08f }))
+    Box(
+        modifier
+            .height(44.dp)
+            .clip(shape)
+            .background(if (label.startsWith("Com")) Brush.horizontalGradient(listOf(color, dark)) else androidx.compose.ui.graphics.SolidColor(color))
+            .border(if (selected) 3.dp else 1.dp, if (selected) Color.White else Color.White.copy(alpha = 0.25f), shape)
+            .bounceClick(pressed = 0.95f, shape = shape, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text((if (selected) "✓ " else "") + label, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+    }
+}

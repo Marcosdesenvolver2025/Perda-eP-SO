@@ -84,6 +84,10 @@ object AppTheme {
     var customAccent by mutableStateOf<Color?>(null)
         internal set
 
+    /** Mini player com degradê (cor do tema sumindo no preto) ou cor única. */
+    var miniGradient by mutableStateOf(true)
+        internal set
+
     /** Versão um pouco mais clara da cor, para degradês. */
     private fun lighter(c: Color): Color = Color(
         red = c.red + (1f - c.red) * 0.25f,
@@ -154,7 +158,13 @@ class ThemeStore private constructor(context: Context) {
 
     init {
         AppTheme.customAccent = if (prefs.contains(KEY_ACCENT)) Color(prefs.getInt(KEY_ACCENT, 0)) else null
+        AppTheme.miniGradient = prefs.getBoolean(KEY_MINI_GRADIENT, true)
         apply(prefs.getString(KEY_APP, null), prefs.getString(KEY_BROWSER, Wallpapers.DEFAULT_BROWSER))
+    }
+
+    fun setMiniGradient(on: Boolean) {
+        prefs.edit().putBoolean(KEY_MINI_GRADIENT, on).apply()
+        AppTheme.miniGradient = on
     }
 
     /** Cor própria do app escolhida na roda de cores (null volta à cor do tema). */
@@ -215,6 +225,7 @@ class ThemeStore private constructor(context: Context) {
         private const val KEY_NEWS_ON = "news_enabled"
         private const val KEY_NEWS_ASKED = "news_asked"
         private const val KEY_ACCENT = "custom_accent"
+        private const val KEY_MINI_GRADIENT = "mini_gradient"
 
         val ALL_INTERESTS = listOf("Entretenimento", "IA", "Esportes", "Compras", "Viagens")
 

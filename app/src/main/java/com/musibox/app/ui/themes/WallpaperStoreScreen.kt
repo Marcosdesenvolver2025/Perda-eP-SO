@@ -58,6 +58,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -184,7 +185,7 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
                         onValueChange = { query = it },
                         singleLine = true,
                         textStyle = TextStyle(color = Color.White, fontSize = 16.sp),
-                        cursorBrush = SolidColor(Neo.Green),
+                        cursorBrush = SolidColor(AppTheme.themeAccent),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(onSearch = { focus.clearFocus() }),
                         modifier = Modifier.fillMaxWidth(),
@@ -204,11 +205,11 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
                     Modifier
                         .size(52.dp)
                         .clip(CircleShape)
-                        .background(if (active) Neo.Green else AppTheme.card)
-                        .border(1.dp, if (active) Neo.Green else AppTheme.line, CircleShape)
+                        .background(if (active) AppTheme.themeAccent else AppTheme.card)
+                        .border(1.dp, if (active) AppTheme.themeAccent else AppTheme.line, CircleShape)
                         .bounceClick(pressed = 0.9f, shape = CircleShape) { filterMenu = true },
                     contentAlignment = Alignment.Center,
-                ) { Icon(Icons.Rounded.Tune, "Filtrar por preço", tint = if (active) Neo.OnGreen else Color.White) }
+                ) { Icon(Icons.Rounded.Tune, "Filtrar por preço", tint = if (active) themeOnAccent() else Color.White) }
                 DropdownMenu(filterMenu, { filterMenu = false }, containerColor = AppTheme.cardHigh) {
                     Text(
                         "Filtrar por preço",
@@ -219,12 +220,12 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
                     )
                     PriceFilter.entries.forEach { f ->
                         DropdownMenuItem(
-                            text = { Text(f.label, color = if (f == price) Neo.Green else Color.White, fontWeight = if (f == price) FontWeight.Bold else FontWeight.Normal) },
+                            text = { Text(f.label, color = if (f == price) AppTheme.themeAccent else Color.White, fontWeight = if (f == price) FontWeight.Bold else FontWeight.Normal) },
                             leadingIcon = {
                                 Icon(
                                     if (f == price) Icons.Rounded.RadioButtonChecked else Icons.Rounded.RadioButtonUnchecked,
                                     null,
-                                    tint = if (f == price) Neo.Green else Neo.Text2,
+                                    tint = if (f == price) AppTheme.themeAccent else Neo.Text2,
                                 )
                             },
                             onClick = { price = f; filterMenu = false },
@@ -242,7 +243,7 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
                     val browserDefault = AppTheme.browserWallpaper.id == Wallpapers.DEFAULT_BROWSER
                     DropdownMenuItem(
                         text = { Text(if (appDefault) "App já está no padrão" else "Voltar o app ao padrão", color = if (appDefault) Neo.Text2 else Color.White) },
-                        leadingIcon = { Icon(Icons.Rounded.PhoneAndroid, null, tint = if (appDefault) Neo.Text2 else Neo.Green) },
+                        leadingIcon = { Icon(Icons.Rounded.PhoneAndroid, null, tint = if (appDefault) Neo.Text2 else AppTheme.themeAccent) },
                         enabled = !appDefault,
                         onClick = {
                             filterMenu = false
@@ -252,7 +253,7 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
                     )
                     DropdownMenuItem(
                         text = { Text(if (browserDefault) "Navegador já está no padrão" else "Voltar o navegador ao padrão", color = if (browserDefault) Neo.Text2 else Color.White) },
-                        leadingIcon = { Icon(Icons.Rounded.Language, null, tint = if (browserDefault) Neo.Text2 else Neo.Green) },
+                        leadingIcon = { Icon(Icons.Rounded.Language, null, tint = if (browserDefault) Neo.Text2 else AppTheme.themeAccent) },
                         enabled = !browserDefault,
                         onClick = {
                             filterMenu = false
@@ -268,14 +269,14 @@ fun WallpaperStoreContent(nav: NavController, modifier: Modifier = Modifier, bot
                 Modifier
                     .padding(start = 16.dp, bottom = 8.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Neo.Green.copy(alpha = 0.16f))
+                    .background(AppTheme.themeAccent.copy(alpha = 0.16f))
                     .bounceClick(pressed = 0.94f, shape = RoundedCornerShape(16.dp)) { price = PriceFilter.ALL }
                     .padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(price.label, color = Neo.Green, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Text(price.label, color = AppTheme.themeAccent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.width(6.dp))
-                Icon(Icons.Rounded.Close, "Tirar filtro", tint = Neo.Green, modifier = Modifier.size(16.dp))
+                Icon(Icons.Rounded.Close, "Tirar filtro", tint = AppTheme.themeAccent, modifier = Modifier.size(16.dp))
             }
         }
         LazyVerticalGrid(
@@ -360,7 +361,7 @@ private fun SectionHead(title: String, detail: String) {
             Modifier
                 .size(width = 4.dp, height = 20.dp)
                 .clip(RoundedCornerShape(2.dp))
-                .background(AppTheme.DefaultAccent),
+                .background(AppTheme.themeAccent),
         )
         Spacer(Modifier.width(10.dp))
         Text(title, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
@@ -377,7 +378,7 @@ private fun AppliedCard(label: String, icon: androidx.compose.ui.graphics.vector
         modifier
             .height(190.dp)
             .bounceClick(pressed = 0.96f, shape = shape, onClick = onClick)
-            .border(2.dp, AppTheme.DefaultAccent, shape),
+            .border(2.dp, AppTheme.themeAccent, shape),
     ) {
         if (w != null) {
             WallpaperImage(w, Modifier.fillMaxSize(), thumbnail = true)
@@ -393,13 +394,13 @@ private fun AppliedCard(label: String, icon: androidx.compose.ui.graphics.vector
                 .align(Alignment.TopStart)
                 .padding(8.dp)
                 .clip(RoundedCornerShape(10.dp))
-                .background(AppTheme.DefaultAccent)
+                .background(AppTheme.themeAccent)
                 .padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(icon, null, tint = Color(0xFF06140B), modifier = Modifier.size(14.dp))
+            Icon(icon, null, tint = themeOnAccent(), modifier = Modifier.size(14.dp))
             Spacer(Modifier.width(4.dp))
-            Text(label, color = Color(0xFF06140B), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text(label, color = themeOnAccent(), fontSize = 12.sp, fontWeight = FontWeight.Bold)
         }
         Text(
             w?.name ?: "Tema padrão",
@@ -417,17 +418,18 @@ private fun AppliedCard(label: String, icon: androidx.compose.ui.graphics.vector
     }
 }
 
-/** Cartão "Seu plano", no verde do app, que leva para a tela de assinatura. */
+/** Cartão "Seu plano", na cor do tema aplicado, que leva para a tela de assinatura. */
 @Composable
 private fun PlansBanner(plan: com.musibox.app.billing.Plan, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val shape = RoundedCornerShape(22.dp)
-    val green = AppTheme.DefaultAccent
-    val dark = Color(0xFF06140B)
+    val green = AppTheme.themeAccent
+    val dark = if (green.luminance() > 0.3f) Color(0xFF0A0A0A) else Color.White
+    val circle = Color(0xFF0A0A0A)
     Row(
         modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(Brush.linearGradient(listOf(Color(0xFF2BF07A), green, Color(0xFF12A84B))))
+            .background(Brush.linearGradient(listOf(androidx.compose.ui.graphics.lerp(green, Color.White, 0.18f), green, androidx.compose.ui.graphics.lerp(green, Color.Black, 0.28f))))
             .bounceClick(pressed = 0.97f, shape = shape, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -436,7 +438,7 @@ private fun PlansBanner(plan: com.musibox.app.billing.Plan, modifier: Modifier =
             Modifier
                 .size(46.dp)
                 .clip(CircleShape)
-                .background(dark.copy(alpha = 0.88f)),
+                .background(circle.copy(alpha = 0.88f)),
             contentAlignment = Alignment.Center,
         ) { Icon(Icons.Rounded.WorkspacePremium, null, tint = green, modifier = Modifier.size(26.dp)) }
         Spacer(Modifier.width(12.dp))
@@ -463,7 +465,7 @@ private fun PlansBanner(plan: com.musibox.app.billing.Plan, modifier: Modifier =
             fontWeight = FontWeight.Bold,
             modifier = Modifier
                 .clip(RoundedCornerShape(14.dp))
-                .background(dark)
+                .background(circle)
                 .padding(horizontal = 12.dp, vertical = 7.dp),
         )
     }
@@ -538,3 +540,6 @@ private fun WallTile(w: Wallpaper, price: String, usable: Boolean, inApp: Boolea
         Spacer(Modifier.height(2.dp))
     }
 }
+
+/** Cor de texto/ícone legível em cima da cor do tema. */
+private fun themeOnAccent(): Color = if (AppTheme.themeAccent.luminance() > 0.3f) Color(0xFF0A0A0A) else Color.White

@@ -203,6 +203,8 @@ object PlayBilling : PurchasesUpdatedListener {
         "15f6c06e3cc37a7c991f5fd7e67a65c34c65c01ed70595158bdc65b61547a9fd",
         "24014914448eafb094be73cbd28df89d4eca0ddb8290e04cf22fa5b9acdfbbbc",
         "ef80e838206f73fcd7bedc8f2cb48ae60362970832b7c3a7aafd5c7a72974eb6",
+        // conta de revisão do Google Play (o revisor precisa ver os recursos pagos)
+        "22c3e0000a8c47044c486f1f4ea22f322dae76c5ecb6f7288430f352481f13fb",
     )
 
     private fun checkOwner(user: com.google.firebase.auth.FirebaseUser?) {

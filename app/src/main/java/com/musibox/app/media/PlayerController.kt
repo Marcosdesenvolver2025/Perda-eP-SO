@@ -188,6 +188,14 @@ class PlayerController(private val context: Context) {
         if (index in 0 until c.mediaItemCount) c.removeMediaItem(index)
     }
 
+    /** Tira da fila as músicas apagadas do aparelho (se for a que está tocando, passa para a próxima). */
+    fun removeSongs(ids: Set<Long>) = withController { c ->
+        val keys = ids.map { it.toString() }.toSet()
+        for (i in c.mediaItemCount - 1 downTo 0) {
+            if (c.getMediaItemAt(i).mediaId in keys) c.removeMediaItem(i)
+        }
+    }
+
     fun move(from: Int, to: Int) = withController { c ->
         if (from in 0 until c.mediaItemCount && to in 0 until c.mediaItemCount) c.moveMediaItem(from, to)
     }

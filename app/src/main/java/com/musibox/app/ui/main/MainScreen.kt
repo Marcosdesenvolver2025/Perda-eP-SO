@@ -88,6 +88,7 @@ fun MainScreen(nav: NavController, pager: PagerState) {
                             onSearch = { nav.navigate(Routes.SEARCH) },
                             onVault = { nav.navigate(Routes.VAULT) { launchSingleTop = true } },
                             onSettings = { nav.navigate(Routes.SETTINGS) },
+                            followTheme = page == MainTabs.THEMES,
                         )
                         Box(Modifier.weight(1f).consumeWindowInsets(WindowInsets.statusBars)) {
                             when (page) {

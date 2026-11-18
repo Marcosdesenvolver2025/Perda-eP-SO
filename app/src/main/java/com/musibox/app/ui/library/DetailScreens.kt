@@ -83,6 +83,22 @@ import com.musibox.app.ui.navigation.Routes
 import com.musibox.app.ui.navigation.navigateTopLevel
 import com.musibox.app.ui.theme.Mb
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.rounded.DragHandle
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.draw.zIndex
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import com.musibox.app.themes.AppTheme
+import kotlinx.coroutines.delay
 
 /** Músicas de um artista, álbum ou pasta. */
 @Composable
@@ -181,8 +197,72 @@ fun PlaylistScreen(nav: NavController, id: String) {
                 onAction = { nav.navigate(Routes.pickSongs(id)) },
             )
             else -> {
-                val available = list.mapNotNull { it.track.song }
-                LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 16.dp)) {
+                // Ordem na tela: muda na hora enquanto a pessoa arrasta; volta a seguir o banco quando ele atualiza
+                var order by remember(list) { mutableStateOf(list) }
+                val available = order.mapNotNull { it.track.song }
+                val listState = rememberLazyListState()
+                val haptic = LocalHapticFeedback.current
+                val density = LocalDensity.current
+                var dragKey by remember { mutableStateOf<String?>(null) }
+                var dragFrom by remember { mutableIntStateOf(-1) }
+                var dragShift by remember { mutableIntStateOf(0) }
+                var dragOffset by remember { mutableFloatStateOf(0f) }
+
+                // Troca de lugar com a música que estiver embaixo do centro da que está sendo arrastada
+                fun trySwap() {
+                    val key = dragKey ?: return
+                    val visible = listState.layoutInfo.visibleItemsInfo
+                    val cur = visible.firstOrNull { it.key == key } ?: return
+                    val from = order.indexOfFirst { it.item.id == key }
+                    if (from < 0 || cur.index - from != dragShift) return // a tela ainda não redesenhou a última troca
+                    val center = cur.offset + dragOffset + cur.size / 2f
+                    val target = visible.firstOrNull { info ->
+                        info.key != key && info.key is String && center >= info.offset && center <= info.offset + info.size
+                    } ?: return
+                    val to = order.indexOfFirst { it.item.id == target.key }
+                    if (to < 0) return
+                    order = order.toMutableList().apply { add(to, removeAt(from)) }
+                    val newOffset = if (to > from) target.offset + target.size - cur.size else target.offset
+                    dragOffset += (cur.offset - newOffset)
+                }
+
+                fun endDrag() {
+                    val key = dragKey ?: return
+                    val from = dragFrom
+                    val to = order.indexOfFirst { it.item.id == key }
+                    dragKey = null
+                    dragOffset = 0f
+                    if (from >= 0 && to >= 0 && from != to) {
+                        scope.launch { container.library.moveInPlaylist(id, from, to) }
+                    }
+                }
+
+                // Rola a lista sozinha quando a música arrastada chega perto do topo ou do fim
+                LaunchedEffect(dragKey) {
+                    if (dragKey == null) return@LaunchedEffect
+                    val edge = with(density) { 72.dp.toPx() }
+                    while (true) {
+                        val li = listState.layoutInfo
+                        val cur = li.visibleItemsInfo.firstOrNull { it.key == dragKey }
+                        if (cur != null) {
+                            val top = cur.offset + dragOffset
+                            val bottom = top + cur.size
+                            val delta = when {
+                                top < li.viewportStartOffset + edge -> -((li.viewportStartOffset + edge - top).coerceAtMost(edge) / 5f)
+                                bottom > li.viewportEndOffset - edge -> (bottom - (li.viewportEndOffset - edge)).coerceAtMost(edge) / 5f
+                                else -> 0f
+                            }
+                            if (delta != 0f) {
+                                val used = listState.scrollBy(delta)
+                                dragOffset += used
+                                trySwap()
+                            }
+                        }
+                        delay(16)
+                    }
+                }
+
+                LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = 16.dp)) {
                     if (available.isNotEmpty()) {
                         item {
                             Row(
@@ -213,6 +293,12 @@ fun PlaylistScreen(nav: NavController, id: String) {
                             Icon(Icons.Rounded.Add, null, tint = com.musibox.app.ui.components.Neo.Link)
                             Spacer(Modifier.width(12.dp))
                             Text("Adicionar músicas", color = com.musibox.app.ui.components.Neo.Link, style = MaterialTheme.typography.titleSmall)
+                            if (order.size > 1) {
+                                Spacer(Modifier.weight(1f))
+                                Icon(Icons.Rounded.DragHandle, null, tint = com.musibox.app.ui.components.Neo.Text2, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Segure e arraste", color = com.musibox.app.ui.components.Neo.Text2, style = MaterialTheme.typography.bodySmall)
+                            }
                         }
                     }
                     if (available.size < list.size) {
@@ -226,31 +312,78 @@ fun PlaylistScreen(nav: NavController, id: String) {
                             )
                         }
                     }
-                    itemsIndexed(list, key = { _, t -> t.item.id }) { index, t ->
+                    itemsIndexed(order, key = { _, t -> t.item.id }) { index, t ->
                         val song = t.track.song
                         val moveMenu = buildList {
                             if (index > 0) add(MenuAction("Mover para cima", Icons.Rounded.ArrowUpward) {
                                 scope.launch { container.library.moveInPlaylist(id, index, index - 1) }
                             })
-                            if (index < list.lastIndex) add(MenuAction("Mover para baixo", Icons.Rounded.ArrowDownward) {
+                            if (index < order.lastIndex) add(MenuAction("Mover para baixo", Icons.Rounded.ArrowDownward) {
                                 scope.launch { container.library.moveInPlaylist(id, index, index + 1) }
                             })
                             add(MenuAction("Remover da playlist", Icons.Rounded.RemoveCircleOutline, destructive = true) {
                                 scope.launch { container.library.removeFromPlaylist(id, t.item.id) }
                             })
                         }
-                        if (song != null) {
-                            SongItem(song, available, player, song.contentKey in favorites, nav, { playlistSongs = listOf(it) }, extraMenu = moveMenu)
-                        } else {
-                            TrackRow(
-                                title = t.track.title,
-                                subtitle = "Arquivo não encontrado neste dispositivo.",
-                                artModel = null,
-                                available = false,
-                                modifier = Modifier.padding(horizontal = 6.dp),
-                                onClick = { snack("Arquivo não encontrado neste dispositivo.") },
-                                menu = moveMenu,
-                            )
+                        val dragging = dragKey == t.item.id
+                        Box(
+                            Modifier
+                                .then(
+                                    if (dragging) {
+                                        Modifier
+                                            .zIndex(1f)
+                                            .graphicsLayer {
+                                                translationY = dragOffset
+                                                scaleX = 1.03f
+                                                scaleY = 1.03f
+                                                shadowElevation = 18f
+                                                shape = RoundedCornerShape(18.dp)
+                                                clip = true
+                                            }
+                                            .background(AppTheme.cardHigh.copy(alpha = 0.95f), RoundedCornerShape(18.dp))
+                                    } else {
+                                        Modifier.animateItem()
+                                    },
+                                )
+                                // Segurar e arrastar muda a música de lugar na playlist
+                                .pointerInput(t.item.id, list) {
+                                    detectDragGesturesAfterLongPress(
+                                        onDragStart = {
+                                            val from = order.indexOfFirst { it.item.id == t.item.id }
+                                            val info = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == t.item.id }
+                                            if (from >= 0 && info != null) {
+                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                dragFrom = from
+                                                dragShift = info.index - from
+                                                dragOffset = 0f
+                                                dragKey = t.item.id
+                                            }
+                                        },
+                                        onDrag = { change, amount ->
+                                            if (dragKey != null) {
+                                                change.consume()
+                                                dragOffset += amount.y
+                                                trySwap()
+                                            }
+                                        },
+                                        onDragEnd = { endDrag() },
+                                        onDragCancel = { endDrag() },
+                                    )
+                                },
+                        ) {
+                            if (song != null) {
+                                SongItem(song, available, player, song.contentKey in favorites, nav, { playlistSongs = listOf(it) }, extraMenu = moveMenu)
+                            } else {
+                                TrackRow(
+                                    title = t.track.title,
+                                    subtitle = "Arquivo não encontrado neste dispositivo.",
+                                    artModel = null,
+                                    available = false,
+                                    modifier = Modifier.padding(horizontal = 6.dp),
+                                    onClick = { snack("Arquivo não encontrado neste dispositivo.") },
+                                    menu = moveMenu,
+                                )
+                            }
                         }
                     }
                 }

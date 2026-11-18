@@ -139,6 +139,7 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
             onOpen = { navController.navigate(Routes.PLAYER) { launchSingleTop = true } },
             onPlayPause = { container.player.togglePlayPause() },
             onNext = { container.player.next() },
+            onPrevious = { container.player.previous() },
             onClose = { container.player.clearQueue() },
         )
     }
@@ -146,6 +147,7 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
     val onMain by androidx.compose.runtime.rememberUpdatedState(route == Routes.MAIN)
 
     CompositionLocalProvider(LocalSnackbar provides snackbar, LocalBottomBarSpace provides (if (showBottom) overlayHeight else 0.dp)) {
+        com.musibox.app.ui.library.SongDeleteHost()
         Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().then(if (showBottom) Modifier.hazeSource(hazeState) else Modifier)) {
         // Na página do navegador, o fundo vira o papel de parede do navegador (troca durante o deslize)

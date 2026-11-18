@@ -54,6 +54,8 @@ import androidx.compose.material.icons.rounded.OpenInFull
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.NewReleases
+import androidx.compose.material.icons.rounded.Whatshot
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -157,6 +159,11 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
     val playlists: StateFlow<List<PlaylistSummary>?> =
         c.library.playlists.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
+    /** Mais ouvidas: as músicas tocadas mais vezes (só as que ainda estão no aparelho). */
+    val mostPlayed: StateFlow<List<com.musibox.app.data.repo.MostPlayed>?> = c.library.mostPlayed(100)
+        .map { list -> list.filter { it.song != null && it.stat.playCount > 0 }.take(50) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
     fun rescan() {
         viewModelScope.launch { c.music.rescan() }
     }
@@ -166,7 +173,7 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
     }
 }
 
-private enum class HomeFilter { ALL, SINGERS, FAVORITES, PLAYLISTS, AUDIOS, RECENT }
+private enum class HomeFilter { ALL, SINGERS, FAVORITES, PLAYLISTS, AUDIOS, RECENT, MOST, HISTORY }
 
 /**
  * Início: busca, filtros (Todas, Favoritas, Playlists, Recentes), "Continue ouvindo",
@@ -177,6 +184,7 @@ fun HomeScreen(nav: NavController) {
     val container = LocalAppContainer.current
     val vm = appViewModel { HomeViewModel(it) }
     val recent by vm.recent.collectAsStateWithLifecycle()
+    val mostPlayed by vm.mostPlayed.collectAsStateWithLifecycle()
     val songs by vm.songs.collectAsStateWithLifecycle()
     val favorites by vm.favorites.collectAsStateWithLifecycle()
     val favoriteKeys by vm.favoriteKeys.collectAsStateWithLifecycle()
@@ -197,7 +205,11 @@ fun HomeScreen(nav: NavController) {
     val allSongs = split.first
     val audioSongs = split.second
     val singerFolders = remember(allSongs) { buildSingerFolders(allSongs) }
-    val recentSongs = recent.orEmpty().mapNotNull { it.song }
+    // Histórico: tocadas por último. Recentes: baixadas por último (as mais novas no topo).
+    val historySongs = recent.orEmpty().mapNotNull { it.song }
+    val recentSongs = remember(allSongs) { allSongs.sortedByDescending { it.dateAddedMs }.take(100) }
+    val mostEntries = mostPlayed.orEmpty()
+    val mostSongs = mostEntries.mapNotNull { it.song }
 
     val introTop = rememberIntroState()
     val intro = rememberIntroState(filter)
@@ -213,9 +225,11 @@ fun HomeScreen(nav: NavController) {
         HomeFilter.AUDIOS -> audioSongs
         HomeFilter.FAVORITES -> favSongs
         HomeFilter.RECENT -> recentSongs
+        HomeFilter.MOST -> mostSongs
+        HomeFilter.HISTORY -> historySongs
         else -> emptyList()
     }
-    val selectedSongs = (allSongs + audioSongs + favSongs + recentSongs).distinctBy { it.id }.filter { it.id in selection }
+    val selectedSongs = (allSongs + audioSongs + favSongs + historySongs + mostSongs).distinctBy { it.id }.filter { it.id in selection }
     LaunchedEffect(filter) { selection = emptySet() }
     var confirmDelete by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<List<android.net.Uri>>(emptyList()) }
@@ -281,7 +295,9 @@ fun HomeScreen(nav: NavController) {
                     item { NeoChip("Favoritas", Icons.Rounded.Favorite, filter == HomeFilter.FAVORITES, { filter = HomeFilter.FAVORITES }) }
                     item { NeoChip("Playlists", Icons.AutoMirrored.Rounded.QueueMusic, filter == HomeFilter.PLAYLISTS, { filter = HomeFilter.PLAYLISTS }) }
                     item { NeoChip("Áudios", Icons.Rounded.GraphicEq, filter == HomeFilter.AUDIOS, { filter = HomeFilter.AUDIOS }) }
-                    item { NeoChip("Recentes", Icons.Rounded.Schedule, filter == HomeFilter.RECENT, { filter = HomeFilter.RECENT }) }
+                    item { NeoChip("Recentes", Icons.Rounded.NewReleases, filter == HomeFilter.RECENT, { filter = HomeFilter.RECENT }) }
+                    item { NeoChip("Mais ouvidas", Icons.Rounded.Whatshot, filter == HomeFilter.MOST, { filter = HomeFilter.MOST }) }
+                    item { NeoChip("Histórico", Icons.Rounded.Schedule, filter == HomeFilter.HISTORY, { filter = HomeFilter.HISTORY }) }
                 }
             }
             // Lista conforme o filtro escolhido
@@ -437,24 +453,72 @@ fun HomeScreen(nav: NavController) {
                         }
                     }
                 }
-                else -> {
+                filter == HomeFilter.RECENT -> {
                     item(key = "recTitle") {
                         ListHeader(
                             "Recentes",
-                            Fmt.plural(recentSongs.size, "música", "músicas"),
+                            "Baixadas por último • " + Fmt.plural(recentSongs.size, "música", "músicas"),
                             onShuffle = { if (recentSongs.isNotEmpty()) container.player.playSongs(recentSongs, 0, shuffle = true) },
                             onPlay = { if (recentSongs.isNotEmpty()) container.player.playSongs(recentSongs, 0) },
+                        )
+                    }
+                    when {
+                        songs == null -> item(key = "recLoading") { LoadingState("Carregando suas músicas…") }
+                        recentSongs.isEmpty() -> item(key = "recEmpty") {
+                            StateMessage(Icons.Rounded.NewReleases, "Nenhuma música baixada ainda", "As músicas que você baixar aparecem aqui, as mais novas primeiro.")
+                        }
+                        else -> itemsIndexed(recentSongs, key = { _, it -> "r" + it.id }) { i, song ->
+                            Box(Modifier.animateItem().intro("r" + song.id, i + 1, intro)) {
+                                SongItem(song, recentSongs, player, song.contentKey in favoriteKeys, nav, { playlistSongs = listOf(it) }, selected = if (selecting) song.id in selection else null, onToggleSelect = toggleSelect)
+                            }
+                        }
+                    }
+                }
+                filter == HomeFilter.MOST -> {
+                    item(key = "mostTitle") {
+                        ListHeader(
+                            "Mais ouvidas",
+                            "As que você mais escuta • " + Fmt.plural(mostSongs.size, "música", "músicas"),
+                            onShuffle = { if (mostSongs.isNotEmpty()) container.player.playSongs(mostSongs, 0, shuffle = true) },
+                            onPlay = { if (mostSongs.isNotEmpty()) container.player.playSongs(mostSongs, 0) },
+                        )
+                    }
+                    when {
+                        mostPlayed == null -> item(key = "mostLoading") { LoadingState("Carregando…") }
+                        mostEntries.isEmpty() -> item(key = "mostEmpty") {
+                            StateMessage(Icons.Rounded.Whatshot, "Ainda sem mais ouvidas", "Ouça suas músicas e as que você mais escuta aparecem aqui.")
+                        }
+                        else -> itemsIndexed(mostEntries, key = { _, it -> "m" + it.stat.songKey }) { i, entry ->
+                            val song = entry.song ?: return@itemsIndexed
+                            val plays = entry.stat.playCount
+                            Box(Modifier.animateItem().intro("m" + song.id, i + 1, intro)) {
+                                SongItem(
+                                    song, mostSongs, player, song.contentKey in favoriteKeys, nav, { playlistSongs = listOf(it) },
+                                    subtitle = "${i + 1}º • ${song.displayArtist()} • " + Fmt.plural(plays, "vez", "vezes"),
+                                    selected = if (selecting) song.id in selection else null, onToggleSelect = toggleSelect,
+                                )
+                            }
+                        }
+                    }
+                }
+                else -> {
+                    item(key = "histTitle") {
+                        ListHeader(
+                            "Histórico",
+                            "Tocadas por último • " + Fmt.plural(historySongs.size, "música", "músicas"),
+                            onShuffle = { if (historySongs.isNotEmpty()) container.player.playSongs(historySongs, 0, shuffle = true) },
+                            onPlay = { if (historySongs.isNotEmpty()) container.player.playSongs(historySongs, 0) },
                             onMore = { nav.navigate(Routes.history(0)) },
                         )
                     }
-                    if (recentSongs.isEmpty()) {
-                        item(key = "recEmpty") {
+                    if (historySongs.isEmpty()) {
+                        item(key = "histEmpty") {
                             StateMessage(Icons.Rounded.Headphones, "Nada tocado ainda", "As músicas que você ouvir aparecem aqui.")
                         }
                     } else {
-                        itemsIndexed(recentSongs, key = { _, it -> "h" + it.id }) { i, song ->
+                        itemsIndexed(historySongs, key = { _, it -> "h" + it.id }) { i, song ->
                             Box(Modifier.animateItem().intro("h" + song.id, i + 1, intro)) {
-                                SongItem(song, recentSongs, player, song.contentKey in favoriteKeys, nav, { playlistSongs = listOf(it) }, selected = if (selecting) song.id in selection else null, onToggleSelect = toggleSelect)
+                                SongItem(song, historySongs, player, song.contentKey in favoriteKeys, nav, { playlistSongs = listOf(it) }, selected = if (selecting) song.id in selection else null, onToggleSelect = toggleSelect)
                             }
                         }
                     }

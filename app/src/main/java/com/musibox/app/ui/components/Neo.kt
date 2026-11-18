@@ -122,13 +122,14 @@ fun GlassCircleButton(icon: ImageVector, description: String, onClick: () -> Uni
 }
 
 /** Topo das telas principais: logo 3D, nome e os botões de busca, avisos e configurações. */
-/** Cor do logo: verde padrão nas telas de visual padrão (Temas e Mais), cor do tema nas outras. */
-private fun brandColor(): Color =
-    if (com.musibox.app.themes.AppTheme.neutral) com.musibox.app.themes.AppTheme.DefaultAccent
+/** Cor do logo: cor do tema aplicado; só na aba Mais (visual padrão) fica no verde do app. */
+private fun brandColor(followTheme: Boolean): Color =
+    if (com.musibox.app.themes.AppTheme.neutral && !followTheme) com.musibox.app.themes.AppTheme.DefaultAccent
     else com.musibox.app.themes.AppTheme.themeAccent
 
 @Composable
-fun BrandHeader(onSearch: () -> Unit, onVault: () -> Unit, onSettings: () -> Unit) {
+fun BrandHeader(onSearch: () -> Unit, onVault: () -> Unit, onSettings: () -> Unit, followTheme: Boolean = false) {
+    val brand = brandColor(followTheme)
     Row(
         Modifier
             .fillMaxWidth()
@@ -141,8 +142,8 @@ fun BrandHeader(onSearch: () -> Unit, onVault: () -> Unit, onSettings: () -> Uni
         Image(
             painterResource(R.drawable.ic_brand_note),
             null,
-            // em Temas e Mais o ícone fica sempre verde; nas outras abas segue a cor do tema aplicado
-            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(brandColor()),
+            // na aba Mais o ícone fica verde; nas outras (inclusive Temas) segue a cor do tema aplicado
+            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(brand),
             modifier = Modifier
                 .size(52.dp)
                 .graphicsLayer {
@@ -166,7 +167,7 @@ fun BrandHeader(onSearch: () -> Unit, onVault: () -> Unit, onSettings: () -> Uni
             Text(
                 buildAnnotatedString {
                     withStyle(SpanStyle(color = Color.White)) { append("Musi") }
-                    withStyle(SpanStyle(color = brandColor())) { append("Box") }
+                    withStyle(SpanStyle(color = brand)) { append("Box") }
                 },
                 fontSize = 28.sp,
                 fontWeight = FontWeight.ExtraBold,

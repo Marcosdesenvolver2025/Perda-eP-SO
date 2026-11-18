@@ -93,6 +93,11 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.rounded.AspectRatio
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -304,6 +309,21 @@ fun VaultPlayerScreen(nav: NavController, id: String) {
 
 private val vaultSpeeds = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f)
 
+/** Formatos de tela do vídeo. Auto usa o formato real do arquivo; os outros enquadram o vídeo recortando as bordas, sem esticar. */
+private enum class VideoAspect(val label: String, val desc: String, val ratio: Float) {
+    AUTO("Auto", "Detecta o formato do vídeo", 0f),
+    R16_9("16:9", "Horizontal", 16f / 9f),
+    R9_16("9:16", "Vertical", 9f / 16f),
+    R4_5("4:5", "Vertical recortado", 4f / 5f),
+    R1_1("1:1", "Quadrado", 1f),
+    R4_3("4:3", "Clássico", 4f / 3f),
+    R21_9("21:9", "Ultrawide / cinema", 21f / 9f),
+}
+
+/** Formato da lista mais parecido com a proporção real do vídeo. */
+private fun nearestAspect(ratio: Float): VideoAspect =
+    VideoAspect.entries.filter { it != VideoAspect.AUTO }.minBy { kotlin.math.abs(kotlin.math.ln(it.ratio / ratio)) }
+
 @OptIn(UnstableApi::class)
 @Composable
 private fun VaultPlayer(nav: NavController, initialId: String) {
@@ -320,6 +340,10 @@ private fun VaultPlayer(nav: NavController, initialId: String) {
     var speed by remember { mutableFloatStateOf(1f) }
     var speedMenu by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    // Proporção real do vídeo (lida pelo player, já com a rotação do celular aplicada)
+    var videoRatio by remember { mutableFloatStateOf(0f) }
+    var aspect by rememberSaveable(currentId) { mutableStateOf(VideoAspect.AUTO) }
+    var aspectMenu by remember { mutableStateOf(false) }
 
     val current = items?.firstOrNull { it.id == currentId }
     val list = items.orEmpty().filter { it.category == (current?.category ?: VaultCategory.VIDEO) }
@@ -351,6 +375,12 @@ private fun VaultPlayer(nav: NavController, initialId: String) {
                 }
             }
 
+            override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
+                if (videoSize.width > 0 && videoSize.height > 0) {
+                    videoRatio = videoSize.width * videoSize.pixelWidthHeightRatio / videoSize.height
+                }
+            }
+
             override fun onPlayerError(e: androidx.media3.common.PlaybackException) {
                 error = "Não foi possível reproduzir este arquivo. Formato não suportado."
             }
@@ -365,6 +395,7 @@ private fun VaultPlayer(nav: NavController, initialId: String) {
     LaunchedEffect(currentId, current != null) {
         if (current == null) return@LaunchedEffect
         error = null
+        videoRatio = 0f
         exo.setMediaItem(MediaItem.Builder().setUri(vaultUri(current.id)).setMediaId(current.id).build())
         exo.prepare()
         exo.play()
@@ -377,12 +408,20 @@ private fun VaultPlayer(nav: NavController, initialId: String) {
         }
     }
 
+    // Formato: o que o player detectou (ou o salvo no cofre, enquanto carrega) ou o escolhido pela pessoa
+    val storedRatio = current?.takeIf { it.width > 0 && it.height > 0 }?.let { it.width.toFloat() / it.height } ?: (16f / 9f)
+    val detectedRatio = if (videoRatio > 0f) videoRatio else storedRatio
+    val frameRatio = (if (aspect == VideoAspect.AUTO) detectedRatio else aspect.ratio).coerceIn(0.3f, 3f)
+    val landscapeVideo = frameRatio >= 1f
+
     val activity = context.findActivity()
-    DisposableEffect(fullscreen) {
+    DisposableEffect(fullscreen, landscapeVideo) {
         val window = activity?.window
         val controller = window?.let { WindowCompat.getInsetsController(it, it.decorView) }
         if (fullscreen) {
-            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            // Vídeo deitado gira a tela; vídeo em pé (9:16, 4:5) fica na vertical
+            activity?.requestedOrientation =
+                if (landscapeVideo) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
             controller?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             controller?.hide(WindowInsetsCompat.Type.systemBars())
         }
@@ -407,17 +446,22 @@ private fun VaultPlayer(nav: NavController, initialId: String) {
     }
 
     val videoSurface: @Composable (Modifier) -> Unit = { modifier ->
+        // Auto: mostra o vídeo inteiro. Formato escolhido: preenche o quadro recortando as sobras, sem esticar.
+        val mode = if (aspect == VideoAspect.AUTO) AspectRatioFrameLayout.RESIZE_MODE_FIT else AspectRatioFrameLayout.RESIZE_MODE_ZOOM
         AndroidView(
             factory = { ctx ->
                 PlayerView(ctx).apply {
                     useController = false
                     player = exo
-                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                    resizeMode = mode
                     keepScreenOn = true
                     setShutterBackgroundColor(android.graphics.Color.BLACK)
                 }
             },
-            update = { it.player = exo },
+            update = {
+                it.player = exo
+                it.resizeMode = mode
+            },
             modifier = modifier.background(Color.Black),
         )
     }
@@ -454,6 +498,42 @@ private fun VaultPlayer(nav: NavController, initialId: String) {
                                 speed = sp
                                 exo.playbackParameters = PlaybackParameters(sp)
                             })
+                        }
+                    }
+                }
+                if (isVideo) {
+                    Box {
+                        IconButton(onClick = { aspectMenu = true }) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(Icons.Rounded.AspectRatio, "Formato do vídeo", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(aspect.label, style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                        DropdownMenu(aspectMenu, { aspectMenu = false }, containerColor = Mb.colors.cardHigh) {
+                            VideoAspect.entries.forEach { a ->
+                                val sel = a == aspect
+                                DropdownMenuItem(
+                                    text = {
+                                        Column {
+                                            Text(
+                                                if (a == VideoAspect.AUTO) "Automático (${nearestAspect(detectedRatio).label})" else a.label,
+                                                fontWeight = if (sel) androidx.compose.ui.text.font.FontWeight.Bold else null,
+                                                color = if (sel) Mb.colors.vault else Color.Unspecified,
+                                            )
+                                            Text(a.desc, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    },
+                                    trailingIcon = if (sel) {
+                                        { Icon(Icons.Rounded.Check, null, tint = Mb.colors.vault) }
+                                    } else {
+                                        null
+                                    },
+                                    onClick = {
+                                        aspectMenu = false
+                                        aspect = a
+                                    },
+                                )
+                            }
                         }
                     }
                 }
@@ -494,7 +574,8 @@ private fun VaultPlayer(nav: NavController, initialId: String) {
                 .background(Color.Black)
                 .pointerInput(Unit) { detectTapGestures(onTap = { showControls = !showControls }) },
         ) {
-            videoSurface(Modifier.fillMaxSize())
+            // Quadro no formato do vídeo (ou no escolhido), o maior possível na tela
+            videoSurface(Modifier.align(Alignment.Center).aspectRatio(frameRatio))
             if (showControls) {
                 Box(
                     Modifier
@@ -527,13 +608,21 @@ private fun VaultPlayer(nav: NavController, initialId: String) {
             item {
                 Column(Modifier.padding(horizontal = 20.dp)) {
                     if (isVideo) {
-                        val ratio = if (current.width > 0 && current.height > 0) current.width.toFloat() / current.height else 16f / 9f
-                        videoSurface(
+                        // Vídeo em pé não passa de ~55% da tela, para os controles aparecerem sem rolar
+                        val maxVideoH = (LocalConfiguration.current.screenHeightDp * 0.55f).dp
+                        Box(
                             Modifier
                                 .fillMaxWidth()
-                                .aspectRatio(ratio.coerceIn(0.5f, 2.4f))
-                                .clip(RoundedCornerShape(18.dp)),
-                        )
+                                .heightIn(max = maxVideoH)
+                                .animateContentSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            videoSurface(
+                                Modifier
+                                    .aspectRatio(frameRatio)
+                                    .clip(RoundedCornerShape(18.dp)),
+                            )
+                        }
                     } else {
                         Artwork(
                             if (current.hasThumb) VaultThumb(current.id) else null,

@@ -39,6 +39,7 @@ import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.SkipNext
+import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -78,6 +79,7 @@ fun MiniPlayer(
     onOpen: () -> Unit,
     onPlayPause: () -> Unit,
     onNext: () -> Unit,
+    onPrevious: () -> Unit = {},
     onClose: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -141,7 +143,7 @@ fun MiniPlayer(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Artwork(current.uri?.let { AudioCover(it) }, Modifier.size(50.dp), corner = 12.dp)
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
                         current.title,
@@ -159,7 +161,7 @@ fun MiniPlayer(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                IconButton(modifier = Modifier.size(42.dp), onClick = {
+                IconButton(modifier = Modifier.size(38.dp), onClick = {
                     scope.launch {
                         container.library.setFavorite(
                             current.songKey, current.looseKey, current.title, current.artist, current.album,
@@ -171,10 +173,14 @@ fun MiniPlayer(
                         if (isFav) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                         if (isFav) "Remover dos favoritos" else "Favoritar",
                         tint = Color(0xFFFFFFFF),
-                        modifier = Modifier.size(26.dp),
+                        modifier = Modifier.size(24.dp),
                     )
                 }
-                IconButton(onClick = onPlayPause, modifier = Modifier.size(44.dp)) {
+                // Voltar: reinicia a música ou vai para a anterior (igual ao player completo)
+                IconButton(onClick = onPrevious, modifier = Modifier.size(38.dp)) {
+                    Icon(Icons.Rounded.SkipPrevious, "Anterior", tint = Color.White, modifier = Modifier.size(27.dp))
+                }
+                IconButton(onClick = onPlayPause, modifier = Modifier.size(42.dp)) {
                     Icon(
                         if (state.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                         if (state.isPlaying) "Pausar" else "Tocar",
@@ -182,18 +188,18 @@ fun MiniPlayer(
                         modifier = Modifier.size(32.dp),
                     )
                 }
-                IconButton(onClick = onNext, enabled = state.hasNext, modifier = Modifier.size(42.dp)) {
-                    Icon(Icons.Rounded.SkipNext, "Próxima", tint = if (state.hasNext) Color.White else Color.White.copy(alpha = 0.4f), modifier = Modifier.size(28.dp))
+                IconButton(onClick = onNext, enabled = state.hasNext, modifier = Modifier.size(38.dp)) {
+                    Icon(Icons.Rounded.SkipNext, "Próxima", tint = if (state.hasNext) Color.White else Color.White.copy(alpha = 0.4f), modifier = Modifier.size(27.dp))
                 }
                 // X: fecha o player; ele volta sozinho quando você tocar uma música de novo
                 Box(
                     Modifier
-                        .padding(start = 2.dp, end = 4.dp)
-                        .size(40.dp)
+                        .padding(start = 2.dp, end = 2.dp)
+                        .size(36.dp)
                         .bounceClick(pressed = 0.8f, shape = CircleShape, onClick = onClose),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.Rounded.Close, "Fechar player", tint = Color.White, modifier = Modifier.size(24.dp))
+                    Icon(Icons.Rounded.Close, "Fechar player", tint = Color.White, modifier = Modifier.size(22.dp))
                 }
             }
             val target = if (state.durationMs > 0) (state.positionMs.toFloat() / state.durationMs).coerceIn(0f, 1f) else 0f

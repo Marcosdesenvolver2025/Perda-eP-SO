@@ -3,6 +3,7 @@ package com.musibox.app.ui.library
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
+import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.MusicNote
@@ -107,6 +108,9 @@ fun SongItem(
                 }
             })
             addAll(extraMenu)
+            add(MenuAction("Excluir música", Icons.Rounded.DeleteOutline, destructive = true) {
+                SongDeletion.ask(listOf(song))
+            })
         },
     )
 }

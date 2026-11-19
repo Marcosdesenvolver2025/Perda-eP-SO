@@ -271,9 +271,9 @@ fun BrowserHomeScreen(nav: NavController) {
                 }
             }
 
-            // Atalhos
+            // Atalhos (nas capturas da loja ficam de fora: são logos de outros sites)
             Spacer(Modifier.height(26.dp))
-            SpeedDial(
+            if (!com.musibox.app.ShotsMode.on) SpeedDial(
                 sites = shortcuts,
                 onOpen = { open(it.url) },
                 onLongPress = { removeTarget = it },

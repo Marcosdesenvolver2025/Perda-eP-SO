@@ -105,6 +105,10 @@ class MainActivity : FragmentActivity() {
             }
             when (route) {
                 null -> Unit
+                "vault" -> {
+                    container.vaultLock.unlock()
+                    navRequests.tryEmit(Routes.VAULT)
+                }
                 "shot_playlist" -> {
                     val id = container.library.playlists.first().firstOrNull()?.playlist?.id
                     if (id != null) navRequests.tryEmit("playlist/$id")

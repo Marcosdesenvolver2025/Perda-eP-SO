@@ -84,10 +84,12 @@ fun StorageScreen(nav: NavController) {
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
         ) {
-            val rows = listOf(
+            // Android 13+: o app não tem acesso à galeria, então fotos e vídeos do celular não entram na conta
+            val gallery = android.os.Build.VERSION.SDK_INT < 33
+            val rows = listOfNotNull(
                 Triple("Músicas", i.music, Icons.Rounded.MusicNote) to MbPalette.Pink,
-                Triple("Vídeos", i.videos, Icons.Rounded.Movie) to MbPalette.Orange,
-                Triple("Imagens", i.images, Icons.Rounded.Image) to MbPalette.Green,
+                if (gallery) Triple("Vídeos", i.videos, Icons.Rounded.Movie) to MbPalette.Orange else null,
+                if (gallery) Triple("Imagens", i.images, Icons.Rounded.Image) to MbPalette.Green else null,
                 Triple("Cofre", i.vault, Icons.Rounded.Lock) to MbPalette.PurpleBright,
                 Triple("Cache", i.cache, Icons.Rounded.Cached) to MbPalette.TextSecondary,
             )

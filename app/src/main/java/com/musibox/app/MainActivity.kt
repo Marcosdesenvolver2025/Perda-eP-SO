@@ -20,6 +20,9 @@ import com.musibox.app.ui.navigation.Routes
 import com.musibox.app.ui.theme.MbPalette
 import com.musibox.app.ui.theme.MusiBoxTheme
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import androidx.lifecycle.lifecycleScope
 
 class MainActivity : FragmentActivity() {
 
@@ -76,6 +79,7 @@ class MainActivity : FragmentActivity() {
 
     private fun handleIntent(intent: Intent?) {
         intent ?: return
+        if (ShotsMode.on) handleShot(intent)
         val target = when {
             intent.getBooleanExtra(EXTRA_OPEN_PLAYER, false) -> Routes.PLAYER
             intent.getBooleanExtra(EXTRA_OPEN_VAULT, false) -> Routes.VAULT
@@ -86,6 +90,31 @@ class MainActivity : FragmentActivity() {
         intent.removeExtra(EXTRA_OPEN_PLAYER)
         intent.removeExtra(EXTRA_OPEN_VAULT)
         intent.removeExtra(EXTRA_OPEN_PRO)
+    }
+
+    /** Comandos do modo de capturas (só em build de capturas): tema, tocar e abrir telas. */
+    private fun handleShot(intent: Intent) {
+        val wall = intent.getStringExtra("shot_wall")
+        val route = intent.getStringExtra("shot_route")
+        val play = intent.getBooleanExtra("shot_play", false)
+        if (wall != null) com.musibox.app.themes.ThemeStore.get(this).setAppWallpaper(wall.ifEmpty { null })
+        lifecycleScope.launch {
+            if (play) {
+                val songs = container.music.songs.first().sortedBy { it.title }
+                if (songs.isNotEmpty()) container.player.playSongs(songs, songs.size / 3)
+            }
+            when (route) {
+                null -> Unit
+                "shot_playlist" -> {
+                    val id = container.library.playlists.first().firstOrNull()?.playlist?.id
+                    if (id != null) navRequests.tryEmit("playlist/$id")
+                }
+                else -> navRequests.tryEmit(route)
+            }
+        }
+        intent.removeExtra("shot_wall")
+        intent.removeExtra("shot_route")
+        intent.removeExtra("shot_play")
     }
 
     companion object {

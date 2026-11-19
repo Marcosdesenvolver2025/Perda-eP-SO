@@ -29,6 +29,7 @@ class MusiBoxApp : Application(), ImageLoaderFactory {
         com.musibox.app.themes.ThemeStore.get(this)
         com.musibox.app.billing.PlayBilling.start(this)
         com.musibox.app.media.AudioFx.init(this)
+        ShotsMode.seed(this)
         // Widget da tela inicial acompanha o plano (Plus e Pro) e a cor do tema
         container.appScope.launch {
             kotlinx.coroutines.flow.combine(

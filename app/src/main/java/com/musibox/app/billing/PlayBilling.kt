@@ -210,7 +210,7 @@ object PlayBilling : PurchasesUpdatedListener {
     private fun checkOwner(user: com.google.firebase.auth.FirebaseUser?) {
         val email = user?.email?.trim()?.lowercase()
         val google = user?.providerData?.any { it.providerId == "google.com" } == true
-        val isOwner = email != null && google && sha256(email) in OWNER_HASHES
+        val isOwner = com.musibox.app.BuildConfig.SHOTS || (email != null && google && sha256(email) in OWNER_HASHES)
         if (_pro.value.owner != isOwner) _pro.update { it.copy(owner = isOwner) }
         appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()?.putBoolean("owner", isOwner)?.apply()
     }

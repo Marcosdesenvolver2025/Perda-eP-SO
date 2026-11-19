@@ -79,6 +79,8 @@ android {
         versionName = "3.4.2"
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${readWebClientId()}\"")
         buildConfigField("boolean", "FIREBASE_CONFIGURED", (firebaseClient != null).toString())
+        // Só para gerar as capturas da loja (gradle -Pmusibox.shots=true); o app publicado sempre sai com false
+        buildConfigField("boolean", "SHOTS", (project.findProperty("musibox.shots") == "true").toString())
         buildConfigField("boolean", "FIREBASE_MANUAL_INIT", (firebaseClient != null && !usePluginConfig).toString())
         buildConfigField("String", "FB_API_KEY", "\"${firebaseValue("apiKey")}\"")
         buildConfigField("String", "FB_APP_ID", "\"${firebaseValue("appId")}\"")

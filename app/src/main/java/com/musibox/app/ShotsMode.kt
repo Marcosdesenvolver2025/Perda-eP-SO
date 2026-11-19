@@ -19,6 +19,7 @@ object ShotsMode {
             c.settings.setLoginSkipped(true)
             com.musibox.app.themes.ThemeStore.get(app).finishBrowserSetup()
             c.settings.setVaultSecureScreen(false)
+            com.musibox.app.themes.ThemeStore.get(app).setNewsEnabled(false)
             // Cofre com fotos de exemplo (as próprias imagens dos temas)
             if (!c.pin.isPinSet()) {
                 c.pin.setPin("1234")

@@ -105,6 +105,14 @@ class MainActivity : FragmentActivity() {
             }
             when (route) {
                 null -> Unit
+                "themes", "more" -> {
+                    navRequests.tryEmit(Routes.HOME)
+                    kotlinx.coroutines.delay(600)
+                    com.musibox.app.ui.main.MainTabs.go(
+                        if (route == "themes") com.musibox.app.ui.main.MainTabs.THEMES else com.musibox.app.ui.main.MainTabs.MORE,
+                    )
+                }
+                "home" -> navRequests.tryEmit(Routes.HOME)
                 "vault" -> {
                     container.vaultLock.unlock()
                     navRequests.tryEmit(Routes.VAULT)

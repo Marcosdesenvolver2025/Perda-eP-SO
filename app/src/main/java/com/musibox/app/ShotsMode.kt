@@ -18,6 +18,23 @@ object ShotsMode {
             c.settings.setOnboardingDone(true)
             c.settings.setLoginSkipped(true)
             com.musibox.app.themes.ThemeStore.get(app).finishBrowserSetup()
+            c.settings.setVaultSecureScreen(false)
+            // Cofre com fotos de exemplo (as próprias imagens dos temas)
+            if (!c.pin.isPinSet()) {
+                c.pin.setPin("1234")
+                val photos = listOf(
+                    "hy_lofoten", "hy_hoi_an", "hy_cachoeira_musgo", "hy_terraco_sakura", "hy_praia_anime",
+                    "hy_cachorro_flores", "hy_terra_espaco", "hy_castelo_aurora", "hy_lanternas_ceu",
+                )
+                photos.forEachIndexed { i, id ->
+                    runCatching {
+                        val f = java.io.File(app.cacheDir, "foto_${i + 1}.webp")
+                        app.assets.open("wallpapers/$id.webp").use { inp -> f.outputStream().use { inp.copyTo(it) } }
+                        c.vault.importFile(f, "Foto ${i + 1}.webp", "image/webp", null)
+                        f.delete()
+                    }
+                }
+            }
             var songs = c.music.songs.first()
             repeat(40) {
                 if (songs.size >= 8) return@repeat

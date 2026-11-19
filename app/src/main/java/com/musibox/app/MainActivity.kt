@@ -98,6 +98,7 @@ class MainActivity : FragmentActivity() {
         val route = intent.getStringExtra("shot_route")
         val play = intent.getBooleanExtra("shot_play", false)
         if (wall != null) com.musibox.app.themes.ThemeStore.get(this).setAppWallpaper(wall.ifEmpty { null })
+        intent.getStringExtra("shot_bwall")?.let { com.musibox.app.themes.ThemeStore.get(this).setBrowserWallpaper(it) }
         lifecycleScope.launch {
             if (play) {
                 val songs = container.music.songs.first().sortedBy { it.title }

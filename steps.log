@@ -1,0 +1,205 @@
+APK=apk/teste.apk PKG=br.com.musibox
+Serving...
+All files should be loaded. Notifying the device.
+Performing Incremental Install
+Success
+Install command complete in 3144 ms
+== Arquivos de teste
+/tmp/teste1.mp3: 1 file pushed, 0 skipped. 7.5 MB/s (641268 bytes in 0.081s)
+/tmp/teste2.mp3: 1 file pushed, 0 skipped. 681.2 MB/s (641268 bytes in 0.001s)
+/tmp/teste3.mp3: 1 file pushed, 0 skipped. 586.1 MB/s (641268 bytes in 0.001s)
+/tmp/teste4.m4a: 1 file pushed, 0 skipped. 408.1 MB/s (648211 bytes in 0.002s)
+/tmp/media/clipe_demo.mp4: 1 file pushed, 0 skipped. 62.3 MB/s (123689 bytes in 0.002s)
+== Primeira abertura
+print 01_apresentacao
+  mCurrentFocus=Window{115e08f u0 br.com.musibox/com.musibox.app.LauncherDefault}
+  mFocusedApp=ActivityRecord{7c0c205 u0 br.com.musibox/com.musibox.app.LauncherDefault t8}
+tap 'Pular' em (540, 2211)
+print 02_conta
+tap 'Continuar sem conta' em (540, 1977)
+visível: 'músicas encontradas'
+print 03_indexacao
+tap 'Ir para o início' em (540, 1495)
+print 04_inicio
+== Biblioteca e player
+tap 'Faixa de Teste 1' em (397, 902)
+print 06_tocando
+print 05_configurar_navegador
+visível: 'Configurar seu navegador'
+print 05a_configurar_papel
+tap 'Começar a navegar' em (540, 2219)
+print 05b_navegador_inicio
+print 05c_deslize_inicio
+NÃO ENCONTRADO: 'Cantores'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 05d_cantores
+NÃO ENCONTRADO: 'Áudios'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 05e_audios
+NÃO ENCONTRADO: 'Todas'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 07_player
+print 08_notificacao
+== Navegador (página inicial, notícias, privada e site)
+NÃO ENCONTRADO: 'Navegador'
+   pacotes=['br.com.musibox'] nós=63 textos=['Fechar player', 'TOCANDO AGORA', 'Album Demo', 'Fila de reprodução', 'Faixa de Teste 3', 'Artista Demo 3', 'Favoritar', '00:30', '00:40', 'Aleatório desligado', 'Anterior', 'Pausar', 'Próxima', 'Repetir desligado']
+print 09_navegador_inicio
+print 10_navegador_noticias
+NÃO ENCONTRADO: 'Privada'
+   pacotes=['br.com.musibox'] nós=63 textos=['Fechar player', 'TOCANDO AGORA', 'Album Demo', 'Fila de reprodução', 'Faixa de Teste 4', 'Artista Demo 4', 'Favoritar', '00:20', '00:40', 'Aleatório desligado', 'Anterior', 'Pausar', 'Próxima', 'Repetir desligado']
+print 11_navegacao_privada
+NÃO ENCONTRADO: 'Fechar navegação privada'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+NÃO ENCONTRADO: 'YouTube'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 12_site_youtube
+== Papéis de parede e Pro
+NÃO ENCONTRADO: 'Mais'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+NÃO ENCONTRADO: 'Papéis de parede'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 13_papeis_loja
+print 13b_papeis_loja_rolada
+NÃO ENCONTRADO: 'Supernova'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 14_papel_supernova
+NÃO ENCONTRADO: 'Comprar'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 14b_comprar_sem_play
+NÃO ENCONTRADO: 'Navegador'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 14c_previa_navegador
+NÃO ENCONTRADO: 'Névoa Verde'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+NÃO ENCONTRADO: 'Usar no app'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 14d_usar_no_app
+NÃO ENCONTRADO: 'Música'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 14e_inicio_com_tema
+NÃO ENCONTRADO: 'Mais'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+NÃO ENCONTRADO: 'MusiBox Pro'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 14f_pro
+NÃO ENCONTRADO: 'Equalizador'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 14g_equalizador
+NÃO ENCONTRADO: 'Navegador'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+NÃO ENCONTRADO: 'Personalizar navegador'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 14h_menu_navegador
+== Cofre: PIN, código de recuperação e recuperação
+NÃO ENCONTRADO: 'Cofre'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+NÃO ENCONTRADO: 'Criar PIN'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+NÃO ENCONTRADO: 'Criar código de recuperação'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+codigo de recuperacao: 
+NÃO ENCONTRADO: 'Anotei o código'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+NÃO ENCONTRADO: 'Concluir'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+NÃO ENCONTRADO: 'Configurações do cofre'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+NÃO ENCONTRADO: 'Bloquear capturas de tela'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 15_cofre_config
+print 15a_cofre_config_pro
+NÃO ENCONTRADO: 'Recuperação do PIN'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 15b_recuperacao
+video id: 1000000023
+visível: 'Salvar no cofre'
+print 15c_compartilhar_cofre
+NÃO ENCONTRADO: 'Copiar para o cofre'
+   pacotes=['br.com.musibox'] nós=13 textos=['Close sheet', 'Drag handle', 'Salvar no cofre', 'Crie o PIN do cofre no MusiBox antes de guardar arquivos nele.', 'Abrir o cofre']
+NÃO ENCONTRADO: 'Cofre'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 16_cofre_fotos
+NÃO ENCONTRADO: 'Vídeos'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 17_cofre_videos
+NÃO ENCONTRADO: 'clipe_demo'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 18_cofre_player
+NÃO ENCONTRADO: 'Música'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+NÃO ENCONTRADO: 'Cofre'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 18a_cofre_bloqueado
+NÃO ENCONTRADO: 'Esqueci o PIN'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 18b_esqueci_pin
+NÃO ENCONTRADO: 'Usar código de recuperação'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+
+Exception occurred while executing 'text':
+java.lang.IllegalArgumentException: Argument expected after "text"
+	at com.android.modules.utils.BasicShellCommandHandler.getNextArgRequired(BasicShellCommandHandler.java:295)
+	at com.android.server.input.InputShellCommand.runText(InputShellCommand.java:291)
+	at com.android.server.input.InputShellCommand.onCommand(InputShellCommand.java:232)
+	at com.android.modules.utils.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:97)
+	at android.os.ShellCommand.exec(ShellCommand.java:38)
+	at com.android.server.input.InputManagerService.onShellCommand(InputManagerService.java:3297)
+	at android.os.Binder.shellCommand(Binder.java:1068)
+	at android.os.Binder.onTransact(Binder.java:888)
+	at android.hardware.input.IInputManager$Stub.onTransact(IInputManager.java:1339)
+	at android.os.Binder.execTransactInternal(Binder.java:1344)
+	at android.os.Binder.execTransact(Binder.java:1275)
+print 18b2_codigo_digitado
+NÃO ENCONTRADO: 'Confirmar'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 18c_cofre_recuperado
+== Histórico, configurações e armazenamento
+NÃO ENCONTRADO: 'Mais'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 19_mais
+NÃO ENCONTRADO: 'Histórico'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 20_historico
+NÃO ENCONTRADO: 'Configurações'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 21_configuracoes
+NÃO ENCONTRADO: 'Armazenamento'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 22_armazenamento
+NÃO ENCONTRADO: 'Biblioteca completa'
+   pacotes=['br.com.musibox'] nós=14 textos=['Notícias na página inicial', 'Quer deixar o widget de notícias ativado? Você pode mudar depois no ⚙ das notícias ou no menu lá em cima.', 'Desativar', 'Deixar ativado']
+print 23_biblioteca
+== Rotação
+print 24_paisagem
+Nenhum crash.
+--- avisos do app
+11-19 09:20:28.794  3967  3967 W MusiBoxBilling: Play Billing indisponível: Billing service unavailable on device.
+11-19 09:20:28.915   520  2183 E JobScheduler.JobStatus: App br.com.musibox became active but still in NEVER bucket
+11-19 09:20:30.432   520   539 W ziparchive: Unable to open '/data/app/~~RdAZbaS2upjnRUIq8yGnDQ==/br.com.musibox-y09mTzvMX0gVMb7kZrnosg==/base.dm': No such file or directory
+11-19 09:20:30.795   520   925 W InputManager-JNI: Input channel object 'd00cd9d Splash Screen br.com.musibox (client)' was disposed without first being removed with the input manager!
+11-19 09:20:31.794   520   812 E JobScheduler.JobStatus: App br.com.musibox became active but still in NEVER bucket
+11-19 09:20:32.830   520  2185 W JobScheduler: Job didn't exist in JobStore: 2d0ebd1 {androidx.work.systemjobscheduler} #u0a192/0 @androidx.work.systemjobscheduler@br.com.musibox/androidx.work.impl.background.systemjob.SystemJobService
+11-19 09:21:10.595  1022  1022 W AudioMediaPlayerWrapper: onQueueChanged(): br.com.musibox tried to update with no new data
+11-19 09:21:50.400  1022  1022 W AudioMediaPlayerWrapper: onMetadataChanged(): br.com.musibox tried to update with no new data
+11-19 09:21:50.401  1022  1022 W AudioMediaPlayerWrapper: onMetadataChanged(): br.com.musibox tried to update with no new data
+11-19 09:21:50.403  1022  1022 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+11-19 09:21:50.407  1022  1022 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+11-19 09:21:50.407  1022  1022 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+11-19 09:21:50.407  1022  1022 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+11-19 09:21:58.104  1022  1022 W AudioMediaPlayerWrapper: onQueueChanged(): br.com.musibox tried to update with no new data
+11-19 09:21:58.104  1022  1022 W AudioMediaPlayerWrapper: onQueueChanged(): br.com.musibox tried to update with no new data
+11-19 09:21:58.116  1022  1022 W AudioMediaPlayerWrapper: onQueueChanged(): br.com.musibox tried to update with no new data
+11-19 09:21:58.117  1022  1022 W AudioMediaPlayerWrapper: onQueueChanged(): br.com.musibox tried to update with no new data
+11-19 09:22:24.778   520  2170 W InputManager-JNI: Input channel object 'badf7f1 br.com.musibox/com.musibox.app.LauncherDefault (client)' was disposed without first being removed with the input manager!
+11-19 09:22:30.732  1022  1022 W AudioMediaPlayerWrapper: onMetadataChanged(): br.com.musibox tried to update with no new data
+11-19 09:22:30.732  1022  1022 W AudioMediaPlayerWrapper: onMetadataChanged(): br.com.musibox tried to update with no new data
+11-19 09:22:30.733  1022  1022 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+11-19 09:22:30.741  1022  1022 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+11-19 09:22:42.615   520   539 W ziparchive: Unable to open '/data/app/~~RdAZbaS2upjnRUIq8yGnDQ==/br.com.musibox-y09mTzvMX0gVMb7kZrnosg==/base.dm': No such file or directory
+11-19 09:23:10.957  1022  1022 W AudioMediaPlayerWrapper: onMetadataChanged(): br.com.musibox tried to update with no new data
+11-19 09:23:10.958  1022  1022 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+11-19 09:23:10.959  1022  1022 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+11-19 09:23:10.959  1022  1022 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+11-19 09:23:10.959  1022  1022 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+11-19 09:23:51.063  1022  1022 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+11-19 09:23:51.063  1022  1022 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data

@@ -1,0 +1,39 @@
+11-19 09:20:26.956  3882  3882 W Monkey  : args: [-p, br.com.musibox, -c, android.intent.category.LAUNCHER, 1]
+11-19 09:20:26.957  3882  3882 W Monkey  :  arg: "br.com.musibox"
+11-19 09:20:26.957  3882  3882 W Monkey  : data="br.com.musibox"
+11-19 09:20:27.354  3967  3967 W br.com.musibox: Unexpected CPU variant for x86: x86_64.
+11-19 09:20:27.354  3967  3967 W br.com.musibox: Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, tremont, kabylake, default
+11-19 09:20:27.360  3967  3967 E br.com.musibox: Not starting debugger since process cannot load the jdwp agent.
+11-19 09:20:27.971  3967  3967 W ziparchive: Unable to open '/data/app/~~RdAZbaS2upjnRUIq8yGnDQ==/br.com.musibox-y09mTzvMX0gVMb7kZrnosg==/base.dm': No such file or directory
+11-19 09:20:27.971  3967  3967 W ziparchive: Unable to open '/data/app/~~RdAZbaS2upjnRUIq8yGnDQ==/br.com.musibox-y09mTzvMX0gVMb7kZrnosg==/base.dm': No such file or directory
+11-19 09:20:28.751   520  2085 E JobScheduler.JobStatus: App br.com.musibox became active but still in NEVER bucket
+11-19 09:20:28.794  3967  3967 W MusiBoxBilling: Play Billing indisponível: Billing service unavailable on device.
+11-19 09:20:28.915   520  2183 E JobScheduler.JobStatus: App br.com.musibox became active but still in NEVER bucket
+11-19 09:20:30.432   520   539 W ziparchive: Unable to open '/data/app/~~RdAZbaS2upjnRUIq8yGnDQ==/br.com.musibox-y09mTzvMX0gVMb7kZrnosg==/base.dm': No such file or directory
+11-19 09:20:30.795   520   925 W InputManager-JNI: Input channel object 'd00cd9d Splash Screen br.com.musibox (client)' was disposed without first being removed with the input manager!
+11-19 09:20:31.794   520   812 E JobScheduler.JobStatus: App br.com.musibox became active but still in NEVER bucket
+11-19 09:20:32.830   520  2185 W JobScheduler: Job didn't exist in JobStore: 2d0ebd1 {androidx.work.systemjobscheduler} #u0a192/0 @androidx.work.systemjobscheduler@br.com.musibox/androidx.work.impl.background.systemjob.SystemJobService
+11-19 09:21:10.595  1022  1022 W AudioMediaPlayerWrapper: onQueueChanged(): br.com.musibox tried to update with no new data
+11-19 09:21:50.400  1022  1022 W AudioMediaPlayerWrapper: onMetadataChanged(): br.com.musibox tried to update with no new data
+11-19 09:21:50.401  1022  1022 W AudioMediaPlayerWrapper: onMetadataChanged(): br.com.musibox tried to update with no new data
+11-19 09:21:50.403  1022  1022 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+11-19 09:21:50.407  1022  1022 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+11-19 09:21:50.407  1022  1022 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+11-19 09:21:50.407  1022  1022 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+11-19 09:21:58.104  1022  1022 W AudioMediaPlayerWrapper: onQueueChanged(): br.com.musibox tried to update with no new data
+11-19 09:21:58.104  1022  1022 W AudioMediaPlayerWrapper: onQueueChanged(): br.com.musibox tried to update with no new data
+11-19 09:21:58.116  1022  1022 W AudioMediaPlayerWrapper: onQueueChanged(): br.com.musibox tried to update with no new data
+11-19 09:21:58.117  1022  1022 W AudioMediaPlayerWrapper: onQueueChanged(): br.com.musibox tried to update with no new data
+11-19 09:22:24.778   520  2170 W InputManager-JNI: Input channel object 'badf7f1 br.com.musibox/com.musibox.app.LauncherDefault (client)' was disposed without first being removed with the input manager!
+11-19 09:22:30.732  1022  1022 W AudioMediaPlayerWrapper: onMetadataChanged(): br.com.musibox tried to update with no new data
+11-19 09:22:30.732  1022  1022 W AudioMediaPlayerWrapper: onMetadataChanged(): br.com.musibox tried to update with no new data
+11-19 09:22:30.733  1022  1022 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+11-19 09:22:30.741  1022  1022 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+11-19 09:22:42.615   520   539 W ziparchive: Unable to open '/data/app/~~RdAZbaS2upjnRUIq8yGnDQ==/br.com.musibox-y09mTzvMX0gVMb7kZrnosg==/base.dm': No such file or directory
+11-19 09:23:10.957  1022  1022 W AudioMediaPlayerWrapper: onMetadataChanged(): br.com.musibox tried to update with no new data
+11-19 09:23:10.958  1022  1022 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+11-19 09:23:10.959  1022  1022 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+11-19 09:23:10.959  1022  1022 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+11-19 09:23:10.959  1022  1022 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+11-19 09:23:51.063  1022  1022 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+11-19 09:23:51.063  1022  1022 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data

@@ -2,8 +2,25 @@
 set -x
 OUT=shots/out; mkdir -p $OUT
 P=br.com.musibox; A=$P/com.musibox.app.MainActivity
-cap(){ sleep ${2:-3}; adb exec-out screencap -p > $OUT/$1.png; }
+clean(){
+  for k in 1 2 3; do
+    adb shell uiautomator dump /sdcard/u.xml >/dev/null 2>&1
+    x=$(adb shell cat /sdcard/u.xml)
+    if echo "$x" | grep -q "isn't responding"; then
+      b=$(echo "$x" | grep -o 'text="Wait"[^>]*bounds="[^"]*"' | grep -o 'bounds="[^"]*"' | head -1 | grep -o '[0-9]\+' | tr '\n' ' ')
+      set -- $b; [ -n "$4" ] && adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 )); sleep 1
+    else break; fi
+  done
+}
+tapText(){
+  adb shell uiautomator dump /sdcard/u.xml >/dev/null 2>&1
+  b=$(adb shell cat /sdcard/u.xml | grep -o "text=\"$1\"[^>]*bounds=\"[^\"]*\"" | grep -o 'bounds="[^"]*"' | head -1 | grep -o '[0-9]\+' | tr '\n' ' ')
+  set -- $b; [ -n "$4" ] && adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 ))
+}
+cap(){ sleep ${2:-3}; clean; adb exec-out screencap -p > $OUT/$1.png; adb shell uiautomator dump /sdcard/u.xml >/dev/null 2>&1; adb shell cat /sdcard/u.xml > $OUT/$1.xml; }
 st(){ adb shell am start -n $A "$@"; }
+adb shell pm disable-user --user 0 com.google.android.apps.nexuslauncher || true
+adb shell settings put global hide_error_dialogs 1 || true
 adb install -r -g shots.apk
 adb shell pm grant $P android.permission.POST_NOTIFICATIONS || true
 adb shell settings put global sysui_demo_allowed 1
@@ -17,24 +34,23 @@ adb shell mkdir -p /sdcard/Music/Demo
 for f in shots/songs/*.mp3; do adb push "$f" /sdcard/Music/Demo/ > /dev/null; done
 adb shell content call --uri content://media --method scan_volume --arg external_primary || true
 sleep 10
-adb shell am start -W -n $A; cap 00_first 35
+adb shell am start -W -n $A; sleep 40; clean
 adb shell am force-stop $P; sleep 3
 adb shell am start -W -n $A --ez shot_play true --es shot_wall hy_hoi_an; cap 01_home 10
-st --es shot_route player; cap 02_player 7
-st --es shot_route equalizer; cap 03_eq 4
-st --es shot_route car_mode; cap 04_car 4
-st --es shot_route home; cap 05_home2 3
-st --es shot_route shot_playlist; cap 06_playlist 4
-st --es shot_route home --es shot_wall hy_lofoten; cap 07_home_lofoten 4
-adb shell input tap 650 2297; cap 08_temas 4
-adb shell input tap 540 1567; cap 09_cor 3
+tapText "Mais ouvidas"; cap 02_mais_ouvidas 3
+tapText "Recentes"; cap 03_recentes 3
+st --es shot_route player; cap 04_player 7
+st --es shot_route equalizer; cap 05_eq 4
+st --es shot_route car_mode; cap 06_car 4
+st --es shot_route shot_playlist; cap 07_playlist 4
+st --es shot_route themes --es shot_wall hy_lofoten; cap 08_temas 5
+adb shell input swipe 540 1700 540 900 600; cap 09_temas_scroll 3
+st --es shot_route themes; sleep 3
+tapText "Cor do app"; cap 10_cor 4
 adb shell input keyevent BACK; sleep 2
-adb shell input tap 430 2297; cap 10_browser 5
-st --es shot_route vault; cap 11_vault 4
-adb shell input keyevent BACK; sleep 1
-st --es shot_route home --es shot_wall hy_hoi_an; sleep 3
-adb shell input tap 210 2297; sleep 2
-adb shell input swipe 900 484 150 484 500; cap 12_chips 2
-adb shell uiautomator dump /sdcard/ui.xml && adb pull /sdcard/ui.xml $OUT/ui.xml || true
-adb logcat -d -t 600 '*:E' > $OUT/logcat.txt || true
-adb shell wm size > $OUT/wm.txt; adb shell wm density >> $OUT/wm.txt
+st --es shot_route browser_home; cap 11_browser 5
+st --es shot_route vault --es shot_wall hy_hoi_an; cap 12_vault 6
+st --es shot_route more; cap 13_mais 4
+st --es shot_route pro; cap 14_pro 4
+adb shell input swipe 540 1700 540 800 600; cap 15_pro2 3
+adb logcat -d -t 400 '*:E' > $OUT/logcat.txt || true

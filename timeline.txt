@@ -1,0 +1,117 @@
+=== tocando_app_aberto ===
+    active=false
+      package=br.com.musibox
+      active=true
+      state=PlaybackState {state=PLAYING(3), position=7525, buffered position=240999, speed=1.0, updated=160728, actions=7340027, custom actions=[Action:mName='Favoritar, mIcon=2131230947, mExtras=Bundle[EMPTY_PARCEL], Action:mName='Fechar, mIcon=2131230946, mExtras=Bundle[EMPTY_PARCEL]], active item id=8, error=null}
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=34073, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+  * ServiceRecord{1f20935 u0 br.com.musibox/com.musibox.app.media.PlaybackService c:br.com.musibox}
+    isForeground=true foregroundId=1001 types=0x00000002 foregroundNoti=Notification(channel=default_channel_id shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE color=0x00000000 category=transport groupKey=media3_group_key actions=5 vis=PUBLIC)
+    lastActivity=-8s244ms restartTime=-11s266ms createdFromFg=true
+    startRequested=true delayedStop=false stopIfKilled=false callStart=true lastStartId=3
+    procStateMemTracker: best=4 () / pending state=1 highest=1 1.0x
+    curProcState=2 mRepProcState=2 setProcState=2 lastStateTime=-11s888ms
+=== tela_desligada_5s ===
+    active=false
+      package=br.com.musibox
+      active=true
+      state=PlaybackState {state=PLAYING(3), position=16331, buffered position=240999, speed=1.0, updated=169945, actions=7340027, custom actions=[Action:mName='Favoritar, mIcon=2131230947, mExtras=Bundle[EMPTY_PARCEL], Action:mName='Fechar, mIcon=2131230946, mExtras=Bundle[EMPTY_PARCEL]], active item id=8, error=null}
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=34073, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+  * ServiceRecord{1f20935 u0 br.com.musibox/com.musibox.app.media.PlaybackService c:br.com.musibox}
+    isForeground=true foregroundId=1001 types=0x00000002 foregroundNoti=Notification(channel=default_channel_id shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE color=0x00000000 category=transport groupKey=media3_group_key actions=5 vis=PUBLIC)
+    lastActivity=-15s662ms restartTime=-18s684ms createdFromFg=true
+    startRequested=true delayedStop=false stopIfKilled=false callStart=true lastStartId=3
+    procStateMemTracker: best=4 () / pending state=1 highest=1 1.0x
+    curProcState=4 mRepProcState=4 setProcState=4 lastStateTime=-19s304ms
+=== tela_desligada_30s ===
+    active=false
+      package=br.com.musibox
+      active=true
+      state=PlaybackState {state=PLAYING(3), position=40299, buffered position=240999, speed=1.0, updated=193955, actions=7340027, custom actions=[Action:mName='Favoritar, mIcon=2131230947, mExtras=Bundle[EMPTY_PARCEL], Action:mName='Fechar, mIcon=2131230946, mExtras=Bundle[EMPTY_PARCEL]], active item id=8, error=null}
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=34073, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+  * ServiceRecord{1f20935 u0 br.com.musibox/com.musibox.app.media.PlaybackService c:br.com.musibox}
+    isForeground=true foregroundId=1001 types=0x00000002 foregroundNoti=Notification(channel=default_channel_id shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE color=0x00000000 category=transport groupKey=media3_group_key actions=5 vis=PUBLIC)
+    lastActivity=-40s711ms restartTime=-43s733ms createdFromFg=true
+    startRequested=true delayedStop=false stopIfKilled=false callStart=true lastStartId=3
+    procStateMemTracker: best=4 () / pending state=1 highest=1 1.0x
+    curProcState=4 mRepProcState=4 setProcState=4 lastStateTime=-44s353ms
+=== tela_desligada_60s ===
+    active=false
+      package=br.com.musibox
+      active=true
+      state=PlaybackState {state=PLAYING(3), position=70322, buffered position=240999, speed=1.0, updated=223963, actions=7340027, custom actions=[Action:mName='Favoritar, mIcon=2131230947, mExtras=Bundle[EMPTY_PARCEL], Action:mName='Fechar, mIcon=2131230946, mExtras=Bundle[EMPTY_PARCEL]], active item id=8, error=null}
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=34073, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+  * ServiceRecord{1f20935 u0 br.com.musibox/com.musibox.app.media.PlaybackService c:br.com.musibox}
+    isForeground=true foregroundId=1001 types=0x00000002 foregroundNoti=Notification(channel=default_channel_id shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE color=0x00000000 category=transport groupKey=media3_group_key actions=5 vis=PUBLIC)
+    lastActivity=-1m10s760ms restartTime=-1m13s782ms createdFromFg=true
+    startRequested=true delayedStop=false stopIfKilled=false callStart=true lastStartId=3
+    procStateMemTracker: best=4 () / pending state=1 highest=1 1.0x
+    curProcState=4 mRepProcState=4 setProcState=4 lastStateTime=-1m14s404ms
+=== tela_desligada_75s ===
+    active=false
+      package=br.com.musibox
+      active=true
+      state=PlaybackState {state=PLAYING(3), position=85322, buffered position=240999, speed=1.0, updated=238967, actions=7340027, custom actions=[Action:mName='Favoritar, mIcon=2131230947, mExtras=Bundle[EMPTY_PARCEL], Action:mName='Fechar, mIcon=2131230946, mExtras=Bundle[EMPTY_PARCEL]], active item id=8, error=null}
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=34073, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+  * ServiceRecord{1f20935 u0 br.com.musibox/com.musibox.app.media.PlaybackService c:br.com.musibox}
+    isForeground=true foregroundId=1001 types=0x00000002 foregroundNoti=Notification(channel=default_channel_id shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE color=0x00000000 category=transport groupKey=media3_group_key actions=5 vis=PUBLIC)
+    lastActivity=-1m25s809ms restartTime=-1m28s831ms createdFromFg=true
+    startRequested=true delayedStop=false stopIfKilled=false callStart=true lastStartId=3
+    procStateMemTracker: best=4 () / pending state=1 highest=1 1.0x
+    curProcState=4 mRepProcState=4 setProcState=4 lastStateTime=-1m29s455ms
+=== tela_desligada_90s ===
+    active=false
+      package=br.com.musibox
+      active=true
+      state=PlaybackState {state=PLAYING(3), position=100321, buffered position=240999, speed=1.0, updated=253970, actions=7340027, custom actions=[Action:mName='Favoritar, mIcon=2131230947, mExtras=Bundle[EMPTY_PARCEL], Action:mName='Fechar, mIcon=2131230946, mExtras=Bundle[EMPTY_PARCEL]], active item id=8, error=null}
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=34073, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+  * ServiceRecord{1f20935 u0 br.com.musibox/com.musibox.app.media.PlaybackService c:br.com.musibox}
+    isForeground=true foregroundId=1001 types=0x00000002 foregroundNoti=Notification(channel=default_channel_id shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE color=0x00000000 category=transport groupKey=media3_group_key actions=5 vis=PUBLIC)
+    lastActivity=-1m40s866ms restartTime=-1m43s888ms createdFromFg=true
+    startRequested=true delayedStop=false stopIfKilled=false callStart=true lastStartId=3
+    procStateMemTracker: best=4 () / pending state=1 highest=1 1.0x
+    curProcState=4 mRepProcState=4 setProcState=4 lastStateTime=-1m44s511ms
+=== tela_desligada_120s ===
+    active=false
+      package=br.com.musibox
+      active=true
+      state=PlaybackState {state=PLAYING(3), position=130329, buffered position=240999, speed=1.0, updated=283977, actions=7340027, custom actions=[Action:mName='Favoritar, mIcon=2131230947, mExtras=Bundle[EMPTY_PARCEL], Action:mName='Fechar, mIcon=2131230946, mExtras=Bundle[EMPTY_PARCEL]], active item id=8, error=null}
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=34073, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+  * ServiceRecord{1f20935 u0 br.com.musibox/com.musibox.app.media.PlaybackService c:br.com.musibox}
+    isForeground=true foregroundId=1001 types=0x00000002 foregroundNoti=Notification(channel=default_channel_id shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE color=0x00000000 category=transport groupKey=media3_group_key actions=5 vis=PUBLIC)
+    lastActivity=-2m10s915ms restartTime=-2m13s937ms createdFromFg=true
+    startRequested=true delayedStop=false stopIfKilled=false callStart=true lastStartId=3
+    procStateMemTracker: best=4 () / pending state=1 highest=1 1.0x
+    curProcState=4 mRepProcState=4 setProcState=4 lastStateTime=-2m14s559ms
+=== tela_desligada_150s ===
+    active=false
+      package=br.com.musibox
+      active=true
+      state=PlaybackState {state=PLAYING(3), position=160307, buffered position=240999, speed=1.0, updated=313983, actions=7340027, custom actions=[Action:mName='Favoritar, mIcon=2131230947, mExtras=Bundle[EMPTY_PARCEL], Action:mName='Fechar, mIcon=2131230946, mExtras=Bundle[EMPTY_PARCEL]], active item id=8, error=null}
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=34073, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+  * ServiceRecord{1f20935 u0 br.com.musibox/com.musibox.app.media.PlaybackService c:br.com.musibox}
+    isForeground=true foregroundId=1001 types=0x00000002 foregroundNoti=Notification(channel=default_channel_id shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE color=0x00000000 category=transport groupKey=media3_group_key actions=5 vis=PUBLIC)
+    lastActivity=-2m40s963ms restartTime=-2m43s985ms createdFromFg=true
+    startRequested=true delayedStop=false stopIfKilled=false callStart=true lastStartId=3
+    procStateMemTracker: best=4 () / pending state=1 highest=1 1.0x
+    curProcState=4 mRepProcState=4 setProcState=4 lastStateTime=-2m44s605ms
+=== tela_desligada_180s ===
+    active=false
+      package=br.com.musibox
+      active=true
+      state=PlaybackState {state=PLAYING(3), position=190316, buffered position=240999, speed=1.0, updated=343990, actions=7340027, custom actions=[Action:mName='Favoritar, mIcon=2131230947, mExtras=Bundle[EMPTY_PARCEL], Action:mName='Fechar, mIcon=2131230946, mExtras=Bundle[EMPTY_PARCEL]], active item id=8, error=null}
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=34073, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+  * ServiceRecord{1f20935 u0 br.com.musibox/com.musibox.app.media.PlaybackService c:br.com.musibox}
+    isForeground=true foregroundId=1001 types=0x00000002 foregroundNoti=Notification(channel=default_channel_id shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE color=0x00000000 category=transport groupKey=media3_group_key actions=5 vis=PUBLIC)
+    lastActivity=-3m11s13ms restartTime=-3m14s35ms createdFromFg=true
+    startRequested=true delayedStop=false stopIfKilled=false callStart=true lastStartId=3
+    procStateMemTracker: best=4 () / pending state=1 highest=1 1.0x
+    curProcState=4 mRepProcState=4 setProcState=4 lastStateTime=-3m14s659ms

@@ -75,8 +75,8 @@ android {
         applicationId = appId
         minSdk = 29
         targetSdk = 36
-        versionCode = 41
-        versionName = "3.4.3"
+        versionCode = 42
+        versionName = "3.4.4"
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${readWebClientId()}\"")
         buildConfigField("boolean", "FIREBASE_CONFIGURED", (firebaseClient != null).toString())
         // Só para gerar as capturas da loja (gradle -Pmusibox.shots=true); o app publicado sempre sai com false
@@ -191,9 +191,9 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.10.0")
 
     // Player
-    implementation("androidx.media3:media3-exoplayer:1.5.1")
-    implementation("androidx.media3:media3-session:1.5.1")
-    implementation("androidx.media3:media3-ui:1.5.1")
+    implementation("androidx.media3:media3-exoplayer:1.11.1")
+    implementation("androidx.media3:media3-session:1.11.1")
+    implementation("androidx.media3:media3-ui:1.11.1")
     implementation("com.google.guava:guava:33.3.1-android")
 
     // Imagens

@@ -11,6 +11,7 @@ import androidx.compose.material.icons.automirrored.rounded.VolumeOff
 import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.AudioFile
 import androidx.compose.material.icons.rounded.Folder
+import androidx.compose.material.icons.rounded.BatteryChargingFull
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.Headset
 import androidx.compose.material.icons.rounded.HighQuality
@@ -73,6 +74,13 @@ private val bitrates = listOf(128, 192, 256, 320)
 
 @Composable
 fun SettingsScreen(nav: NavController) {
+    val bgContext = LocalContext.current
+    var bgFree by remember { mutableStateOf(BackgroundPlay.isUnrestricted(bgContext)) }
+    var bgDialog by remember { mutableStateOf(false) }
+    androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+        bgFree = BackgroundPlay.isUnrestricted(bgContext)
+    }
+    if (bgDialog) BackgroundPlayDialog { bgDialog = false }
     val container = LocalAppContainer.current
     val context = LocalContext.current
     val settings by container.settings.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
@@ -124,6 +132,14 @@ fun SettingsScreen(nav: NavController) {
                     SettingDivider()
                     SettingSwitch(Icons.Rounded.CloseFullscreen, "Parar ao fechar o app", "Para a música quando o app é removido dos recentes",
                         settings.stopOnTaskRemoved, { v -> scope.launch { container.settings.setStopOnTaskRemoved(v) } })
+                    SettingDivider()
+                    SettingItem(
+                        Icons.Rounded.BatteryChargingFull,
+                        "Tocar com a tela desligada",
+                        if (bgFree) "Liberado: a música continua com a tela desligada" else "Toque para liberar na bateria e a música não parar",
+                        onClick = { bgDialog = true },
+                        tint = if (bgFree) androidx.compose.material3.MaterialTheme.colorScheme.primary else Mb.colors.danger,
+                    )
                     SettingDivider()
                     SettingItem(Icons.Rounded.GraphicEq, "Qualidade de áudio",
                         "Os arquivos do aparelho tocam na qualidade original.")

@@ -8,13 +8,13 @@
 
     <!-- Leitura de músicas (Android 13+ granular; antigo apenas até o 12) -->
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
-    <!-- Usadas apenas para calcular o espaço de fotos/vídeos na tela Armazenamento, quando o usuário pedir -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
-    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
+    <!-- Sem acesso à galeria (fotos/vídeos): o cofre escolhe arquivos pelo seletor do Android (política do Google Play) -->
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
+
+    <!-- O leitor de QR (ML Kit) abre em pé; isso não deve impedir a instalação em aparelhos sem tela "em pé" -->
+    <uses-feature android:name="android.hardware.screen.portrait" android:required="false" />
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />

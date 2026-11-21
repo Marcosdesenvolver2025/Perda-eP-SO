@@ -93,6 +93,17 @@ fun MusiBoxRoot(startOnboarding: Boolean, navRequests: Flow<String>) {
     val navController = rememberNavController()
     val snackbar = remember { SnackbarHostState() }
     val playerState by container.player.state.collectAsStateWithLifecycle()
+    // Na primeira música, se o celular ainda puder fechar o app pela bateria, avisa uma vez como liberar
+    val rootContext = androidx.compose.ui.platform.LocalContext.current
+    var bgTip by remember { mutableStateOf(false) }
+    LaunchedEffect(playerState.isPlaying) {
+        if (playerState.isPlaying && com.musibox.app.ui.settings.BackgroundPlay.shouldShowTip(rootContext)) {
+            kotlinx.coroutines.delay(4_000)
+            com.musibox.app.ui.settings.BackgroundPlay.markTipShown(rootContext)
+            bgTip = true
+        }
+    }
+    if (bgTip) com.musibox.app.ui.settings.BackgroundPlayDialog { bgTip = false }
     val backStack by navController.currentBackStackEntryAsState()
     val route = backStack?.destination?.route
 

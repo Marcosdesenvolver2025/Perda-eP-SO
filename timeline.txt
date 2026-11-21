@@ -1,0 +1,99 @@
+=== tocando_app_aberto ===
+    active=false
+      package=br.com.musibox
+      active=true
+      state=PlaybackState {state=PLAYING(3), position=6115, buffered position=240999, speed=1.0, updated=173922, actions=7340027, custom actions=[Action:mName='Favoritar, mIcon=2131230947, mExtras=Bundle[EMPTY_PARCEL], Action:mName='Fechar, mIcon=2131230946, mExtras=Bundle[EMPTY_PARCEL]], active item id=8, error=null}
+  * ServiceRecord{13709d3 u0 br.com.musibox/com.musibox.app.media.PlaybackService c:br.com.musibox}
+    isForeground=true foregroundId=1001 types=0x00000002 foregroundNoti=Notification(channel=default_channel_id shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE color=0x00000000 category=transport groupKey=media3_group_key actions=5 vis=PUBLIC)
+    lastActivity=-8s380ms restartTime=-11s699ms createdFromFg=true
+    startRequested=true delayedStop=false stopIfKilled=false callStart=true lastStartId=4
+    procStateMemTracker: best=4 () / pending state=1 highest=1 1.0x
+    curProcState=2 mRepProcState=2 setProcState=2 lastStateTime=-12s17ms
+=== tela_desligada_5s ===
+    active=false
+      package=br.com.musibox
+      active=true
+      state=PlaybackState {state=PLAYING(3), position=14969, buffered position=240999, speed=1.0, updated=182993, actions=7340027, custom actions=[Action:mName='Favoritar, mIcon=2131230947, mExtras=Bundle[EMPTY_PARCEL], Action:mName='Fechar, mIcon=2131230946, mExtras=Bundle[EMPTY_PARCEL]], active item id=8, error=null}
+  * ServiceRecord{13709d3 u0 br.com.musibox/com.musibox.app.media.PlaybackService c:br.com.musibox}
+    isForeground=true foregroundId=1001 types=0x00000002 foregroundNoti=Notification(channel=default_channel_id shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE color=0x00000000 category=transport groupKey=media3_group_key actions=5 vis=PUBLIC)
+    lastActivity=-15s488ms restartTime=-18s807ms createdFromFg=true
+    startRequested=true delayedStop=false stopIfKilled=false callStart=true lastStartId=4
+    procStateMemTracker: best=4 () / pending state=1 highest=1 1.0x
+    curProcState=4 mRepProcState=4 setProcState=4 lastStateTime=-19s124ms
+=== tela_desligada_30s ===
+    active=false
+      package=br.com.musibox
+      active=true
+      state=PlaybackState {state=PLAYING(3), position=38921, buffered position=240999, speed=1.0, updated=207001, actions=7340027, custom actions=[Action:mName='Favoritar, mIcon=2131230947, mExtras=Bundle[EMPTY_PARCEL], Action:mName='Fechar, mIcon=2131230946, mExtras=Bundle[EMPTY_PARCEL]], active item id=8, error=null}
+  * ServiceRecord{13709d3 u0 br.com.musibox/com.musibox.app.media.PlaybackService c:br.com.musibox}
+    isForeground=true foregroundId=1001 types=0x00000002 foregroundNoti=Notification(channel=default_channel_id shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE color=0x00000000 category=transport groupKey=media3_group_key actions=5 vis=PUBLIC)
+    lastActivity=-40s536ms restartTime=-43s855ms createdFromFg=true
+    startRequested=true delayedStop=false stopIfKilled=false callStart=true lastStartId=4
+    procStateMemTracker: best=4 () / pending state=1 highest=1 1.0x
+    curProcState=4 mRepProcState=4 setProcState=4 lastStateTime=-44s171ms
+=== tela_desligada_60s ===
+    active=false
+      package=br.com.musibox
+      active=true
+      state=PlaybackState {state=PLAYING(3), position=68990, buffered position=240999, speed=1.0, updated=237015, actions=7340027, custom actions=[Action:mName='Favoritar, mIcon=2131230947, mExtras=Bundle[EMPTY_PARCEL], Action:mName='Fechar, mIcon=2131230946, mExtras=Bundle[EMPTY_PARCEL]], active item id=8, error=null}
+  * ServiceRecord{13709d3 u0 br.com.musibox/com.musibox.app.media.PlaybackService c:br.com.musibox}
+    isForeground=true foregroundId=1001 types=0x00000002 foregroundNoti=Notification(channel=default_channel_id shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE color=0x00000000 category=transport groupKey=media3_group_key actions=5 vis=PUBLIC)
+    lastActivity=-1m10s584ms restartTime=-1m13s903ms createdFromFg=true
+    startRequested=true delayedStop=false stopIfKilled=false callStart=true lastStartId=4
+    procStateMemTracker: best=4 () / pending state=1 highest=1 1.0x
+    curProcState=4 mRepProcState=4 setProcState=4 lastStateTime=-1m14s219ms
+=== tela_desligada_75s ===
+    active=false
+      package=br.com.musibox
+      active=true
+      state=PlaybackState {state=PLAYING(3), position=84017, buffered position=240999, speed=1.0, updated=252021, actions=7340027, custom actions=[Action:mName='Favoritar, mIcon=2131230947, mExtras=Bundle[EMPTY_PARCEL], Action:mName='Fechar, mIcon=2131230946, mExtras=Bundle[EMPTY_PARCEL]], active item id=8, error=null}
+  * ServiceRecord{13709d3 u0 br.com.musibox/com.musibox.app.media.PlaybackService c:br.com.musibox}
+    isForeground=true foregroundId=1001 types=0x00000002 foregroundNoti=Notification(channel=default_channel_id shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE color=0x00000000 category=transport groupKey=media3_group_key actions=5 vis=PUBLIC)
+    lastActivity=-1m25s632ms restartTime=-1m28s951ms createdFromFg=true
+    startRequested=true delayedStop=false stopIfKilled=false callStart=true lastStartId=4
+    procStateMemTracker: best=4 () / pending state=1 highest=1 1.0x
+    curProcState=4 mRepProcState=4 setProcState=4 lastStateTime=-1m29s268ms
+=== tela_desligada_90s ===
+    active=false
+      package=br.com.musibox
+      active=true
+      state=PlaybackState {state=PLAYING(3), position=99044, buffered position=240999, speed=1.0, updated=267028, actions=7340027, custom actions=[Action:mName='Favoritar, mIcon=2131230947, mExtras=Bundle[EMPTY_PARCEL], Action:mName='Fechar, mIcon=2131230946, mExtras=Bundle[EMPTY_PARCEL]], active item id=8, error=null}
+  * ServiceRecord{13709d3 u0 br.com.musibox/com.musibox.app.media.PlaybackService c:br.com.musibox}
+    isForeground=true foregroundId=1001 types=0x00000002 foregroundNoti=Notification(channel=default_channel_id shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE color=0x00000000 category=transport groupKey=media3_group_key actions=5 vis=PUBLIC)
+    lastActivity=-1m40s680ms restartTime=-1m43s999ms createdFromFg=true
+    startRequested=true delayedStop=false stopIfKilled=false callStart=true lastStartId=4
+    procStateMemTracker: best=4 () / pending state=1 highest=1 1.0x
+    curProcState=4 mRepProcState=4 setProcState=4 lastStateTime=-1m44s314ms
+=== tela_desligada_120s ===
+    active=false
+      package=br.com.musibox
+      active=true
+      state=PlaybackState {state=PLAYING(3), position=129074, buffered position=240999, speed=1.0, updated=297039, actions=7340027, custom actions=[Action:mName='Favoritar, mIcon=2131230947, mExtras=Bundle[EMPTY_PARCEL], Action:mName='Fechar, mIcon=2131230946, mExtras=Bundle[EMPTY_PARCEL]], active item id=8, error=null}
+  * ServiceRecord{13709d3 u0 br.com.musibox/com.musibox.app.media.PlaybackService c:br.com.musibox}
+    isForeground=true foregroundId=1001 types=0x00000002 foregroundNoti=Notification(channel=default_channel_id shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE color=0x00000000 category=transport groupKey=media3_group_key actions=5 vis=PUBLIC)
+    lastActivity=-2m10s726ms restartTime=-2m14s45ms createdFromFg=true
+    startRequested=true delayedStop=false stopIfKilled=false callStart=true lastStartId=4
+    procStateMemTracker: best=4 () / pending state=1 highest=1 1.0x
+    curProcState=4 mRepProcState=4 setProcState=4 lastStateTime=-2m14s360ms
+=== tela_desligada_150s ===
+    active=false
+      package=br.com.musibox
+      active=true
+      state=PlaybackState {state=PLAYING(3), position=159098, buffered position=240999, speed=1.0, updated=327050, actions=7340027, custom actions=[Action:mName='Favoritar, mIcon=2131230947, mExtras=Bundle[EMPTY_PARCEL], Action:mName='Fechar, mIcon=2131230946, mExtras=Bundle[EMPTY_PARCEL]], active item id=8, error=null}
+  * ServiceRecord{13709d3 u0 br.com.musibox/com.musibox.app.media.PlaybackService c:br.com.musibox}
+    isForeground=true foregroundId=1001 types=0x00000002 foregroundNoti=Notification(channel=default_channel_id shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE color=0x00000000 category=transport groupKey=media3_group_key actions=5 vis=PUBLIC)
+    lastActivity=-2m40s771ms restartTime=-2m44s90ms createdFromFg=true
+    startRequested=true delayedStop=false stopIfKilled=false callStart=true lastStartId=4
+    procStateMemTracker: best=4 () / pending state=1 highest=1 1.0x
+    curProcState=4 mRepProcState=4 setProcState=4 lastStateTime=-2m44s406ms
+=== tela_desligada_180s ===
+    active=false
+      package=br.com.musibox
+      active=true
+      state=PlaybackState {state=PLAYING(3), position=189108, buffered position=240999, speed=1.0, updated=357060, actions=7340027, custom actions=[Action:mName='Favoritar, mIcon=2131230947, mExtras=Bundle[EMPTY_PARCEL], Action:mName='Fechar, mIcon=2131230946, mExtras=Bundle[EMPTY_PARCEL]], active item id=8, error=null}
+  * ServiceRecord{13709d3 u0 br.com.musibox/com.musibox.app.media.PlaybackService c:br.com.musibox}
+    isForeground=true foregroundId=1001 types=0x00000002 foregroundNoti=Notification(channel=default_channel_id shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE color=0x00000000 category=transport groupKey=media3_group_key actions=5 vis=PUBLIC)
+    lastActivity=-3m10s817ms restartTime=-3m14s136ms createdFromFg=true
+    startRequested=true delayedStop=false stopIfKilled=false callStart=true lastStartId=4
+    procStateMemTracker: best=4 () / pending state=1 highest=1 1.0x
+    curProcState=4 mRepProcState=4 setProcState=4 lastStateTime=-3m14s452ms

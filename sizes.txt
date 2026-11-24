@@ -1,0 +1,13 @@
+app/build/outputs/apk/release/:
+total 71508
+drwxr-xr-x 3 runner runner     4096 Nov 24 11:17 .
+drwxr-xr-x 3 runner runner     4096 Nov 24 11:17 ..
+-rw-r--r-- 1 runner runner 73202727 Nov 24 11:17 app-release-unsigned.apk
+drwxr-xr-x 4 runner runner     4096 Nov 24 11:17 baselineProfiles
+-rw-r--r-- 1 runner runner      732 Nov 24 11:17 output-metadata.json
+
+app/build/outputs/bundle/release/:
+total 70988
+drwxr-xr-x 2 runner runner     4096 Nov 24 11:17 .
+drwxr-xr-x 3 runner runner     4096 Nov 24 11:17 ..
+-rw-r--r-- 1 runner runner 72682511 Nov 24 11:17 app-release.aab

@@ -131,9 +131,9 @@ class PlayerController(private val context: Context) {
 
     // ---------------- Comandos ----------------
 
-    fun playSongs(songs: List<Song>, startIndex: Int = 0, shuffle: Boolean = false) {
+    fun playSongs(songs: List<Song>, startIndex: Int = 0, shuffle: Boolean = false, edits: List<String?>? = null) {
         if (songs.isEmpty()) return
-        val items = songs.map { it.toMediaItem() }
+        val items = songs.mapIndexed { i, s -> s.toMediaItem(edits?.getOrNull(i)) }
         withController { c ->
             c.shuffleModeEnabled = shuffle
             val start = if (shuffle && startIndex == 0) items.indices.random() else startIndex.coerceIn(items.indices)

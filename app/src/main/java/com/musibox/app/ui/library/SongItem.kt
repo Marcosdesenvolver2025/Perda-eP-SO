@@ -12,6 +12,8 @@ import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -46,14 +48,23 @@ fun SongItem(
     /** Seleção múltipla: null = normal. Com seleção ativa, tocar marca/desmarca. */
     selected: Boolean? = null,
     onToggleSelect: ((Song) -> Unit)? = null,
+    /** Playlist com Music Edits: efeito de cada música da fila e a posição desta música nela. */
+    queueEdits: List<String?>? = null,
+    playIndex: Int? = null,
 ) {
     val container = LocalAppContainer.current
     val context = LocalContext.current
     val snack = rememberSnack()
     val scope = rememberCoroutineScope()
-    val isCurrent = player.current?.songId == song.id
+    val myEdit = queueEdits?.getOrNull(playIndex ?: -1)
+    val currentEdit by com.musibox.app.media.MusicEdits.current.collectAsStateWithLifecycle()
+    val isCurrent = player.current?.songId == song.id && (queueEdits == null || currentEdit.id == (myEdit ?: "none"))
     val play = {
-        if (isCurrent) container.player.togglePlayPause() else container.player.playSong(song, queue)
+        when {
+            isCurrent -> container.player.togglePlayPause()
+            queueEdits != null && playIndex != null -> container.player.playSongs(queue, playIndex, edits = queueEdits)
+            else -> container.player.playSong(song, queue)
+        }
     }
     TrackRow(
         title = song.title,

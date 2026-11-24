@@ -71,6 +71,8 @@ data class PlaylistItemEntity(
     val durationMs: Long,
     val position: Int,
     val addedAt: Long,
+    /** Music Edit salvo junto com a música nesta playlist (ex.: "slowed_reverb"); null = normal. */
+    val fx: String? = null,
 )
 
 @Entity(tableName = "play_history", indices = [Index("playedAt"), Index("songKey")])

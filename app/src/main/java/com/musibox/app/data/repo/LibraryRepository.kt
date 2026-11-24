@@ -137,15 +137,17 @@ class LibraryRepository(
     }
 
     /** Adiciona músicas ao final da playlist (ignora as que já estão nela). */
-    suspend fun addToPlaylist(playlistId: String, songs: List<Song>): Int {
+    suspend fun addToPlaylist(playlistId: String, songs: List<Song>, fx: String? = null): Int {
+        val edit = fx?.takeIf { it != "none" }
         val p = plDao.get(playlistId) ?: return 0
         var added = 0
         db.withTransaction {
             val items = plDao.items(playlistId)
-            val existingKeys = items.mapTo(HashSet()) { it.songKey }
+            // a mesma música pode entrar de novo com outro efeito (ex.: normal e Slowed + Reverb)
+            val existingKeys = items.mapTo(HashSet()) { it.songKey + "|" + (it.fx ?: "") }
             var position = (items.maxOfOrNull { it.position } ?: -1) + 1
             val now = System.currentTimeMillis()
-            val newItems = songs.filter { existingKeys.add(it.contentKey) }.map { s ->
+            val newItems = songs.filter { existingKeys.add(it.contentKey + "|" + (edit ?: "")) }.map { s ->
                 PlaylistItemEntity(
                     id = UUID.randomUUID().toString(),
                     playlistId = playlistId,
@@ -157,6 +159,7 @@ class LibraryRepository(
                     durationMs = s.durationMs,
                     position = position++,
                     addedAt = now,
+                    fx = edit,
                 )
             }
             added = newItems.size

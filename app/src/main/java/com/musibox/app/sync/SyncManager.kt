@@ -728,6 +728,7 @@ class SyncManager(
                 "durationMs" to i.durationMs,
                 "position" to i.position,
                 "addedAt" to i.addedAt,
+                "fx" to i.fx,
             )
         },
     )
@@ -756,6 +757,7 @@ class SyncManager(
                 durationMs = (m["durationMs"] as? Number)?.toLong() ?: 0L,
                 position = (m["position"] as? Number)?.toInt() ?: index,
                 addedAt = (m["addedAt"] as? Number)?.toLong() ?: updatedAt,
+                fx = m["fx"] as? String,
             )
         }.filter { it.songKey.isNotBlank() }
         return p to items

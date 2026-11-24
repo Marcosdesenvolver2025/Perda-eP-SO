@@ -200,6 +200,10 @@ fun PlaylistScreen(nav: NavController, id: String) {
                 // Ordem na tela: muda na hora enquanto a pessoa arrasta; volta a seguir o banco quando ele atualiza
                 var order by remember(list) { mutableStateOf(list) }
                 val available = order.mapNotNull { it.track.song }
+                // Music Edits salvos em cada música (tocam automaticamente com o efeito)
+                val availableEdits = order.filter { it.track.song != null }.map { it.item.fx }
+                val hasEdits = availableEdits.any { it != null }
+                val playIndexOf = order.filter { it.track.song != null }.withIndex().associate { (i, t) -> t.item.id to i }
                 val listState = rememberLazyListState()
                 val haptic = LocalHapticFeedback.current
                 val density = LocalDensity.current
@@ -272,10 +276,10 @@ fun PlaylistScreen(nav: NavController, id: String) {
                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                             ) {
                                 HeaderButton(Icons.Rounded.PlayArrow, "Tocar", Modifier.weight(1f), primary = true) {
-                                    container.player.playSongs(available, 0)
+                                    container.player.playSongs(available, 0, edits = availableEdits)
                                 }
                                 HeaderButton(Icons.Rounded.Shuffle, "Aleatório", Modifier.weight(1f)) {
-                                    container.player.playSongs(available, 0, shuffle = true)
+                                    container.player.playSongs(available, 0, shuffle = true, edits = availableEdits)
                                 }
                             }
                         }
@@ -372,7 +376,15 @@ fun PlaylistScreen(nav: NavController, id: String) {
                                 },
                         ) {
                             if (song != null) {
-                                SongItem(song, available, player, song.contentKey in favorites, nav, { playlistSongs = listOf(it) }, extraMenu = moveMenu)
+                                val fxLabel = t.item.fx?.let { com.musibox.app.media.MusicEdit.fromId(it) }
+                                    ?.takeIf { it != com.musibox.app.media.MusicEdit.NONE }
+                                SongItem(
+                                    song, available, player, song.contentKey in favorites, nav, { playlistSongs = listOf(it) },
+                                    subtitle = fxLabel?.let { "${it.emoji} ${it.label} • ${song.displayArtist()}" },
+                                    extraMenu = moveMenu,
+                                    queueEdits = if (hasEdits) availableEdits else null,
+                                    playIndex = if (hasEdits) playIndexOf[t.item.id] else null,
+                                )
                             } else {
                                 TrackRow(
                                     title = t.track.title,

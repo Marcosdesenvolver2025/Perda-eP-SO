@@ -34,6 +34,8 @@ internal object Extras {
     const val URI = "uri"
     const val RAW_ARTIST = "rawArtist"
     const val RAW_ALBUM = "rawAlbum"
+    /** Music Edit desta música (ex.: "slowed_reverb"), quando ela vem de uma playlist com efeito. */
+    const val EDIT = "musicEdit"
 }
 
 fun buildMediaItem(
@@ -46,8 +48,9 @@ fun buildMediaItem(
     durationMs: Long,
     songKey: String,
     looseKey: String,
+    edit: String? = null,
 ): MediaItem {
-    val parsed = Uri.parse(uri)
+    val parsed = if (edit == MusicEdit.REVERSED.id) ReverseRenderer.reverseUri(uri) else Uri.parse(uri)
     val extras = Bundle().apply {
         putString(Extras.SONG_KEY, songKey)
         putString(Extras.LOOSE_KEY, looseKey)
@@ -56,6 +59,7 @@ fun buildMediaItem(
         putString(Extras.URI, uri)
         putString(Extras.RAW_ARTIST, artist)
         putString(Extras.RAW_ALBUM, album)
+        if (edit != null && edit != MusicEdit.NONE.id) putString(Extras.EDIT, edit)
     }
     val metadata = MediaMetadata.Builder()
         .setTitle(title)
@@ -74,8 +78,8 @@ fun buildMediaItem(
         .build()
 }
 
-fun Song.toMediaItem(): MediaItem =
-    buildMediaItem(id, uri, title, artist, album, albumId, durationMs, contentKey, looseKey)
+fun Song.toMediaItem(edit: String? = null): MediaItem =
+    buildMediaItem(id, uri, title, artist, album, albumId, durationMs, contentKey, looseKey, edit)
 
 fun QueueItemEntity.toMediaItem(): MediaItem =
     buildMediaItem(songId, uri, title, artist, album, albumId, durationMs, songKey, looseKey)
@@ -91,9 +95,10 @@ fun MediaItem.withPlayableUri(): MediaItem {
 
 fun MediaItem.toNowPlaying(): NowPlaying {
     val extras = mediaMetadata.extras
-    val uri = localConfiguration?.uri
+    // o endereço original vem antes (no "Reversed" o player toca uma cópia de trás para frente)
+    val uri = extras?.getString(Extras.URI)?.let(Uri::parse)
+        ?: localConfiguration?.uri
         ?: requestMetadata.mediaUri
-        ?: extras?.getString(Extras.URI)?.let(Uri::parse)
     val title = mediaMetadata.title?.toString() ?: ""
     val rawArtist = extras?.getString(Extras.RAW_ARTIST) ?: mediaMetadata.artist?.toString() ?: ""
     val rawAlbum = extras?.getString(Extras.RAW_ALBUM) ?: mediaMetadata.albumTitle?.toString() ?: ""

@@ -36,6 +36,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.DirectionsCar
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.Bedtime
@@ -119,6 +120,9 @@ fun PlayerScreen(nav: NavController) {
     var dragging by remember { mutableStateOf<Float?>(null) }
     var speedMenu by remember { mutableStateOf(false) }
     var playlistSong by remember { mutableStateOf<Song?>(null) }
+    var playlistFx by remember { mutableStateOf<String?>(null) }
+    var editsSheet by remember { mutableStateOf(false) }
+    val currentEdit by com.musibox.app.media.MusicEdits.current.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current
     val vizState by com.musibox.app.billing.PlayBilling.pro.collectAsStateWithLifecycle()
     val vizAllowed = vizState.plan.ordinal >= com.musibox.app.billing.Plan.PLUS.ordinal
@@ -400,15 +404,48 @@ fun PlayerScreen(nav: NavController) {
                 BottomAction(Icons.Rounded.NotificationsActive, "Criar toque") {
                     nav.navigate(if (isProPlan) Routes.RINGTONE else Routes.PRO)
                 }
+                BottomAction(
+                    Icons.Rounded.AutoAwesome,
+                    if (currentEdit != com.musibox.app.media.MusicEdit.NONE) "${currentEdit.emoji} ${currentEdit.label}" else "Music Edits",
+                    highlight = currentEdit != com.musibox.app.media.MusicEdit.NONE,
+                ) { editsSheet = true }
                 BottomAction(Icons.Rounded.DirectionsCar, "Modo carro") {
                     nav.navigate(if (isProPlan) Routes.CAR_MODE else Routes.PRO)
                 }
             }
             if (boostDialog) BoostDialog(fx.boostMb) { boostDialog = false }
+            if (editsSheet) {
+                val goPlan = proState.plan.ordinal >= com.musibox.app.billing.Plan.GO.ordinal
+                MusicEditsSheet(
+                    unlocked = goPlan,
+                    onLocked = { editsSheet = false; nav.navigate(Routes.PRO) },
+                    onSaveToPlaylist = { e ->
+                        val song = index.byId(current.songId)
+                        if (song != null) {
+                            playlistFx = e.id
+                            playlistSong = song
+                        } else {
+                            snack("Arquivo não encontrado neste dispositivo.")
+                        }
+                    },
+                    onPicked = { e ->
+                        com.musibox.app.media.MusicEdits.select(e)
+                        when (e) {
+                            com.musibox.app.media.MusicEdit.REVERSED -> snack("Preparando a música de trás para frente…")
+                            com.musibox.app.media.MusicEdit.EIGHT_D -> snack("8D: use fones de ouvido para sentir o som girando.")
+                            com.musibox.app.media.MusicEdit.KARAOKE -> snack("Karaokê: em algumas músicas a voz some mais do que em outras.")
+                            else -> Unit
+                        }
+                    },
+                    onDismiss = { editsSheet = false },
+                )
+            }
             Spacer(Modifier.height(24.dp))
         }
     }
-    playlistSong?.let { AddToPlaylistDialog(listOf(it)) { playlistSong = null } }
+    playlistSong?.let {
+        AddToPlaylistDialog(listOf(it), onDismiss = { playlistSong = null; playlistFx = null }, fx = playlistFx)
+    }
 }
 
 private fun trimSpeed(s: Float): String =
@@ -481,7 +518,14 @@ private fun BottomAction(
     ) {
         Icon(icon, label, tint = if (highlight) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
         Spacer(Modifier.height(4.dp))
-        Text(label, style = MaterialTheme.typography.labelMedium, color = if (highlight) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            label,
+            Modifier.widthIn(max = 116.dp),
+            style = MaterialTheme.typography.labelMedium,
+            color = if (highlight) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+        )
     }
 }
 

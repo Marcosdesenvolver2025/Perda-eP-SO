@@ -31,7 +31,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun vaultDao(): VaultDao
 
     companion object {
-        const val VERSION = 1
+        const val VERSION = 2
 
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "musibox.db")
@@ -46,5 +46,12 @@ abstract class AppDatabase : RoomDatabase() {
  * e aumente AppDatabase.VERSION. O esquema de cada versão fica exportado em app/schemas.
  */
 object Migrations {
-    val ALL: Array<Migration> = arrayOf()
+    /** 1 → 2: Music Edits salvos nas músicas das playlists. */
+    private val M1_2 = object : Migration(1, 2) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE playlist_items ADD COLUMN fx TEXT")
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(M1_2)
 }

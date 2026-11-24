@@ -105,10 +105,28 @@ class PlaybackService : MediaSessionService() {
                 androidx.media3.exoplayer.audio.DefaultAudioSink.Builder(context)
                     .setEnableFloatOutput(enableFloatOutput)
                     .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
-                    .setAudioProcessors(arrayOf(LevelTapProcessor()))
+                    .setAudioProcessors(arrayOf(EditProcessor(), LevelTapProcessor()))
                     .build()
         }
+        // "Reversed" (Music Edits): o endereço especial vira a cópia de trás para frente, gerada na hora
+        val appCtx = applicationContext
+        val dataSources = androidx.media3.datasource.ResolvingDataSource.Factory(
+            androidx.media3.datasource.DefaultDataSource.Factory(this),
+        ) { spec ->
+            if (spec.uri.scheme == ReverseRenderer.SCHEME) {
+                val original = ReverseRenderer.originalOf(spec.uri)
+                if (original == null) {
+                    spec
+                } else {
+                    runCatching { spec.withUri(android.net.Uri.fromFile(ReverseRenderer.render(appCtx, original))) }
+                        .getOrElse { spec.withUri(original) }
+                }
+            } else {
+                spec
+            }
+        }
         player = ExoPlayer.Builder(this, renderers)
+            .setMediaSourceFactory(androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSources))
             .setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(C.USAGE_MEDIA)
@@ -138,6 +156,8 @@ class PlaybackService : MediaSessionService() {
                 if (!billing.isProNow() && player.playbackParameters.speed != 1f) {
                     player.playbackParameters = androidx.media3.common.PlaybackParameters(1f)
                 }
+                // Music Edits (Go, Plus e Pro)
+                applyEdit(MusicEdits.current.value)
                 MusicWidget.refresh(this@PlaybackService)
             }
         }
@@ -214,8 +234,16 @@ class PlaybackService : MediaSessionService() {
         player.addListener(object : Player.Listener {
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                 currentKey.value = mediaItem?.mediaMetadata?.extras?.getString(Extras.SONG_KEY)
+                // cada música toca com o próprio efeito (o salvo na playlist ou nenhum)
+                applyEdit(MusicEdit.fromId(mediaItem?.mediaMetadata?.extras?.getString(Extras.EDIT)))
+            }
+
+            override fun onPlaybackParametersChanged(playbackParameters: androidx.media3.common.PlaybackParameters) {
+                // velocidade escolhida pela pessoa (sem mudar o tom) fica guardada para voltar depois de um efeito
+                if (playbackParameters.pitch == 1f) baseSpeed = playbackParameters.speed
             }
         })
+        scope.launch { MusicEdits.requests.collect { editCurrentSong(it) } }
 
         // Botões próprios na notificação: coração (favoritar) e X (fechar o player).
         scope.launch {
@@ -247,6 +275,48 @@ class PlaybackService : MediaSessionService() {
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
+
+    // ---------------- Music Edits ----------------
+
+    private var baseSpeed = 1f
+    private var editReplacing = false
+
+    /** Liga o efeito no som e ajusta velocidade/tom (sem plano, a música toca normal). */
+    private fun applyEdit(edit: MusicEdit) {
+        val allowed = com.musibox.app.billing.PlayBilling.hasPlan(com.musibox.app.billing.Plan.GO)
+        MusicEdits.setCurrent(edit, allowed)
+        val e = MusicEdits.active
+        val params = if (e.speed != 1f || e.pitch != 1f) {
+            androidx.media3.common.PlaybackParameters(e.speed, e.pitch)
+        } else {
+            androidx.media3.common.PlaybackParameters(baseSpeed)
+        }
+        if (player.playbackParameters != params) player.playbackParameters = params
+    }
+
+    /** A pessoa escolheu um efeito no player: grava na música atual da fila e aplica na hora. */
+    private fun editCurrentSong(edit: MusicEdit) {
+        val index = player.currentMediaItemIndex
+        val item = player.currentMediaItem ?: return
+        val extras = android.os.Bundle(item.mediaMetadata.extras ?: android.os.Bundle())
+        val before = MusicEdit.fromId(extras.getString(Extras.EDIT))
+        if (edit == MusicEdit.NONE) extras.remove(Extras.EDIT) else extras.putString(Extras.EDIT, edit.id)
+        val original = extras.getString(Extras.URI)
+        val reverseChanged = (before == MusicEdit.REVERSED) != (edit == MusicEdit.REVERSED)
+        val builder = item.buildUpon().setMediaMetadata(item.mediaMetadata.buildUpon().setExtras(extras).build())
+        if (reverseChanged && original != null) {
+            val uri = if (edit == MusicEdit.REVERSED) ReverseRenderer.reverseUri(original) else android.net.Uri.parse(original)
+            builder.setUri(uri).setRequestMetadata(MediaItem.RequestMetadata.Builder().setMediaUri(uri).build())
+        }
+        editReplacing = true
+        try {
+            player.replaceMediaItem(index, builder.build())
+            if (reverseChanged) player.seekTo(index, 0L)
+        } finally {
+            editReplacing = false
+        }
+        applyEdit(edit)
+    }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         val p = session?.player
@@ -299,6 +369,8 @@ class PlaybackService : MediaSessionService() {
         }
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            // trocar o efeito da música atual não conta como música nova (histórico, widget)
+            if (editReplacing) return
             if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) autoTransition = true
             updateWidget(newSong = true)
             transitionToken++

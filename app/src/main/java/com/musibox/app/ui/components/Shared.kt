@@ -40,7 +40,8 @@ import com.musibox.app.ui.theme.Mb
 import kotlinx.coroutines.launch
 
 @Composable
-fun AddToPlaylistDialog(songs: List<Song>, onDismiss: () -> Unit) {
+fun AddToPlaylistDialog(songs: List<Song>, onDismiss: () -> Unit, fx: String? = null) {
+    val editLabel = fx?.let { com.musibox.app.media.MusicEdit.fromId(it) }?.takeIf { it != com.musibox.app.media.MusicEdit.NONE }?.label
     val container = LocalAppContainer.current
     val playlists by container.library.playlists.collectAsStateWithLifecycle(initialValue = emptyList())
     val scope = rememberCoroutineScope()
@@ -56,7 +57,7 @@ fun AddToPlaylistDialog(songs: List<Song>, onDismiss: () -> Unit) {
             onConfirm = { name ->
                 scope.launch {
                     val id = container.library.createPlaylist(name)
-                    val added = container.library.addToPlaylist(id, songs)
+                    val added = container.library.addToPlaylist(id, songs, fx)
                     snack(if (added > 0) "Adicionada à playlist \"$name\"." else "A playlist foi criada.")
                     onDismiss()
                 }
@@ -68,7 +69,7 @@ fun AddToPlaylistDialog(songs: List<Song>, onDismiss: () -> Unit) {
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Adicionar à playlist") },
+        title = { Text(if (editLabel != null) "Salvar com $editLabel" else "Adicionar à playlist") },
         text = {
             LazyColumn(Modifier.heightIn(max = 380.dp)) {
                 item {
@@ -103,10 +104,10 @@ fun AddToPlaylistDialog(songs: List<Song>, onDismiss: () -> Unit) {
                             .fillMaxWidth()
                             .clickable {
                                 scope.launch {
-                                    val added = container.library.addToPlaylist(p.playlist.id, songs)
+                                    val added = container.library.addToPlaylist(p.playlist.id, songs, fx)
                                     snack(
-                                        if (added > 0) "Adicionada à playlist \"${p.playlist.name}\"."
-                                        else "Essa música já está na playlist.",
+                                        if (added > 0) "Adicionada à playlist \"${p.playlist.name}\"" + (editLabel?.let { " com $it." } ?: ".")
+                                        else "Essa música já está na playlist" + (editLabel?.let { " com $it." } ?: "."),
                                     )
                                     onDismiss()
                                 }

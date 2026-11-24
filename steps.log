@@ -1,0 +1,202 @@
+APK=apk/teste.apk PKG=br.com.musibox
+Serving...
+All files should be loaded. Notifying the device.
+Performing Incremental Install
+Success
+Install command complete in 2781 ms
+== Arquivos de teste
+/tmp/teste1.mp3: 1 file pushed, 0 skipped. 595.0 MB/s (641268 bytes in 0.001s)
+/tmp/teste2.mp3: 1 file pushed, 0 skipped. 599.6 MB/s (641268 bytes in 0.001s)
+/tmp/teste3.mp3: 1 file pushed, 0 skipped. 553.2 MB/s (641268 bytes in 0.001s)
+/tmp/teste4.m4a: 1 file pushed, 0 skipped. 310.7 MB/s (648211 bytes in 0.002s)
+/tmp/media/clipe_demo.mp4: 1 file pushed, 0 skipped. 126.7 MB/s (123689 bytes in 0.001s)
+== Primeira abertura
+print 01_apresentacao
+  mCurrentFocus=Window{36e396 u0 br.com.musibox/com.musibox.app.LauncherDefault}
+  mFocusedApp=ActivityRecord{6d18638 u0 br.com.musibox/com.musibox.app.LauncherDefault t8}
+tap 'Pular' em (540, 2211)
+print 02_conta
+tap 'Continuar sem conta' em (540, 1977)
+visível: 'músicas encontradas'
+print 03_indexacao
+tap 'Ir para o início' em (540, 1495)
+print 04_inicio
+== Biblioteca e player
+tap 'Faixa de Teste 1' em (397, 902)
+print 06_tocando
+print 05_configurar_navegador
+NÃO APARECEU: 'Configurar seu navegador'
+print 05a_configurar_papel
+NÃO ENCONTRADO: 'Começar a navegar'
+   pacotes=['br.com.musibox'] nós=18 textos=['Música parando com a tela desligada?', 'Para economizar bateria, o celular pode fechar o MusiBox depois de alguns minutos com a tela desligada. Libere o app uma vez e a música não para mais:', '1. Toque em Abrir configurações.', '2. Toque em Bateria e escolha Sem restrições.', 'Deixe também o modo de economia de energia desligado enquanto ouve música.', 'Agora não', 'Abrir configurações']
+print 05b_navegador_inicio
+print 05c_deslize_inicio
+NÃO ENCONTRADO: 'Cantores'
+   pacotes=['br.com.musibox'] nós=18 textos=['Música parando com a tela desligada?', 'Para economizar bateria, o celular pode fechar o MusiBox depois de alguns minutos com a tela desligada. Libere o app uma vez e a música não para mais:', '1. Toque em Abrir configurações.', '2. Toque em Bateria e escolha Sem restrições.', 'Deixe também o modo de economia de energia desligado enquanto ouve música.', 'Agora não', 'Abrir configurações']
+print 05d_cantores
+NÃO ENCONTRADO: 'Áudios'
+   pacotes=['br.com.musibox'] nós=18 textos=['Música parando com a tela desligada?', 'Para economizar bateria, o celular pode fechar o MusiBox depois de alguns minutos com a tela desligada. Libere o app uma vez e a música não para mais:', '1. Toque em Abrir configurações.', '2. Toque em Bateria e escolha Sem restrições.', 'Deixe também o modo de economia de energia desligado enquanto ouve música.', 'Agora não', 'Abrir configurações']
+print 05e_audios
+NÃO ENCONTRADO: 'Todas'
+   pacotes=['br.com.musibox'] nós=18 textos=['Música parando com a tela desligada?', 'Para economizar bateria, o celular pode fechar o MusiBox depois de alguns minutos com a tela desligada. Libere o app uma vez e a música não para mais:', '1. Toque em Abrir configurações.', '2. Toque em Bateria e escolha Sem restrições.', 'Deixe também o modo de economia de energia desligado enquanto ouve música.', 'Agora não', 'Abrir configurações']
+print 07_player
+print 08_notificacao
+== Navegador (página inicial, notícias, privada e site)
+NÃO ENCONTRADO: 'Navegador'
+   pacotes=['br.com.musibox'] nós=18 textos=['Música parando com a tela desligada?', 'Para economizar bateria, o celular pode fechar o MusiBox depois de alguns minutos com a tela desligada. Libere o app uma vez e a música não para mais:', '1. Toque em Abrir configurações.', '2. Toque em Bateria e escolha Sem restrições.', 'Deixe também o modo de economia de energia desligado enquanto ouve música.', 'Agora não', 'Abrir configurações']
+print 09_navegador_inicio
+print 10_navegador_noticias
+NÃO ENCONTRADO: 'Privada'
+   pacotes=['br.com.musibox'] nós=66 textos=['Fechar player', 'TOCANDO AGORA', 'Album Demo', 'Fila de reprodução', 'Faixa de Teste 4', 'Artista Demo 4', 'Favoritar', '00:37', '00:40', 'Aleatório desligado', 'Anterior', 'Pausar', 'Próxima', 'Repetir desligado']
+print 11_navegacao_privada
+NÃO ENCONTRADO: 'Fechar navegação privada'
+   pacotes=['br.com.musibox'] nós=96 textos=['MusiBox', 'Sua música, do seu jeito.', 'Pesquisar', 'Cofre', 'Configurações', 'Buscar músicas, artistas, playlists...', 'Todas', 'Cantores', 'Favoritas', 'Suas músicas', '4 músicas', 'Ver todas', 'Aleatório', 'Tocar tudo']
+tap 'YouTube' em (918, 1615)
+print 12_site_youtube
+== Papéis de parede e Pro
+tap 'Mais' em (868, 2227)
+tap 'Papéis de parede' em (515, 853)
+print 13_papeis_loja
+print 13b_papeis_loja_rolada
+NÃO ENCONTRADO: 'Supernova'
+   pacotes=['br.com.musibox'] nós=69 textos=['MusiBox', 'Sua música, do seu jeito.', 'Pesquisar', 'Cofre', 'Configurações', 'Temas', '298 papéis • as cores do app seguem o tema', 'Filtrar por preço', 'Grátis', 'Noite Estrelada', 'Grátis', 'Nuvens de Algodão', 'Grátis', 'Névoa Verde']
+print 14_papel_supernova
+NÃO ENCONTRADO: 'Comprar'
+   pacotes=['br.com.musibox'] nós=69 textos=['MusiBox', 'Sua música, do seu jeito.', 'Pesquisar', 'Cofre', 'Configurações', 'Temas', '298 papéis • as cores do app seguem o tema', 'Filtrar por preço', 'Grátis', 'Noite Estrelada', 'Grátis', 'Nuvens de Algodão', 'Grátis', 'Névoa Verde']
+print 14b_comprar_sem_play
+tap 'Navegador' em (430, 2227)
+print 14c_previa_navegador
+NÃO ENCONTRADO: 'Névoa Verde'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+NÃO ENCONTRADO: 'Usar no app'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+print 14d_usar_no_app
+NÃO ENCONTRADO: 'Música'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+print 14e_inicio_com_tema
+NÃO ENCONTRADO: 'Mais'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+NÃO ENCONTRADO: 'MusiBox Pro'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+print 14f_pro
+NÃO ENCONTRADO: 'Equalizador'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+print 14g_equalizador
+NÃO ENCONTRADO: 'Navegador'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+NÃO ENCONTRADO: 'Personalizar navegador'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+print 14h_menu_navegador
+== Cofre: PIN, código de recuperação e recuperação
+NÃO ENCONTRADO: 'Cofre'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+NÃO ENCONTRADO: 'Criar PIN'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+NÃO ENCONTRADO: 'Criar código de recuperação'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+codigo de recuperacao: 
+NÃO ENCONTRADO: 'Anotei o código'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+NÃO ENCONTRADO: 'Concluir'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+NÃO ENCONTRADO: 'Configurações do cofre'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+NÃO ENCONTRADO: 'Bloquear capturas de tela'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+print 15_cofre_config
+print 15a_cofre_config_pro
+NÃO ENCONTRADO: 'Recuperação do PIN'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+print 15b_recuperacao
+video id: 1000000023
+visível: 'Salvar no cofre'
+print 15c_compartilhar_cofre
+NÃO ENCONTRADO: 'Copiar para o cofre'
+   pacotes=['br.com.musibox'] nós=13 textos=['Close sheet', 'Drag handle', 'Salvar no cofre', 'Crie o PIN do cofre no MusiBox antes de guardar arquivos nele.', 'Abrir o cofre']
+NÃO ENCONTRADO: 'Cofre'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+print 16_cofre_fotos
+NÃO ENCONTRADO: 'Vídeos'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+print 17_cofre_videos
+NÃO ENCONTRADO: 'clipe_demo'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+print 18_cofre_player
+NÃO ENCONTRADO: 'Música'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+NÃO ENCONTRADO: 'Cofre'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+print 18a_cofre_bloqueado
+NÃO ENCONTRADO: 'Esqueci o PIN'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+print 18b_esqueci_pin
+NÃO ENCONTRADO: 'Usar código de recuperação'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+
+Exception occurred while executing 'text':
+java.lang.IllegalArgumentException: Argument expected after "text"
+	at com.android.modules.utils.BasicShellCommandHandler.getNextArgRequired(BasicShellCommandHandler.java:295)
+	at com.android.server.input.InputShellCommand.runText(InputShellCommand.java:291)
+	at com.android.server.input.InputShellCommand.onCommand(InputShellCommand.java:232)
+	at com.android.modules.utils.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:97)
+	at android.os.ShellCommand.exec(ShellCommand.java:38)
+	at com.android.server.input.InputManagerService.onShellCommand(InputManagerService.java:3297)
+	at android.os.Binder.shellCommand(Binder.java:1068)
+	at android.os.Binder.onTransact(Binder.java:888)
+	at android.hardware.input.IInputManager$Stub.onTransact(IInputManager.java:1339)
+	at android.os.Binder.execTransactInternal(Binder.java:1344)
+	at android.os.Binder.execTransact(Binder.java:1275)
+print 18b2_codigo_digitado
+NÃO ENCONTRADO: 'Confirmar'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+print 18c_cofre_recuperado
+== Histórico, configurações e armazenamento
+NÃO ENCONTRADO: 'Mais'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+print 19_mais
+NÃO ENCONTRADO: 'Histórico'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+print 20_historico
+NÃO ENCONTRADO: 'Configurações'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+print 21_configuracoes
+NÃO ENCONTRADO: 'Armazenamento'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+print 22_armazenamento
+NÃO ENCONTRADO: 'Biblioteca completa'
+   pacotes=['br.com.musibox'] nós=26 textos=['Configurar seu navegador', 'Escolher um papel de parede', 'Ver todos', '298 papéis', 'Noite Estrelada', 'Quais são os seus interesses?', 'Entretenimento', '✓', 'IA', '✓', 'Esportes', 'Compras', 'Viagens', 'Começar a navegar']
+print 23_biblioteca
+== Rotação
+print 24_paisagem
+Nenhum crash.
+--- avisos do app
+11-24 11:24:45.008   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:24:45.008   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:24:45.008   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:24:45.008   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:24:45.008   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:24:45.008   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:24:45.008   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:24:45.009   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:24:45.009   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:24:45.009   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:24:45.009   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:24:45.009   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:24:45.009   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:24:45.011   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:24:45.011   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:24:45.011   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:24:45.012   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:24:45.012   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:24:45.012   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:24:45.012   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:24:45.012   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:24:45.012   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:24:45.012   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:24:45.012   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:24:45.013   519   622 W InputDispatcher: Not creating InputTarget for b6aa1b br.com.musibox/com.musibox.app.LauncherDefault, no input channel
+11-24 11:25:01.439  1019  1019 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+11-24 11:25:01.440  1019  1019 W AudioMediaPlayerWrapper: onPlaybackStateChanged(): br.com.musibox tried to update with no new data
+11-24 11:25:17.369   519  2865 W InputManager-JNI: Input channel object '36e396 br.com.musibox/com.musibox.app.LauncherDefault (client)' was disposed without first being removed with the input manager!
+11-24 11:25:40.312   519   538 W ziparchive: Unable to open '/data/app/~~YviYAiV8fsLkiRYw6lAXcw==/br.com.musibox--1X1i1Ng4XXl8eh9hktQlQ==/base.dm': No such file or directory
+11-24 11:25:40.341   519   535 W InputManager-JNI: Input channel object '48cae5d Splash Screen br.com.musibox (client)' was disposed without first being removed with the input manager!

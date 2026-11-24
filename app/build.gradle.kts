@@ -75,8 +75,8 @@ android {
         applicationId = appId
         minSdk = 29
         targetSdk = 36
-        versionCode = 42
-        versionName = "3.4.4"
+        versionCode = 43
+        versionName = "3.4.5"
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${readWebClientId()}\"")
         buildConfigField("boolean", "FIREBASE_CONFIGURED", (firebaseClient != null).toString())
         // Só para gerar as capturas da loja (gradle -Pmusibox.shots=true); o app publicado sempre sai com false

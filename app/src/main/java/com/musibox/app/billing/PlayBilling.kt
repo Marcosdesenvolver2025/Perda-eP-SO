@@ -64,6 +64,8 @@ data class ProState(
     val subPlus: Boolean = false,
     /** Conta do dono do app (acesso total, sem cobrança). */
     val owner: Boolean = false,
+    /** Pro de presente: acesso total como o dono, mas o app mostra "Pro ilimitado" (não "dono"). */
+    val gift: Boolean = false,
 ) {
     /** Algum plano ativo (Go, Plus, Pro ou conta do dono). */
     val isActive: Boolean
@@ -143,6 +145,7 @@ object PlayBilling : PurchasesUpdatedListener {
             subPro = subPro,
             subPlus = subPlus,
             owner = prefs.getBoolean("owner", false),
+            gift = prefs.getBoolean("gift", false),
         )
         if (firebaseReady()) {
             val ok = runCatching {
@@ -207,12 +210,20 @@ object PlayBilling : PurchasesUpdatedListener {
         "22c3e0000a8c47044c486f1f4ea22f322dae76c5ecb6f7288430f352481f13fb",
     )
 
+    /** Pro ilimitado de presente (mesmo acesso do dono, mas aparece como plano Pro). */
+    private val GIFT_HASHES = setOf(
+        "b1a641b1cc239fd1994f7cd1c32012becb4393f94cd1c83076fc09d06cf5f240",
+    )
+
     private fun checkOwner(user: com.google.firebase.auth.FirebaseUser?) {
         val email = user?.email?.trim()?.lowercase()
         val google = user?.providerData?.any { it.providerId == "google.com" } == true
-        val isOwner = com.musibox.app.BuildConfig.SHOTS || (email != null && google && sha256(email) in OWNER_HASHES)
-        if (_pro.value.owner != isOwner) _pro.update { it.copy(owner = isOwner) }
-        appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()?.putBoolean("owner", isOwner)?.apply()
+        val hash = email?.let { sha256(it) }
+        val isGift = email != null && google && hash in GIFT_HASHES
+        val isOwner = com.musibox.app.BuildConfig.SHOTS || isGift || (email != null && google && hash in OWNER_HASHES)
+        if (_pro.value.owner != isOwner || _pro.value.gift != isGift) _pro.update { it.copy(owner = isOwner, gift = isGift) }
+        appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()
+            ?.putBoolean("owner", isOwner)?.putBoolean("gift", isGift)?.apply()
     }
 
     private fun sha256(text: String): String =

@@ -163,7 +163,10 @@ fun ProScreen(nav: NavController) {
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp),
         ) {
-            if (state.owner) {
+            if (state.owner && state.gift) {
+                StatusCard("Seu plano: Pro ✓", "Pro ilimitado • todos os temas e recursos liberados para sempre.")
+                Spacer(Modifier.height(14.dp))
+            } else if (state.owner) {
                 StatusCard("Conta do dono ✓", "Acesso total: todos os temas e o Pro sem limite.")
                 Spacer(Modifier.height(14.dp))
             } else if (active) {

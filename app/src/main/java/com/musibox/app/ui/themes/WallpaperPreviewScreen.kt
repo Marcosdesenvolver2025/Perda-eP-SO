@@ -134,6 +134,7 @@ fun WallpaperPreviewScreen(nav: NavController, id: String) {
                     Text(w.name, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                     Text(
                         when {
+                            pro.owner && pro.gift -> "Liberado no seu plano Pro"
                             pro.owner -> "Liberado • conta do dono do app"
                             w.free -> "Grátis"
                             w.pro && usable -> "Liberado no seu plano ${plan.label}"

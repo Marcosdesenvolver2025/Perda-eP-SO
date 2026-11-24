@@ -40,7 +40,7 @@ import com.musibox.app.ui.theme.Mb
 import kotlinx.coroutines.launch
 
 @Composable
-fun AddToPlaylistDialog(songs: List<Song>, onDismiss: () -> Unit, fx: String? = null) {
+fun AddToPlaylistDialog(songs: List<Song>, fx: String? = null, onDismiss: () -> Unit) {
     val editLabel = fx?.let { com.musibox.app.media.MusicEdit.fromId(it) }?.takeIf { it != com.musibox.app.media.MusicEdit.NONE }?.label
     val container = LocalAppContainer.current
     val playlists by container.library.playlists.collectAsStateWithLifecycle(initialValue = emptyList())
